@@ -7,7 +7,7 @@
             "name": "Win32",
             "includePath": [
                 "d:/RC_Tank/arduino/Tank/include",
-                "d:/RC_Tank/arduino/Tank/src",
+                "d:/RC_Tank/arduino/Tank/Tank",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
                 "C:/Users/godar/.platformio/lib/Servo/src",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/cores/arduino",
@@ -23,7 +23,7 @@
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
                     "d:/RC_Tank/arduino/Tank/include",
-                    "d:/RC_Tank/arduino/Tank/src",
+                    "d:/RC_Tank/arduino/Tank/Tank",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
                     "C:/Users/godar/.platformio/lib/Servo/src",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/cores/arduino",
