@@ -25,7 +25,7 @@
 #define TK_SETTINGS_H
 
 #include "configuration.h"
-#include <EEPROM.h>
+//#include <EEPROM.h>
 
 
 typedef struct
@@ -67,6 +67,8 @@ class Settings {
     void setDeadzone(int i);
     void setFlutter(int i);
     void setStickMode(bool b);
+
+    void printSettings(void);
 
   private:
     configData_t _cfg;

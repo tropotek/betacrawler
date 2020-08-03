@@ -18,10 +18,12 @@
 #include "Settings.h"
 
 Settings::Settings() {
-    if (!readCfg()) {
-       resetCfg();
-       saveCfg();
-     }
+    resetCfg();
+    // TODO: Implement a reliable CLI with interupts
+    // if (!readCfg()) {
+    //    resetCfg();
+    //    saveCfg();
+    // }
 }
 Settings::~Settings() { }
 
@@ -29,38 +31,37 @@ void Settings::resetCfg() {
     _cfg.signature[0] = TK_EEPROM_SIG[0];
     _cfg.signature[1] = TK_EEPROM_SIG[1];
     _cfg.version = VERSION;
-    setRxrangeMin(1140);
-    setRxrangeMax(1860);
-    setDeadzone(0);
-    setFlutter(10);
-    setStickMode(true);
+    setRxrangeMin(RX_MIN);
+    setRxrangeMax(RX_MAX);
+    setDeadzone(DEADZONE);
+    setFlutter(FLUTTER);
+    setStickMode((bool)STICK_MODE);
 }
 bool Settings::readCfg(void) {
-    EEPROM.get(TK_EEPROM_ADDR, _cfg);
+    // EEPROM.get(TK_EEPROM_ADDR, _cfg);
+    //  if (_cfg.signature[0] != TK_EEPROM_SIG[0] && 
+    //      _cfg.signature[1] != TK_EEPROM_SIG[1]) {
+    //    Serial.println("001: Reset your configuration.");
+    //    return(false);
+    // }
+    // // handle any version adjustments here
+    // if (_cfg.version != VERSION) {
+    //   // do something here
+    //   Serial.println("Upgrading your settings for v"+String(VERSION));
+    //   if (_cfg.version == 0 && VERSION == 1) {
+    //       resetCfg();
+    //   }
+    //   // TODO: Add updates when developing new versions
+    //   //if (_cfg.version == 1 && VERSION == 2) {
+    //   //}
 
-     if (_cfg.signature[0] != TK_EEPROM_SIG[0] && 
-         _cfg.signature[1] != TK_EEPROM_SIG[1]) {
-       Serial.println("001: Reset your configuration.");
-       return(false);
-    }
-    // handle any version adjustments here
-    if (_cfg.version != VERSION) {
-      // do something here
-      Serial.println("Upgrading your settings for v"+String(VERSION));
-      if (_cfg.version == 0 && VERSION == 1) {
-          resetCfg();
-      }
-      // TODO: Add updates when developing new versions
-      //if (_cfg.version == 1 && VERSION == 2) {
-      //}
-
-      _cfg.version = VERSION;
-      saveCfg();
-    }
+    //   _cfg.version = VERSION;
+    //   saveCfg();
+    // }
     return(true);
 }
 bool Settings::saveCfg(void) {
-    EEPROM.put(TK_EEPROM_ADDR, _cfg);
+    //EEPROM.put(TK_EEPROM_ADDR, _cfg);
     return(true);
 }
 void Settings::clearCfg(void) {
@@ -75,9 +76,9 @@ void Settings::clearCfg(void) {
 }
 
 void Settings::eraseEeprom(void) {
-    for (uint8_t i = 0 ; i < EEPROM.length() ; i++) {
-        EEPROM.write(i, 0);
-    }
+    // for (uint8_t i = 0 ; i < EEPROM.length() ; i++) {
+    //     EEPROM.write(i, 0);
+    // }
 }
 
 
@@ -119,4 +120,14 @@ void Settings::setFlutter(int i) {
 }
 void Settings::setStickMode(bool b) {
     _cfg.stickMode = (uint8_t)b;
+}
+
+void Settings::printSettings(void) {
+    //Serial.println("Settings:");
+    Serial.println("  rxMin        " + String((int)getRxrangeMin()));
+    Serial.println("  rxMax        " + String((int)getRxrangeMax()));
+    //Serial.println("  deadzone     " + String(getDeadzone()));
+    Serial.println("  flutter      " + String(getFlutter()));
+    String sm = ((int)getStickMode() == 0) ? "0 [SINGLE STICK]" : "1 [DUAL STICK]";
+    Serial.println("  stickMode    " + sm);
 }

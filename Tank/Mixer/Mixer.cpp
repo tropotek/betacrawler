@@ -52,27 +52,37 @@ void Mixer::loop(void) {
         int dir = scaleSpeed(_ppm->latestValidChannelValue(CH_DIR, TK_MIN_THROTTLE));
         int leftSub = 0;
         int rightSub = 0;
-
-        // int lThrowVal = TK_MID_THROTTLE - TK_MAX_THROTTLE;          // 500 is the left and right movment amount
-        // int rThrowVal = TK_MIN_THROTTLE - TK_MID_THROTTLE;          // 500 is the left and right movment amount
-
+        
+        // NOTE: This method while works is bulky and shuts down the motors to soon
+        //       I think we ned to use a ratio of change rather than actual numbers
         // We subtract speed from the opposite motor to turn
+        // if (dir > TK_MID_THROTTLE) {    // left stick
+        //     rightSub = dir-TK_MID_THROTTLE;
+        // } else if (dir < TK_MID_THROTTLE) { // Right Stick
+        //     leftSub = TK_MID_THROTTLE-dir;
+        // }
+
+        float pct = 0.0;
+        // Here we will find the percentage of left/right movement and subtract that from the current throttle
+        // This should result in more subttle turns of the motors
         if (dir > TK_MID_THROTTLE) {    // left stick
             rightSub = dir-TK_MID_THROTTLE;
+            pct = (float)1.0-(rightSub/500.0);
+            _rightSpeed = (pct*(float)(throt-1000))+1000;
+            // if (isArmed())
+            // Serial.println("rate: " + String(pct) + "   _rightSpeed: " + String(_rightSpeed));
         } else if (dir < TK_MID_THROTTLE) { // Right Stick
             leftSub = TK_MID_THROTTLE-dir;
+            pct = (float)1.0-leftSub/500.0;
+            _leftSpeed = (pct*(float)(throt-1000))+1000;
         }
-        int l = constrain(throt-rightSub, TK_MIN_THROTTLE, TK_MAX_THROTTLE);
-        int r = constrain(throt-leftSub, TK_MIN_THROTTLE, TK_MAX_THROTTLE);
-        _leftSpeed = l;
-        _rightSpeed = r;
     } else {
         _leftSpeed = 0;
         _rightSpeed = 0;
     }
 
     if (isArmed()) {
-        //Serial.println("ls: " + String(_leftSpeed) + "   rs: " + String(_rightSpeed));
+        Serial.println("ls: " + String(_leftSpeed) + "   rs: " + String(_rightSpeed));
         writeEscSpeed();
     } else {
         // TODO: This seems to stop the escs from arming and moving
@@ -91,18 +101,18 @@ void Mixer::writeEscSpeed(void) {
     if (_leftSpeed <= 0) {
         _leftEsc->stop();
     } else if (!(curLeftSpeed >= (_leftSpeed - _cfg->getFlutter()) && curLeftSpeed <= (_leftSpeed + _cfg->getFlutter())))  {
-        if (_leftSpeed != curLeftSpeed && isArmed()) {
-            Serial.println("ESC_LEFT: " + String(_leftSpeed) + " [" + String(curLeftSpeed) + "]");
-        }
+        // if (_leftSpeed != curLeftSpeed && isArmed()) {
+        //     Serial.println("ESC_LEFT: " + String(_leftSpeed) + " [" + String(curLeftSpeed) + "]");
+        // }
         _leftEsc->speed(_leftSpeed);
     }
 
     if (_rightSpeed <= 0) {
         _rightEsc->stop();
     } else if (_rightSpeed > 0 && !(curRightSpeed >= (_rightSpeed - _cfg->getFlutter()) && curRightSpeed <= (_rightSpeed + _cfg->getFlutter()))) {
-        if (_rightSpeed != curRightSpeed && isArmed()) {
-            Serial.println("ESC_RIGHT: " + String(_rightSpeed) + " [" + String(curRightSpeed) + "]");
-        }
+        // if (_rightSpeed != curRightSpeed && isArmed()) {
+        //     Serial.println("ESC_RIGHT: " + String(_rightSpeed) + " [" + String(curRightSpeed) + "]");
+        // }
         _rightEsc->speed(_rightSpeed);
     }
     delay(10); 

@@ -19,6 +19,8 @@
 #ifndef TK_GLOBAL_H
 #define TK_GLOBAL_H
 
+
+
 /* ***********************************************
  * Global includes
  * ***********************************************/
@@ -34,7 +36,7 @@
 #include "configuration.h"
 
 #include "Settings/Settings.h"
-#include "Command/Command.h"
+//#include "Command/Command.h"
 
 #include "PPMReader/PPMReader.h"
 #include "Mixer/Mixer.h"
@@ -47,7 +49,7 @@
 Settings cfg;
 PPMReader ppm(PPM_RX_PIN, MAX_RX_CHANNELS);
 Mixer mixer(&cfg, &ppm);
-Command cmd(&cfg, &ppm);
+//Command cmd(&cfg, &ppm);
 
 
 

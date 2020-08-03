@@ -25,7 +25,16 @@ void setup() {
   Serial.begin(SERIAL_BAUD);
   delay(50);
 
-  cmd.setup();
+  Serial.println("\n---------------" + PROJECT_NAME + "-------------");
+  Serial.println("  Author:      tropotek.com");
+  Serial.println("  Version:     " + String(cfg.getVersion()));
+  Serial.println("  Date:        29-07-2020");
+  cfg.printSettings();
+  Serial.println("---------------------------------------------");
+  
+
+
+  //cmd.setup();
   mixer.setup();
 }
 
@@ -33,7 +42,7 @@ void setup() {
  * 
  **/
 void loop() {  
-  cmd.loop();
+  //cmd.loop();
   mixer.loop();
 
 }

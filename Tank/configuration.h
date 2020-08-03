@@ -28,28 +28,17 @@
 
 #ifndef TK_CONFIGURATION_H
 #define TK_CONFIGURATION_H
+#include "Application.h"
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include <Arduino.h>
-#else
-  #include <WProgram.h>
-#endif
+#define RX_MIN                  1140
+#define RX_MAX                  1860
+#define FLUTTER                 10
+#define STICK_MODE              MODE_SINGLE
+//#define STICK_MODE              MODE_DUAL
 
-#include <EEPROM.h>
-
-
-// The common project name
-const String PROJECT_NAME =     "Beatacrawler";
-
-// Current build version
-#define VERSION                 1
-
-// Debug: uncomment for more verbose debug 
-//        messages and debug commands on the cli
-#define DEBUG
 
 // Serial baud rate
-#define SERIAL_BAUD             115200
+#define SERIAL_BAUD             9600
 
 // PPM Receiver pin
 #define PPM_RX_PIN              3
@@ -61,28 +50,9 @@ const String PROJECT_NAME =     "Beatacrawler";
 // LED Pin
 #define LED_PIN                 13
 
-// TODO: This is not implemented yet
-// ********************************************************************
-// Use these to invert the stick readings from the PPM receiver
-// NOTE: this does not change the motor direction
-#define INVERT_ESC0             0
-#define INVERT_ESC1             0
-// ********************************************************************
-
-
-// define the max number of receiver channels 0=thr, 1=aile, 2=elev, 3=rudd, 4=aux1(arm), 5=aux2
-#define MAX_RX_CHANNELS         6   // Available Channels
-
-// numer of used ESC/servo channels
-#define ESC_MAX_CHANNELS        2
-
-// Map channels to use with PPMReader
-#define CH_1                    1
-#define CH_2                    2
-#define CH_3                    3
-#define CH_4                    4
-#define CH_AUX1                 5
-#define CH_AUX2                 6
+// Debug: uncomment for more verbose debug 
+//        messages and debug commands on the cli
+#define DEBUG
 
 
 /*
@@ -114,12 +84,19 @@ const String PROJECT_NAME =     "Beatacrawler";
 #define CH_THROT_RIGHT          CH_3  // ELEVATOR
 
 
-// Stick modes
-#define MODE_DUAL               0
-#define MODE_SINGLE             1
 
-#define TK_MIN_THROTTLE         1000
-#define TK_MAX_THROTTLE         2000
-#define TK_MID_THROTTLE         1500
+
+// TODO: These are not implemented yet
+// ********************************************************************
+// Use these to invert the stick readings from the PPM receiver
+// NOTE: this does not change the motor direction
+#define INVERT_ESC0             0
+#define INVERT_ESC1             0
+
+#define DEADZONE                0   // Set to 50 when using reverse
+// ********************************************************************
+
+
+
 
 #endif   /*  CONFIGURATION_H */

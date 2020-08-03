@@ -24,19 +24,13 @@ void(* resetFunc) (void) = 0; //declare reset function @ address 0
 Command::Command(Settings* pCfg, PPMReader* pPppm) {
     _cfg = pCfg;
     _ppm = pPppm;
+    //commandStr.reserve(200);
     commandStr = "";
 }
 Command::~Command() { }
 
 void Command::setup() {
 
-  Serial.print("\n----------------------------\n");
-  Serial.print("  " + PROJECT_NAME + " \n");
-  Serial.print("  Author: tropotek.com\n");
-  Serial.print("  Version: " + String(_cfg->getVersion()) + " \n");
-  Serial.print("  Date: 29-07-2020\n");
-  Serial.print("----------------------------\n");
-  Serial.print(">> ");
 }
 
 void Command::loop() {
@@ -51,7 +45,6 @@ void Command::loop() {
             commandStr += c;
             Serial.print(c);
         }
-        delay(20);
     }
     if (!commandStr.equals("") && cmdFinish) {
         Serial.println();
@@ -65,6 +58,7 @@ void Command::loop() {
 void Command::parse(String cmdStr) {
     for (int i = 0; i < MAX_NUM_ARGS; i++) {
         args[i] = "";  // reset cmd array
+        //args[i].reserve(16);
     }
     cmdStr.trim();
     args[0] = cmdStr;
@@ -187,7 +181,7 @@ void Command::cmdShowCfg(void) {
     Serial.println("  stickMode    " + sm);
 #if defined(DEBUG)
     Serial.println("--------------------------------------");
-    Serial.println("  Eeprom Size  " + String(EEPROM.length()));
+    //Serial.println("  Eeprom Size  " + String(EEPROM.length()));
 #endif
     Serial.println();
 }
