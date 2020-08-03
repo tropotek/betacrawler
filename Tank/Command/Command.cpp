@@ -24,6 +24,7 @@ void(* resetFunc) (void) = 0; //declare reset function @ address 0
 Command::Command(Settings* pCfg, PPMReader* pPppm) {
     _cfg = pCfg;
     _ppm = pPppm;
+    commandStr = "";
 }
 Command::~Command() { }
 
@@ -39,14 +40,9 @@ void Command::setup() {
 }
 
 void Command::loop() {
-    // flush serial buffer ???
-    // while(Serial.available()) {
-    //     Serial.read(); delay(50);
-    // }
-
     char c;
     while(Serial.available()) {
-        c = (char)Serial.read();
+        c = Serial.read();
         if (c == '\n') {
             cmdFinish = true;
         } else if (c == '\r' || c == '\t' || c == '\0') {
@@ -55,7 +51,7 @@ void Command::loop() {
             commandStr += c;
             Serial.print(c);
         }
-        delay(10);
+        delay(20);
     }
     if (!commandStr.equals("") && cmdFinish) {
         Serial.println();
@@ -64,19 +60,20 @@ void Command::loop() {
         commandStr = "";
         Serial.print("> ");
     }
-
 }
 
-void Command::parse(String cmd) {
-    String args[MAX_NUM_ARGS];
-    for (int i = 0; i < MAX_NUM_ARGS; i++) args[i] = String("");
-    cmd.trim();
-    args[0] = cmd;
-    if (cmd.indexOf(" ") > -1) {
+void Command::parse(String cmdStr) {
+    for (int i = 0; i < MAX_NUM_ARGS; i++) {
+        args[i] = "";  // reset cmd array
+    }
+    cmdStr.trim();
+    args[0] = cmdStr;
+    if (cmdStr.indexOf(" ") > -1) {
         for (int i = 0; i < MAX_NUM_ARGS; i++) {
-            args[i] = getValue(cmd, ' ', i);
+            args[i] = getValue(cmdStr, ' ', i);
             args[i].toLowerCase();
             args[i].trim();
+            if (args[i].equals("")) break;
         }
     }
 
@@ -85,37 +82,36 @@ void Command::parse(String cmd) {
     //          Serial.println("===="+String(i)+"> " + args[i]);
     // }
 
-    if (args[0] == "help") {
+    if (args[0].equals("help") || args[0].equals("h") || args[0].equals("?")) {
         cmdHelp();
-    } else if (args[0] == "show" || args[0] == "list" || args[0] == "l") {
+    } else if (args[0].equals("show") || args[0].equals("list") || args[0].equals("l")) {
         cmdShowCfg();
-    } else if (args[0] == "save") {
+    } else if (args[0].equals("save")) {
         cmdSaveCfg();
-    } else if (args[0] == "reset") {
+    } else if (args[0].equals("reset")) {
         cmdInitCfg();
-    } else if (args[0] == "read") {
+    } else if (args[0].equals("read")) {
         _cfg->readCfg();
         Serial.println("Settings reloaded from eeprom.");
-    } else if (args[0] == "reboot") {
-        Serial.println("Reset");
+    } else if (args[0].equals("reboot")) {
+        Serial.println("Rebooting....");
         resetFunc();
-    } else if (args[0] == "get") {
+    } else if (args[0].equals("get")) {
         cmdGet(args[1], args[2]);
-    } else if (args[0] == "set") {
+    } else if (args[0].equals("set")) {
         cmdSet(args[1], args[2]);
     } 
 #if defined(DEBUG)
     // undocumented commands for debugging
-    else if (args[0] == "ppmdump" || args[0] == "ppm") {      
+    else if (args[0].equals("ppmdump") || args[0].equals("ppm")) {
         while (true) {
             printPpmChannels();
-            delay(100);
         }
-    } else if (args[0] == "clear") {
+    } else if (args[0].equals("clear")) {
         _cfg->clearCfg();
         _cfg->saveCfg();
         Serial.println("Settings cleared from eeprom and saved.");
-    } else if (args[0] == "erase" || args[0] == "format") {
+    } else if (args[0].equals("erase") || args[0].equals("format")) {
         _cfg->eraseEeprom();
         Serial.println("Eeprom data formatted");
     } 
@@ -127,15 +123,15 @@ void Command::parse(String cmd) {
 }
 
 void Command::cmdGet(String arg, String val) {
-    if (arg == "rxmin") {
+    if (arg.equals("rxmin")) {
         Serial.println("rxmin " + String(_cfg->getRxrangeMin()));
-    } else if (arg == "rxmax") {
+    } else if (arg.equals("rxmax")) {
         Serial.println("rxmax " + String(_cfg->getRxrangeMax()));
-    } else if (arg == "deadzone") {
+    } else if (arg.equals("deadzone")) {
         Serial.println("deadzone " + String(_cfg->getDeadzone()));
-    } else if (arg == "flutter") {
+    } else if (arg.equals("flutter")) {
         Serial.println("flutter " + String(_cfg->getFlutter()));
-    } else if (arg == "stickmode") {
+    } else if (arg.equals("stickmode") || arg.equals("sm")) {
         Serial.println("stickMode " + String((int)_cfg->getStickMode()));
     } else {
         Serial.println("Settings parameter not found!");
@@ -143,19 +139,19 @@ void Command::cmdGet(String arg, String val) {
 }
 void Command::cmdSet(String arg, String val) {
 
-    if (val == "") {    // TODO: how to deal with missing val arg
+    if (val.equals("")) {    // TODO: how to deal with missing val arg
         Serial.println("No value parameter specified for: " + arg);
         return;
     }
-    if (arg == "rxmin") {
+    if (arg.equals("rxmin")) {
         _cfg->setRxrangeMin(val.toInt());
-    } else if (arg == "rxmax") {
+    } else if (arg.equals("rxmax")) {
         _cfg->setRxrangeMax(val.toInt());
-    } else if (arg == "deadzone") {
+    } else if (arg.equals("deadzone")) {
         _cfg->setDeadzone(val.toInt());
-    } else if (arg == "flutter") {
+    } else if (arg.equals("flutter")) {
         _cfg->setFlutter(val.toInt());
-    } else if (arg == "stickmode") {
+    } else if (arg.equals("stickmode") || arg.equals("sm")) {
         _cfg->setStickMode((bool)val.toInt());
     } else {
         Serial.println("Settings parameter not found!");
@@ -187,10 +183,12 @@ void Command::cmdShowCfg(void) {
     Serial.println("  rxMax        " + String((int)_cfg->getRxrangeMax()));
     //Serial.println("  deadzone     " + String(_cfg->getDeadzone()));
     Serial.println("  flutter      " + String(_cfg->getFlutter()));
-    Serial.println("  stickMode    " + String((int)_cfg->getStickMode()));
-
+    String sm = ((int)_cfg->getStickMode() == 0) ? "0 [SINGLE STICK]" : "1 [DUAL STICK]";
+    Serial.println("  stickMode    " + sm);
+#if defined(DEBUG)
     Serial.println("--------------------------------------");
     Serial.println("  Eeprom Size  " + String(EEPROM.length()));
+#endif
     Serial.println();
 }
 void Command::cmdSaveCfg(void) {
@@ -229,4 +227,5 @@ void Command::printPpmChannels(void) {
       str += String(value) + " ";
   }
   Serial.println(str);
+  delay(100);
 }

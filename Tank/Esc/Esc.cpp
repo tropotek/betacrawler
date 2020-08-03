@@ -1,7 +1,7 @@
 /*
  * Electronic Speed Controller (ESC) - Library
  *
- *
+ * https://github.com/RB-ENantel/RC_ESC
  */
 
 #include "Esc.h"

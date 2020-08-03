@@ -47,6 +47,7 @@ class Command {
     Settings* _cfg;
     PPMReader* _ppm;
     String commandStr;
+    String args[MAX_NUM_ARGS];
     bool cmdFinish = false;
 
     void parse(String cmd);

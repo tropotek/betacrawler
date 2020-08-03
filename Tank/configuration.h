@@ -58,10 +58,16 @@ const String PROJECT_NAME =     "Beatacrawler";
 #define ESC0_PIN                8
 #define ESC1_PIN                9
 
+// LED Pin
+#define LED_PIN                 13
+
+// TODO: This is not implemented yet
+// ********************************************************************
 // Use these to invert the stick readings from the PPM receiver
 // NOTE: this does not change the motor direction
 #define INVERT_ESC0             0
 #define INVERT_ESC1             0
+// ********************************************************************
 
 
 // define the max number of receiver channels 0=thr, 1=aile, 2=elev, 3=rudd, 4=aux1(arm), 5=aux2
@@ -115,9 +121,5 @@ const String PROJECT_NAME =     "Beatacrawler";
 #define TK_MIN_THROTTLE         1000
 #define TK_MAX_THROTTLE         2000
 #define TK_MID_THROTTLE         1500
-
-
-// Uncomment to use the Servo lib only and not the Esc lib
-//#define SERVO_LIB
 
 #endif   /*  CONFIGURATION_H */

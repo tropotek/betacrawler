@@ -12,11 +12,7 @@
 #include "configuration.h"
 #include "Settings/Settings.h"
 #include "PPMReader/PPMReader.h"
-
-#include <Servo.h>
-#if !defined(SERVO_LIB)
 #include "Esc/Esc.h"
-#endif
 
 
 class Mixer {
@@ -42,13 +38,8 @@ class Mixer {
 
     Settings* _cfg;
     PPMReader* _ppm;
-#if !defined(SERVO_LIB)
     Esc* _leftEsc;
     Esc* _rightEsc;
-#else
-    Servo* _leftEsc;
-    Servo* _rightEsc;
-#endif
 
 };
 
