@@ -32,45 +32,31 @@ void Mixer::setup(void) {
     armSvo();
 }
 void Mixer::loop(void) { 
-    
-    
+        
     // Read the current arm switch state 
     // WARNING: When the TX transmitter is powered off this can be set to armed and full throttle
     //          TODO: We need to check for if the throttle is > TK_MIN_THROTTLE then do not ar, throw an error msg
     arm(_ppm->latestValidChannelValue(CH_AUX1, TK_MIN_THROTTLE) >= 1800 && _ppm->latestValidChannelValue(CH_AUX1, TK_MIN_THROTTLE) <= 2100);
-
 
     // Read the stick control values and calculate the left right esc pulses
     if (_cfg->getStickMode() == MODE_DUAL) {
         // Start here
         _leftSpeed = scaleSpeed(_ppm->latestValidChannelValue(CH_THROT_LEFT, TK_MIN_THROTTLE));
         _rightSpeed = scaleSpeed(_ppm->latestValidChannelValue(CH_THROT_RIGHT, TK_MIN_THROTTLE));
-        
     } else if (_cfg->getStickMode() == MODE_SINGLE) {
         int throt = scaleSpeed(_ppm->latestValidChannelValue(CH_THROT, TK_MIN_THROTTLE));
         // 1000 = left | 1500 = straight | 2000 = right
         int dir = scaleSpeed(_ppm->latestValidChannelValue(CH_DIR, TK_MIN_THROTTLE));
         int leftSub = 0;
         int rightSub = 0;
-        
-        // NOTE: This method while works is bulky and shuts down the motors to soon
-        //       I think we ned to use a ratio of change rather than actual numbers
-        // We subtract speed from the opposite motor to turn
-        // if (dir > TK_MID_THROTTLE) {    // left stick
-        //     rightSub = dir-TK_MID_THROTTLE;
-        // } else if (dir < TK_MID_THROTTLE) { // Right Stick
-        //     leftSub = TK_MID_THROTTLE-dir;
-        // }
-
         float pct = 0.0;
         // Here we will find the percentage of left/right movement and subtract that from the current throttle
         // This should result in more subttle turns of the motors
+        // TODO: implement a scaling factor like rate curve for turning harder or softer.
         if (dir > TK_MID_THROTTLE) {    // left stick
             rightSub = dir-TK_MID_THROTTLE;
             pct = (float)1.0-(rightSub/500.0);
             _rightSpeed = (pct*(float)(throt-1000))+1000;
-            // if (isArmed())
-            // Serial.println("rate: " + String(pct) + "   _rightSpeed: " + String(_rightSpeed));
         } else if (dir < TK_MID_THROTTLE) { // Right Stick
             leftSub = TK_MID_THROTTLE-dir;
             pct = (float)1.0-leftSub/500.0;
@@ -82,10 +68,9 @@ void Mixer::loop(void) {
     }
 
     if (isArmed()) {
-        Serial.println("ls: " + String(_leftSpeed) + "   rs: " + String(_rightSpeed));
+        //Serial.println("ls: " + String(_leftSpeed) + "   rs: " + String(_rightSpeed));
         writeEscSpeed();
     } else {
-        // TODO: This seems to stop the escs from arming and moving
         _leftSpeed = 0;
         _rightSpeed = 0;
         writeEscSpeed();

@@ -35,7 +35,7 @@ void Settings::resetCfg() {
     setRxrangeMax(RX_MAX);
     setDeadzone(DEADZONE);
     setFlutter(FLUTTER);
-    setStickMode((bool)STICK_MODE);
+    setStickMode(STICK_MODE);
 }
 bool Settings::readCfg(void) {
     // EEPROM.get(TK_EEPROM_ADDR, _cfg);
@@ -128,6 +128,6 @@ void Settings::printSettings(void) {
     Serial.println("  rxMax        " + String((int)getRxrangeMax()));
     //Serial.println("  deadzone     " + String(getDeadzone()));
     Serial.println("  flutter      " + String(getFlutter()));
-    String sm = ((int)getStickMode() == 0) ? "0 [SINGLE STICK]" : "1 [DUAL STICK]";
+    String sm = getStickMode() ? "1 [SINGLE STICK]" : "0 [DUAL STICK]";
     Serial.println("  stickMode    " + sm);
 }
