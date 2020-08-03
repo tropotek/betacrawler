@@ -87,3 +87,15 @@ unsigned long PPMReader::latestValidChannelValue(byte channel, unsigned long def
     }
     return value;
 }
+
+
+void PPMReader::printPpmChannels(void) {
+  // Print latest valid values from all channels
+  double value;
+  String str;
+  for (int channel = 1; channel <= channelAmount; ++channel) {
+      value = latestValidChannelValue(channel, 0);
+      str += String(value) + " ";
+  }
+  Serial.println(str);
+}

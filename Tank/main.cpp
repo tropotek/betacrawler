@@ -32,8 +32,6 @@ void setup() {
   cfg.printSettings();
   Serial.println("---------------------------------------------");
   
-
-
   //cmd.setup();
   mixer.setup();
 }
@@ -45,6 +43,15 @@ void loop() {
   //cmd.loop();
   mixer.loop();
 
+  // DEBUG: Dump receiver and speed values
+  if (false) {
+    if (mixer.isArmed()) {
+        Serial.println("ls: " + String(mixer.getLeftSpeed()) + "   rs: " + String(mixer.getRightSpeed()));
+    } else {
+        ppm.printPpmChannels();
+    }
+  }
+  
 }
 
 

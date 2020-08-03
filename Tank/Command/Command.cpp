@@ -99,7 +99,7 @@ void Command::parse(String cmdStr) {
     // undocumented commands for debugging
     else if (args[0].equals("ppmdump") || args[0].equals("ppm")) {
         while (true) {
-            printPpmChannels();
+            _ppm->printPpmChannels();
         }
     } else if (args[0].equals("clear")) {
         _cfg->clearCfg();
@@ -210,16 +210,4 @@ String Command::getValue(String data, char separator, int index)
         }
     }
     return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
-}
-
-void Command::printPpmChannels(void) {
-  // Print latest valid values from all channels
-  double value;
-  String str;
-  for (int channel = 1; channel <= MAX_RX_CHANNELS; ++channel) {
-      value = _ppm->latestValidChannelValue(channel, 0);
-      str += String(value) + " ";
-  }
-  Serial.println(str);
-  delay(100);
 }

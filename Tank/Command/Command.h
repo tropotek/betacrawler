@@ -60,7 +60,6 @@ class Command {
     void cmdInitCfg(void);
 
     String getValue(String data, char separator, int index);
-    void printPpmChannels(void);
 
 };
 

@@ -25,11 +25,14 @@ class Mixer {
     
     void arm(bool b);        // arm/disarm escs
     bool isArmed(void);
-    int scaleSpeed(int rxVal);
     bool isDeadzone(int speed);
-    void writeEscSpeed(void);
+    int getLeftSpeed(void);
+    int getRightSpeed(void);
+    Esc* getLeftEsc(void);
+    Esc* getRightEsc(void);
 
-    void armSvo(void);
+    Settings* getSettings(void);
+    PPMReader* getPpm(void);
     
   private:
     bool _armed = false;
@@ -40,6 +43,12 @@ class Mixer {
     PPMReader* _ppm;
     Esc* _leftEsc;
     Esc* _rightEsc;
+
+    int scaleSpeed(int rxVal);
+    void writeEscSpeed(void);
+    void armSvo(void);
+    void setLeftSpeed(int);
+    void setRightSpeed(int);
 
 };
 

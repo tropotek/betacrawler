@@ -36,69 +36,73 @@ void Mixer::loop(void) {
     // Read the current arm switch state 
     // WARNING: When the TX transmitter is powered off this can be set to armed and full throttle
     //          TODO: We need to check for if the throttle is > TK_MIN_THROTTLE then do not ar, throw an error msg
-    arm(_ppm->latestValidChannelValue(CH_AUX1, TK_MIN_THROTTLE) >= 1800 && _ppm->latestValidChannelValue(CH_AUX1, TK_MIN_THROTTLE) <= 2100);
+    arm(getPpm()->latestValidChannelValue(CH_AUX1, TK_MIN_THROTTLE) >= 1800 && getPpm()->latestValidChannelValue(CH_AUX1, TK_MIN_THROTTLE) <= 2100);
 
     // Read the stick control values and calculate the left right esc pulses
-    if (_cfg->getStickMode() == MODE_DUAL) {
+    if (getSettings()->getStickMode() == MODE_DUAL) {
         // Start here
-        _leftSpeed = scaleSpeed(_ppm->latestValidChannelValue(CH_THROT_LEFT, TK_MIN_THROTTLE));
-        _rightSpeed = scaleSpeed(_ppm->latestValidChannelValue(CH_THROT_RIGHT, TK_MIN_THROTTLE));
-    } else if (_cfg->getStickMode() == MODE_SINGLE) {
-        int throt = scaleSpeed(_ppm->latestValidChannelValue(CH_THROT, TK_MIN_THROTTLE));
-        // 1000 = left | 1500 = straight | 2000 = right
-        int dir = scaleSpeed(_ppm->latestValidChannelValue(CH_DIR, TK_MIN_THROTTLE));
+        setLeftSpeed(scaleSpeed(getPpm()->latestValidChannelValue(CH_THROT_LEFT, TK_MIN_THROTTLE)));
+        setRightSpeed(scaleSpeed(getPpm()->latestValidChannelValue(CH_THROT_RIGHT, TK_MIN_THROTTLE)));
+    } else if (getSettings()->getStickMode() == MODE_SINGLE) {
+        int throt = scaleSpeed(getPpm()->latestValidChannelValue(CH_THROT, TK_MIN_THROTTLE));
+        int dir = scaleSpeed(getPpm()->latestValidChannelValue(CH_DIR, TK_MIN_THROTTLE));
         int leftSub = 0;
         int rightSub = 0;
         float pct = 0.0;
+        setLeftSpeed(throt);
+        setRightSpeed(throt);
         // Here we will find the percentage of left/right movement and subtract that from the current throttle
         // This should result in more subttle turns of the motors
         // TODO: implement a scaling factor like rate curve for turning harder or softer.
         if (dir > TK_MID_THROTTLE) {    // left stick
             rightSub = dir-TK_MID_THROTTLE;
             pct = (float)1.0-(rightSub/500.0);
-            _rightSpeed = (pct*(float)(throt-1000))+1000;
+            setRightSpeed((pct*(float)(throt-1000))+1000);
         } else if (dir < TK_MID_THROTTLE) { // Right Stick
             leftSub = TK_MID_THROTTLE-dir;
             pct = (float)1.0-leftSub/500.0;
-            _leftSpeed = (pct*(float)(throt-1000))+1000;
+            setLeftSpeed((pct*(float)(throt-1000))+1000);
         }
     } else {
-        _leftSpeed = 0;
-        _rightSpeed = 0;
+        setLeftSpeed(0);
+        setRightSpeed(0);
     }
 
     if (isArmed()) {
-        //Serial.println("ls: " + String(_leftSpeed) + "   rs: " + String(_rightSpeed));
         writeEscSpeed();
     } else {
-        _leftSpeed = 0;
-        _rightSpeed = 0;
+        setLeftSpeed(0);
+        setRightSpeed(0);
         writeEscSpeed();
     }
 }
 void Mixer::writeEscSpeed(void) {
-    if (isDeadzone(_leftSpeed)) _leftSpeed = TK_MID_THROTTLE;
-    if (isDeadzone(_rightSpeed)) _rightSpeed = TK_MID_THROTTLE;
+    if (isDeadzone(getLeftSpeed())) setLeftSpeed(TK_MID_THROTTLE);
+    if (isDeadzone(getRightSpeed())) setRightSpeed(TK_MID_THROTTLE);
 
-    int curLeftSpeed = _leftEsc->getSpeed();
-    int curRightSpeed = _rightEsc->getSpeed();
+    int curLeftSpeed = getLeftEsc()->getSpeed();
+    int curRightSpeed = getRightEsc()->getSpeed();
  
-    if (_leftSpeed <= 0) {
-        _leftEsc->stop();
-    } else if (!(curLeftSpeed >= (_leftSpeed - _cfg->getFlutter()) && curLeftSpeed <= (_leftSpeed + _cfg->getFlutter())))  {
-        // if (_leftSpeed != curLeftSpeed && isArmed()) {
-        //     Serial.println("ESC_LEFT: " + String(_leftSpeed) + " [" + String(curLeftSpeed) + "]");
-        // }
-        _leftEsc->speed(_leftSpeed);
+    // use flutter to blank lower stick vals
+    if (getLeftSpeed() < (FLUTTER+TK_MIN_THROTTLE)) 
+        setLeftSpeed(TK_MIN_THROTTLE);
+    if (getRightSpeed() < (FLUTTER+TK_MIN_THROTTLE)) 
+        setRightSpeed(TK_MIN_THROTTLE);
+    if (getLeftSpeed() > (TK_MAX_THROTTLE-FLUTTER)) 
+        setLeftSpeed(TK_MAX_THROTTLE);
+    if (getRightSpeed() > (TK_MAX_THROTTLE-FLUTTER)) 
+        setRightSpeed(TK_MAX_THROTTLE);
+
+    if (getLeftSpeed() <= 0) {
+        getLeftEsc()->stop();
+    } else if (!(curLeftSpeed >= (getLeftSpeed() - getSettings()->getFlutter()) && curLeftSpeed <= (getLeftSpeed() + getSettings()->getFlutter())))  {
+        getLeftEsc()->speed(getLeftSpeed());
     }
 
-    if (_rightSpeed <= 0) {
-        _rightEsc->stop();
-    } else if (_rightSpeed > 0 && !(curRightSpeed >= (_rightSpeed - _cfg->getFlutter()) && curRightSpeed <= (_rightSpeed + _cfg->getFlutter()))) {
-        // if (_rightSpeed != curRightSpeed && isArmed()) {
-        //     Serial.println("ESC_RIGHT: " + String(_rightSpeed) + " [" + String(curRightSpeed) + "]");
-        // }
-        _rightEsc->speed(_rightSpeed);
+    if (getRightSpeed() <= 0) {
+        getRightEsc()->stop();
+    } else if (!(curRightSpeed >= (getRightSpeed() - getSettings()->getFlutter()) && curRightSpeed <= (getRightSpeed() + getSettings()->getFlutter()))) {
+        getRightEsc()->speed(getRightSpeed());
     }
     delay(10); 
 }
@@ -110,8 +114,8 @@ void Mixer::arm(bool b) {
         Serial.println("Tank Armed!");
     } else if(!b && isArmed()) {
         // Trigger dissarm and stop motors immediatly
-        _leftSpeed = 0;
-        _rightSpeed = 0;
+        setLeftSpeed(0);
+        setRightSpeed(0);
         writeEscSpeed();
         digitalWrite(LED_PIN, LOW);
         Serial.println("Tank Disarmed!");
@@ -123,20 +127,48 @@ bool Mixer::isArmed(void) {
 }
 
 void Mixer::armSvo(void) {
-    _leftEsc->arm();
-    _rightEsc->arm();
+    getLeftEsc()->arm();
+    getRightEsc()->arm();
     delay(10); 
 }
 
 int Mixer::scaleSpeed(int rxVal) { 
-    rxVal = constrain(rxVal, _cfg->getRxrangeMin(), _cfg->getRxrangeMax());
-    return map(rxVal, _cfg->getRxrangeMin(), _cfg->getRxrangeMax(), TK_MIN_THROTTLE, TK_MAX_THROTTLE);
+    rxVal = constrain(rxVal, getSettings()->getRxrangeMin(), getSettings()->getRxrangeMax());
+    return map(rxVal, getSettings()->getRxrangeMin(), getSettings()->getRxrangeMax(), TK_MIN_THROTTLE, TK_MAX_THROTTLE);
     //return 1000 * (((double)rxVal - _cfg->getRxrangeMin()) / (_cfg->getRxrangeMax() - _cfg->getRxrangeMin())) + 1000;
 }
 
 bool Mixer::isDeadzone(int speed)
 {
-    if (speed >= (TK_MID_THROTTLE - _cfg->getDeadzone()) && speed <= (TK_MID_THROTTLE + _cfg->getDeadzone()))
+    if (speed >= (TK_MID_THROTTLE - getSettings()->getDeadzone()) && speed <= (TK_MID_THROTTLE + getSettings()->getDeadzone()))
         return true;
     return false;
+}
+
+int Mixer::getLeftSpeed(void) {
+    return _leftSpeed;
+}
+int Mixer::getRightSpeed(void) {
+    return _rightSpeed;
+}
+Esc* Mixer::getLeftEsc(void) {
+    return _leftEsc;
+}
+Esc* Mixer::getRightEsc(void) {
+    return _rightEsc;
+}
+void Mixer::setLeftSpeed(int i) {
+    i = constrain(i, TK_MIN_THROTTLE, TK_MAX_THROTTLE);
+    _leftSpeed = i;
+}
+void Mixer::setRightSpeed(int i) {
+    i = constrain(i, TK_MIN_THROTTLE, TK_MAX_THROTTLE);
+    _rightSpeed = i;
+}
+
+Settings* Mixer::getSettings(void) {
+    return _cfg;
+}
+PPMReader* Mixer::getPpm(void) {
+    return _ppm;
 }

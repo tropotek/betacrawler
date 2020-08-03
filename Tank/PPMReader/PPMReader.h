@@ -78,6 +78,8 @@ class PPMReader : InterruptHandler {
         * Returns defaultValue if the given channel hasn't received any valid values yet. */
         unsigned long latestValidChannelValue(byte channel, unsigned long defaultValue);
 
+        void printPpmChannels(void);
+        
     private:
 
         // An interrupt service routine for handling the interrupts activated by PPM pulses
