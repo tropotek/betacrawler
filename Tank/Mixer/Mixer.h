@@ -41,6 +41,7 @@ class Mixer {
     bool _armed = false;
     int _leftSpeed = 0;
     int _rightSpeed = 0;
+    int _panSpeed = 0;
     int _panAngle = 0;
 
     Settings* _cfg;

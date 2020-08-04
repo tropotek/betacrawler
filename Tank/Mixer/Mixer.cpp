@@ -37,7 +37,8 @@ void Mixer::loop(void) {
     // Failsafe
     if (getPpm()->timeSinceLastPulse() > SIGNAL_LOSS_TIME) {
         // shutdown (no paulses)
-        Serial.println("Signal Loss. (Failsafe)");
+        if(isArmed())
+            Serial.println("Signal Loss. (Failsafe)");
         arm(false);
         return;
     }
@@ -85,7 +86,11 @@ void Mixer::loop(void) {
         writeEscSpeed();
     }
 
+#if (defined(DISABLE_PAN_ON_DISARM))
     if (CAM_ENABLED && isArmed())
+#else
+    if (CAM_ENABLED)
+#endif
         writeServoSpeed();
 
 }
@@ -122,11 +127,12 @@ void Mixer::writeEscSpeed(void) {
 void Mixer::writeServoSpeed(void) {
     // Read angle 1000 = 0, 1500 = 90, 2000 = 180
     int pos = getPpm()->latestValidChannelValue(CH_PAN, TK_MIN_THROTTLE);
-    int newPos = map(pos, TK_MIN_THROTTLE, TK_MAX_THROTTLE, TK_MIN_ANGLE, TK_MAX_ANGLE);
-    if (newPos == getPanAngle()) return;
-
-    if (!(newPos >= (getPanAngle() - getSettings()->getFlutter()) && newPos <= (getPanAngle() + getSettings()->getFlutter())))  {
-        setPanAngle(newPos);
+    int flt = getSettings()->getFlutter()*2;
+    if (!(pos >= (_panSpeed - flt) && pos <= (_panSpeed + flt)))  {
+        _panSpeed = pos;    // save to implement flutter
+        int newAngle = map(_panSpeed, TK_MIN_THROTTLE, TK_MAX_THROTTLE, TK_MIN_ANGLE, TK_MAX_ANGLE);
+        if (newAngle == getPanAngle()) return;
+        setPanAngle(newAngle);
         // Serial.println("Angle: " + String(getPanAngle()) + "  Pos: " + String(pos));
         // Serial.println("Angle: " + String(getPanAngle()));
         getPanServo()->write(getPanAngle());            // tell servo to go to position in variable 'pos'

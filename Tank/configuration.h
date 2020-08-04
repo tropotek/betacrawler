@@ -49,7 +49,7 @@
 #define ESC1_PIN                9
 
 // Servo 0 Use this servo for pan of a cam mount.
-#define SVO0_PIN              11
+#define SVO0_PIN                11
 
 // LED Pin
 #define LED_PIN                 13
@@ -58,6 +58,8 @@
 //        messages and debug commands on the cli
 #define DEBUG
 
+// If you want the pan to be diabled on disarm
+#define DISABLE_PAN_ON_DISARM
 
 /*
  * ------------------------------------------------------------------
