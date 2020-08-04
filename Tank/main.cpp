@@ -32,15 +32,22 @@ void setup() {
   cfg.printSettings();
   Serial.println("---------------------------------------------");
   
-  //cmd.setup();
+  #if (defined(CLI_ENABLED))
+    cmd.setup();
+  #endif
+
   mixer.setup();
+
 }
 
 /**
  * 
  **/
 void loop() {  
-  //cmd.loop();
+  #if (defined(CLI_ENABLED))
+      cmd.loop();
+  #endif
+  
   mixer.loop();
 
   // DEBUG: Dump receiver and speed values

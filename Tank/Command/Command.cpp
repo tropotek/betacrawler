@@ -24,16 +24,16 @@ void(* resetFunc) (void) = 0; //declare reset function @ address 0
 Command::Command(Settings* pCfg, PPMReader* pPppm) {
     _cfg = pCfg;
     _ppm = pPppm;
-    //commandStr.reserve(200);
     commandStr = "";
 }
 Command::~Command() { }
 
 void Command::setup() {
-
+    Serial.print("> ");
 }
 
 void Command::loop() {
+    noInterrupts();             // TODO: thought this might save the day, but NOOOOOO!
     char c;
     while(Serial.available()) {
         c = Serial.read();
@@ -53,6 +53,7 @@ void Command::loop() {
         commandStr = "";
         Serial.print("> ");
     }
+    interrupts();               // TODO: thought this might save the day, but NOOOOO!
 }
 
 void Command::parse(String cmdStr) {

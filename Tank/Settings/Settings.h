@@ -25,8 +25,9 @@
 #define TK_SETTINGS_H
 
 #include "configuration.h"
-//#include <EEPROM.h>
-
+#if (defined(CLI_ENABLED))
+  #include <EEPROM.h>
+#endif
 
 typedef struct
 {   

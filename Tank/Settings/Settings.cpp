@@ -18,12 +18,15 @@
 #include "Settings.h"
 
 Settings::Settings() {
-    resetCfg();
+#if (defined(CLI_ENABLED))
     // TODO: Implement a reliable CLI with interupts
-    // if (!readCfg()) {
-    //    resetCfg();
-    //    saveCfg();
-    // }
+    if (!readCfg()) {
+       resetCfg();
+       saveCfg();
+    }
+#else 
+    resetCfg();
+#endif
 }
 Settings::~Settings() { }
 
@@ -38,30 +41,33 @@ void Settings::resetCfg() {
     setStickMode(STICK_MODE);
 }
 bool Settings::readCfg(void) {
-    // EEPROM.get(TK_EEPROM_ADDR, _cfg);
-    //  if (_cfg.signature[0] != TK_EEPROM_SIG[0] && 
-    //      _cfg.signature[1] != TK_EEPROM_SIG[1]) {
-    //    Serial.println("001: Reset your configuration.");
-    //    return(false);
-    // }
-    // // handle any version adjustments here
-    // if (_cfg.version != VERSION) {
-    //   // do something here
-    //   Serial.println("Upgrading your settings for v"+String(VERSION));
-    //   if (_cfg.version == 0 && VERSION == 1) {
-    //       resetCfg();
-    //   }
-    //   // TODO: Add updates when developing new versions
-    //   //if (_cfg.version == 1 && VERSION == 2) {
-    //   //}
-
-    //   _cfg.version = VERSION;
-    //   saveCfg();
-    // }
+#if (defined(CLI_ENABLED))
+    EEPROM.get(TK_EEPROM_ADDR, _cfg);
+     if (_cfg.signature[0] != TK_EEPROM_SIG[0] && 
+         _cfg.signature[1] != TK_EEPROM_SIG[1]) {
+       Serial.println("001: Reset your configuration.");
+       return(false);
+    }
+    // handle any version adjustments here
+    if (_cfg.version != VERSION) {
+      // do something here
+      Serial.println("Upgrading your settings for v"+String(VERSION));
+      if (_cfg.version == 0 && VERSION == 1) {
+          resetCfg();
+      }
+      // TODO: Add updates when developing new versions
+      //if (_cfg.version == 1 && VERSION == 2) {
+      //}
+      _cfg.version = VERSION;
+      saveCfg();
+    }
+#endif
     return(true);
 }
 bool Settings::saveCfg(void) {
-    //EEPROM.put(TK_EEPROM_ADDR, _cfg);
+#if (defined(CLI_ENABLED))
+    EEPROM.put(TK_EEPROM_ADDR, _cfg);
+#endif
     return(true);
 }
 void Settings::clearCfg(void) {
@@ -76,9 +82,11 @@ void Settings::clearCfg(void) {
 }
 
 void Settings::eraseEeprom(void) {
-    // for (uint8_t i = 0 ; i < EEPROM.length() ; i++) {
-    //     EEPROM.write(i, 0);
-    // }
+#if (defined(CLI_ENABLED))
+    for (uint8_t i = 0 ; i < EEPROM.length() ; i++) {
+        EEPROM.write(i, 0);
+    }
+#endif
 }
 
 
@@ -130,4 +138,7 @@ void Settings::printSettings(void) {
     Serial.println("  flutter      " + String(getFlutter()));
     String sm = getStickMode() ? "1 [SINGLE STICK]" : "0 [DUAL STICK]";
     Serial.println("  stickMode    " + sm);
+#if (defined(CLI_ENABLED) && defined(DEBUG))
+        Serial.println("  eeprom       " + String(EEPROM.length()));
+#endif
 }

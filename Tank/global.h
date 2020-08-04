@@ -36,11 +36,13 @@
 #include "configuration.h"
 
 #include "Settings/Settings.h"
-//#include "Command/Command.h"
 
 #include "PPMReader/PPMReader.h"
 #include "Mixer/Mixer.h"
 
+#if (defined(CLI_ENABLED))
+  #include "Command/Command.h"
+#endif
 
 /* ***********************************************
  * Global variables
@@ -49,8 +51,10 @@
 Settings cfg;
 PPMReader ppm(PPM_RX_PIN, MAX_RX_CHANNELS);
 Mixer mixer(&cfg, &ppm);
-//Command cmd(&cfg, &ppm);
 
+#if (defined(CLI_ENABLED))
+  Command cmd(&cfg, &ppm);
+#endif
 
 
 #endif   /*  TK_GLOBAL_H */

@@ -62,8 +62,9 @@ const String PROJECT_NAME =     "Beatacrawler";
 #define MODE_SINGLE             1
 
 
-
-
+// To setup the command line interface 
+//   when we figure out how to handle the interrupts
+//#define CLI_ENABLED
 
 
 
