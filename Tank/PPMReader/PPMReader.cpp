@@ -49,15 +49,6 @@ void PPMReader::handleInterrupt(int8_t interruptNum) {
     microsAtLastPulse = micros();
     unsigned long time = microsAtLastPulse - previousMicros;
 
-// TODO: How can we detect signal loss???
-// Taken form: http://www.electronoobs.com/eng_robotica_tut5_2_1.php
-// unsigned long now = millis();
-// //Here we check if we've lost signal, if we did we reset the values 
-// if ( now - lastRecvTime > 1000 ) {
-// // Signal lost?
-// resetData();
-//}
-
 
     if (time > blankTime) {
         /* If the time between pulses was long enough to be considered an end
@@ -109,7 +100,14 @@ void PPMReader::printPpmChannels(void) {
   }
   Serial.println(str);
 }
-
+/**
+ * I have found a value of 35000 seems good to stop false positive tests
+ * your setup may vary
+ * 
+ * Eg:
+ *     if (getPpm()->timeSinceLastPulse() > 20000) { // Failsafe code }
+ * 
+ */
 unsigned long PPMReader::timeSinceLastPulse(void) {
     return micros() - microsAtLastPulse;
 }
