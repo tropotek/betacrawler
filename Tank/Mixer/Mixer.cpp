@@ -34,7 +34,14 @@ void Mixer::setup(void) {
     armEsc();
 }
 void Mixer::loop(void) { 
-        
+    // Failsafe
+    if (getPpm()->timeSinceLastPulse() > SIGNAL_LOSS_TIME) {
+        // shutdown (no paulses)
+        Serial.println("Signal Loss. (Failsafe)");
+        arm(false);
+        return;
+    }
+
     // Read the current arm switch state 
     // WARNING: When the TX transmitter is powered off this can be set to armed and full throttle
     //          TODO: We need to check for if the throttle is > TK_MIN_THROTTLE then do not ar, throw an error msg
@@ -77,7 +84,8 @@ void Mixer::loop(void) {
         setRightSpeed(0);
         writeEscSpeed();
     }
-    if (CAM_ENABLED)
+
+    if (CAM_ENABLED && isArmed())
         writeServoSpeed();
 
 }
@@ -115,7 +123,9 @@ void Mixer::writeServoSpeed(void) {
     // Read angle 1000 = 0, 1500 = 90, 2000 = 180
     int pos = getPpm()->latestValidChannelValue(CH_PAN, TK_MIN_THROTTLE);
     int newPos = map(pos, TK_MIN_THROTTLE, TK_MAX_THROTTLE, TK_MIN_ANGLE, TK_MAX_ANGLE);
-    if (newPos != getPanAngle()) {
+    if (newPos == getPanAngle()) return;
+
+    if (!(newPos >= (getPanAngle() - getSettings()->getFlutter()) && newPos <= (getPanAngle() + getSettings()->getFlutter())))  {
         setPanAngle(newPos);
         // Serial.println("Angle: " + String(getPanAngle()) + "  Pos: " + String(pos));
         // Serial.println("Angle: " + String(getPanAngle()));

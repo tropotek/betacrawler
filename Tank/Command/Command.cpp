@@ -161,6 +161,7 @@ void Command::cmdHelp(void) {
     Serial.println("  reset:  Factory Reset and save the settings.");
     Serial.println("  read:  Read settings from eeprom.");
     Serial.println("  save:  Save settings to memory.");
+    Serial.println("  reboot:  restart the system");
 #if defined(DEBUG)
     Serial.println("DEBUG Commands:");
     // undocumented commands for debugging

@@ -79,6 +79,7 @@ class PPMReader : InterruptHandler {
         unsigned long latestValidChannelValue(byte channel, unsigned long defaultValue);
 
         void printPpmChannels(void);
+        unsigned long timeSinceLastPulse(void);
         
     private:
 

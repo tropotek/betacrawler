@@ -61,9 +61,11 @@ const String PROJECT_NAME =     "Beatacrawler";
 #define MODE_DUAL               0
 #define MODE_SINGLE             1
 
+// After this timeout the PPM signal will failsafe
+#define SIGNAL_LOSS_TIME        20000
 
 // To setup the command line interface 
-//   when we figure out how to handle the interrupts
+//   when we figure out how to handle the Serial with interrupts attached
 //#define CLI_ENABLED
 
 
