@@ -35,6 +35,7 @@
 #define FLUTTER                 10
 #define STICK_MODE              MODE_SINGLE
 //#define STICK_MODE              MODE_DUAL
+#define CAM_ENABLED             true        // Enable the cam servo 0
 
 
 // Serial baud rate
@@ -46,6 +47,9 @@
 // ESC pins
 #define ESC0_PIN                8
 #define ESC1_PIN                9
+
+// Servo 0 Use this servo for pan of a cam mount.
+#define SVO0_PIN              11
 
 // LED Pin
 #define LED_PIN                 13
@@ -74,7 +78,6 @@
 #define CH_THROT                CH_1  // THROTTLE
 #define CH_DIR                  CH_4  // RUDDER
 
-
 /*
  * DUEL THROTTLE CONTROL:
  *   This mapping is for using independent sticks to control
@@ -83,8 +86,12 @@
 #define CH_THROT_LEFT           CH_1  // THROTTLE
 #define CH_THROT_RIGHT          CH_3  // ELEVATOR
 
-
-
+// PAN CONTROL channel (Could use CH_AUX2 mapped to a pot on controller too)
+#if (CAM_ENABLED == MODE_SINGLE)
+    #define CH_PAN              CH_3
+#else
+    #define CH_PAN              CH_2  
+#endif
 
 // TODO: These are not implemented yet
 // ********************************************************************
@@ -92,6 +99,7 @@
 // NOTE: this does not change the motor direction
 #define INVERT_ESC0             0
 #define INVERT_ESC1             0
+#define INVERT_SVO0             0
 
 #define DEADZONE                0   // Set to 50 when using reverse
 // ********************************************************************

@@ -29,7 +29,9 @@ void Mixer::setup(void) {
     digitalWrite(LED_PIN, LOW);
     _leftEsc  = new Esc((int)ESC0_PIN);
     _rightEsc = new Esc((int)ESC1_PIN);
-    armSvo();
+    _panServo = new Servo();
+    _panServo->attach(SVO0_PIN);
+    armEsc();
 }
 void Mixer::loop(void) { 
         
@@ -75,6 +77,9 @@ void Mixer::loop(void) {
         setRightSpeed(0);
         writeEscSpeed();
     }
+    if (CAM_ENABLED)
+        writeServoSpeed();
+
 }
 void Mixer::writeEscSpeed(void) {
     if (isDeadzone(getLeftSpeed())) setLeftSpeed(TK_MID_THROTTLE);
@@ -106,6 +111,19 @@ void Mixer::writeEscSpeed(void) {
     }
     delay(10); 
 }
+void Mixer::writeServoSpeed(void) {
+    // Read angle 1000 = 0, 1500 = 90, 2000 = 180
+    int pos = getPpm()->latestValidChannelValue(CH_PAN, TK_MIN_THROTTLE);
+    int newPos = map(pos, TK_MIN_THROTTLE, TK_MAX_THROTTLE, TK_MIN_ANGLE, TK_MAX_ANGLE);
+    if (newPos != getPanAngle()) {
+        setPanAngle(newPos);
+        // Serial.println("Angle: " + String(getPanAngle()) + "  Pos: " + String(pos));
+        // Serial.println("Angle: " + String(getPanAngle()));
+        getPanServo()->write(getPanAngle());            // tell servo to go to position in variable 'pos'
+        delay(15);                                      // waits 15ms for the servo to reach the position
+    }
+
+}
 
 void Mixer::arm(bool b) {
     if (b && !isArmed()) {
@@ -126,7 +144,7 @@ bool Mixer::isArmed(void) {
     return _armed;
 }
 
-void Mixer::armSvo(void) {
+void Mixer::armEsc(void) {
     getLeftEsc()->arm();
     getRightEsc()->arm();
     delay(10); 
@@ -171,4 +189,16 @@ Settings* Mixer::getSettings(void) {
 }
 PPMReader* Mixer::getPpm(void) {
     return _ppm;
+}
+
+
+Servo* Mixer::getPanServo(void) {
+    return _panServo;
+}
+void Mixer::setPanAngle(int i) {
+    i = constrain(i, TK_MIN_ANGLE, TK_MAX_ANGLE);
+    _panAngle = i;
+}
+int Mixer::getPanAngle(void) {
+    return _panAngle;
 }

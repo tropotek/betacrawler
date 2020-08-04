@@ -13,6 +13,7 @@
 #include "Settings/Settings.h"
 #include "PPMReader/PPMReader.h"
 #include "Esc/Esc.h"
+#include <Servo.h>
 
 
 class Mixer {
@@ -28,8 +29,10 @@ class Mixer {
     bool isDeadzone(int speed);
     int getLeftSpeed(void);
     int getRightSpeed(void);
+    int getPanAngle(void);
     Esc* getLeftEsc(void);
     Esc* getRightEsc(void);
+    Servo* getPanServo(void);
 
     Settings* getSettings(void);
     PPMReader* getPpm(void);
@@ -38,17 +41,22 @@ class Mixer {
     bool _armed = false;
     int _leftSpeed = 0;
     int _rightSpeed = 0;
+    int _panAngle = 0;
 
     Settings* _cfg;
     PPMReader* _ppm;
     Esc* _leftEsc;
     Esc* _rightEsc;
+    Servo* _panServo;
 
     int scaleSpeed(int rxVal);
     void writeEscSpeed(void);
-    void armSvo(void);
-    void setLeftSpeed(int);
-    void setRightSpeed(int);
+    void writeServoSpeed(void);
+    void armEsc(void);
+
+    void setLeftSpeed(int i);
+    void setRightSpeed(int i);
+    void setPanAngle(int i);
 
 };
 

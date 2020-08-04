@@ -40,6 +40,9 @@ const String PROJECT_NAME =     "Beatacrawler";
 #define TK_MAX_THROTTLE         2000
 #define TK_MID_THROTTLE         1500
 
+#define TK_MIN_ANGLE            0
+#define TK_MAX_ANGLE            180
+
 // define the max number of receiver channels 0=thr, 1=aile, 2=elev, 3=rudd, 4=aux1(arm), 5=aux2
 #define MAX_RX_CHANNELS         6   // Available Channels
 
