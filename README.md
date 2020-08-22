@@ -100,16 +100,75 @@ You can change the default pins as requred.
 
 ## Hardware Setup
 
-TODO
+This is the setup I have used to get this project up and running, your project may differ. 
+This should get you started if you are not sure how it all fits together.
+
+This setup assumes that you already have a radio transmitter and know how to bind it up 
+to your selected PPM receiver. This is the one used in testing [8CH Transmitter DSM2 Compatible](https://www.banggood.com/custlink/KGDYcLmCMg).  
+
+The transmitter has also been modified to remove the spring on both left and right throttle sticks. 
+This helps when using Dual Stick mode.
 
 
-### Parts
-  - ESC's used in this project: HGLRC BS30A - BLHli_S: Rev16.6 F-H-40
-  - Any brusheless motors that fit the ESC's
-  - A battery 
-  - A PPM Receiver with a transmitting controller to match
+#### Tank Model
+
+To start with you will need a Tank model. If you have a 3D Printer and a bit of time on your hands
+A fantastic starting model is the [RC Tank - By Staind](https://www.thingiverse.com/thing:2414983).
+
+There may be other Tank project either bought or printed its entrly up to you!
 
 
+#### Arduino & PPM 
+
+##### Parts
+  * [Arduino Nano V3](https://www.banggood.com/custlink/mKDyWl3pU3)
+  * [Arduino Nano Expansion Board](https://www.banggood.com/custlink/KKmRpavpqC)
+  * [Tiny 2.4G DSM2 6CH PPM Receiver](https://www.banggood.com/custlink/GDmycOmcUI)
+
+
+
+#### ESC's
+
+##### Parts
+  * [Matek Mini PDB With 5V/12V BEC](https://www.banggood.com/custlink/m3vErjGJM1)
+  * (optional)[5V BEC 2-6S](https://www.banggood.com/custlink/mGDYJO3rfE)
+  * [2 x Razor32 35A 3-6S ESC](https://www.banggood.com/custlink/v3GhrL3Jwc)
+  * [2 x 2212 930KV 2-4s](https://www.banggood.com/custlink/mK3ypomrfZ)
+  * [2200mAh 60C 3S Lipo](https://www.banggood.com/custlink/3GKyWLGtm5)
+
+
+#### FPV & Servos
+
+##### Parts
+  * [2 x SG90 Micro Servo 9g](https://www.banggood.com/custlink/DmDRJaGp76)
+  * [Foxeer Razer 1.8mm Lens 1200TVL](https://www.banggood.com/custlink/vvDyrOmpu2)
+  * [AKK FX337CH 25/200/400/600mW VTX](https://www.banggood.com/custlink/m3mypOGH3m)
+  * [SMA 5,8G Antenna](https://www.banggood.com/custlink/vGKRcOGPGc)
+
+
+
+
+
+
+### All Parts
+
+All  these parts are only suggestions, you will need get the parts that are right for you project.
+
+The 5v BEC is only needed if you are not using a PDB (Power Distribution Board) with an onboard 5v Bec.
+
+  * [Arduino Nano V3](https://www.banggood.com/custlink/mKDyWl3pU3)
+  * [Arduino Nano Expansion Board](https://www.banggood.com/custlink/KKmRpavpqC)
+  * [Tiny 2.4G DSM2 6CH PPM Receiver](https://www.banggood.com/custlink/GDmycOmcUI)
+  * [Matek Mini PDB With 5V/12V BEC](https://www.banggood.com/custlink/m3vErjGJM1)
+  * (optional)[5V BEC 2-6S](https://www.banggood.com/custlink/mGDYJO3rfE)
+  * [2 x Razor32 35A 3-6S ESC](https://www.banggood.com/custlink/v3GhrL3Jwc)
+  * [2 x 2212 930KV 2-4s](https://www.banggood.com/custlink/mK3ypomrfZ)
+  * [2200mAh 60C 3S Lipo](https://www.banggood.com/custlink/3GKyWLGtm5)
+  * [2 x SG90 Micro Servo 9g](https://www.banggood.com/custlink/DmDRJaGp76)
+  * [Foxeer Razer 1.8mm Lens 1200TVL](https://www.banggood.com/custlink/vvDyrOmpu2)
+  * [AKK FX337CH 25/200/400/600mW VTX](https://www.banggood.com/custlink/m3mypOGH3m)
+  * [SMA 5,8G Antenna](https://www.banggood.com/custlink/vGKRcOGPGc)
+  * [8CH Transmitter DSM2 Compatible](https://www.banggood.com/custlink/KGDYcLmCMg)
 
 
 
@@ -128,7 +187,7 @@ Follow this project on [Facebook Group](https://www.facebook.com/groups/30743233
 
 
 ## Resources Used
-  - The tank model tested with betacrawler [RX Tank - Staind](https://www.thingiverse.com/thing:2414983)
+  - The tank model tested with betacrawler [RX Tank - By Staind](https://www.thingiverse.com/thing:2414983)
   - [PPM Reciver](https://github.com/Nikkilae/PPM-reader)
   - [ESC/Servo](https://www.instructables.com/id/ESC-Programming-on-Arduino-Hobbyking-ESC/)
   - [ESC bi-directional](https://www.youtube.com/watch?v=jBr-ZLMt4W4)
