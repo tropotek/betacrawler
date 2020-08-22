@@ -86,10 +86,10 @@ void Mixer::loop(void) {
         writeEscSpeed();
     }
 
-#if (defined(DISABLE_PAN_ON_DISARM))
-    if (CAM_ENABLED && isArmed())
+#if (defined(DISABLE_PAN_TILT_ON_DISARM))
+    if (CAM_PAN_ENABLED && isArmed())
 #else
-    if (CAM_ENABLED)
+    if (CAM_PAN_ENABLED)
 #endif
         writeServoSpeed();
 
