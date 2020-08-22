@@ -51,7 +51,7 @@ void loop() {
   mixer.loop();
 
   // DEBUG: Dump receiver and speed values
-  if (true) {
+  if (false) {
     if (mixer.isArmed()) {
         Serial.println("ls: " + String(mixer.getLeftSpeed()) + "   rs: " + String(mixer.getRightSpeed()));
     } else {
