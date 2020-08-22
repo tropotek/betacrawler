@@ -1,8 +1,5 @@
 # Betacrawler
 
-
-## Introduction
-
 Betacrawler is a basic tank control firmware for arduino processers.
 
 It has some basic settings such as rxmin and rxmax and some minor stick filtering.   
