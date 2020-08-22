@@ -40,7 +40,6 @@
 
 // Serial baud rate
 #define SERIAL_BAUD             115200
-//#define SERIAL_BAUD             9600
 
 // PPM Receiver pin
 #define PPM_RX_PIN              3
