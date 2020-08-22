@@ -115,8 +115,6 @@ This helps when using Dual Stick mode.
 To start with you will need a Tank model. If you have a 3D Printer and a bit of time on your hands
 A fantastic starting model is the [RC Tank - By Staind](https://www.thingiverse.com/thing:2414983).
 
-There may be other Tank project either bought or printed its entrly up to you!
-
 
 #### Arduino & PPM 
 
@@ -137,7 +135,7 @@ There may be other Tank project either bought or printed its entrly up to you!
   * [2 x Razor32 35A 3-6S ESC](https://www.banggood.com/custlink/v3GhrL3Jwc)
   * [2 x 2212 930KV 2-4s](https://www.banggood.com/custlink/mK3ypomrfZ)
   * [2200mAh 60C 3S Lipo](https://www.banggood.com/custlink/3GKyWLGtm5)
-  
+
 ##### Wiring
 
 
