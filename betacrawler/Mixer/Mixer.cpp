@@ -30,7 +30,7 @@ void Mixer::setup(void) {
     _leftEsc  = new Esc((int)ESC0_PIN);
     _rightEsc = new Esc((int)ESC1_PIN);
     _panServo = new Servo();
-    _panServo->attach(SVO0_PIN);
+    //_panServo->attach(SVO0_PIN);
     armEsc();
 }
 void Mixer::loop(void) { 
@@ -83,6 +83,7 @@ void Mixer::loop(void) {
     } else {
         setLeftSpeed(0);
         setRightSpeed(0);
+        //setPanAngle(0);
         writeEscSpeed();
     }
 
@@ -145,13 +146,17 @@ void Mixer::arm(bool b) {
     if (b && !isArmed()) {
         // trigger Arming
         digitalWrite(LED_PIN, HIGH);
+        getPanServo()->attach(SVO0_PIN);
         Serial.println("Tank Armed!");
     } else if(!b && isArmed()) {
         // Trigger dissarm and stop motors immediatly
         setLeftSpeed(0);
         setRightSpeed(0);
+        //getLeftEsc()->stop();
+        //getRightEsc()->stop();
         writeEscSpeed();
         digitalWrite(LED_PIN, LOW);
+        getPanServo()->detach();
         Serial.println("Tank Disarmed!");
     }
     _armed = b;
