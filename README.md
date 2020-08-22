@@ -1,5 +1,7 @@
 # Betacrawler
 
+[Facebook Group: ](https://www.facebook.com/groups/307432330496662)
+
 Betacrawler is a basic tank control firmware for arduino processers.  
 Use [Atom](https://atom.io/) and the [Platform IO](https://platformio.org/) IDE to compile.  
 If your not sure how to use PlatformIO here is a tutorial to get you started (https://youtu.be/EIkGTwLOD7o)
@@ -185,8 +187,10 @@ My knowledge of C++ and arduino is limited and I would like to see where this pr
 
 If we get enough of a community we can grow the features of Betacrawler.
 
-If you arent a programmer and still want to contribute pleae considder supporting me by sending a donation through [PayPal](https://www.paypal.com/paypalme/tropotek).
-This will help me continue to support this project
+If your not into programming, and you still want to contribute, pleae consider supporting me through one of these options:
+
+  * [PayPal](https://www.paypal.com/paypalme/tropotek)
+  * [Patreon](https://www.patreon.com/tropotek)
 
 Follow this project on [Facebook Group](https://www.facebook.com/groups/307432330496662) to ask any questions and any additions you would like to see.
 
