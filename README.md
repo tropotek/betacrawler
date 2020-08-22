@@ -111,8 +111,8 @@ to your selected PPM receiver. This is the one used in testing [8CH Transmitter 
 The transmitter has also been modified to remove the spring on both left and right throttle sticks. 
 This helps when using Dual Stick mode.
 
-For Single Stick Mode the channels are configured for Transmitters in MODE 2 (left stick).   
-You can change this in the configuration if you prefer to use MODE 1 (right stick).
+For Single Stick Mode the channels are configured for Transmitters using the left stick (MODE 2).   
+You can change the channels in the configuration if you prefer to use the right stick (MODE 1).
 
 
 #### Tank Model
