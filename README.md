@@ -25,8 +25,48 @@ To configure the firmware for your setup open the configuration.h file and edit
 the required parameters as needed.
 
 ```
+/*
+ * Serial baud rate
+ */
+#define SERIAL_BAUD             115200
 
+/*
+ * Your controller's minumim stick value
+ */
+#define RX_MIN                  1140
 
+/*
+ * Your controller's maxumim stick value
+ */
+#define RX_MAX                  1860
+
+/*
+ * A filter to reduce stick position noise
+ * Increase this if you find erratic motor movements 
+ *   when the stick is in a hold position.
+ * 
+ */
+#define FLUTTER                 10
+
+/*
+ * Set the mode of operation.
+ * MODE_SINGLE: Use the left stick for all motor throttle movement
+ * MODE_DUAL: Use left and right as seperate throttles for each motor
+ */
+#define STICK_MODE              MODE_SINGLE
+
+/*
+ * If you are using a servo to move your camera enable this
+ */
+#define CAM_PAN_ENABLED         true        // Enable cam servo 0
+// TODO: Implement this. (Comming soon)
+#define CAM_TILT_ENABLED        true        // Enable cam servo 1
+
+/*
+ * If you want the pan/tilt to be diabled on disarm
+ */
+#define DISABLE_PAN_TILT_ON_DISARM
+```
 
 Hardware Setup
 ====
