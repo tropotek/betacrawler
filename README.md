@@ -24,7 +24,7 @@ Configuration
 To configure the firmware for your setup open the configuration.h file and edit
 the required parameters as needed.
 
-```
+```cpp
 /*
  * Serial baud rate
  */
@@ -67,6 +67,36 @@ the required parameters as needed.
  */
 #define DISABLE_PAN_TILT_ON_DISARM
 ```
+
+Also be sure to check the pins section to ensure you have your hardware connected correctly. 
+You can change the default pins as requred.
+
+```cpp
+// ------------- PIN Configuration -------------
+
+/*
+ * PPM Receiver pin
+ */
+#define PPM_RX_PIN              3
+
+/*
+ * ESC pins
+ */
+#define ESC0_PIN                8
+#define ESC1_PIN                9
+
+/*
+ * Servo 0 Use this servo for pan of a cam mount.
+ */
+#define SVO0_PIN                11
+
+/*
+ * LED Pin, used when the system is armed.
+ */
+#define LED_PIN                 13
+```
+
+
 
 Hardware Setup
 ====

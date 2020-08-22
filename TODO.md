@@ -10,7 +10,7 @@ Thing we would like to see implemented in the future:
 
 
 
-Noted
+Notes
 =======
 
   - The cli (Command.cpp) object has been disabled as the Serial rx/tx 
