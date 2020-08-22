@@ -1,8 +1,8 @@
 # Betacrawler
 
 Betacrawler is a basic tank control firmware for arduino processers.  
-Use [Atom](https://atom.io/) and the [Platform IO](https://platformio.org/) IDE to compile.
-Here is a tutorial on that to get you started (https://youtu.be/EIkGTwLOD7o)
+Use [Atom](https://atom.io/) and the [Platform IO](https://platformio.org/) IDE to compile.  
+If your not sure how to use PlatformIO here is a tutorial to get you started (https://youtu.be/EIkGTwLOD7o)
 
 It has some basic settings such as rxmin and rxmax and some minor stick filtering.   
 These settings can be changed in the configuration.h file.
