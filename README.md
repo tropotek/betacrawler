@@ -125,6 +125,8 @@ There may be other Tank project either bought or printed its entrly up to you!
   * [Arduino Nano Expansion Board](https://www.banggood.com/custlink/KKmRpavpqC)
   * [Tiny 2.4G DSM2 6CH PPM Receiver](https://www.banggood.com/custlink/GDmycOmcUI)
 
+##### Wiring
+
 
 
 #### ESC's
@@ -135,6 +137,9 @@ There may be other Tank project either bought or printed its entrly up to you!
   * [2 x Razor32 35A 3-6S ESC](https://www.banggood.com/custlink/v3GhrL3Jwc)
   * [2 x 2212 930KV 2-4s](https://www.banggood.com/custlink/mK3ypomrfZ)
   * [2200mAh 60C 3S Lipo](https://www.banggood.com/custlink/3GKyWLGtm5)
+  
+##### Wiring
+
 
 
 #### FPV & Servos
@@ -145,7 +150,7 @@ There may be other Tank project either bought or printed its entrly up to you!
   * [AKK FX337CH 25/200/400/600mW VTX](https://www.banggood.com/custlink/m3mypOGH3m)
   * [SMA 5,8G Antenna](https://www.banggood.com/custlink/vGKRcOGPGc)
 
-
+##### Wiring
 
 
 
