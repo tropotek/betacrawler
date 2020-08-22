@@ -113,7 +113,9 @@ This helps when using Dual Stick mode.
 #### Tank Model
 
 To start with you will need a Tank model. If you have a 3D Printer and a bit of time on your hands
-A fantastic starting model is the [RC Tank - By Staind](https://www.thingiverse.com/thing:2414983).
+a fantastic starting model is the [RC Tank - By Staind](https://www.thingiverse.com/thing:2414983).
+
+But I assume if you have come here then you have the model part sorted out already. ;-)
 
 
 #### Arduino & PPM 
