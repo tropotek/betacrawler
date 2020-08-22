@@ -6,8 +6,8 @@
         {
             "name": "Win32",
             "includePath": [
-                "d:/RC_Tank/arduino/Tank/include",
-                "d:/RC_Tank/arduino/Tank/Tank",
+                "F:/Hobbies/RC_Tank/arduino/Tank/include",
+                "F:/Hobbies/RC_Tank/arduino/Tank/Tank",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
                 "C:/Users/godar/.platformio/lib/Servo/src",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/cores/arduino",
@@ -16,14 +16,13 @@
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
-                "C:/Users/godar/.platformio/packages/tool-unity",
-                ""
+                "C:/Users/godar/.platformio/packages/tool-unity"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "d:/RC_Tank/arduino/Tank/include",
-                    "d:/RC_Tank/arduino/Tank/Tank",
+                    "F:/Hobbies/RC_Tank/arduino/Tank/include",
+                    "F:/Hobbies/RC_Tank/arduino/Tank/Tank",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
                     "C:/Users/godar/.platformio/lib/Servo/src",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/cores/arduino",
@@ -32,8 +31,7 @@
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
-                    "C:/Users/godar/.platformio/packages/tool-unity",
-                    ""
+                    "C:/Users/godar/.platformio/packages/tool-unity"
                 ]
             },
             "defines": [
