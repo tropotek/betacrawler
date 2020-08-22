@@ -51,9 +51,9 @@ const String PROJECT_NAME =     "Beatacrawler";
 
 // Map channels to use with PPMReader
 #define CH_1                    1   // Left stick up/down
-#define CH_2                    2   // Left stick left/right
+#define CH_2                    2   // Right stick left/right
 #define CH_3                    3   // Right stick up/down
-#define CH_4                    4   // Right stick left/right
+#define CH_4                    4   // Left stick left/right
 #define CH_AUX1                 5   // Aux1
 #define CH_AUX2                 6   // Aux2
 

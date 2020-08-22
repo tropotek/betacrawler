@@ -124,12 +124,11 @@ If we get enough of a community we can grow the features of Betacrawler.
 If you arent a programmer and still want to contribute pleae considder supporting me by sending a donation through [PayPal](https://www.paypal.com/paypalme/tropotek).
 This will help me continue to support this project
 
-Follow this project on [Facebook Group](https://www.facebook.com/groups/307432330496662)
-
-
+Follow this project on [Facebook Group](https://www.facebook.com/groups/307432330496662) to ask any questions and any additions you would like to see.
 
 
 ## Resources Used
+  - The tank model tested with [RX Tank - Staind](https://www.thingiverse.com/thing:2414983)
   - [PPM Reciver](https://github.com/Nikkilae/PPM-reader)
   - [ESC/Servo](https://www.instructables.com/id/ESC-Programming-on-Arduino-Hobbyking-ESC/)
   - [ESC bi-directional](https://www.youtube.com/watch?v=jBr-ZLMt4W4)
