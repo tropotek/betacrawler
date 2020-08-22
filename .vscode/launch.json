@@ -12,7 +12,7 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-            "executable": "f:/Hobbies/RC_Tank/arduino/Tank/.pio/build/pro16MHzatmega328/firmware.elf",
+            "executable": "f:/Hobbies/RC_Tank/arduino/betacrawler/.pio/build/pro16MHzatmega328/firmware.elf",
             "toolchainBinDir": "C:/Users/godar/.platformio/packages/toolchain-atmelavr/bin",
             "preLaunchTask": {
                 "type": "PlatformIO",
@@ -24,7 +24,7 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-            "executable": "f:/Hobbies/RC_Tank/arduino/Tank/.pio/build/pro16MHzatmega328/firmware.elf",
+            "executable": "f:/Hobbies/RC_Tank/arduino/betacrawler/.pio/build/pro16MHzatmega328/firmware.elf",
             "toolchainBinDir": "C:/Users/godar/.platformio/packages/toolchain-atmelavr/bin",
             "internalConsoleOptions": "openOnSessionStart"
         }

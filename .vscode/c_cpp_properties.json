@@ -6,32 +6,36 @@
         {
             "name": "Win32",
             "includePath": [
-                "F:/Hobbies/RC_Tank/arduino/Tank/include",
-                "F:/Hobbies/RC_Tank/arduino/Tank/Tank",
+                "f:/Hobbies/RC_Tank/arduino/betacrawler/include",
+                "f:/Hobbies/RC_Tank/arduino/betacrawler/Tank",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
-                "C:/Users/godar/.platformio/lib/Servo/src",
+                "f:/Hobbies/RC_Tank/arduino/betacrawler/.pio/libdeps/pro16MHzatmega328/Servo/src",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/cores/arduino",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                "C:/Users/godar/.platformio/lib/Servo/src",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/HID/src",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
                 "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
-                "C:/Users/godar/.platformio/packages/tool-unity"
+                "C:/Users/godar/.platformio/packages/tool-unity",
+                ""
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "F:/Hobbies/RC_Tank/arduino/Tank/include",
-                    "F:/Hobbies/RC_Tank/arduino/Tank/Tank",
+                    "f:/Hobbies/RC_Tank/arduino/betacrawler/include",
+                    "f:/Hobbies/RC_Tank/arduino/betacrawler/Tank",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
-                    "C:/Users/godar/.platformio/lib/Servo/src",
+                    "f:/Hobbies/RC_Tank/arduino/betacrawler/.pio/libdeps/pro16MHzatmega328/Servo/src",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/cores/arduino",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/variants/eightanaloginputs",
+                    "C:/Users/godar/.platformio/lib/Servo/src",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/HID/src",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
                     "C:/Users/godar/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
-                    "C:/Users/godar/.platformio/packages/tool-unity"
+                    "C:/Users/godar/.platformio/packages/tool-unity",
+                    ""
                 ]
             },
             "defines": [
