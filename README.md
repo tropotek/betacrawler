@@ -86,9 +86,14 @@ You can change the default pins as requred.
 #define ESC1_PIN                9
 
 /*
- * Servo 0 Use this servo for pan of a cam mount.
+ * Servo 0 Use this servo for the pan of a cam mount.
  */
 #define SVO0_PIN                11
+
+/*
+ * Servo 1 Use this servo for the tilt of a cam mount.
+ */
+#define SVO1_PIN                12
 
 /*
  * LED Pin, used when the system is armed.
