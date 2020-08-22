@@ -128,7 +128,7 @@ Follow this project on [Facebook Group](https://www.facebook.com/groups/30743233
 
 
 ## Resources Used
-  - The tank model tested with [RX Tank - Staind](https://www.thingiverse.com/thing:2414983)
+  - The tank model tested with betacrawler [RX Tank - Staind](https://www.thingiverse.com/thing:2414983)
   - [PPM Reciver](https://github.com/Nikkilae/PPM-reader)
   - [ESC/Servo](https://www.instructables.com/id/ESC-Programming-on-Arduino-Hobbyking-ESC/)
   - [ESC bi-directional](https://www.youtube.com/watch?v=jBr-ZLMt4W4)
