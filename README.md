@@ -1,6 +1,6 @@
 # Betacrawler
 
-Betacrawler is a basic tank control firmware for arduino processers. 
+Betacrawler is a basic tank control firmware for arduino processers.  
 Use [Atom](https://atom.io/) and the [Platform IO](https://platformio.org/) IDE to compile.
 Here is a tutorial on that to get you started (https://youtu.be/EIkGTwLOD7o)
 
