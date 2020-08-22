@@ -126,8 +126,13 @@
  *   This is the mapping of the stick modes only change this if you are using
  *   different mapping in your controller, or want to change the stick inputs
  */
+// Transmitter MODE 2 (Left Stick throttle)
 #define CH_THROT                CH_1  // Left stick up/down
 #define CH_DIR                  CH_4  // Left stick left/right
+
+// Transmitter MODE 1 (Right Stick throttle)
+// #define CH_THROT                CH_3  // Right stick up/down
+// #define CH_DIR                  CH_2  // Right stick left/right
 
 /*
  * DUEL THROTTLE CONTROL:
@@ -144,7 +149,7 @@
 #if (CAM_TILT_ENABLED == MODE_SINGLE)
     #define CH_TILT             CH_3  // Right stick up/down
 #else
-    #define CH_TILT             CH_4  // Right stick left/right
+    #define CH_TILT             CH_4  // Left stick left/right
 #endif
 
 /*
