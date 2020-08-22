@@ -1,9 +1,7 @@
-Betacrawler
-====
+# Betacrawler
 
 
-Introduction
-====
+## Introduction
 
 Betacrawler is a basic tank control firmware for arduino processers.
 
@@ -18,8 +16,7 @@ It has 2 modes of operation:
             motors, leaving the other stick availalbe for cam pan/tilt
 
 
-Configuration
-====
+## Configuration
 
 To configure the firmware for your setup open the configuration.h file and edit
 the required parameters as needed.
@@ -103,14 +100,12 @@ You can change the default pins as requred.
 
 
 
-Hardware Setup
-====
+## Hardware Setup
+
+TODO
 
 
-
-
-Parts
-=====
+### Parts
   - ESC's used in this project: HGLRC BS30A - BLHli_S: Rev16.6 F-H-40
   - Any brusheless motors that fit the ESC's
   - A battery 
@@ -120,8 +115,7 @@ Parts
 
 
 
-How To Contribute
-==========
+## How To Contribute
 
 If you would like to contribute contact me and let me know on github or facebook at 
 
@@ -129,14 +123,15 @@ My knowledge of C++ and arduino is limited and I would like to see where this pr
 
 If we get enough of a community we can grow the features of Betacrawler.
 
-If you arent a programmer and still want to contribute pleae considder supporting me by sending a donation through [PayPal] (https://www.paypal.com/paypalme/tropotek).
+If you arent a programmer and still want to contribute pleae considder supporting me by sending a donation through [PayPal](https://www.paypal.com/paypalme/tropotek).
 This will help me continue to support this project
 
-Follow this project on [Facebook Group] (https://www.facebook.com/groups/307432330496662)
+Follow this project on [Facebook Group](https://www.facebook.com/groups/307432330496662)
 
 
-Resources Used
-====
+
+
+## Resources Used
   - [PPM Reciver](https://github.com/Nikkilae/PPM-reader)
   - [ESC/Servo](https://www.instructables.com/id/ESC-Programming-on-Arduino-Hobbyking-ESC/)
   - [ESC bi-directional](https://www.youtube.com/watch?v=jBr-ZLMt4W4)
