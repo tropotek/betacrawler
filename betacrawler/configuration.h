@@ -25,47 +25,91 @@
  *
  * ESC's used in this project: HGLRC BS30A - BLHli_S: Rev16.6 F-H-40
  */
-
 #ifndef TK_CONFIGURATION_H
 #define TK_CONFIGURATION_H
 #include "Application.h"
 
-#define RX_MIN                  1140
-#define RX_MAX                  1860
-#define FLUTTER                 10
-#define STICK_MODE              MODE_SINGLE
-//#define STICK_MODE              MODE_DUAL
-#define CAM_ENABLED             true        // Enable the cam servo 0
 
 
-// Serial baud rate
+/*
+ * Serial baud rate
+ */
 #define SERIAL_BAUD             115200
 
-// PPM Receiver pin
+/*
+ * Your controller's minumim stick value
+ */
+#define RX_MIN                  1140
+
+/*
+ * Your controller's maxumim stick value
+ */
+#define RX_MAX                  1860
+
+/*
+ * A filter to reduce stick position noise
+ * Increase this if you find erratic motor movements 
+ *   when the stick is in a hold position.
+ * 
+ */
+#define FLUTTER                 10
+
+/*
+ * Set the mode of operation.
+ * MODE_SINGLE: Use the left stick for all motor throttle movement
+ * MODE_DUAL: Use left and right as seperate throttles for each motor
+ */
+#define STICK_MODE              MODE_SINGLE
+
+/*
+ * If you are using a servo to move your camera enable this
+ */
+#define CAM_PAN_ENABLED         true        // Enable cam servo 0
+// TODO: Implement this. (Comming soon)
+#define CAM_TILT_ENABLED        true        // Enable cam servo 1
+
+/*
+ * If you want the pan/tilt to be diabled on disarm
+ */
+#define DISABLE_PAN_TILT_ON_DISARM
+
+// ------------- PIN Configuration -------------
+
+/*
+ * PPM Receiver pin
+ */
 #define PPM_RX_PIN              3
 
-// ESC pins
+/*
+ * ESC pins
+ */
 #define ESC0_PIN                8
 #define ESC1_PIN                9
 
-// Servo 0 Use this servo for pan of a cam mount.
+/*
+ * Servo 0 Use this servo for pan of a cam mount.
+ */
 #define SVO0_PIN                11
 
-// LED Pin
+/*
+ * LED Pin, used when the system is armed.
+ */
 #define LED_PIN                 13
 
-// Debug: uncomment for more verbose debug 
-//        messages and debug commands on the cli
-#define DEBUG
+// ----------------------------------------------
 
-// If you want the pan to be diabled on disarm
-#define DISABLE_PAN_ON_DISARM
+
 
 /*
  * ------------------------------------------------------------------
  *   DO NOT EDIT BELOW UNLESS YOU KNOW WHAT YOU ARE DOING !!!!!!!!!
  * ------------------------------------------------------------------
  */
+
+/*
+ * Debug: uncomment for more verbose debug messages and debug commands on the cli
+ */
+#define DEBUG
 
 /*
  * ARM SWITCH CHANNEL
@@ -77,34 +121,42 @@
  *   This is the mapping of the stick modes only change this if you are using
  *   different mapping in your controller, or want to change the stick inputs
  */
-#define CH_THROT                CH_1  // THROTTLE
-#define CH_DIR                  CH_4  // RUDDER
+#define CH_THROT                CH_1  // Left stick up/down
+#define CH_DIR                  CH_4  // Left stick left/right
 
 /*
  * DUEL THROTTLE CONTROL:
  *   This mapping is for using independent sticks to control
  *   the left and right tracks individually
  */
-#define CH_THROT_LEFT           CH_1  // THROTTLE
-#define CH_THROT_RIGHT          CH_3  // ELEVATOR
+#define CH_THROT_LEFT           CH_1  // Left stick up/down
+#define CH_THROT_RIGHT          CH_3  // Right stick up/down
 
-// PAN CONTROL channel (Could use CH_AUX2 mapped to a pot on controller too)
-#if (CAM_ENABLED == MODE_SINGLE)
-    #define CH_PAN              CH_3
+/*
+ * PAN CONTROL channel (Could use CH_AUX2 mapped to a pot on controller too)
+ */
+#define CH_PAN                  CH_2  // Left stick left/right
+#if (CAM_TILT_ENABLED == MODE_SINGLE)
+    #define CH_TILT             CH_3  // Right stick up/down
 #else
-    #define CH_PAN              CH_2  
+    #define CH_TILT             CH_4  // Right stick left/right
 #endif
 
-// TODO: These are not implemented yet
-// ********************************************************************
-// Use these to invert the stick readings from the PPM receiver
-// NOTE: this does not change the motor direction
+/*
+ * TODO: These are not implemented yet
+ * 
+ * Use these to invert the stick readings from the PPM receiver
+ * 
+ * NOTE: This does not change the motor directiononly the stick reading direction, 
+ *       you need to do that manually through blheli32 or wiring
+ */
 #define INVERT_ESC0             0
 #define INVERT_ESC1             0
 #define INVERT_SVO0             0
+#define INVERT_SVO1             0
 
-#define DEADZONE                0   // Set to 50 when using reverse
-// ********************************************************************
+#define DEADZONE                0   // Set to 50 when reverse motors is enabled (not implemented)
+
 
 
 

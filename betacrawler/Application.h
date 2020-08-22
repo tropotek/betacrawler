@@ -50,12 +50,12 @@ const String PROJECT_NAME =     "Beatacrawler";
 #define ESC_MAX_CHANNELS        2
 
 // Map channels to use with PPMReader
-#define CH_1                    1
-#define CH_2                    2
-#define CH_3                    3
-#define CH_4                    4
-#define CH_AUX1                 5
-#define CH_AUX2                 6
+#define CH_1                    1   // Left stick up/down
+#define CH_2                    2   // Left stick left/right
+#define CH_3                    3   // Right stick up/down
+#define CH_4                    4   // Right stick left/right
+#define CH_AUX1                 5   // Aux1
+#define CH_AUX2                 6   // Aux2
 
 // Stick modes
 #define MODE_DUAL               0

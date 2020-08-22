@@ -13,14 +13,24 @@ These settings can be changed via a simple command interface.
 This project has been inspired somewhat by the Betaflight Quadcopeter software
 
 It has 2 modes of operation:
-  - Mode 1: __Dual Stick__ allows for the use of both sticks to control the left and right 
-            motors individually
-  - Mode 2: __Single Stick__ allows you to use a single stick to control the left right
-            motors as a mix leaving the other stick availalbe for other operations
+  - __Dual Stick:__ Use both sticks to control the left and right motors individually
+  - __Single Stick:__ Use a single stick to control the left right
+            motors, leaving the other stick availalbe for cam pan/tilt
 
 
-Usage
+Configuration
 ====
+
+
+
+
+
+Hardware Setup
+====
+
+
+
+
 
 
 How To Contribute
