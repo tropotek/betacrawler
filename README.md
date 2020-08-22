@@ -2,7 +2,7 @@
 
 Facebook: [Betacrawler Community](https://www.facebook.com/groups/307432330496662)
 
-Betacrawler is a basic tank control firmware for arduino processers.  
+Betacrawler is a basic tank control firmware for arduino processors.  
 Use [Atom](https://atom.io/) and the [Platform IO](https://platformio.org/) IDE to compile.  
 If your not sure how to use PlatformIO here is a tutorial to get you started (https://youtu.be/EIkGTwLOD7o)
 
