@@ -137,11 +137,11 @@ Follow this project on [Facebook Group] (https://www.facebook.com/groups/3074323
 
 Resources Used
 ====
-  - [PPM Reciver] (https://github.com/Nikkilae/PPM-reader)
-  - [ESC/Servo] (https://www.instructables.com/id/ESC-Programming-on-Arduino-Hobbyking-ESC/)
-  - [ESC bi-directional] (https://www.youtube.com/watch?v=jBr-ZLMt4W4)
-  - [ESC PWM Testing] (https://github.com/MikeysLab/BrushlessESCviaPWM/blob/master/EscPWMTesting/EscPWMTesting.ino)
-  - [Arduino ESC Lib] (https://www.robotshop.com/community/blog/show/rc-speed-controller-esc-arduino-library)
+  - [PPM Reciver](https://github.com/Nikkilae/PPM-reader)
+  - [ESC/Servo](https://www.instructables.com/id/ESC-Programming-on-Arduino-Hobbyking-ESC/)
+  - [ESC bi-directional](https://www.youtube.com/watch?v=jBr-ZLMt4W4)
+  - [ESC PWM Testing](https://github.com/MikeysLab/BrushlessESCviaPWM/blob/master/EscPWMTesting/EscPWMTesting.ino)
+  - [Arduino ESC Lib](https://www.robotshop.com/community/blog/show/rc-speed-controller-esc-arduino-library)
 
 
 
