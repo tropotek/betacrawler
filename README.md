@@ -123,7 +123,7 @@ a fantastic starting model is the [RC Tank - By Staind](https://www.thingiverse.
 But I assume if you have come here then you have the model part sorted out already. ;-)
 
 
-#### Arduino & PPM 
+#### Step 1 - Arduino & PPM 
 
 ##### Parts
   * [Arduino Nano V3](https://www.banggood.com/custlink/mKDyWl3pU3)
@@ -135,7 +135,10 @@ But I assume if you have come here then you have the model part sorted out alrea
 ![Arduino And PPM](media/ArduinoPPM.png)
 
 
-#### ESC's
+#### Step 2 - ESC's
+
+Note: If your ESC's have an onboard 5v BEC you can use that instad of using an external BEC on the PDB or similar.
+      However it is reccomended to use the BEC's on you PDB where possible to reduce EMF noise.
 
 ##### Parts
   * [Matek Mini PDB With 5V/12V BEC](https://www.banggood.com/custlink/m3vErjGJM1)
@@ -148,9 +151,12 @@ But I assume if you have come here then you have the model part sorted out alrea
 
 ![Arduino And PPM](media/ESC_Motor.png)
 
-Note: If your ESC's have an onboard 5v BEC you can use that instad of using an external BEC on the PDB or similar.
 
-#### FPV & Servos
+
+#### Step 3 - FPV & Servos
+
+The main thing to take note here is that you have connected the correct voltage to your VTX.
+If it needs 5v you must connect to a 5v BEC from the PDB or ESC (if available).
 
 ##### Parts
   * [2 x SG90 Micro Servo 9g](https://www.banggood.com/custlink/DmDRJaGp76)
@@ -165,7 +171,7 @@ Note: If your ESC's have an onboard 5v BEC you can use that instad of using an e
 
 ### All Parts
 
-All  these parts are only suggestions, you will need get the parts that are right for you project.
+All these parts are only suggestions, you will need get the parts that are right for you project.
 
 The 5v BEC is only needed if you are not using a PDB (Power Distribution Board) with an onboard 5v Bec.
 
