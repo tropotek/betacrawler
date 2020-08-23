@@ -30,7 +30,7 @@ void Mixer::setup(void) {
     _leftEsc  = new Esc((int)ESC0_PIN);
     _rightEsc = new Esc((int)ESC1_PIN);
     _panServo = new Servo();
-    //_panServo->attach(SVO0_PIN);
+    _tiltServo = new Servo();
     armEsc();
 }
 void Mixer::loop(void) { 
@@ -83,14 +83,11 @@ void Mixer::loop(void) {
     } else {
         setLeftSpeed(0);
         setRightSpeed(0);
-        //setPanAngle(0);
         writeEscSpeed();
     }
 
 #if (defined(DISABLE_PAN_TILT_ON_DISARM))
-    if (CAM_PAN_ENABLED && isArmed())
-#else
-    if (CAM_PAN_ENABLED)
+    if (isArmed())
 #endif
         writeServoSpeed();
 
@@ -127,17 +124,30 @@ void Mixer::writeEscSpeed(void) {
 }
 void Mixer::writeServoSpeed(void) {
     // Read angle 1000 = 0, 1500 = 90, 2000 = 180
-    int pos = getPpm()->latestValidChannelValue(CH_PAN, TK_MIN_THROTTLE);
-    int flt = getSettings()->getFlutter()*2;
-    if (!(pos >= (_panSpeed - flt) && pos <= (_panSpeed + flt)))  {
-        _panSpeed = pos;    // save to implement flutter
-        int newAngle = map(_panSpeed, TK_MIN_THROTTLE, TK_MAX_THROTTLE, TK_MIN_ANGLE, TK_MAX_ANGLE);
-        if (newAngle == getPanAngle()) return;
-        setPanAngle(newAngle);
-        // Serial.println("Angle: " + String(getPanAngle()) + "  Pos: " + String(pos));
-        // Serial.println("Angle: " + String(getPanAngle()));
-        getPanServo()->write(getPanAngle());            // tell servo to go to position in variable 'pos'
-        delay(10);                                      // waits 15ms for the servo to reach the position
+    if (getPanServo()->attached()) {
+        int pos = getPpm()->latestValidChannelValue(CH_PAN, TK_MIN_THROTTLE);
+        int flt = getSettings()->getFlutter()*2;
+        if (!(pos >= (_panSpeed - flt) && pos <= (_panSpeed + flt)))  {
+            _panSpeed = pos;    // save to implement flutter
+            int newAngle = map(_panSpeed, TK_MIN_THROTTLE, TK_MAX_THROTTLE, TK_MIN_ANGLE, TK_MAX_ANGLE);
+            if (newAngle == getPanAngle()) return;
+            setPanAngle(newAngle);
+            getPanServo()->write(getPanAngle());            // tell servo to go to position in variable 'pos'
+            delay(10);                                      // waits 15ms for the servo to reach the position
+        }
+    }
+    if (getTiltServo()->attached()) {
+        int pos = getPpm()->latestValidChannelValue(CH_TILT, TK_MIN_THROTTLE);
+        int flt = getSettings()->getFlutter()*2;
+        if (!(pos >= (_tiltSpeed - flt) && pos <= (_tiltSpeed + flt)))  {
+            _tiltSpeed = pos;    // save to implement flutter
+            int newAngle = map(_tiltSpeed, TK_MIN_THROTTLE, TK_MAX_THROTTLE, TK_MIN_ANGLE, TK_MAX_ANGLE);
+            if (newAngle == getTiltAngle()) return;
+            setTiltAngle(newAngle);
+            getTiltServo()->write(getTiltAngle());          // tell servo to go to position in variable 'pos'
+            delay(10);                                      // waits 15ms for the servo to reach the position
+        }
+
     }
 
 }
@@ -146,7 +156,10 @@ void Mixer::arm(bool b) {
     if (b && !isArmed()) {
         // trigger Arming
         digitalWrite(LED_PIN, HIGH);
-        getPanServo()->attach(SVO0_PIN);
+        if (CAM_PAN_ENABLED)
+            getPanServo()->attach(SVO0_PIN);
+        if (CAM_TILT_ENABLED)
+            getTiltServo()->attach(SVO1_PIN);
         Serial.println("Tank Armed!");
     } else if(!b && isArmed()) {
         // Trigger dissarm and stop motors immediatly
@@ -157,6 +170,7 @@ void Mixer::arm(bool b) {
         writeEscSpeed();
         digitalWrite(LED_PIN, LOW);
         getPanServo()->detach();
+        getTiltServo()->detach();
         Serial.println("Tank Disarmed!");
     }
     _armed = b;
@@ -222,4 +236,15 @@ void Mixer::setPanAngle(int i) {
 }
 int Mixer::getPanAngle(void) {
     return _panAngle;
+}
+
+Servo* Mixer::getTiltServo(void) {
+    return _tiltServo;
+}
+void Mixer::setTiltAngle(int i) {
+    i = constrain(i, TK_MIN_ANGLE, TK_MAX_ANGLE);
+    _tiltAngle = i;
+}
+int Mixer::getTiltAngle(void) {
+    return _tiltAngle;
 }

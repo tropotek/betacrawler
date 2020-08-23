@@ -2,16 +2,15 @@
 
 Facebook: [Betacrawler Community](https://www.facebook.com/groups/307432330496662)
 
-Betacrawler is a basic tank control firmware for arduino processors.  
+Betacrawler is a RC tank controler firmware for arduino processors.  
 Use [Atom](https://atom.io/) and the [Platform IO](https://platformio.org/) IDE to compile.  
 If your not sure how to use PlatformIO here is a tutorial to get you started (https://youtu.be/EIkGTwLOD7o)
 
-Betacrawler has some basic settings such as rxmin and rxmax and stick filtering.   
-These settings can be changed in the configuration.h file.
+Betacrawler has a number of basic settings that can be changed in the configuration.h file.
 
 There are 2 modes of operation available:
   - __Single Stick:__ Use a single stick to control the left right
-            motors, leaving the other stick availalbe for cam pan/tilt
+            motors, leaving the other stick availalbe for cam pan/tilt.
   - __Dual Stick:__ Use both sticks to control the left and right motors indepentantly.
 
 This project has been inspired by the [Betaflight](https://github.com/betaflight) FPV firmware.
