@@ -131,6 +131,7 @@ But I assume if you have come here then you have the model part sorted out alrea
   * [Tiny 2.4G DSM2 6CH PPM Receiver](https://www.banggood.com/custlink/GDmycOmcUI)
 
 ##### Wiring
+
 ![Arduino And PPM](media/ArduinoPPM.png)
 
 
@@ -144,8 +145,10 @@ But I assume if you have come here then you have the model part sorted out alrea
   * [2200mAh 60C 3S Lipo](https://www.banggood.com/custlink/3GKyWLGtm5)
 
 ##### Wiring
+
 ![Arduino And PPM](media/ESC_Motor.png)
 
+Note: If your ESC's have an onboard 5v BEC you can use that instad of using an external BEC on the PDB or similar.
 
 #### FPV & Servos
 
@@ -157,7 +160,7 @@ But I assume if you have come here then you have the model part sorted out alrea
 
 ##### Wiring
 
-
+![Arduino And PPM](media/FPV_SERVO.png)
 
 
 ### All Parts
