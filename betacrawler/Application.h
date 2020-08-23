@@ -49,7 +49,7 @@ const String PROJECT_NAME =     "Beatacrawler";
 // numer of used ESC/servo channels
 #define ESC_MAX_CHANNELS        2
 
-// Map channels to use with PPMReader
+// Map channels to use with PPMReader (Assumes TREA1234 mapping in transmitter)
 #define CH_1                    1   // Left stick up/down
 #define CH_2                    2   // Right stick left/right
 #define CH_3                    3   // Right stick up/down
