@@ -55,6 +55,13 @@
 #define FLUTTER                 10
 
 /*
+ * Set a center stick deadzone to avoid stuttering of 
+ * motors when not moving the sticks
+ * Note: Ignored when when REVERSE_ENABLED = false
+ */
+#define DEADZONE                50
+
+/*
  * Set the mode of operation.
  * MODE_SINGLE: Use the left stick for all motor throttle movement
  * MODE_DUAL: Use left and right as seperate throttles for each motor
@@ -62,10 +69,17 @@
 #define STICK_MODE              MODE_SINGLE
 
 /*
+ * TODO: Not implemented!
+ * Enable reverse on the motors
+ * NOTE: You will have to configure your ESC's to be set to Bi-Directional
+ *       to enable this function. The center of the stick(s) will become the idle position.
+ */
+#define REVERSE_ENABLED         false
+
+/*
  * If you are using a servo to move your camera enable this
  */
 #define CAM_PAN_ENABLED         true        // Enable cam servo 0
-// TODO: Implement this. (Comming soon)
 #define CAM_TILT_ENABLED        true        // Enable cam servo 1
 
 /*
@@ -154,21 +168,12 @@
 
 /*
  * TODO: These are not implemented yet
- * 
  * Use these to invert the stick readings from the PPM receiver
- * 
- * NOTE: This does not change the motor directiononly the stick reading direction, 
- *       you need to do that manually through blheli32 or wiring
  */
 #define INVERT_ESC0             0
 #define INVERT_ESC1             0
 #define INVERT_SVO0             0
 #define INVERT_SVO1             0
-
-#define DEADZONE                0   // Set to 50 when reverse motors is enabled (not implemented)
-
-
-
 
 
 #endif   /*  CONFIGURATION_H */

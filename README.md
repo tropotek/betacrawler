@@ -55,7 +55,6 @@ the required parameters as needed.
  * If you are using a servo to move your camera enable this
  */
 #define CAM_PAN_ENABLED         true        // Enable cam servo 0
-// TODO: Implement this. (Comming soon)
 #define CAM_TILT_ENABLED        true        // Enable cam servo 1
 
 /*

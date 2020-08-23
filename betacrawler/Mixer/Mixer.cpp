@@ -193,8 +193,10 @@ int Mixer::scaleSpeed(int rxVal) {
 
 bool Mixer::isDeadzone(int speed)
 {
-    if (speed >= (TK_MID_THROTTLE - getSettings()->getDeadzone()) && speed <= (TK_MID_THROTTLE + getSettings()->getDeadzone()))
-        return true;
+    if (REVERSE_ENABLED) {
+        if (speed >= (TK_MID_THROTTLE - getSettings()->getDeadzone()) && speed <= (TK_MID_THROTTLE + getSettings()->getDeadzone()))
+            return true;
+    }
     return false;
 }
 
