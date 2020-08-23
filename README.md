@@ -132,7 +132,7 @@ But I assume if you have come here then you have the model part sorted out alrea
 
 ##### Wiring
 
-![Arduino And PPM](media/ArduinoPPM.png)
+![Arduino And PPM](media/ArduinoPPM.jpg)
 
 
 #### Step 2 - ESC's
@@ -149,7 +149,7 @@ Note: If your ESC's have an onboard 5v BEC you can use that instad of using an e
 
 ##### Wiring
 
-![Arduino And PPM](media/ESC_Motor.png)
+![Arduino And PPM](media/ESC_Motor.jpg)
 
 
 
@@ -157,6 +157,7 @@ Note: If your ESC's have an onboard 5v BEC you can use that instad of using an e
 
 The main thing to take note here is that you have connected the correct voltage to your VTX.
 If it needs 5v you must connect to a 5v BEC from the PDB or ESC (if available).
+
 
 ##### Parts
   * [2 x SG90 Micro Servo 9g](https://www.banggood.com/custlink/DmDRJaGp76)
@@ -166,7 +167,7 @@ If it needs 5v you must connect to a 5v BEC from the PDB or ESC (if available).
 
 ##### Wiring
 
-![Arduino And PPM](media/FPV_SERVO.png)
+![Arduino And PPM](media/FPV_SERVO.jpg)
 
 
 ### All Parts
