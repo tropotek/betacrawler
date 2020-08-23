@@ -131,7 +131,7 @@ But I assume if you have come here then you have the model part sorted out alrea
   * [Tiny 2.4G DSM2 6CH PPM Receiver](https://www.banggood.com/custlink/GDmycOmcUI)
 
 ##### Wiring
-![Arduino And PPM](/media/AruinoPPM.png)
+![Arduino And PPM](media/AruinoPPM.png)
 
 
 #### ESC's
