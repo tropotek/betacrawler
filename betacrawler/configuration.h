@@ -89,12 +89,12 @@
 /*
  * Servo 0 Use this servo for the pan of a cam mount.
  */
-#define SVO0_PIN                11
+#define SVO0_PIN                10
 
 /*
  * Servo 1 Use this servo for the tilt of a cam mount.
  */
-#define SVO1_PIN                12
+#define SVO1_PIN                11
 
 /*
  * LED Pin, used when the system is armed.
