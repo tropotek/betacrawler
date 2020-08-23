@@ -125,7 +125,7 @@ But I assume if you have come here then you have the model part sorted out alrea
 
 ##### Parts
   * [Arduino Nano V3](https://www.banggood.com/custlink/mKDyWl3pU3)
-  * [Arduino Nano Expansion Board](https://www.banggood.com/custlink/KKmRpavpqC)
+  * [Arduino Nano Expansion Board](https://www.banggood.com/custlink/KKmRpavpqC) (optional: For bench testing)
   * [Tiny 2.4G DSM2 6CH PPM Receiver](https://www.banggood.com/custlink/GDmycOmcUI)
 
 ##### Wiring
@@ -140,7 +140,7 @@ Note: If your ESC's have an onboard 5v BEC you can use that instad of using an e
 
 ##### Parts
   * [Matek Mini PDB With 5V/12V BEC](https://www.banggood.com/custlink/m3vErjGJM1)
-  * (optional)[5V BEC 2-6S](https://www.banggood.com/custlink/mGDYJO3rfE)
+  * [5V BEC 2-6S](https://www.banggood.com/custlink/mGDYJO3rfE) (Optional: not needed if PDB/ESC has 5v BEC)
   * [2 x Razor32 35A 3-6S ESC](https://www.banggood.com/custlink/v3GhrL3Jwc)
   * [2 x 2212 930KV 2-4s](https://www.banggood.com/custlink/mK3ypomrfZ)
   * [2200mAh 60C 3S Lipo](https://www.banggood.com/custlink/3GKyWLGtm5)
@@ -158,7 +158,7 @@ If it needs 5v you must connect to a 5v BEC from the PDB or ESC (if available).
 
 
 ##### Parts
-  * [2 x SG90 Micro Servo 9g](https://www.banggood.com/custlink/DmDRJaGp76)
+  * [2 x SG90 Micro Servo 9g](https://www.banggood.com/custlink/DmDRJaGp76) (Optional: for pan/tilt functions)
   * [Foxeer Razer 1.8mm Lens 1200TVL](https://www.banggood.com/custlink/vvDyrOmpu2)
   * [AKK FX337CH 25/200/400/600mW VTX](https://www.banggood.com/custlink/m3mypOGH3m)
   * [SMA 5,8G Antenna](https://www.banggood.com/custlink/vGKRcOGPGc)
@@ -175,14 +175,14 @@ All these parts are only suggestions, you will need get the parts that are right
 The 5v BEC is only needed if you are not using a PDB (Power Distribution Board) with an onboard 5v Bec.
 
   * [Arduino Nano V3](https://www.banggood.com/custlink/mKDyWl3pU3)
-  * [Arduino Nano Expansion Board](https://www.banggood.com/custlink/KKmRpavpqC)
+  * [Arduino Nano Expansion Board](https://www.banggood.com/custlink/KKmRpavpqC) (optional: For bench testing)
   * [Tiny 2.4G DSM2 6CH PPM Receiver](https://www.banggood.com/custlink/GDmycOmcUI)
   * [Matek Mini PDB With 5V/12V BEC](https://www.banggood.com/custlink/m3vErjGJM1)
-  * (optional)[5V BEC 2-6S](https://www.banggood.com/custlink/mGDYJO3rfE)
+  * [5V BEC 2-6S](https://www.banggood.com/custlink/mGDYJO3rfE) (Optional: not needed if PDB/ESC has 5v BEC)
   * [2 x Razor32 35A 3-6S ESC](https://www.banggood.com/custlink/v3GhrL3Jwc)
   * [2 x 2212 930KV 2-4s](https://www.banggood.com/custlink/mK3ypomrfZ)
   * [2200mAh 60C 3S Lipo](https://www.banggood.com/custlink/3GKyWLGtm5)
-  * [2 x SG90 Micro Servo 9g](https://www.banggood.com/custlink/DmDRJaGp76)
+  * [2 x SG90 Micro Servo 9g](https://www.banggood.com/custlink/DmDRJaGp76) (Optional: for pan/tilt functions)
   * [Foxeer Razer 1.8mm Lens 1200TVL](https://www.banggood.com/custlink/vvDyrOmpu2)
   * [AKK FX337CH 25/200/400/600mW VTX](https://www.banggood.com/custlink/m3mypOGH3m)
   * [SMA 5,8G Antenna](https://www.banggood.com/custlink/vGKRcOGPGc)
