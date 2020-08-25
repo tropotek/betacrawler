@@ -26,6 +26,8 @@
   #include <WProgram.h>
 #endif
 
+#include "configuration.h"
+
 /* ***********************************************
  * Application Specific
  * ***********************************************/

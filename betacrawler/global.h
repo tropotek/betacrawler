@@ -33,12 +33,12 @@
 #include <EEPROM.h>
 
 #include "configuration.h"
-#include "Settings/Settings.h"
-#include "PPMReader/PPMReader.h"
-#include "Mixer/Mixer.h"
+#include "Settings.h"
+#include "PPMReader.h"
+#include "Mixer.h"
 
 #if (defined(CLI_ENABLED))
-  #include "Command/Command.h"
+  #include "Command.h"
 #endif
 
 /* ***********************************************

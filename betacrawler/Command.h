@@ -29,8 +29,8 @@
 #endif
 
 #include "configuration.h"
-#include "Settings/Settings.h"
-#include "PPMReader/PPMReader.h"
+#include "Settings.h"
+#include "PPMReader.h"
 //#include <EEPROM.h>
 
 #define MAX_NUM_ARGS 4      //Maximum number of arguments

@@ -26,7 +26,7 @@ along with PPM Reader.  If not, see <http://www.gnu.org/licenses/>.
   #include <WProgram.h>
 #endif
 
-#include "InterruptHandler/InterruptHandler.h"
+#include "InterruptHandler.h"
 
 
 class PPMReader : InterruptHandler {

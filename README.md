@@ -6,6 +6,9 @@ Betacrawler is a RC tank controler firmware for arduino processors.
 Use [Atom](https://atom.io/) and the [Platform IO](https://platformio.org/) IDE to compile.  
 If your not sure how to use PlatformIO here is a tutorial to get you started (https://youtu.be/EIkGTwLOD7o)
 
+However if you still want to use the [Arduino IDE](https://www.arduino.cc/en/main/software) open the betacrawler/betacrawler.ino file and you 
+can compile the project from there.
+
 Betacrawler has a number of basic settings that can be changed in the configuration.h file.
 
 There are 2 modes of operation available:

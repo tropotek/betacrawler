@@ -10,9 +10,9 @@
 #endif
 
 #include "configuration.h"
-#include "Settings/Settings.h"
-#include "PPMReader/PPMReader.h"
-#include "Esc/Esc.h"
+#include "Settings.h"
+#include "PPMReader.h"
+#include "Esc.h"
 #include <Servo.h>
 
 
