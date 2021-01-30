@@ -38,10 +38,21 @@ const String PROJECT_NAME =     "Beatacrawler";
 // Current build version
 #define VERSION                 1
 
+// Limits for the throttle on the controller
 #define TK_MIN_THROTTLE         1000
 #define TK_MAX_THROTTLE         2000
 #define TK_MID_THROTTLE         1500
 
+// {TODO: }
+// ESC Signal Values, (Get these from BlHeli)
+#define ESC_MIN_THROTTLE		    1005  // 1012
+#define ESC_MAX_THROTTLE		    1812
+#define ESC_CENT_THROTTLE	      1488  
+
+#define ESC_ARM_SIGNAL			    1000
+#define ESC_ARM_TIME			      2000
+
+// Angle for pan of camera
 #define TK_MIN_ANGLE            0
 #define TK_MAX_ANGLE            180
 
@@ -56,8 +67,8 @@ const String PROJECT_NAME =     "Beatacrawler";
 #define CH_2                    2   // Right stick left/right
 #define CH_3                    3   // Right stick up/down
 #define CH_4                    4   // Left stick left/right
-#define CH_AUX1                 5   // Aux1
-#define CH_AUX2                 6   // Aux2
+#define CH_AUX1                 5   // Aux1  (Arm)
+#define CH_AUX2                 6   // Aux2  (Reverse)
 
 // Stick modes
 #define MODE_DUAL               0

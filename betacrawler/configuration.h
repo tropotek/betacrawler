@@ -32,7 +32,13 @@
 
 
 /*
+ * Debug: set true for more verbose debug messages and debug commands on the cli
+ */
+#define DEBUG                   true
+
+/*
  * Serial baud rate
+ *   [2400, 9600, 19200, 38400, 57600, 115200, 250000, 500000, 1000000]
  */
 #define SERIAL_BAUD             115200
 
@@ -69,12 +75,19 @@
 #define STICK_MODE              MODE_SINGLE
 
 /*
- * TODO: Not implemented!
+ * {TODO: }
  * Enable reverse on the motors
  * NOTE: You will have to configure your ESC's to be set to Bi-Directional
  *       to enable this function. The center of the stick(s) will become the idle position.
  */
 #define REVERSE_ENABLED         false
+
+/*
+ * {TODO: }
+ * If reverse enabled then enable this if you want reverse activated by AUX_2 Switch
+ * If this is false then center throttle is stop up is forward and down is reverse
+ */
+#define REVERSE_SW_ENABLED      true
 
 /*
  * If you are using a servo to move your camera enable this
@@ -90,15 +103,17 @@
 // ------------- PIN Configuration -------------
 
 /*
- * PPM Receiver pin
+ * PPM Receiver pin (Must be an interrupt digital pin)
  */
-#define PPM_RX_PIN              3
+#define PPM_RX_PIN              2
 
 /*
  * ESC pins
+ * See Blheli pinout for your board so you can config them after install
+ * PWM pins preferred
  */
-#define ESC0_PIN                8
-#define ESC1_PIN                9
+#define ESC0_PIN                3
+#define ESC1_PIN                4
 
 /*
  * Servo 0 Use this servo for the pan of a cam mount.
@@ -126,14 +141,14 @@
  */
 
 /*
- * Debug: uncomment for more verbose debug messages and debug commands on the cli
- */
-#define DEBUG
-
-/*
  * ARM SWITCH CHANNEL
  */
 #define CH_ARM                  CH_AUX1
+
+/*
+ * REVERSE SWITCH CHANNEL
+ */
+#define CH_REVERSE              CH_AUX2
 
 /*
  * SINGLE STICK CONTROL:
@@ -167,6 +182,7 @@
 #endif
 
 /*
+ * {TODO: }
  * TODO: These are not implemented yet
  * Use these to invert the stick readings from the PPM receiver
  */
