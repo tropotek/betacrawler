@@ -163,10 +163,10 @@ void Mixer::arm(bool b) {
         Serial.println("Tank Armed!");
     } else if(!b && isArmed()) {
         // Trigger dissarm and stop motors immediatly
-        setLeftSpeed(0);
-        setRightSpeed(0);
-        //getLeftEsc()->stop();
-        //getRightEsc()->stop();
+        //setLeftSpeed(1000);
+        //setRightSpeed(1000);
+        getLeftEsc()->stop();
+        getRightEsc()->stop();
         writeEscSpeed();
         digitalWrite(LED_PIN, LOW);
         getPanServo()->detach();
@@ -180,9 +180,22 @@ bool Mixer::isArmed(void) {
 }
 
 void Mixer::armEsc(void) {
+    //getLeftEsc()->calib();
+    //getRightEsc()->calib();
+    
+    //delay(5000); 
     getLeftEsc()->arm();
     getRightEsc()->arm();
-    delay(10); 
+    delay(5000); 
+    getLeftEsc()->speed(0);
+    getRightEsc()->speed(0);
+    getLeftEsc()->speed(2000);
+    getRightEsc()->speed(2000);
+    getLeftEsc()->speed(0);
+    getRightEsc()->speed(0);
+    
+    getLeftEsc()->stop();
+    getRightEsc()->stop();
 }
 
 int Mixer::scaleSpeed(int rxVal) { 

@@ -41,7 +41,8 @@ class Esc
 		int _speed = 1000;
 		int _arm = 500;
 		int _calibrationDelay = 8000;		// Calibration delay (milisecond)
-		int _stopPulse = 500;				// Stop pulse (microseconds)
+		//int _stopPulse = 500;
+		int _stopPulse = 1000;				// Stop pulse (microseconds)
 };
 
 #endif /*  TK_ESC_H  */
