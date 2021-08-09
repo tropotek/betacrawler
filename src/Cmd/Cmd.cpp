@@ -13,23 +13,23 @@
  *   https://www.norwegiancreations.com/2018/02/creating-a-command-line-interface-in-arduinos-serial-monitor/
  * 
  */
-#include "Cli.h"
+#include "Cmd.h"
 
 
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 
-Cli::Cli(Stream *streamObject) {
+Cmd::Cmd(Stream *streamObject) {
     serial = streamObject;
     commandStr = "";
 }
-Cli::~Cli() { }
+Cmd::~Cmd() { }
 
-void Cli::setup() {
+void Cmd::setup() {
     serial->print("> ");
 }
 
-void Cli::loop() {
+void Cmd::loop() {
     char c;
     while(serial->available()) {
         c = serial->read();
@@ -51,7 +51,7 @@ void Cli::loop() {
     }
 }
 
-void Cli::parse(String cmdStr) {
+void Cmd::parse(String cmdStr) {
     for (int i = 0; i < MAX_NUM_ARGS; i++) {
         args[i] = "";  // reset cmd array
         //args[i].reserve(16);
@@ -112,7 +112,7 @@ void Cli::parse(String cmdStr) {
 
 }
 
-void Cli::cmdGet(String arg, String val) {
+void Cmd::cmdGet(String arg, String val) {
     serial->println("---- Not implemented ----");
     
     // if (arg.equals("rxmin")) {
@@ -129,7 +129,7 @@ void Cli::cmdGet(String arg, String val) {
     //     serial->println("Settings parameter not found!");
     // }
 }
-void Cli::cmdSet(String arg, String val) {
+void Cmd::cmdSet(String arg, String val) {
 
     if (val.equals("")) {
         serial->println("No value parameter specified for: " + arg);
@@ -150,7 +150,7 @@ void Cli::cmdSet(String arg, String val) {
     //     serial->println("Settings parameter not found!");
     // }
 }
-void Cli::cmdHelp(void) {
+void Cmd::cmdHelp(void) {
     serial->println("Use the following commands:");
     serial->println("  help:  To view this help.");
     serial->println("  show:  To show the current settings.");
@@ -170,7 +170,7 @@ void Cli::cmdHelp(void) {
 #endif
     serial->println();
 }
-void Cli::cmdShowCfg(void) {
+void Cmd::cmdShowCfg(void) {
     // serial->println(PROJECT_NAME + " Settings:");
     // serial->println("  version      " + String(VERSION));
 
@@ -186,19 +186,18 @@ void Cli::cmdShowCfg(void) {
 #endif
     serial->println();
 }
-void Cli::cmdSaveCfg(void) {
+void Cmd::cmdSaveCfg(void) {
 //    _cfg->saveCfg();
     serial->println("Settings saved.");
 
 }
-void Cli::cmdInitCfg(void) {
+void Cmd::cmdInitCfg(void) {
 //    _cfg->resetCfg();
 //    _cfg->saveCfg();
     serial->println("Settings reset and saved.");
 }
 
-
-String Cli::getValue(String data, char separator, int index)
+String Cmd::getValue(String data, char separator, int index)
 {
     int found = 0;
     int strIndex[] = { 0, -1 };

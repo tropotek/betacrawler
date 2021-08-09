@@ -13,23 +13,18 @@
  *   https://www.norwegiancreations.com/2018/02/creating-a-command-line-interface-in-arduinos-serial-monitor/
  */
 
-#ifndef TK_CLI_H
-#define TK_CLI_H
+#ifndef BC_CMD_H
+#define BC_CMD_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include "WProgram.h"
-#endif
+#include "headers.h"
 
-//#include "headers.h"
 
 #define MAX_NUM_ARGS 4      //Maximum number of arguments
 
-class Cli {
+class Cmd {
   public:
-     Cli(Stream *streamObject);
-    ~Cli();
+     Cmd(Stream *streamObject);
+    ~Cmd();
 
     void setup(void);
     void loop(void);
@@ -53,4 +48,4 @@ class Cli {
 
 };
 
-#endif    /** CLI_H **/
+#endif    /** BC_CMD_H **/

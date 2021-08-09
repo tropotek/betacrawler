@@ -9,12 +9,12 @@
  * 
  * ***********************************************************************
  * 
- * Define any global objects here an include all libs and headers
+ * Define any global objects here
  * 
  */
 
-#ifndef TK_GLOBAL_H
-#define TK_GLOBAL_H
+#ifndef BC_GLOBAL_H
+#define BC_GLOBAL_H
 
 #include "headers.h"
 
@@ -31,7 +31,9 @@
 /*
  * The Command Line Interface to the USB Serial
  */
-Cli cli(&Serial);
+#ifdef BC_CMD
+Cmd cmd(&Serial);
+#endif
 
 /*
  * Object to read the PPM signal from the receiver
@@ -47,4 +49,4 @@ Throttle throttle(ESC0_PIN, ESC1_PIN);
 
 
 
-#endif   /*  TK_GLOBAL_H */
+#endif   /*  BC_GLOBAL_H */

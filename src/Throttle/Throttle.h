@@ -13,8 +13,8 @@
  * 
  */
 
-#ifndef TK_THROTTLE_H
-#define TK_THROTTLE_H
+#ifndef BC_THROTTLE_H
+#define BC_THROTTLE_H
 
 #include "headers.h"
 #include <Esc.h>
@@ -56,4 +56,4 @@ class Throttle {
     
 };
 
-#endif  /* TK_THROTTLE_H */
+#endif  /* BC_THROTTLE_H */

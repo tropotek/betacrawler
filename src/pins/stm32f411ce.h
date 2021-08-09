@@ -13,8 +13,8 @@
  * 
  * 
  */
-#ifndef TK_STM32F111CE_H
-#define TK_STM32F111CE_H
+#ifndef BC_STM32F411CE_H
+#define BC_STM32F411CE_H
 
 
 /*
@@ -22,8 +22,9 @@
  */
 #define LED_PIN                 PC13
 
-/*
- * LED Pin, used when the system is armed.
+/* 
+ * Button 
+ * TODO: Unused yet
  */
 #define BTN_PIN                 PA0
 
@@ -52,4 +53,4 @@
 
 
 
-#endif   /*  TK_STM32F111CE_H */
+#endif   /*  BC_STM32F411CE_H */

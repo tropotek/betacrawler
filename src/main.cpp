@@ -9,7 +9,7 @@
  * 
  * ***********************************************************************
  * 
- *
+ * 
  */
 
 #include "global.h"
@@ -25,7 +25,6 @@ void setup() {
 
   throttle.setup();
 
-
   Serial.println("\n---------------" + PROJECT_NAME + "-------------");
   Serial.println("  Author:      " + String(AUTHOR));
   Serial.println("  Version:     " + String(VERSION));
@@ -34,15 +33,17 @@ void setup() {
   Serial.println();
 
 }
-long mili = 0;
+
 void loop() {
 
+#ifdef BC_CMD
+  cmd.loop();
+#endif
 
-  cli.loop();
-  // mixer.loop();
   throttle.loop();
 
-  if (mili%500 == 0) {
+  if (millis()%500 == 0) {  // every 1/2 a second
+
     unsigned arm = ppm.latestValidChannelValue(7, 0);
     if (arm > 1200) {
       unsigned speed = ppm.latestValidChannelValue(1, 0);
@@ -57,9 +58,9 @@ void loop() {
     //     Serial.print(String(value) + "\t");
     // }
     // Serial.println();
+
   }
   
-  
-  mili++;
+
 }
 

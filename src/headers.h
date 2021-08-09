@@ -9,12 +9,12 @@
  * 
  * ***********************************************************************
  * 
- * Define any global objects here an include all libs and headers
+ * Include all libs and headers
  * 
  */
 
-#ifndef TK_HEADERS_H
-#define TK_HEADERS_H
+#ifndef BC_HEADERS_H
+#define BC_HEADERS_H
 
 /* ***********************************************
  * Global includes
@@ -25,20 +25,18 @@
 #else
   #include <WProgram.h>
 #endif
-#include <EEPROM.h>
 
 #include <Servo.h>
 #include <ESC.h>
-#include "Cli/Cli.h"
+//#include <EEPROM.h>
 
 #include "configuration.h"
-#include "STM32F111CE_pins.h"
+#include "pins/pins.h"
+#include "Cmd/Cmd.h"
 #include "PPMReader/PPMReader.h"
 #include "Throttle/Throttle.h"
 //#include "Settings/Settings.h"
 //#include "Mixer/Mixer.h"
 
 
-
-
-#endif   /*  TK_HEADERS_H */
+#endif   /*  BC_HEADERS_H */
