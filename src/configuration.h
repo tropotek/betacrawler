@@ -23,25 +23,25 @@
 #define TK_CONFIGURATION_H
 
 
-/*
- * The common project name
- */
-const String PROJECT_NAME =     "Beatacrawler";
-
 /* 
  * Current build version
  */
 #define VERSION                 "2.0.0"
 
 /* 
- * Author
- */
-#define AUTHOR                 "Tropotek"
-
-/* 
  * Build Date
  */
 #define BUILD_DATE             "07-07-2021"
+
+/*
+ * The common project name
+ */
+const String PROJECT_NAME =     "Beatacrawler";
+
+/* 
+ * Author
+ */
+#define AUTHOR                 "Tropotek"
 
 /*
  * Serial baud rate
