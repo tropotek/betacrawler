@@ -25,20 +25,6 @@ void setup() {
 
   throttle.setup();
 
-  // throttle.setLeftSpeed(1080);
-  // throttle.setRightSpeed(1080);
-
-  // for(int i = 0; i < 10; i++) {
-  //   if (i%2 == 0) {
-  //     throttle.arm();
-  //   } else {
-  //     throttle.disarm();
-  //   }
-  //   throttle.loop();
-  //   delay(5000);
-  // }
-
-
 }
 long mili = 0;
 void loop() {
