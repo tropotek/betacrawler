@@ -1,5 +1,7 @@
 # Betacrawler
 
+## TODO: This is out of date and needs to be updated for Version 2.0 of Betacrawler
+
 Facebook: [Betacrawler Community](https://www.facebook.com/groups/307432330496662)
 
 Betacrawler is a RC tank controler firmware for arduino processors.  
