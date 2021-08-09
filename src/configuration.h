@@ -19,8 +19,8 @@
  * ESC's used in this project: HGLRC BS30A - BLHli_S: Rev16.6 F-H-40
  * 
  */
-#ifndef BC_CONFIGURATION_H
-#define BC_CONFIGURATION_H
+#ifndef TK_CONFIGURATION_H
+#define TK_CONFIGURATION_H
 
 
 /* 
