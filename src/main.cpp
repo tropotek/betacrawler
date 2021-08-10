@@ -25,12 +25,12 @@ void setup() {
 
   throttle.setup();
 
-  Serial.println("\n---------------" + String(PROJECT_NAME) + "-------------");
-  Serial.println("  Author:      " + String(AUTHOR));
-  Serial.println("  Version:     " + String(VERSION));
-  Serial.println("  Date:        " + String(BUILD_DATE));
-  Serial.println("---------------------------------------------");
-  Serial.println();
+  // Serial.println("\n---------------" + String(PROJECT_NAME) + "-------------");
+  // Serial.println("  Author:      " + String(AUTHOR));
+  // Serial.println("  Version:     " + String(VERSION));
+  // Serial.println("  Date:        " + String(BUILD_DATE));
+  // Serial.println("---------------------------------------------");
+  // Serial.println();
 
 }
 
