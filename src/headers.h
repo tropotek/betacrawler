@@ -28,15 +28,24 @@
 
 #include <Servo.h>
 #include <ESC.h>
-//#include <EEPROM.h>
 
+
+#include "Settings/Settings.h"
 #include "configuration.h"
 #include "pins/pins.h"
+#ifdef BC_CLI
 #include "Cmd/Cmd.h"
+#include <EEPROM.h>
+#endif
 #include "PPMReader/PPMReader.h"
 #include "Throttle/Throttle.h"
-//#include "Settings/Settings.h"
 //#include "Mixer/Mixer.h"
+
+
+
+
+
+
 
 
 #endif   /*  BC_HEADERS_H */

@@ -25,7 +25,7 @@ void setup() {
 
   throttle.setup();
 
-  Serial.println("\n---------------" + PROJECT_NAME + "-------------");
+  Serial.println("\n---------------" + String(PROJECT_NAME) + "-------------");
   Serial.println("  Author:      " + String(AUTHOR));
   Serial.println("  Version:     " + String(VERSION));
   Serial.println("  Date:        " + String(BUILD_DATE));
@@ -36,7 +36,7 @@ void setup() {
 
 void loop() {
 
-#ifdef BC_CMD
+#ifdef BC_CLI
   cmd.loop();
 #endif
 
@@ -52,6 +52,8 @@ void loop() {
     } else {
       throttle.disarm();
     }
+
+    
     // // Print latest valid values from all channels
     // for (byte channel = 1; channel <= MAX_RX_CHANNELS; ++channel) {
     //     unsigned value = ppm.latestValidChannelValue(channel, 0);

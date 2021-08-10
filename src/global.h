@@ -26,13 +26,13 @@
 /*
  * Store the Betacrawler user defind settings
  */
-// Settings cfg;
+Settings settings;
 
 /*
  * The Command Line Interface to the USB Serial
  */
-#ifdef BC_CMD
-Cmd cmd(&Serial);
+#ifdef BC_CLI
+Cmd cmd(&Serial, &settings);
 #endif
 
 /*
@@ -44,7 +44,6 @@ PPMReader ppm(PPM_RX_PIN, MAX_RX_CHANNELS);
  * Mix down the received raw RX throttle signals to 
  * values ready to be sent to the ESC's
  */
-// Mixer mixer(&cfg, &ppm);
 Throttle throttle(ESC0_PIN, ESC1_PIN);
 
 

@@ -15,12 +15,22 @@
  */
 #include "Cmd.h"
 
+/*
+ * Reset the board 
+ */
+void BC_systemReset(void) {
+#if defined(BC_AVR)
+    void(* resetFunc) (void) = 0; //declare reset function @ address 0
+    resetFunc();
+#elif defined(BC_STM32F4)
+    NVIC_SystemReset();
+#endif
+}
 
-void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
-
-Cmd::Cmd(Stream *streamObject) {
+Cmd::Cmd(Stream *streamObject, Settings *settings) {
     serial = streamObject;
+    settings = settings;
     commandStr = "";
 }
 Cmd::~Cmd() { }
@@ -50,6 +60,11 @@ void Cmd::loop() {
         serial->print("> ");
     }
 }
+
+Settings* Cmd::getSettings(void) {
+    return settings;
+}
+
 
 void Cmd::parse(String cmdStr) {
     for (int i = 0; i < MAX_NUM_ARGS; i++) {
@@ -84,28 +99,28 @@ void Cmd::parse(String cmdStr) {
         //_cfg->readCfg();
         serial->println("Settings reloaded from eeprom.");
     } else if (args[0].equals("reboot")) {
-        // serial->println("Rebooting....");
-        // resetFunc();
+        serial->println("Rebooting....");
+        BC_systemReset();
     } else if (args[0].equals("get")) {
         cmdGet(args[1], args[2]);
     } else if (args[0].equals("set")) {
         cmdSet(args[1], args[2]);
     } 
-#if defined(DEBUG)
-    // undocumented commands for debugging
-    else if (args[0].equals("ppmdump") || args[0].equals("ppm")) {
-        while (true) {
-            _ppm->printPpmChannels();
-        }
-    } else if (args[0].equals("clear")) {
-        _cfg->clearCfg();
-        _cfg->saveCfg();
-        serial->println("Settings cleared from eeprom and saved.");
-    } else if (args[0].equals("erase") || args[0].equals("format")) {
-        _cfg->eraseEeprom();
-        serial->println("Eeprom data formatted");
-    } 
-#endif
+// #if defined(DEBUG)
+//     // undocumented commands for debugging
+//     else if (args[0].equals("ppmdump") || args[0].equals("ppm")) {
+//         while (true) {
+//             _ppm->printPpmChannels();
+//         }
+//     } else if (args[0].equals("clear")) {
+//         _cfg->clearCfg();
+//         _cfg->saveCfg();
+//         serial->println("Settings cleared from eeprom and saved.");
+//     } else if (args[0].equals("erase") || args[0].equals("format")) {
+//         _cfg->eraseEeprom();
+//         serial->println("Eeprom data formatted");
+//     } 
+// #endif
     else {
         serial->println("Command not found!");
     }
@@ -158,23 +173,22 @@ void Cmd::cmdHelp(void) {
     serial->println("  set <param> <value>: Set the value of a settings parameter.");
     serial->println("  reset:  Factory Reset and save the settings.");
     serial->println("  read:  Read settings from eeprom.");
-    //serial->println("  Cal:  Calabrate ESC`s (requires restart)");
     serial->println("  save:  Save settings to memory.");
-    //serial->println("  reboot:  restart the system");
+    serial->println("  reboot:  restart the system");
 #if defined(DEBUG)
     serial->println("DEBUG Commands:");
     // undocumented commands for debugging
     serial->println("  ppmdump:  dump the ppm channels received. (requires reset to exit)");
-    serial->println("  clear:  Clear the settings to their zero values.");
-    serial->println("  erase:  <alias: format> Format the eeprom contents. requires reset and save to restore settings.");
+    //serial->println("  clear:  Clear the settings to their zero values.");
+    //serial->println("  erase:  <alias: format> Format the eeprom contents. requires reset and save to restore settings.");
 #endif
     serial->println();
 }
 void Cmd::cmdShowCfg(void) {
-    // serial->println(PROJECT_NAME + " Settings:");
-    // serial->println("  version      " + String(VERSION));
+    serial->println(String(PROJECT_NAME) + " Settings:");
+    serial->println("  version        " + String(VERSION));
 
-//    serial->println("  rxMin        " + String((int)_cfg->getRxrangeMin()));
+    serial->println("  txMap          " + String(getSettings()->getTxMap()));
 //    serial->println("  rxMax        " + String((int)_cfg->getRxrangeMax()));
 //    //serial->println("  deadzone     " + String(_cfg->getDeadzone()));
 //    serial->println("  flutter      " + String(_cfg->getFlutter()));

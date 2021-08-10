@@ -23,13 +23,15 @@
 
 class Cmd {
   public:
-     Cmd(Stream *streamObject);
+     Cmd(Stream *streamObject, Settings *settings);
     ~Cmd();
 
     void setup(void);
     void loop(void);
+    Settings* getSettings(void);
 
   private:
+    Settings* settings;
     Stream* serial;
     String commandStr;
     String args[MAX_NUM_ARGS];

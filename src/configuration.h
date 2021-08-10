@@ -23,6 +23,11 @@
 #define TK_CONFIGURATION_H
 
 
+/*
+ * Set to 1 if we want to enable Debug messages
+ */
+#define DEBUG   1
+
 /* 
  * Current build version
  */
@@ -31,17 +36,17 @@
 /* 
  * Build Date
  */
-#define BUILD_DATE             "07-07-2021"
+#define BUILD_DATE              "07-07-2021"
 
 /*
  * The common project name
  */
-const String PROJECT_NAME =     "Beatacrawler";
+#define PROJECT_NAME            "Beatacrawler"
 
 /* 
  * Author
  */
-#define AUTHOR                 "Tropotek"
+#define AUTHOR                  "Tropotek"
 
 /*
  * Serial baud rate
@@ -67,6 +72,32 @@ const String PROJECT_NAME =     "Beatacrawler";
 
 
 
+/*
+ * Smooth out the stick control data
+ */
+#define FLUTTER          10
+
+/*
+ * The default transmitter channel map
+ */
+#define TX_MAP           "TAER"
+
+/*
+ * THe Default transmitter mode setup
+ */
+#define RX_MODE           2
+
+/*
+ * The default ESC reverse mode
+ * Can only be enabled if you you have bi-directional ECS's installed
+ * This will also determin what stick is the throttle controller
+ * 
+ * Enabled (true): The Elevator and Aileron (Mode 2) will be used
+ * Dissabled (false): The Throttle and Rudder (Mode 2) will be used 
+ * 
+ * 
+ */
+#define REVERSE           false
 
 
 

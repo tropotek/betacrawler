@@ -18,71 +18,40 @@
 #include "Settings.h"
 
 Settings::Settings() {
-#if (defined(CLI_ENABLED))
-    // TODO: Implement a reliable CLI with interupts
-    if (!readCfg()) {
-       resetCfg();
-       saveCfg();
-    }
-#else 
     resetCfg();
-#endif
+    readCfg();
 }
 Settings::~Settings() { }
+
 
 void Settings::resetCfg() {
     _cfg.signature[0] = TK_EEPROM_SIG[0];
     _cfg.signature[1] = TK_EEPROM_SIG[1];
-    _cfg.version = VERSION;
-    setRxrangeMin(RX_MIN);
-    setRxrangeMax(RX_MAX);
-    setDeadzone(DEADZONE);
     setFlutter(FLUTTER);
-    setStickMode(STICK_MODE);
+    setTxMap(TX_MAP);
+    setTxMode(RX_MODE);
+    enableReverse(REVERSE);
 }
 bool Settings::readCfg(void) {
-#if (defined(CLI_ENABLED))
+#ifdef EEPROM_h
     EEPROM.get(TK_EEPROM_ADDR, _cfg);
      if (_cfg.signature[0] != TK_EEPROM_SIG[0] && 
          _cfg.signature[1] != TK_EEPROM_SIG[1]) {
        Serial.println("001: Reset your configuration.");
        return(false);
     }
-    // handle any version adjustments here
-    if (_cfg.version != VERSION) {
-      // do something here
-      Serial.println("Upgrading your settings for v"+String(VERSION));
-      if (_cfg.version == 0 && VERSION == 1) {
-          resetCfg();
-      }
-      // TODO: Add updates when developing new versions
-      //if (_cfg.version == 1 && VERSION == 2) {
-      //}
-      _cfg.version = VERSION;
-      saveCfg();
-    }
 #endif
-    return(true);
+    return true;
 }
 bool Settings::saveCfg(void) {
-#if (defined(CLI_ENABLED))
+#ifdef EEPROM_h
     EEPROM.put(TK_EEPROM_ADDR, _cfg);
 #endif
     return(true);
 }
-void Settings::clearCfg(void) {
-    _cfg.signature[0] = 0;
-    _cfg.signature[1] = 0;
-    _cfg.version = 0;
-    setRxrangeMin(0);
-    setRxrangeMax(0);
-    setDeadzone(0);
-    setFlutter(0);
-    setStickMode(false);
-}
 
 void Settings::eraseEeprom(void) {
-#if (defined(CLI_ENABLED))
+#ifdef EEPROM_h
     for (uint8_t i = 0 ; i < EEPROM.length() ; i++) {
         EEPROM.write(i, 0);
     }
@@ -90,55 +59,48 @@ void Settings::eraseEeprom(void) {
 }
 
 
-int Settings::getVersion(void) {
-    return (int)_cfg.version;
-}
-int Settings::getRxrangeMin(void) {
-    return (int)_cfg.rxrangeMin;
-}
-int Settings::getRxrangeMax(void) {
-    return (int)_cfg.rxrangeMax;
-}
-int Settings::getDeadzone(void) {
-    return (int)_cfg.deadzone;
-}
 int Settings::getFlutter(void) {
     return (int)_cfg.flutter;
 }
-bool Settings::getStickMode(void) {
-    return (bool)_cfg.stickMode;
+char* Settings::getTxMap(void) {
+    return _cfg.txMap;
+}
+int Settings::getTxMode(void) {
+    return (int)_cfg.txMode;
+}
+bool Settings::hasReverse(void) {
+    return (bool)_cfg.reverse;
 }
 
 
-void Settings::setRxrangeMin(int i) {
-    i = constrain(i, 500, 2500);
-    _cfg.rxrangeMin = (uint16_t)i;
-}
-void Settings::setRxrangeMax(int i) {
-    i = constrain(i, 500, 2500);
-    _cfg.rxrangeMax = (uint16_t)i;
-}
-void Settings::setDeadzone(int i) {
-    i = constrain(i, 0, 200);
-    _cfg.deadzone = (uint8_t)i;
-}
 void Settings::setFlutter(int i) {
     i = constrain(i, 0, 50);
-    _cfg.flutter = (uint8_t)i;
+    _cfg.flutter = i;
 }
-void Settings::setStickMode(bool b) {
-    _cfg.stickMode = (uint8_t)b;
+void Settings::setTxMap(char *str) {
+    for(int i = 0; i < 4; i++) {
+        Serial.println(str[i]);
+      _cfg.txMap[i] = str[i];
+    }
+    //strcpy(_cfg.txMap, str);
+    //_cfg.txMap = String(str);
+}
+void Settings::setTxMode(int i) {
+    i = constrain(i, 500, 2500);
+    _cfg.txMode = i;
+}
+void Settings::enableReverse(bool b) {
+    _cfg.reverse = b;
 }
 
 void Settings::printSettings(void) {
-    //Serial.println("Settings:");
-    Serial.println("  rxMin        " + String((int)getRxrangeMin()));
-    Serial.println("  rxMax        " + String((int)getRxrangeMax()));
-    //Serial.println("  deadzone     " + String(getDeadzone()));
+    Serial.println("Settings:");
     Serial.println("  flutter      " + String(getFlutter()));
-    String sm = getStickMode() ? "1 [SINGLE STICK]" : "0 [DUAL STICK]";
-    Serial.println("  stickMode    " + sm);
-#if (defined(CLI_ENABLED) && defined(DEBUG))
-        Serial.println("  eeprom       " + String(EEPROM.length()));
+    Serial.println("  txMap        " );         // TODO: ???
+    Serial.println("  txMode       " + String(getTxMode()));
+    String sm = hasReverse() ? "Enabled" : "Disabled";
+    Serial.println("  reverse      " + sm);
+#if (defined(BC_CLI) && defined(DEBUG))
+        //Serial.println("  eeprom       " + String(EEPROM.length()));
 #endif
 }
