@@ -34,7 +34,7 @@
 #include "pins/pins.h"
 #ifdef BC_CLI
 #include "Cmd/Cmd.h"
-//#include <EEPROM.h>
+#include <EEPROM.h>
 #endif
 #include "PPMReader/PPMReader.h"
 #include "Throttle/Throttle.h"

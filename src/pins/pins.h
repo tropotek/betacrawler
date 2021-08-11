@@ -17,7 +17,7 @@
 #if defined(BC_AVR)
 #include "avr.h"
 #elif defined(BC_STM32F4)
-#include "stm32f411ce.h"
+#include "stm32f4.h"
 // #elif defined(ARDUINO_ARCH_SAM)
 // #include "sam/ServoTimers.h"
 // #elif defined(ARDUINO_ARCH_SAMD)

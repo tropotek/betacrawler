@@ -75,8 +75,6 @@
 
 
 
-
-
 /*
  * Smooth out the stick control data
  */
@@ -86,11 +84,12 @@
  * The default transmitter channel map
  */
 #define TX_MAP           "TAER"
+//#define TX_MAP           {'T', 'A', 'E', 'R'}
 
 /*
  * THe Default transmitter mode setup
  */
-#define RX_MODE           2
+#define TX_MODE           2
 
 /*
  * The default ESC reverse mode

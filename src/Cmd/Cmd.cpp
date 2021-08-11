@@ -195,21 +195,7 @@ void Cmd::cmdHelp(void) {
 }
 
 void Cmd::cmdShowCfg(void) {
-    getSerial()->println(String(PROJECT_NAME) + " Settings:");
-    getSerial()->println("  version        " + String(VERSION));
-
-    getSerial()->println("  txMap          " + String(getSettings()->getTxMap()));
-
-    
-//    getSerial()->println("  rxMax        " + String((int)getSettings()->getRxrangeMax()));
-//    //getSerial()->println("  deadzone     " + String(getSettings()->getDeadzone()));
-//    getSerial()->println("  flutter      " + String(getSettings()->getFlutter()));
-//    String sm = ((int)_cfg->getStickMode() == 0) ? "0 [SINGLE STICK]" : "1 [DUAL STICK]";
-//    getSerial()->println("  stickMode    " + sm);
-#if defined(DEBUG)
-    getSerial()->println("--------------------------------------");
-    //getSerial()->println("  Eeprom Size  " + String(EEPROM.length()));
-#endif
+    getSerial()->println(getSettings()->toString());
     getSerial()->println();
 }
 
