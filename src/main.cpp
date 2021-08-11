@@ -16,7 +16,8 @@
 
 
 void setup() {
-
+  
+  //SerialUSB.begin(SERIAL_BAUD);
   Serial.begin(SERIAL_BAUD);
   
   pinMode(LED_PIN, OUTPUT);
@@ -31,7 +32,6 @@ void setup() {
   // Serial.println("  Date:        " + String(BUILD_DATE));
   // Serial.println("---------------------------------------------");
   // Serial.println();
-
 }
 
 void loop() {

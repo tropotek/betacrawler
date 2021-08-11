@@ -22,11 +22,6 @@
 #ifndef BC_SETTINGS_H
 #define BC_SETTINGS_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include <Arduino.h>
-#else
-  #include <WProgram.h>
-#endif
 #include "configuration.h"
 
 
@@ -34,11 +29,10 @@
 
 typedef struct
 {   
-    int signature[2];                 // TK_EEPROM_SIG
-    int flutter;                      // The amount a channle must change before a value is updated, ignore micro changes (smooths the response)
-    
-    char txMap[4];                    // The controller channel mapping. Default is TAER  ???
-    int txMode;                       // The controller mode (Default: Mode 2)
+    int signature[2];                     // TK_EEPROM_SIG
+    int flutter;                          // The amount a channle must change before a value is updated, ignore micro changes (smooths the response)
+    char txMap[4];                        // The controller channel mapping. Default is TAER  ???
+    int txMode;                           // The controller mode (Default: Mode 2)
     bool reverse;                         // 0 = forward Only (throttle + rudder used ,non-centerng), 1 = bi directional (Elevator + Aileron used, centering)
 } configData_t;
 
@@ -54,7 +48,6 @@ class Settings {
     void resetCfg(void);
     bool readCfg(void);
     bool saveCfg(void);
-    void clearCfg(void);
     void eraseEeprom(void);
 
     int getFlutter(void);
@@ -63,7 +56,7 @@ class Settings {
     bool hasReverse(void);
 
     void setFlutter(int i);
-    void setTxMap(char *str);
+    void setTxMap(char* str);
     void setTxMode(int i);
     void enableReverse(bool b);
 

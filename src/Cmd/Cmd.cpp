@@ -33,6 +33,10 @@ Cmd::Cmd(Stream *streamObject, Settings *settings) {
     settings = settings;
     commandStr = "";
 }
+Cmd::Cmd(Stream *streamObject) {
+    serial = streamObject;
+    commandStr = "";
+}
 Cmd::~Cmd() { }
 
 void Cmd::setup() {
@@ -65,6 +69,9 @@ Settings* Cmd::getSettings(void) {
     return settings;
 }
 
+Stream* Cmd::getSerial(void) {
+    return serial;
+}
 
 void Cmd::parse(String cmdStr) {
     for (int i = 0; i < MAX_NUM_ARGS; i++) {
@@ -96,10 +103,10 @@ void Cmd::parse(String cmdStr) {
     } else if (args[0].equals("reset")) {
         cmdInitCfg();
     } else if (args[0].equals("read")) {
-        //_cfg->readCfg();
-        serial->println("Settings reloaded from eeprom.");
+        getSettings()->readCfg();
+        getSerial()->println("Settings reloaded from eeprom.");
     } else if (args[0].equals("reboot")) {
-        serial->println("Rebooting....");
+        getSerial()->println("Rebooting....");
         BC_systemReset();
     } else if (args[0].equals("get")) {
         cmdGet(args[1], args[2]);
@@ -113,102 +120,108 @@ void Cmd::parse(String cmdStr) {
 //             _ppm->printPpmChannels();
 //         }
 //     } else if (args[0].equals("clear")) {
-//         _cfg->clearCfg();
-//         _cfg->saveCfg();
+//         getSettings()->clearCfg();
+//         getSettings()->saveCfg();
 //         serial->println("Settings cleared from eeprom and saved.");
 //     } else if (args[0].equals("erase") || args[0].equals("format")) {
-//         _cfg->eraseEeprom();
+//         getSettings()->eraseEeprom();
 //         serial->println("Eeprom data formatted");
 //     } 
 // #endif
     else {
-        serial->println("Command not found!");
+        getSerial()->println("Command not found!");
     }
 
 }
 
 void Cmd::cmdGet(String arg, String val) {
-    serial->println("---- Not implemented ----");
+    getSerial()->println("---- Not implemented ----");
     
     // if (arg.equals("rxmin")) {
-    //     serial->println("rxmin " + String(_cfg->getRxrangeMin()));
+    //     getSerial()->println("rxmin " + String(getSettings()->getRxrangeMin()));
     // } else if (arg.equals("rxmax")) {
-    //     serial->println("rxmax " + String(_cfg->getRxrangeMax()));
+    //     getSerial()->println("rxmax " + String(getSettings()->getRxrangeMax()));
     // } else if (arg.equals("deadzone")) {
-    //     serial->println("deadzone " + String(_cfg->getDeadzone()));
+    //     getSerial()->println("deadzone " + String(getSettings()->getDeadzone()));
     // } else if (arg.equals("flutter")) {
-    //     serial->println("flutter " + String(_cfg->getFlutter()));
+    //     getSerial()->println("flutter " + String(getSettings()->getFlutter()));
     // } else if (arg.equals("stickmode") || arg.equals("sm")) {
-    //     serial->println("stickMode " + String((int)_cfg->getStickMode()));
+    //     getSerial()->println("stickMode " + String((int)getSettings()->getStickMode()));
     // } else {
-    //     serial->println("Settings parameter not found!");
+    //     getSerial()->println("Settings parameter not found!");
     // }
 }
+
 void Cmd::cmdSet(String arg, String val) {
 
     if (val.equals("")) {
-        serial->println("No value parameter specified for: " + arg);
+        getSerial()->println("No value parameter specified for: " + arg);
         return;
     }
 
     // if (arg.equals("rxmin")) {
-    //     _cfg->setRxrangeMin(val.toInt());
+    //     getSettings()->setRxrangeMin(val.toInt());
     // } else if (arg.equals("rxmax")) {
-    //     _cfg->setRxrangeMax(val.toInt());
+    //     getSettings()->setRxrangeMax(val.toInt());
     // } else if (arg.equals("deadzone")) {
-    //     _cfg->setDeadzone(val.toInt());
+    //     getSettings()->setDeadzone(val.toInt());
     // } else if (arg.equals("flutter")) {
-    //     _cfg->setFlutter(val.toInt());
+    //     getSettings()->setFlutter(val.toInt());
     // } else if (arg.equals("stickmode") || arg.equals("sm")) {
-    //     _cfg->setStickMode((bool)val.toInt());
+    //     getSettings()->setStickMode((bool)val.toInt());
     // } else {
-    //     serial->println("Settings parameter not found!");
+    //     getSerial()->println("Settings parameter not found!");
     // }
 }
+
 void Cmd::cmdHelp(void) {
-    serial->println("Use the following commands:");
-    serial->println("  help:  To view this help.");
-    serial->println("  show:  To show the current settings.");
-    serial->println("  get <param>: Display the value of a settings parameter.");
-    serial->println("  set <param> <value>: Set the value of a settings parameter.");
-    serial->println("  reset:  Factory Reset and save the settings.");
-    serial->println("  read:  Read settings from eeprom.");
-    serial->println("  save:  Save settings to memory.");
-    serial->println("  reboot:  restart the system");
+    getSerial()->println("Use the following commands:");
+    getSerial()->println("  help:  To view this help.");
+    getSerial()->println("  show:  To show the current settings.");
+    getSerial()->println("  get <param>: Display the value of a settings parameter.");
+    getSerial()->println("  set <param> <value>: Set the value of a settings parameter.");
+    getSerial()->println("  reset:  Factory Reset and save the settings.");
+    //getSerial()->println("  read:  Read settings from eeprom.");
+    getSerial()->println("  save:  Save settings to memory.");
+    getSerial()->println("  reboot:  restart the system");
 #if defined(DEBUG)
-    serial->println("DEBUG Commands:");
+    getSerial()->println("DEBUG Commands:");
     // undocumented commands for debugging
-    serial->println("  ppmdump:  dump the ppm channels received. (requires reset to exit)");
-    //serial->println("  clear:  Clear the settings to their zero values.");
-    //serial->println("  erase:  <alias: format> Format the eeprom contents. requires reset and save to restore settings.");
+    getSerial()->println("  ppmdump:  dump the ppm channels received. (requires reset to exit)");
+    //getSerial()->println("  clear:  Clear the settings to their zero values.");
+    //getSerial()->println("  erase:  <alias: format> Format the eeprom contents. requires reset and save to restore settings.");
 #endif
-    serial->println();
+    getSerial()->println();
 }
+
 void Cmd::cmdShowCfg(void) {
-    serial->println(String(PROJECT_NAME) + " Settings:");
-    serial->println("  version        " + String(VERSION));
+    getSerial()->println(String(PROJECT_NAME) + " Settings:");
+    getSerial()->println("  version        " + String(VERSION));
 
-    serial->println("  txMap          " + String(getSettings()->getTxMap()));
-//    serial->println("  rxMax        " + String((int)_cfg->getRxrangeMax()));
-//    //serial->println("  deadzone     " + String(_cfg->getDeadzone()));
-//    serial->println("  flutter      " + String(_cfg->getFlutter()));
+    getSerial()->println("  txMap          " + String(getSettings()->getTxMap()));
+
+    
+//    getSerial()->println("  rxMax        " + String((int)getSettings()->getRxrangeMax()));
+//    //getSerial()->println("  deadzone     " + String(getSettings()->getDeadzone()));
+//    getSerial()->println("  flutter      " + String(getSettings()->getFlutter()));
 //    String sm = ((int)_cfg->getStickMode() == 0) ? "0 [SINGLE STICK]" : "1 [DUAL STICK]";
-//    serial->println("  stickMode    " + sm);
+//    getSerial()->println("  stickMode    " + sm);
 #if defined(DEBUG)
-    serial->println("--------------------------------------");
-    //serial->println("  Eeprom Size  " + String(EEPROM.length()));
+    getSerial()->println("--------------------------------------");
+    //getSerial()->println("  Eeprom Size  " + String(EEPROM.length()));
 #endif
-    serial->println();
+    getSerial()->println();
 }
-void Cmd::cmdSaveCfg(void) {
-//    _cfg->saveCfg();
-    serial->println("Settings saved.");
 
+void Cmd::cmdSaveCfg(void) {
+    getSettings()->saveCfg();
+    getSerial()->println("Settings saved.");
 }
+
 void Cmd::cmdInitCfg(void) {
-//    _cfg->resetCfg();
-//    _cfg->saveCfg();
-    serial->println("Settings reset and saved.");
+    getSettings()->resetCfg();
+    getSettings()->saveCfg();
+    getSerial()->println("Settings reset and saved.");
 }
 
 String Cmd::getValue(String data, char separator, int index)

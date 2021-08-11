@@ -24,11 +24,13 @@
 class Cmd {
   public:
      Cmd(Stream *streamObject, Settings *settings);
+     Cmd(Stream *streamObject);
     ~Cmd();
 
     void setup(void);
     void loop(void);
     Settings* getSettings(void);
+    Stream* getSerial(void);
 
   private:
     Settings* settings;

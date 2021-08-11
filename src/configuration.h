@@ -22,6 +22,11 @@
 #ifndef TK_CONFIGURATION_H
 #define TK_CONFIGURATION_H
 
+#if defined(ARDUINO) && ARDUINO >= 100
+  #include <Arduino.h>
+#else
+  #include <WProgram.h>
+#endif
 
 /*
  * Set to 1 if we want to enable Debug messages

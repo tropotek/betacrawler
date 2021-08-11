@@ -33,6 +33,7 @@ Settings settings;
  */
 #ifdef BC_CLI
 Cmd cmd(&Serial, &settings);
+//Cmd cmd(&Serial);
 #endif
 
 /*
