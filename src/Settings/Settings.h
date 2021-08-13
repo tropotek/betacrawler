@@ -24,10 +24,6 @@
 
 #include "configuration.h"
 
-// // TODO: How to move these consts to the class without it barfing???
-// const uint16_t TK_EEPROM_ADDR = 100;
-// const uint8_t TK_EEPROM_SIG[2] = { 0xee, 0x11 };
-
 class Settings {
   public:
     Settings();
@@ -60,7 +56,7 @@ class Settings {
         uint8_t flutter;                          // The amount a channle must change before a value is updated, ignore micro changes (smooths the response)
         uint8_t txMode;                           // The controller mode (Default: Mode 2)
         bool reverse;                             // 0 = forward Only (throttle + rudder used ,non-centerng), 1 = bi directional (Elevator + Aileron used, centering)
-        char txMap[5];                            // The controller channel mapping. Default is TAER  ???
+        char txMap[10];                           // The controller channel mapping. Default is TAER1234  ???
     } data;
     
 };

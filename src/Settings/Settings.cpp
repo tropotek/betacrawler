@@ -22,18 +22,11 @@ Settings::~Settings() { }
 void Settings::resetCfg() {
     data.signature[0] = TK_EEPROM_SIG[0];
     data.signature[1] = TK_EEPROM_SIG[1];
-
-    setFlutter(15);
-    char map[] = "TEAR";
+    setFlutter(FLUTTER);
+    char map[] = TX_MAP;
     setTxMap(map);
-    setTxMode(2);
-    enableReverse(false);
-
-    // setFlutter(FLUTTER);
-    // char map[] = TX_MAP;
-    // setTxMap(map);
-    // setTxMode(TX_MODE);
-    // enableReverse(REVERSE);
+    setTxMode(TX_MODE);
+    enableReverse(REVERSE);
 }
 
 bool Settings::readCfg(void) {
@@ -41,7 +34,7 @@ bool Settings::readCfg(void) {
     EEPROM.get(TK_EEPROM_ADDR, _cfg);
      if (data.signature[0] != TK_EEPROM_SIG[0] && 
          data.signature[1] != TK_EEPROM_SIG[1]) {
-       Serial.println("001: Reset your configuration.");
+       Serial.println("Error 1001: Reset and save your settings.");
        return(false);
     }
 #endif

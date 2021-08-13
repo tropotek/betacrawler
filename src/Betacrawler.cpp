@@ -13,12 +13,14 @@
  */
 #include "Betacrawler.h"
 
-Betacrawler::Betacrawler(Mixer* pMixer, Cmd* pCli) {
+Betacrawler::Betacrawler(Mixer* pMixer, Throttle* pThrottle, Cmd* pCli) {
     mixer = pMixer;
+    throttle = pThrottle;
     cli = pCli;
 }
-Betacrawler::Betacrawler(Mixer* pMixer) {
+Betacrawler::Betacrawler(Mixer* pMixer, Throttle* pThrottle) {
     mixer = pMixer;
+    throttle = pThrottle;
 }
 Betacrawler::Betacrawler() { }
 Betacrawler::~Betacrawler() { }
@@ -36,15 +38,16 @@ void Betacrawler::loop(void) {
     static uint16_t tick = 0;
     tick++;
     
-
     if (getCli() != nullptr)
         getCli()->loop();
 
     getThrottle()->loop();
+    getMixer()->loop();
+
+    
 
 
-
-    if (tick%500 == 0) {  // every 1/2 a second
+    if (tick%1000 == 0) {  // every 1/2 a second
 
   //   unsigned arm = getPPM()->latestValidChannelValue(7, 0);
   //   if (arm > 1200) {
@@ -57,12 +60,21 @@ void Betacrawler::loop(void) {
 
     
     // // Print latest valid values from all channels
-    Serial.print("                                                               \r");
-    for (byte channel = 1; channel <= MAX_RX_CHANNELS; ++channel) {
-        unsigned value = getPPM()->latestValidChannelValue(channel, 0);
-        Serial.print(String(value) + "\t");
-    }
-    Serial.print("\r");
+    
+    // for (byte channel = 1; channel <= MAX_RX_CHANNELS; ++channel) {
+    //     unsigned value = getPPM()->latestValidChannelValue(channel, 0);
+    //     Serial.print(String(value) + "\t");
+    // }
+
+    getSerial()->print("                                                                     \r");
+    getSerial()->print(getMixer()->toString());
+    getSerial()->print("\r");
+
+    // getSerial()->print(getPPM()->toString());
+    // getSerial()->print(getMixer()->getChannel('T'));
+    // getSerial()->print("  ");
+    // getSerial()->print(getMixer()->getChannel('1'));
+    // getSerial()->print("\r");
 
    }
 }
@@ -86,5 +98,5 @@ PPMReader* Betacrawler::getPPM(void) {
     return getMixer()->getPpm();
 }
 Throttle* Betacrawler::getThrottle(void) {
-    return getMixer()->getThrottle();
+    return throttle;
 }

@@ -98,3 +98,33 @@ unsigned PPMReader::latestValidChannelValue(byte channel, unsigned defaultValue)
     }
     return value;
 }
+
+
+
+/**
+ * I have found a value of 35000 seems good to stop false positive tests
+ * your setup may vary
+ * 
+ * Eg:
+ *     if (getPpm()->timeSinceLastPulse() > 20000) { // Failsafe code }
+ * 
+ * @author: Mick
+ */
+unsigned long PPMReader::timeSinceLastPulse(void) {
+    return micros() - microsAtLastPulse;
+}
+/**
+ * 
+ * 
+ * @author: Mick
+ */
+String PPMReader::toString(void) {
+  // Print latest valid values from all channels
+  double value;
+  String str;
+  for (int channel = 1; channel <= channelAmount; ++channel) {
+      value = latestValidChannelValue(channel, 0);
+      str += String(value) + "   ";
+  }
+  return str;
+}

@@ -22,10 +22,16 @@
 // #include "Esc/Esc.h"
 // #include <Servo.h>
 
+#ifndef SIGNAL_LOSS_TIME
+/*
+ * After this timeout the PPM signal will failsafe
+ */
+#define SIGNAL_LOSS_TIME        25000
+#endif
 
 class Mixer {
   public:
-     Mixer(Settings* pSettings, PPMReader* pPpm, Throttle* pThrottle);
+     Mixer(PPMReader* pPpm, Settings* pSettings);
     ~Mixer();
 
     void setup(void);
@@ -33,12 +39,30 @@ class Mixer {
     
     Settings* getSettings(void);
     PPMReader* getPpm(void);
-    Throttle* getThrottle(void);
+
+    uint16_t getChannel(char c);
+    uint16_t getLeft(void);
+    uint16_t getRight(void);
+    uint16_t getPan(void);
+    uint16_t getTilt(void);
+    uint16_t getArm();
+    uint16_t getAux(int i);
+    
+    String toString(void);
     
   private:
-    Throttle* throttle;
     Settings* settings;
     PPMReader* ppm;
+
+    uint16_t tx, ty;        // Throttle control points
+    uint16_t left, right;   // Calculated Esc throttle vals
+    uint16_t pan, tilt;     // cam servo controls
+    uint16_t aux1;          // Aux 1 used as Arm 
+    uint16_t aux2;          // Aux 2
+    uint16_t aux3;          // Aux 3
+    uint16_t aux4;          // Aux 4
+
+    void calculateThrottle(uint16_t x, uint16_t y);
     
 };
 

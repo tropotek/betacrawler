@@ -47,16 +47,14 @@ Throttle throttle(ESC0_PIN, ESC1_PIN);
 /*
  * Mixer for the PPM receiver values
  */
-Mixer mixer(&settings, &ppm, &throttle);
-
+Mixer mixer(&ppm, &settings);
 
 
 #ifdef BC_CLI
-    Betacrawler BTC(&mixer, &cli);
+    Betacrawler BTC(&mixer, &throttle, &cli);
 #else
-    Betacrawler BTC(&mixer);
+    Betacrawler BTC(&mixer, &throttle);
 #endif
-
 
 
 #endif   /*  BC_GLOBAL_H */

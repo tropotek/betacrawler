@@ -63,7 +63,6 @@
  */
 #define MAX_RX_CHANNELS         7   // Available Channels
 
-
 /*
  * ESC Settings
  * NOTE: Assumes ESC are set to bi-directional.

@@ -21,13 +21,11 @@
 #include "Mixer/Mixer.h"
 #include "Betacrawler.h"
 
-
-
 class Betacrawler {
 
   public:
-     Betacrawler(Mixer* pMixer, Cmd* pCli);
-     Betacrawler(Mixer* pMixer);
+     Betacrawler(Mixer* pMixer, Throttle* pThrottle, Cmd* pCli);
+     Betacrawler(Mixer* pMixer, Throttle* pThrottle);
      Betacrawler();
     ~Betacrawler();
 
@@ -42,9 +40,8 @@ class Betacrawler {
 
   private:
     Mixer* mixer;
+    Throttle* throttle;
     Cmd* cli = nullptr;
 };
 
-
-//static Betacrawler BTC;
 #endif    /** BC_BETACRAWLER_H **/

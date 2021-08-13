@@ -77,6 +77,11 @@ class PPMReader {
      * Returns defaultValue if the given channel hasn't received any valid values yet. */
     unsigned latestValidChannelValue(byte channel, unsigned defaultValue);
 
+    /* Added By Mick */
+    unsigned long timeSinceLastPulse(void);
+    /* Added By Mick */
+    String toString(void);
+
     private:
 
     // An interrupt service routine for handling the interrupts activated by PPM pulses
