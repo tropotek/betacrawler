@@ -43,21 +43,22 @@ void Throttle::loop(void) {
 
 }
 
-void Throttle::arm(void) {
-    if (isArmed()) return;
-    digitalWrite(LED_PIN, LOW);             // LED ON Once Armed
-    _armed = true;
+void Throttle::arm(bool b) {
+    if (b) {
+        if (isArmed()) return;
+        digitalWrite(LED_PIN, LOW);             // LED ON Once Armed
+    } else {
+        if (!isArmed()) return;
+        _leftEsc->stop();
+        _rightEsc->stop();
+        digitalWrite(LED_PIN, HIGH);            // LED OFF Once Armed
+        //delay(1000);                            // Wait for a while
+    }
+    _armed = b;
 }
-void Throttle::disarm(void) {
-    if (!isArmed()) return;
-    _leftEsc->stop();
-    _rightEsc->stop();
-    digitalWrite(LED_PIN, HIGH);            // LED OFF Once Armed
-    //delay(1000);                            // Wait for a while
-    _armed = false;
-}
+
 void Throttle::calib(void) {
-    if (isArmed()) disarm();
+    if (isArmed()) arm(false);
     _leftEsc->calib();
     _rightEsc->calib();
 }

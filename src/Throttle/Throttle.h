@@ -37,8 +37,7 @@ class Throttle {
     ESC* getLeftEsc(void);
     ESC* getRightEsc(void);
 
-    void arm(void);
-    void disarm(void);
+    void arm(bool b);
     void calib(void);
     bool isArmed(void);
     void speed(int i);

@@ -41,40 +41,31 @@ void Betacrawler::loop(void) {
     if (getCli() != nullptr)
         getCli()->loop();
 
-    getThrottle()->loop();
+    // Read values from the PPM receiver and map channel values
     getMixer()->loop();
 
+
+    // Arm/Disarm the throttle
+    getThrottle()->arm((getMixer()->getArm() > 1250));
+    // Set the Esc throrrle values
+    getThrottle()->setLeftSpeed(getMixer()->getLeft());
+    getThrottle()->setRightSpeed(getMixer()->getRight());
+    // transmit Esc throttle values
+    getThrottle()->loop();
+
+    // TODO: Send values to the Pan/Tilt camera servos
+
+
+
+    // TODO: Write code here to perform functions to use Aux2, Aux3, Aux4
     
 
 
-    if (tick%1000 == 0) {  // every 1/2 a second
-
-  //   unsigned arm = getPPM()->latestValidChannelValue(7, 0);
-  //   if (arm > 1200) {
-  //     unsigned speed = getPPM()->latestValidChannelValue(1, 0);
-  //     getThrottle()->speed(speed);
-  //     getThrottle()->arm();
-  //   } else {
-  //     getThrottle()->disarm();
-  //   }
-
+    if (tick%1000 == 0) {  // every 1/2 a second Good place to output debug data
     
-    // // Print latest valid values from all channels
-    
-    // for (byte channel = 1; channel <= MAX_RX_CHANNELS; ++channel) {
-    //     unsigned value = getPPM()->latestValidChannelValue(channel, 0);
-    //     Serial.print(String(value) + "\t");
-    // }
-
-    getSerial()->print("                                                                     \r");
-    getSerial()->print(getMixer()->toString());
-    getSerial()->print("\r");
-
-    // getSerial()->print(getPPM()->toString());
-    // getSerial()->print(getMixer()->getChannel('T'));
-    // getSerial()->print("  ");
-    // getSerial()->print(getMixer()->getChannel('1'));
-    // getSerial()->print("\r");
+        // getSerial()->print("                                                                     \r");
+        // getSerial()->print(getMixer()->toString());
+        // getSerial()->print("\r");
 
    }
 }
