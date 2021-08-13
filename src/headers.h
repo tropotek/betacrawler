@@ -37,6 +37,7 @@
 //#include <EEPROM.h>
 #include "PPMReader/PPMReader.h"
 #include "Throttle/Throttle.h"
+#include "Mixer/Mixer.h"
 #include "Betacrawler.h"
 
 

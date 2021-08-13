@@ -83,11 +83,24 @@
 /*
  * The default transmitter channel map
  */
-#define TX_MAP           "TAER"
-//#define TX_MAP           {'T', 'A', 'E', 'R'}
+#define TX_MAP           "TAER1234"
 
 /*
- * THe Default transmitter mode setup
+ * 
+ * Mode 1:
+ *   Reverse On:  {E,R}
+ *   Reverse Off: {T,A}
+ * Mode 2: 
+ *   Reverse On:  {E,A}
+ *   Reverse Off: {T,R}
+ * Mode 3: 
+ *   Reverse On:  {E,A}
+ *   Reverse Off: {T,R}
+ * Mode 4: 
+ *   Reverse On:  {E,R}
+ *   Reverse Off: {T,A}
+ * 
+ * The Default transmitter mode setup
  */
 #define TX_MODE           2
 
@@ -96,9 +109,8 @@
  * Can only be enabled if you you have bi-directional ECS's installed
  * This will also determin what stick is the throttle controller
  * 
- * Enabled (true): The Elevator and Aileron (Mode 2) will be used
- * Dissabled (false): The Throttle and Rudder (Mode 2) will be used 
- * 
+ * Enabled (true): The Elevator stick will be used (centering)
+ * Dissabled (false): The Throttle stick will be used (non-centering)
  * 
  */
 #define REVERSE           false

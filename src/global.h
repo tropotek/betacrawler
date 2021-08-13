@@ -44,11 +44,17 @@ PPMReader ppm(PPM_RX_PIN, MAX_RX_CHANNELS);
  */
 Throttle throttle(ESC0_PIN, ESC1_PIN);
 
+/*
+ * Mixer for the PPM receiver values
+ */
+Mixer mixer(&settings, &ppm, &throttle);
+
+
 
 #ifdef BC_CLI
-    Betacrawler BTC(&settings, &cli, &ppm, &throttle);
+    Betacrawler BTC(&mixer, &cli);
 #else
-    Betacrawler BTC(&settings, &ppm, &throttle);
+    Betacrawler BTC(&mixer);
 #endif
 
 

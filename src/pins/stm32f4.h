@@ -26,7 +26,7 @@
  * Button 
  * TODO: Unused yet
  */
-#define BTN_PIN                 PA0
+//#define BTN_PIN                 PA0
 
 /*
  * PPM Receiver pin

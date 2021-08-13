@@ -17,10 +17,8 @@
 
 #include "pins/pins.h"
 #include "configuration.h"
-#include "Settings/Settings.h"
 #include "Cmd/Cmd.h"
-#include "PPMReader/PPMReader.h"
-#include "Throttle/Throttle.h"
+#include "Mixer/Mixer.h"
 #include "Betacrawler.h"
 
 
@@ -28,8 +26,8 @@
 class Betacrawler {
 
   public:
-     Betacrawler(Settings* _settings, Cmd* _cli, PPMReader* _ppm, Throttle* _throttle);
-     Betacrawler(Settings* _settings, PPMReader* _ppm, Throttle* _throttle);
+     Betacrawler(Mixer* pMixer, Cmd* pCli);
+     Betacrawler(Mixer* pMixer);
      Betacrawler();
     ~Betacrawler();
 
@@ -39,14 +37,12 @@ class Betacrawler {
     Stream* getSerial(void);
     Cmd* getCli(void);
     PPMReader* getPPM(void);
-    Throttle* getThrottle(void);    
+    Throttle* getThrottle(void);
+    Mixer* getMixer(void);
 
   private:
-    Stream* serial;
-    Settings* settings;
+    Mixer* mixer;
     Cmd* cli = nullptr;
-    PPMReader* ppm;
-    Throttle* throttle;
 };
 
 

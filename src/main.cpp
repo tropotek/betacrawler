@@ -27,49 +27,11 @@ void setup() {
 
   BTC.setup();
 
-  // pinMode(LED_PIN, OUTPUT);
-  // pinMode(BTN_PIN, INPUT_PULLUP);
-  // digitalWrite(LED_PIN, HIGH);
-
-  // throttle.setup();
-
 }
 
 void loop() {
 
   BTC.loop();
-  // Serial.println(settings.toString());
-  // delay(2000);
-
-
-// Disable for AVR single UART chips
-// #ifdef BC_CLI
-//   cli.loop();
-// #endif
-
-//   throttle.loop();
-
-  // if (millis()%500 == 0) {  // every 1/2 a second
-
-  //   unsigned arm = ppm.latestValidChannelValue(7, 0);
-  //   if (arm > 1200) {
-  //     unsigned speed = ppm.latestValidChannelValue(1, 0);
-  //     throttle.speed(speed);
-  //     throttle.arm();
-  //   } else {
-  //     throttle.disarm();
-  //   }
-
-    
-  //   // // Print latest valid values from all channels
-  //   // for (byte channel = 1; channel <= MAX_RX_CHANNELS; ++channel) {
-  //   //     unsigned value = ppm.latestValidChannelValue(channel, 0);
-  //   //     Serial.print(String(value) + "\t");
-  //   // }
-  //   // Serial.println();
-
-  // }
-  
 
 }
 

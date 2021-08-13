@@ -13,18 +13,12 @@
  */
 #include "Betacrawler.h"
 
-Betacrawler::Betacrawler(Settings* _settings, Cmd* _cli, PPMReader* _ppm, Throttle* _throttle) {
-    settings = _settings;
-    cli = _cli;
-    ppm = _ppm;
-    throttle = _throttle;
+Betacrawler::Betacrawler(Mixer* pMixer, Cmd* pCli) {
+    mixer = pMixer;
+    cli = pCli;
 }
-Betacrawler::Betacrawler(Settings* _settings, PPMReader* _ppm, Throttle* _throttle) {
-
-    settings = _settings;
-    ppm = _ppm;
-    throttle = _throttle;
-    
+Betacrawler::Betacrawler(Mixer* pMixer) {
+    mixer = pMixer;
 }
 Betacrawler::Betacrawler() { }
 Betacrawler::~Betacrawler() { }
@@ -32,62 +26,65 @@ Betacrawler::~Betacrawler() { }
 
 void Betacrawler::setup(void) {
   
-  pinMode(LED_PIN, OUTPUT);
-  //pinMode(BTN_PIN, INPUT_PULLUP);
-  digitalWrite(LED_PIN, HIGH);
-  getThrottle()->setup();
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, HIGH);
+    getThrottle()->setup();
 
 }
 
 void Betacrawler::loop(void) {
-
-  //Serial.println(settings.toString());
+    static uint16_t tick = 0;
+    tick++;
+    
 
     if (getCli() != nullptr)
         getCli()->loop();
 
-  getThrottle()->loop();
+    getThrottle()->loop();
 
-  // if (millis()%500 == 0) {  // every 1/2 a second
 
-  //   unsigned arm = ppm.latestValidChannelValue(7, 0);
+
+    if (tick%500 == 0) {  // every 1/2 a second
+
+  //   unsigned arm = getPPM()->latestValidChannelValue(7, 0);
   //   if (arm > 1200) {
-  //     unsigned speed = ppm.latestValidChannelValue(1, 0);
-  //     throttle.speed(speed);
-  //     throttle.arm();
+  //     unsigned speed = getPPM()->latestValidChannelValue(1, 0);
+  //     getThrottle()->speed(speed);
+  //     getThrottle()->arm();
   //   } else {
-  //     throttle.disarm();
+  //     getThrottle()->disarm();
   //   }
 
     
     // // Print latest valid values from all channels
-    // for (byte channel = 1; channel <= MAX_RX_CHANNELS; ++channel) {
-    //     unsigned value = ppm.latestValidChannelValue(channel, 0);
-    //     Serial.print(String(value) + "\t");
-    // }
-    // Serial.println();
+    Serial.print("                                                               \r");
+    for (byte channel = 1; channel <= MAX_RX_CHANNELS; ++channel) {
+        unsigned value = getPPM()->latestValidChannelValue(channel, 0);
+        Serial.print(String(value) + "\t");
+    }
+    Serial.print("\r");
 
-   // }
+   }
 }
 
 
 
-Settings* Betacrawler::getSettings(void) {
-    return settings;
-}
-Stream* Betacrawler::getSerial(void) {
-    return serial;
+Mixer* Betacrawler::getMixer(void) {
+    return mixer;
 }
 Cmd* Betacrawler::getCli(void) {
     return cli;
 }
+
+Settings* Betacrawler::getSettings(void) {
+    return getMixer()->getSettings();
+}
+Stream* Betacrawler::getSerial(void) {
+    return &Serial; // TODO: not sure if this is a good Idea, maybe we should pass it through from the constructor???
+}
 PPMReader* Betacrawler::getPPM(void) {
-    return ppm;
+    return getMixer()->getPpm();
 }
 Throttle* Betacrawler::getThrottle(void) {
-    return throttle;
+    return getMixer()->getThrottle();
 }
-
-
-
-
