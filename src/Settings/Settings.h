@@ -23,12 +23,14 @@
 #define BC_SETTINGS_H
 
 #include "configuration.h"
+#include <EEPROM.h>
 
 class Settings {
   public:
     Settings();
     ~Settings();
 
+    void init(void);
     void resetCfg(void);
     bool readCfg(void);
     bool saveCfg(void);
@@ -50,6 +52,7 @@ class Settings {
     const uint16_t TK_EEPROM_ADDR = 100;
     const uint8_t TK_EEPROM_SIG[2] = { 0xee, 0x11 };
 
+    // Struct used here to easly save all setting to the EEPROM
     struct
     {   
         uint8_t signature[2];                     // TK_EEPROM_SIG

@@ -13,12 +13,13 @@
 #include "Settings.h"
 
 
-Settings::Settings() {
+Settings::Settings() { }
+Settings::~Settings() { }
+
+void Settings::init() {
     resetCfg();
     readCfg();
 }
-Settings::~Settings() { }
-
 void Settings::resetCfg() {
     data.signature[0] = TK_EEPROM_SIG[0];
     data.signature[1] = TK_EEPROM_SIG[1];
@@ -31,11 +32,12 @@ void Settings::resetCfg() {
 
 bool Settings::readCfg(void) {
 #ifdef EEPROM_h
-    EEPROM.get(TK_EEPROM_ADDR, _cfg);
-     if (data.signature[0] != TK_EEPROM_SIG[0] && 
-         data.signature[1] != TK_EEPROM_SIG[1]) {
-       Serial.println("Error 1001: Reset and save your settings.");
-       return(false);
+    EEPROM.get(TK_EEPROM_ADDR, data);
+    if (data.signature[0] != TK_EEPROM_SIG[0] && data.signature[1] != TK_EEPROM_SIG[1]) {
+        // TODO: We need to ouotput the error somehow as this could be called before the serial is initalized
+        Serial.println("Error 1001: Reset and save your settings.");
+        //saveCfg();
+        return false;
     }
 #endif
     return true;
@@ -72,6 +74,7 @@ void Settings::enableReverse(bool b) {
 }
 
 void Settings::setTxMap(char str[]) {
+    memset(data.txMap,0,sizeof(data.txMap));
     for(int i = 0; i < strlen(str); i++) {
         data.txMap[i] = str[i];
     }
@@ -100,12 +103,14 @@ String Settings::toString(void) {
     str = "Settings:\n";
     str += " version        " + String(VERSION) + "\n";
     str += " flutter        " + String(getFlutter()) + "\n";
-    str += " txMode         " + String(getTxMode()) + "\n";
+    str += " txmode         " + String(getTxMode()) + "\n";
     String rev = hasReverse() ? "Enabled" : "Disabled";
     str += " reverse        " + rev + "\n";
-    str += " txMap          " + String(getTxMap()) + "\n";
+    str += " txmap          " + String(getTxMap()) + "\n";
 #if (defined(EEPROM_h) && defined(DEBUG))
-    str += " eeprom         " + String(EEPROM.length()) + "\n";
+    str += " -------------- DEBUG -----------------\n";
+    str += " eeprom         [" + String(EEPROM.length()) + "]\n";
+    str += " --------------------------------------\n";
 #endif
     return str;
 }

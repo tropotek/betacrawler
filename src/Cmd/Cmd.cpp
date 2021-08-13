@@ -76,7 +76,6 @@ Stream* Cmd::getSerial(void) {
 void Cmd::parse(String cmdStr) {
     for (int i = 0; i < MAX_NUM_ARGS; i++) {
         args[i] = "";  // reset cmd array
-        //args[i].reserve(16);
     }
     cmdStr.trim();
     args[0] = cmdStr;
@@ -88,11 +87,6 @@ void Cmd::parse(String cmdStr) {
             if (args[i].equals("")) break;
         }
     }
-
-    // for (int i = 0; i < MAX_NUM_ARGS; i++) {
-    //     if (!args[i].equals(""))
-    //          getSerial()->println("===="+String(i)+"> " + args[i]);
-    // }
 
     if (args[0].equals("help") || args[0].equals("h") || args[0].equals("?")) {
         cmdHelp();
@@ -113,21 +107,6 @@ void Cmd::parse(String cmdStr) {
     } else if (args[0].equals("set")) {
         cmdSet(args[1], args[2]);
     } 
-// #if defined(DEBUG)
-//     // undocumented commands for debugging
-//     else if (args[0].equals("ppmdump") || args[0].equals("ppm")) {
-//         while (true) {
-//             _ppm->printPpmChannels();
-//         }
-//     } else if (args[0].equals("clear")) {
-//         getSettings()->clearCfg();
-//         getSettings()->saveCfg();
-//         getSerial()->println("Settings cleared from eeprom and saved.");
-//     } else if (args[0].equals("erase") || args[0].equals("format")) {
-//         getSettings()->eraseEeprom();
-//         getSerial()->println("Eeprom data formatted");
-//     } 
-// #endif
     else {
         getSerial()->println("Command not found!");
     }
@@ -137,19 +116,22 @@ void Cmd::parse(String cmdStr) {
 void Cmd::cmdGet(String arg, String val) {
     getSerial()->println("---- Not implemented ----");
     
-    // if (arg.equals("rxmin")) {
-    //     getSerial()->println("rxmin " + String(getSettings()->getRxrangeMin()));
-    // } else if (arg.equals("rxmax")) {
-    //     getSerial()->println("rxmax " + String(getSettings()->getRxrangeMax()));
-    // } else if (arg.equals("deadzone")) {
-    //     getSerial()->println("deadzone " + String(getSettings()->getDeadzone()));
-    // } else if (arg.equals("flutter")) {
-    //     getSerial()->println("flutter " + String(getSettings()->getFlutter()));
-    // } else if (arg.equals("stickmode") || arg.equals("sm")) {
-    //     getSerial()->println("stickMode " + String((int)getSettings()->getStickMode()));
-    // } else {
-    //     getSerial()->println("Settings parameter not found!");
-    // }
+    if (arg.equals("flutter")) {
+        getSerial()->println("flutter: " + String(getSettings()->getFlutter()));
+    } 
+    else if (arg.equals("txmap")) {
+        getSerial()->println("txmap: " + String(getSettings()->getTxMap()));
+    }
+    else if (arg.equals("txmode")) {
+        getSerial()->println("txmode: " + String(getSettings()->getTxMode()));
+    }
+    else if (arg.equals("reverse")) {
+        String rev = getSettings()->hasReverse() ? "On" : "Off";
+        getSerial()->println("reverse: " + rev);
+    }
+    else {
+        getSerial()->println("Settings parameter not found!");
+    }
 }
 
 void Cmd::cmdSet(String arg, String val) {
@@ -158,20 +140,27 @@ void Cmd::cmdSet(String arg, String val) {
         getSerial()->println("No value parameter specified for: " + arg);
         return;
     }
-
-    // if (arg.equals("rxmin")) {
-    //     getSettings()->setRxrangeMin(val.toInt());
-    // } else if (arg.equals("rxmax")) {
-    //     getSettings()->setRxrangeMax(val.toInt());
-    // } else if (arg.equals("deadzone")) {
-    //     getSettings()->setDeadzone(val.toInt());
-    // } else if (arg.equals("flutter")) {
-    //     getSettings()->setFlutter(val.toInt());
-    // } else if (arg.equals("stickmode") || arg.equals("sm")) {
-    //     getSettings()->setStickMode((bool)val.toInt());
-    // } else {
-    //     getSerial()->println("Settings parameter not found!");
-    // }
+    
+    val.toLowerCase();
+    if (arg.equals("flutter")) {
+        getSettings()->setFlutter(val.toInt());
+    }
+    else if (arg.equals("txmode")) {
+        getSettings()->setTxMode(val.toInt());
+    }
+    else if (arg.equals("reverse")) {
+        bool b = (val.equals("on"));
+        getSettings()->enableReverse(b);
+    }
+    else if (arg.equals("txmap")) {
+        val.toUpperCase();
+        char c[10];
+        val.toCharArray(c, 10);
+        getSettings()->setTxMap(c);
+    }
+    else {
+        getSerial()->println("Settings parameter not found!");
+    }
 }
 
 void Cmd::cmdHelp(void) {

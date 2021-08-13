@@ -27,11 +27,10 @@ Betacrawler::~Betacrawler() { }
 
 
 void Betacrawler::setup(void) {
-  
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, HIGH);
+    getSettings()->init();
     getThrottle()->setup();
-
 }
 
 void Betacrawler::loop(void) {
