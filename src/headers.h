@@ -29,20 +29,15 @@
 #include <Servo.h>
 #include <ESC.h>
 
-#include "Settings/Settings.h"
 #include "configuration.h"
 #include "pins/pins.h"
-#ifdef BC_CLI
+
+#include "Settings/Settings.h"
 #include "Cmd/Cmd.h"
-#include <EEPROM.h>
-#endif
+//#include <EEPROM.h>
 #include "PPMReader/PPMReader.h"
 #include "Throttle/Throttle.h"
-
-
-
-
-
+#include "Betacrawler.h"
 
 
 

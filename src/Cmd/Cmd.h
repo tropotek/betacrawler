@@ -16,8 +16,7 @@
 #ifndef BC_CMD_H
 #define BC_CMD_H
 
-#include "headers.h"
-
+#include "Settings/Settings.h"
 
 #define MAX_NUM_ARGS 4      //Maximum number of arguments
 

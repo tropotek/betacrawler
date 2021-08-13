@@ -28,9 +28,9 @@ void BC_systemReset(void) {
 }
 
 
-Cmd::Cmd(Stream *streamObject, Settings *settings) {
+Cmd::Cmd(Stream *streamObject, Settings *_settings) {
     serial = streamObject;
-    settings = settings;
+    settings = _settings;
     commandStr = "";
 }
 Cmd::Cmd(Stream *streamObject) {
@@ -40,28 +40,28 @@ Cmd::Cmd(Stream *streamObject) {
 Cmd::~Cmd() { }
 
 void Cmd::setup() {
-    serial->print("> ");
+    getSerial()->print("> ");
 }
 
 void Cmd::loop() {
     char c;
-    while(serial->available()) {
-        c = serial->read();
+    while(getSerial()->available()) {
+        c = getSerial()->read();
         if (c == '\n') {
             cmdFinish = true;
         } else if (c == '\r' || c == '\t' || c == '\0') {
             ; // ingnore
         } else {
             commandStr += c;
-            serial->print(c);
+            getSerial()->print(c);
         }
     }
     if (!commandStr.equals("") && cmdFinish) {
-        serial->println();
+        getSerial()->println();
         parse(commandStr);
         cmdFinish = false;
         commandStr = "";
-        serial->print("> ");
+        getSerial()->print("> ");
     }
 }
 
@@ -91,7 +91,7 @@ void Cmd::parse(String cmdStr) {
 
     // for (int i = 0; i < MAX_NUM_ARGS; i++) {
     //     if (!args[i].equals(""))
-    //          serial->println("===="+String(i)+"> " + args[i]);
+    //          getSerial()->println("===="+String(i)+"> " + args[i]);
     // }
 
     if (args[0].equals("help") || args[0].equals("h") || args[0].equals("?")) {
@@ -122,10 +122,10 @@ void Cmd::parse(String cmdStr) {
 //     } else if (args[0].equals("clear")) {
 //         getSettings()->clearCfg();
 //         getSettings()->saveCfg();
-//         serial->println("Settings cleared from eeprom and saved.");
+//         getSerial()->println("Settings cleared from eeprom and saved.");
 //     } else if (args[0].equals("erase") || args[0].equals("format")) {
 //         getSettings()->eraseEeprom();
-//         serial->println("Eeprom data formatted");
+//         getSerial()->println("Eeprom data formatted");
 //     } 
 // #endif
     else {

@@ -16,7 +16,8 @@
 #ifndef BC_THROTTLE_H
 #define BC_THROTTLE_H
 
-#include "headers.h"
+#include "pins/pins.h"
+#include "configuration.h"
 #include <Esc.h>
 
 

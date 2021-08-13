@@ -31,10 +31,7 @@ Settings settings;
 /*
  * The Command Line Interface to the USB Serial
  */
-#ifdef BC_CLI
-Cmd cmd(&Serial, &settings);
-//Cmd cmd(&Serial);
-#endif
+Cmd cli(&Serial, &settings);
 
 /*
  * Object to read the PPM signal from the receiver
@@ -46,6 +43,13 @@ PPMReader ppm(PPM_RX_PIN, MAX_RX_CHANNELS);
  * values ready to be sent to the ESC's
  */
 Throttle throttle(ESC0_PIN, ESC1_PIN);
+
+
+#ifdef BC_CLI
+    Betacrawler BTC(&settings, &cli, &ppm, &throttle);
+#else
+    Betacrawler BTC(&settings, &ppm, &throttle);
+#endif
 
 
 

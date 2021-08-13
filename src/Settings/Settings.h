@@ -24,24 +24,13 @@
 
 #include "configuration.h"
 
-
-typedef struct
-{   
-    uint8_t signature[2];                     // TK_EEPROM_SIG
-    uint8_t flutter;                          // The amount a channle must change before a value is updated, ignore micro changes (smooths the response)
-    uint8_t txMode;                           // The controller mode (Default: Mode 2)
-    bool reverse;                             // 0 = forward Only (throttle + rudder used ,non-centerng), 1 = bi directional (Elevator + Aileron used, centering)
-    char txMap[5];                            // The controller channel mapping. Default is TAER  ???
-} configData_t;
-
-
-// TODO: How to move these consts to the class without it barfing???
-const uint16_t TK_EEPROM_ADDR = 100;
-const uint8_t TK_EEPROM_SIG[2] = { 0xee, 0x11 };
+// // TODO: How to move these consts to the class without it barfing???
+// const uint16_t TK_EEPROM_ADDR = 100;
+// const uint8_t TK_EEPROM_SIG[2] = { 0xee, 0x11 };
 
 class Settings {
   public:
-     Settings();
+    Settings();
     ~Settings();
 
     void resetCfg(void);
@@ -62,7 +51,17 @@ class Settings {
     String toString(void);
 
   private:
-    configData_t _cfg;
+    const uint16_t TK_EEPROM_ADDR = 100;
+    const uint8_t TK_EEPROM_SIG[2] = { 0xee, 0x11 };
+
+    struct
+    {   
+        uint8_t signature[2];                     // TK_EEPROM_SIG
+        uint8_t flutter;                          // The amount a channle must change before a value is updated, ignore micro changes (smooths the response)
+        uint8_t txMode;                           // The controller mode (Default: Mode 2)
+        bool reverse;                             // 0 = forward Only (throttle + rudder used ,non-centerng), 1 = bi directional (Elevator + Aileron used, centering)
+        char txMap[5];                            // The controller channel mapping. Default is TAER  ???
+    } data;
     
 };
 

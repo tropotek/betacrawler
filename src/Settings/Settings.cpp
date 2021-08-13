@@ -12,6 +12,7 @@
  */
 #include "Settings.h"
 
+
 Settings::Settings() {
     resetCfg();
     readCfg();
@@ -19,8 +20,8 @@ Settings::Settings() {
 Settings::~Settings() { }
 
 void Settings::resetCfg() {
-    _cfg.signature[0] = TK_EEPROM_SIG[0];
-    _cfg.signature[1] = TK_EEPROM_SIG[1];
+    data.signature[0] = TK_EEPROM_SIG[0];
+    data.signature[1] = TK_EEPROM_SIG[1];
 
     setFlutter(15);
     char map[] = "TEAR";
@@ -38,8 +39,8 @@ void Settings::resetCfg() {
 bool Settings::readCfg(void) {
 #ifdef EEPROM_h
     EEPROM.get(TK_EEPROM_ADDR, _cfg);
-     if (_cfg.signature[0] != TK_EEPROM_SIG[0] && 
-         _cfg.signature[1] != TK_EEPROM_SIG[1]) {
+     if (data.signature[0] != TK_EEPROM_SIG[0] && 
+         data.signature[1] != TK_EEPROM_SIG[1]) {
        Serial.println("001: Reset your configuration.");
        return(false);
     }
@@ -49,9 +50,9 @@ bool Settings::readCfg(void) {
 
 bool Settings::saveCfg(void) {
 #ifdef EEPROM_h
-    EEPROM.put(TK_EEPROM_ADDR, _cfg);
+    EEPROM.put(TK_EEPROM_ADDR, data);
 #endif
-    return(true);
+    return true;
 }
 
 void Settings::eraseEeprom(void) {
@@ -64,58 +65,52 @@ void Settings::eraseEeprom(void) {
 
 
 void Settings::setFlutter(uint8_t i) {
-    //i = constrain(i, 0, 100);
-    _cfg.flutter = (uint8_t)i;
+    i = constrain(i, 0, 100);
+    data.flutter = (uint8_t)i;
 }
 
 void Settings::setTxMode(uint8_t i) {
-    //i = constrain(i, 1, 4);
-    _cfg.txMode = (uint8_t)i;
+    i = constrain(i, 1, 4);
+    data.txMode = (uint8_t)i;
 }
 
 void Settings::enableReverse(bool b) {
-    _cfg.reverse = b;
+    data.reverse = b;
 }
 
 void Settings::setTxMap(char str[]) {
     for(int i = 0; i < strlen(str); i++) {
-        _cfg.txMap[i] = str[i];
+        data.txMap[i] = str[i];
     }
 }
 
 
 uint8_t Settings::getFlutter(void) {
-    return _cfg.flutter;
+    return data.flutter;
 }
 
 uint8_t Settings::getTxMode(void) {
-    return _cfg.txMode;
+    return data.txMode;
 }
 
 bool Settings::hasReverse(void) {
-    return _cfg.reverse;
+    return data.reverse;
 }
 
 char* Settings::getTxMap(void) {
-    return _cfg.txMap;
+    return data.txMap;
 }
 
 
 String Settings::toString(void) {
     String str;
-    //Serial.printf("%.*s\n", (int)sizeof(settings.getTxMap()), settings.getTxMap());
-
     str = "Settings:\n";
     str += " version        " + String(VERSION) + "\n";
-
     str += " flutter        " + String(getFlutter()) + "\n";
     str += " txMode         " + String(getTxMode()) + "\n";
     String rev = hasReverse() ? "Enabled" : "Disabled";
     str += " reverse        " + rev + "\n";
-    
-    str += " txMap          " + String(_cfg.txMap) + "\n";
     str += " txMap          " + String(getTxMap()) + "\n";
-    
 #if (defined(EEPROM_h) && defined(DEBUG))
     str += " eeprom         " + String(EEPROM.length()) + "\n";
 #endif
