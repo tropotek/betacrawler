@@ -19,6 +19,7 @@
 #include "configuration.h"
 #include "Cmd/Cmd.h"
 #include "Mixer/Mixer.h"
+#include "Pan/Pan.h"
 #include "Betacrawler.h"
 
 class Betacrawler {
@@ -26,22 +27,24 @@ class Betacrawler {
   public:
      Betacrawler(Mixer* pMixer, Throttle* pThrottle, Cmd* pCli);
      Betacrawler(Mixer* pMixer, Throttle* pThrottle);
-     Betacrawler();
     ~Betacrawler();
 
     void setup(void);
     void loop(void);
+    void bcLoop(void);
     Settings* getSettings(void);
     Stream* getSerial(void);
     Cmd* getCli(void);
     PPMReader* getPPM(void);
     Throttle* getThrottle(void);
     Mixer* getMixer(void);
+    Pan* getCam(void);
 
   private:
     Mixer* mixer;
     Throttle* throttle;
     Cmd* cli = nullptr;
+    Pan* cam;
 };
 
 #endif    /** BC_BETACRAWLER_H **/

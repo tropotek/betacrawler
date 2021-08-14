@@ -21,8 +21,12 @@ Mixer::~Mixer() { }
 
 void Mixer::setup(void) {  }
 
-void Mixer::loop(void) { 
+void Mixer::loop(void) {
+
     // TODO: Failsafe - Find a way to detect signal loss in a PPM signal
+    //       Need to do further testing on other receivers see if we can get this 
+    //       code to work as expected
+    // 
     // if (getPpm()->timeSinceLastPulse() > SIGNAL_LOSS_TIME) {
     //     // shutdown (no paulses)
     //     //if(isArmed())

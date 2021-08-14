@@ -9,7 +9,6 @@
  * 
  * ***********************************************************************
  * 
- * Define any global objects here an include all libs and headers
  * 
  */
 #include "Throttle.h"
@@ -22,7 +21,7 @@ Throttle::Throttle(int esc0Pin, int esc1Pin) {
 
 Throttle::~Throttle() { }
 
-void Throttle::setup(void) { 
+void Throttle::setup(void) {
     _leftEsc  = new ESC(_esc0Pin, ESC_MIN_THROTTLE, ESC_MAX_THROTTLE, ESC_ARM);
     _rightEsc = new ESC(_esc1Pin, ESC_MIN_THROTTLE, ESC_MAX_THROTTLE, ESC_ARM);
     _leftEsc->arm();
@@ -55,12 +54,6 @@ void Throttle::arm(bool b) {
         //delay(1000);                            // Wait for a while
     }
     _armed = b;
-}
-
-void Throttle::calib(void) {
-    if (isArmed()) arm(false);
-    _leftEsc->calib();
-    _rightEsc->calib();
 }
 
 

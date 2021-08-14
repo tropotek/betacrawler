@@ -9,7 +9,14 @@
  * 
  * ***********************************************************************
  * 
- * Define any global objects here an include all libs and headers
+ * Resources
+ *   PPM Reciver: https://github.com/Nikkilae/PPM-reader
+ *   ESC/Servo: https://www.instructables.com/id/ESC-Programming-on-Arduino-Hobbyking-ESC/
+ *   ESC bi-directional:  https://www.youtube.com/watch?v=jBr-ZLMt4W4
+ *   ESC: https://github.com/MikeysLab/BrushlessESCviaPWM/blob/master/EscPWMTesting/EscPWMTesting.ino
+ *   ESC: https://www.robotshop.com/community/blog/show/rc-speed-controller-esc-arduino-library
+ *
+ * ESC's used in this project: HGLRC BS30A - BLHli_S: Rev16.6 F-H-40
  * 
  */
 
@@ -38,7 +45,6 @@ class Throttle {
     ESC* getRightEsc(void);
 
     void arm(bool b);
-    void calib(void);
     bool isArmed(void);
     void speed(int i);
     

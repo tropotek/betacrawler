@@ -23,11 +23,11 @@ void Settings::init() {
 void Settings::resetCfg() {
     data.signature[0] = TK_EEPROM_SIG[0];
     data.signature[1] = TK_EEPROM_SIG[1];
-    setFlutter(FLUTTER);
-    char map[] = TX_MAP;
+    setFlutter(DEFAULT_FLUTTER);
+    char map[] = DEFAULT_TX_MAP;
     setTxMap(map);
-    setTxMode(TX_MODE);
-    enableReverse(REVERSE);
+    setTxMode(DEFAULT_TX_MODE);
+    enableReverse(DEFAULT_REVERSE);
 }
 
 bool Settings::readCfg(void) {

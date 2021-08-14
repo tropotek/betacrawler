@@ -9,49 +9,23 @@
  * 
  * ***********************************************************************
  * 
- * Resources
- *   PPM Reciver: https://github.com/Nikkilae/PPM-reader
- *   ESC/Servo: https://www.instructables.com/id/ESC-Programming-on-Arduino-Hobbyking-ESC/
- *   ESC bi-directional:  https://www.youtube.com/watch?v=jBr-ZLMt4W4
- *   ESC: https://github.com/MikeysLab/BrushlessESCviaPWM/blob/master/EscPWMTesting/EscPWMTesting.ino
- *   ESC: https://www.robotshop.com/community/blog/show/rc-speed-controller-esc-arduino-library
- *
- * ESC's used in this project: HGLRC BS30A - BLHli_S: Rev16.6 F-H-40
+ * Edit this file to get the default values for your setup.
+ * 
+ * You may also want to look in the pins folder if you want to change the wiring pins.
+ * 
+ * If you are using an Arduino/AVR CPU then this is where you come to update 
+ * your Betacrawler settings as the CLI will not work on single serial AVR CPUS.
+ * 
+ * If you are using STM32 setting can be changed later in the serial CLI
  * 
  */
 #ifndef TK_CONFIGURATION_H
 #define TK_CONFIGURATION_H
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include <Arduino.h>
-#else
-  #include <WProgram.h>
-#endif
-
 /*
- * Set to 1 if we want to enable Debug messages
+ * Set to 1 if we want to enable Debug environment
  */
 #define DEBUG   1
-
-/* 
- * Current build version
- */
-#define VERSION                 "2.0.0"
-
-/* 
- * Build Date
- */
-#define BUILD_DATE              "07-07-2021"
-
-/*
- * The common project name
- */
-#define PROJECT_NAME            "Beatacrawler"
-
-/* 
- * Author
- */
-#define AUTHOR                  "Tropotek"
 
 /*
  * Serial baud rate
@@ -60,48 +34,34 @@
 
 /*
  * define the max number of receiver channels 0=thr, 1=aile, 2=elev, 3=rudd, 4=aux1(arm), 5=aux2
+ * (Valid values:4-16)
+ * @todo: put this into the settings object
  */
 #define MAX_RX_CHANNELS         7   // Available Channels
 
 /*
- * ESC Settings
- * NOTE: Assumes ESC are set to bi-directional.
+ * The default transmitter channel map.
+ * 
+ * TEAR ARET etc.. refer to the channel order received by the receiver. 
+ * So TAER means:
+ *   Channel 1 -> thottle
+ *   Channel 2 -> aileron
+ *   Channel 3 -> elevator
+ *   Channel 4 -> Rudder
+ * @see https://oscarliang.com/channel-map/
  */
-#define ESC_MIN_THROTTLE         1000       // Full reverse
-#define ESC_MID_THROTTLE         1500       // Stop
-#define ESC_MAX_THROTTLE         2000       // Full Forward
-#define ESC_ARM                  500
+#define DEFAULT_TX_MAP           "TAER1234"
 
-
+/*
+ * The Default transmitter mode setup (Valid values 1-4)
+ */
+#define DEFAULT_TX_MODE           2
 
 /*
  * Smooth out the stick control data
+ * (Valid values 0-100)
  */
-#define FLUTTER          10
-
-/*
- * The default transmitter channel map
- */
-#define TX_MAP           "TAER1234"
-
-/*
- * 
- * Mode 1:
- *   Reverse On:  {E,R}
- *   Reverse Off: {T,A}
- * Mode 2: 
- *   Reverse On:  {E,A}
- *   Reverse Off: {T,R}
- * Mode 3: 
- *   Reverse On:  {E,A}
- *   Reverse Off: {T,R}
- * Mode 4: 
- *   Reverse On:  {E,R}
- *   Reverse Off: {T,A}
- * 
- * The Default transmitter mode setup
- */
-#define TX_MODE           2
+#define DEFAULT_FLUTTER          10
 
 /*
  * The default ESC reverse mode
@@ -112,11 +72,11 @@
  * Dissabled (false): The Throttle stick will be used (non-centering)
  * 
  */
-#define REVERSE           false
+#define DEFAULT_REVERSE           false
 
 
 
 
-
-
+// DO NOT MOVE This....
+#include "Application.h"
 #endif   /*  CONFIGURATION_H */

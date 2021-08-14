@@ -47,7 +47,7 @@
 /*
  * Servo 1 Use this servo for the tilt of a cam mount.
  */
-#define SVO1_PIN                11
+//#define SVO1_PIN                11
 
 
 
