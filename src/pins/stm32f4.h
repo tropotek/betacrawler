@@ -31,7 +31,7 @@
 /*
  * PPM Receiver pin
  */
-#define PPM_RX_PIN             PB1
+#define PPM_RX_PIN             PB12
 //#define PPM_RX_PIN             PB7
 
 /*
@@ -43,7 +43,7 @@
 /*
  * Servo 0 Use this servo for the pan of a cam mount.
  */
-#define SVO0_PIN                PA7
+#define SVO0_PIN                PB14
 
 /*
  * Servo 1 Use this servo for the tilt of a cam mount.
