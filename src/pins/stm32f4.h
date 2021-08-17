@@ -31,7 +31,8 @@
 /*
  * PPM Receiver pin
  */
-#define PPM_RX_PIN             PB7
+#define PPM_RX_PIN             PB1
+//#define PPM_RX_PIN             PB7
 
 /*
  * ESC pins
