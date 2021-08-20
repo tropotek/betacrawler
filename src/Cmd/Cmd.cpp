@@ -125,6 +125,9 @@ void Cmd::cmdGet(String arg, String val) {
     else if (arg.equals("expo")) {
         getSerial()->println("expo: " + String(getSettings()->getExpo()));
     }
+    else if (arg.equals("tlimit")) {
+        getSerial()->println("tlimit: " + String(getSettings()->getExpo()));
+    }
     else if (arg.equals("txmap")) {
         getSerial()->println("txmap: " + String(getSettings()->getTxMap()));
     }
@@ -156,6 +159,9 @@ void Cmd::cmdSet(String arg, String val) {
     }
     else if (arg.equals("expo")) {
         getSettings()->setExpo(val.toInt());
+    }
+    else if (arg.equals("tlimit")) {
+        getSettings()->setThrottleLimit(val.toInt());
     }
     else if (arg.equals("txmode")) {
         getSettings()->setTxMode(val.toInt());

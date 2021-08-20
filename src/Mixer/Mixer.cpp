@@ -20,7 +20,17 @@ Mixer::Mixer(PPMReader* pPpm, Settings* pSettings) {
 Mixer::~Mixer() { }
 
 void Mixer::setup(void) { 
-    
+    // init throttle limits
+    float pct = getSettings()->getThrottleLimit()/100.0;
+    T_MIN = ESC_MIN_THROTTLE;
+    T_MAX = ((ESC_MAX_THROTTLE-ESC_MIN_THROTTLE)*pct)+ESC_MIN_THROTTLE;
+    T_MID = T_MAX/2;
+    if (getSettings()->hasReverse()) {
+        T_MID = ESC_MID_THROTTLE;
+        uint16_t a = ((ESC_MAX_THROTTLE-ESC_MID_THROTTLE)*pct);
+        T_MAX = ESC_MID_THROTTLE + a;
+        T_MIN = ESC_MID_THROTTLE - a;
+    }
 }
 
 void Mixer::loop(void) {
@@ -100,7 +110,7 @@ void Mixer::loop(void) {
     // calculate esc throttle values from the tx, ty values
     calculateThrottle(getTx(), getTy());
 
-    // Limit throttle mins/max
+    // Limit throttle mins/max and adds expo curv
     addExpo((getSettings()->getExpo()/10.0));
 
 }
@@ -118,37 +128,35 @@ void Mixer::addExpo(float exp) {
         int16_t l = getLeft() - ESC_MID_THROTTLE;
         int16_t r = getRight() - ESC_MID_THROTTLE;
         int16_t rm = ESC_MAX_THROTTLE - ESC_MID_THROTTLE;        // relative max (500)
+        int16_t lm = T_MAX - T_MID;                     // throttle max
         
-        // need to calculate forward expo then reverse expo
-        //Serial.println("*  " + String(tLeft) + " " + String(tRight)  + "  *");
-        //Serial.println("*  " + String(exp) + "  " + String(l) + " " + String(r)  + " " + String(rm) + "  *");
-        
-        if (getLeft() >= ESC_MID_THROTTLE) {  // forward
-            l = (uint16_t)fscale(0, rm, 0, rm, l, exp);
+        if (getLeft() >= ESC_MID_THROTTLE) {            // forward
+            l = (uint16_t)fscale(0, rm, 0, lm, l, exp);
             tLeft = ESC_MID_THROTTLE+l;
-        } else if (getLeft() < ESC_MID_THROTTLE) {   // reverse
+        } else if (getLeft() < ESC_MID_THROTTLE) {      // reverse
             l = abs(l);
-            l = (uint16_t)fscale(0, rm, 0, rm, l, exp);
+            l = (uint16_t)fscale(0, rm, 0, lm, l, exp);
             tLeft = ESC_MID_THROTTLE-l;
         }
-        if (getRight() >= ESC_MID_THROTTLE) {  // forward
-            r = (uint16_t)fscale(0, rm, 0, rm, r, exp);
+        if (getRight() >= ESC_MID_THROTTLE) {           // forward
+            r = (uint16_t)fscale(0, rm, 0, lm, r, exp);
             tRight = ESC_MID_THROTTLE+r;
-        } else if (getRight() < ESC_MID_THROTTLE) {   // reverse
+        } else if (getRight() < ESC_MID_THROTTLE) {     // reverse
             r = abs(r);
-            r = (uint16_t)fscale(0, rm, 0, rm, r, exp);
+            r = (uint16_t)fscale(0, rm, 0, lm, r, exp);
             tRight = ESC_MID_THROTTLE-r;
         }
     } else {
         int16_t l = getLeft() - ESC_MIN_THROTTLE;
         int16_t r = getRight() - ESC_MIN_THROTTLE;
         uint16_t rm = ESC_MAX_THROTTLE - ESC_MIN_THROTTLE;        // relative max (1000)
+        int16_t lm = T_MAX - T_MIN;     // throttle max
         if (getLeft() > ESC_MIN_THROTTLE) {  // forward
-            l = (uint16_t)fscale(0, rm, 0, rm, l, exp);
+            l = (uint16_t)fscale(0, rm, 0, lm, l, exp);
             tLeft = ESC_MID_THROTTLE+l;
         }
         if (getRight() > ESC_MIN_THROTTLE) {  // forward
-            r = (uint16_t)fscale(0, rm, 0, rm, r, exp);
+            r = (uint16_t)fscale(0, rm, 0, lm, r, exp);
             tRight = ESC_MID_THROTTLE+r;
         }
     }

@@ -80,10 +80,12 @@ uint16_t Pan::getPrevTilt(void) {
 }
 
 void Pan::setPan(int i) {
+    _prevPan = _pan;
     i = constrain(i, ESC_MIN_THROTTLE, ESC_MAX_THROTTLE);
     _pan = i;
 }
 void Pan::setTilt(int i) {
+    _prevTilt = _tilt;
     i = constrain(i, ESC_MIN_THROTTLE, ESC_MAX_THROTTLE);
     _tilt = i;
 }

@@ -9,8 +9,7 @@
  * 
  * ***********************************************************************
  * 
- * This is a pin config for the Blackpill board
- * 
+ * This is a pin config for the STM32 boards
  * 
  */
 #ifndef BC_STM32F411CE_H
@@ -43,7 +42,7 @@
 /*
  * Servo 0 Use this servo for the pan of a cam mount.
  */
-#define SVO0_PIN                PA1
+#define SVO0_PIN                PA2
 
 /*
  * Servo 1 Use this servo for the tilt of a cam mount.

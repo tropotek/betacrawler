@@ -30,6 +30,8 @@ void Betacrawler::setup(void) {
     getSettings()->init();
     getThrottle()->enableReverse(getSettings()->hasReverse());
     getThrottle()->setup();
+
+    getMixer()->setup();
     
     // We an object to manage the pan and tilt gimbol here
     // Update the pins file to your board to enable tilt (SVO1_PIN must be defined)
@@ -40,6 +42,7 @@ void Betacrawler::setup(void) {
 #endif
 
     if (getCam() != nullptr) {
+        getCam()->setup();
         getCam()->setFlutter(getSettings()->getFlutter()*2);
     }
 
@@ -49,7 +52,10 @@ void Betacrawler::loop(void) {
     // Do not edit these lines
     static uint16_t tick = 0;
     tick++;
-    bcLoop();
+    if (tick%200 == 0) { 
+        bcLoop();
+        return;
+    }
 
     /*
      * ---------------- Custom code below. ----------------
@@ -72,7 +78,7 @@ void Betacrawler::loop(void) {
 
 
     // Send values to the Pan/Tilt camera servos
-    if (getCam() != nullptr) {
+    if (tick%500 == 0 && getCam() != nullptr) {
         getCam()->setPan(getMixer()->getPan());
         getCam()->setTilt(getMixer()->getTilt());
         // Update Pan
@@ -84,7 +90,7 @@ void Betacrawler::loop(void) {
     // Two Position Switch (Values should be close to 1000 = POS1, 2000 = POS2)
     if (getMixer()->getAux(2) > 1500) { 
         if (getThrottle()->isArmed()) { // Use this to see if the motors are armed
-            // Aux2 POS2
+            // Aux2 POS2 do some function if armed and Aux 2 is moved
         }
     }
 

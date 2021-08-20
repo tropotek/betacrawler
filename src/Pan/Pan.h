@@ -9,8 +9,6 @@
  * 
  * ***********************************************************************
  *
- * Sources:
- *   https://www.norwegiancreations.com/2018/02/creating-a-command-line-interface-in-arduinos-serial-monitor/
  */
 
 #ifndef BC_PAN_H

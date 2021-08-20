@@ -9,9 +9,8 @@
  * 
  * ***********************************************************************
  * 
- * This is a pin config for the Arduino board
+ * This is a pin config for the Arduino boards
  * 
- * TODO: Not completed or tested yet
  */
 #ifndef BC_AVR_H
 #define BC_AVR_H
@@ -31,7 +30,7 @@
 /*
  * PPM Receiver pin
  */
-#define PPM_RX_PIN             3
+#define PPM_RX_PIN              3
 
 /*
  * ESC pins

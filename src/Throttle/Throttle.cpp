@@ -25,20 +25,11 @@ void Throttle::setup(void) {
     _leftEsc  = new ESC(_esc0Pin, ESC_MIN_THROTTLE, ESC_MAX_THROTTLE, ESC_ARM);
     _rightEsc = new ESC(_esc1Pin, ESC_MIN_THROTTLE, ESC_MAX_THROTTLE, ESC_ARM);
     
-    // getLeftEsc()->setStopPulse(0);
-    // getRightEsc()->setStopPulse(0);
-    // if (hasReverse()) {
-    //     getLeftEsc()->setStopPulse(ESC_MID_THROTTLE);
-    //     getRightEsc()->setStopPulse(ESC_MID_THROTTLE);
-    // } else {
-    //     getLeftEsc()->setStopPulse(ESC_MIN_THROTTLE);
-    //     getRightEsc()->setStopPulse(ESC_MIN_THROTTLE);
-    // }
     getLeftEsc()->arm();
     getRightEsc()->arm();
-    delay(2000);
+    delay(1000);
     speed(ESC_MAX_THROTTLE);
-    delay(2000);
+    delay(1000);
     stop();
     delay(100);
 

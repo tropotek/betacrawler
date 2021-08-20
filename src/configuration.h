@@ -73,7 +73,13 @@
  * Add throttle expo
  * (Valid values 1-100)
  */
-#define DEFAULT_EXPO                15
+#define DEFAULT_EXPO                -30
+
+/*
+ * Add throttle limit by percent
+ * (Valid values 1-100)
+ */
+#define DEFAULT_THROTT_LIMIT        40
 
 /*
  * The default ESC reverse mode

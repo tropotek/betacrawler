@@ -70,6 +70,9 @@ class Mixer {
     uint16_t aux3;          // Aux 3
     uint16_t aux4;          // Aux 4
 
+    uint16_t T_MIN;          // 
+    uint16_t T_MID;          // 
+    uint16_t T_MAX;          // 
 
     void setTx(uint16_t i);
     void setTy(uint16_t i);

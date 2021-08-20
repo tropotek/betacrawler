@@ -28,6 +28,7 @@ void Settings::resetCfg() {
     setFlutter(DEFAULT_FLUTTER);
     setDeadzone(DEFAULT_DEADZONE);
     setExpo(DEFAULT_EXPO);
+    setThrottleLimit(DEFAULT_THROTT_LIMIT);
     char map[] = DEFAULT_TX_MAP;
     setTxMap(map);
     setTxMode(DEFAULT_TX_MODE);
@@ -76,6 +77,11 @@ void Settings::setExpo(int8_t i) {
     data.expo = (int8_t)i;
 }
 
+void Settings::setThrottleLimit(uint8_t i) {
+    i = constrain(i, 1, 100);
+    data.tLimit = (uint8_t)i;
+}
+
 void Settings::setTxMode(uint8_t i) {
     i = constrain(i, 1, 4);
     data.txMode = (uint8_t)i;
@@ -104,6 +110,10 @@ int8_t Settings::getExpo(void) {
     return data.expo;
 }
 
+uint8_t Settings::getThrottleLimit(void) {
+    return data.tLimit;
+}
+
 uint8_t Settings::getTxMode(void) {
     return data.txMode;
 }
@@ -123,6 +133,7 @@ String Settings::toString(void) {
     str += " flutter        " + String(getFlutter()) + "\n";
     str += " deadzone       " + String(getDeadzone()) + "\n";
     str += " expo           " + String(getExpo()) + "\n";
+    str += " tLimit         " + String(getThrottleLimit()) + "\n";
     str += " txmode         " + String(getTxMode()) + "\n";
     String rev = hasReverse() ? "Enabled" : "Disabled";
     str += " reverse        " + rev + "\n";
