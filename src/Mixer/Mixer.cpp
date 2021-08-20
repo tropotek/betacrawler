@@ -25,6 +25,7 @@ void Mixer::setup(void) {
 
 void Mixer::loop(void) {
 
+    // TODO: This needs to be moved to the Betacrawer.cpp loop
     // TODO: Failsafe - Find a way to detect signal loss in a PPM signal
     //       Need to do further testing on other receivers see if we can get this 
     //       code to work as expected
@@ -32,8 +33,8 @@ void Mixer::loop(void) {
     // if (getPpm()->timeSinceLastPulse() > SIGNAL_LOSS_TIME) {
     //     // shutdown (no paulses)
     //     //if(isArmed())
+    //     //setArm(false);
     //         Serial.println("Signal Loss. (Failsafe)");
-    //     //arm(false);
     //     return;
     // }
 
