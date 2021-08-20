@@ -23,21 +23,21 @@
 #define TK_CONFIGURATION_H
 
 /*
- * Set to 1 if we want to enable Debug environment
+ * Set to true if we want to enable Debug environment
  */
-#define DEBUG   1
+#define DEBUG                       true
 
 /*
  * Serial baud rate
  */
-#define SERIAL_BAUD             115200
+#define SERIAL_BAUD                 115200
 
 /*
  * define the max number of receiver channels 0=thr, 1=aile, 2=elev, 3=rudd, 4=aux1(arm), 5=aux2
  * (Valid values:4-16)
  * @todo: put this into the settings object
  */
-#define MAX_RX_CHANNELS         7   // Available Channels
+#define MAX_RX_CHANNELS             7   // Available Channels
 
 /*
  * The default transmitter channel map.
@@ -50,18 +50,30 @@
  *   Channel 4 -> Rudder
  * @see https://oscarliang.com/channel-map/
  */
-#define DEFAULT_TX_MAP           "TAER1234"
+#define DEFAULT_TX_MAP              "TAER1234"
 
 /*
  * The Default transmitter mode setup (Valid values 1-4)
  */
-#define DEFAULT_TX_MODE           2
+#define DEFAULT_TX_MODE             2
 
 /*
  * Smooth out the stick control data
  * (Valid values 0-100)
  */
-#define DEFAULT_FLUTTER          10
+#define DEFAULT_FLUTTER             10
+
+/*
+ * Deadzone for center stick control
+ * (Valid values 0-100)
+ */
+#define DEFAULT_DEADZONE            50
+
+/*
+ * Add throttle expo
+ * (Valid values 1-100)
+ */
+#define DEFAULT_EXPO                15
 
 /*
  * The default ESC reverse mode
@@ -72,9 +84,15 @@
  * Dissabled (false): The Throttle stick will be used (non-centering)
  * 
  */
-#define DEFAULT_REVERSE           false
+#define DEFAULT_REVERSE             true
 
 
+/*
+ * Enable/Disable the firmware
+ * 
+ * NOTE: This will only work for STM32, the CLI does not work for arduino`s (AVR)
+ */
+#define BC_CLI                      true
 
 
 // DO NOT MOVE This....

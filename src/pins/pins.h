@@ -13,6 +13,8 @@
 
 #ifndef BC_PINS_H
 #define BC_PINS_H
+
+
 // Architecture specific include
 #if defined(BC_AVR)
 #include "avr.h"

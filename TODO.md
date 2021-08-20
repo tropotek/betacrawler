@@ -1,10 +1,10 @@
 TODO
 ====
 
+  - Get servo pan/tilt operational
+  - 
+  - 
   - Update Readme and documentation to include a parts list and the new STM32 wiring diagrams
-  - 
-  - 
-  - 
 
 ---
 

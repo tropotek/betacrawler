@@ -24,10 +24,24 @@ Throttle::~Throttle() { }
 void Throttle::setup(void) {
     _leftEsc  = new ESC(_esc0Pin, ESC_MIN_THROTTLE, ESC_MAX_THROTTLE, ESC_ARM);
     _rightEsc = new ESC(_esc1Pin, ESC_MIN_THROTTLE, ESC_MAX_THROTTLE, ESC_ARM);
-    _leftEsc->arm();
-    _rightEsc->arm();
-    delay(5000);                            // Wait for a while
     
+    // getLeftEsc()->setStopPulse(0);
+    // getRightEsc()->setStopPulse(0);
+    // if (hasReverse()) {
+    //     getLeftEsc()->setStopPulse(ESC_MID_THROTTLE);
+    //     getRightEsc()->setStopPulse(ESC_MID_THROTTLE);
+    // } else {
+    //     getLeftEsc()->setStopPulse(ESC_MIN_THROTTLE);
+    //     getRightEsc()->setStopPulse(ESC_MIN_THROTTLE);
+    // }
+    getLeftEsc()->arm();
+    getRightEsc()->arm();
+    delay(2000);
+    speed(ESC_MAX_THROTTLE);
+    delay(2000);
+    stop();
+    delay(100);
+
 }
 
 void Throttle::loop(void) { 
@@ -36,8 +50,7 @@ void Throttle::loop(void) {
         _leftEsc->speed(getLeftSpeed());
         _rightEsc->speed(getRightSpeed());
     } else {
-        // _leftEsc->stop();
-        // _rightEsc->stop();
+        
     }
 
 }
@@ -48,14 +61,19 @@ void Throttle::arm(bool b) {
         digitalWrite(LED_PIN, LOW);             // LED ON Once Armed
     } else {
         if (!isArmed()) return;
-        _leftEsc->stop();
-        _rightEsc->stop();
+        stop();
         digitalWrite(LED_PIN, HIGH);            // LED OFF Once Armed
-        //delay(1000);                            // Wait for a while
     }
     _armed = b;
 }
 
+void Throttle::stop(void) {
+    if (hasReverse()) {
+        speed(ESC_MID_THROTTLE);
+    } else {
+        speed(ESC_MIN_THROTTLE);
+    }
+}
 
 bool Throttle::isArmed(void) {
     return _armed;
@@ -83,5 +101,23 @@ void Throttle::setRightSpeed(int i) {
 void Throttle::speed(int i) {
     setLeftSpeed(i);
     setRightSpeed(i);
+    _leftEsc->speed(getLeftSpeed());
+    _rightEsc->speed(getRightSpeed());
+}
+void Throttle::enableReverse(bool b)
+{
+    reverse = b;
+}
+bool Throttle::hasReverse(void)
+{
+    return reverse;
 }
 
+String Throttle::toString(void) {
+    String str = "";
+    str += String(getLeftSpeed()) + " ";
+    str += String(getRightSpeed()) + " ";
+    String rev = hasReverse() ? "Enabled" : "Disabled";
+    str += rev;
+    return str;
+}

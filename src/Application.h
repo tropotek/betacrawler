@@ -17,7 +17,7 @@
  * Set to 1 if we want to enable Debug messages
  */
 #ifndef DEBUG
-#define DEBUG   0
+#define DEBUG                   false
 #endif
 
 /* 
@@ -53,16 +53,16 @@
  * NOTE: Assumes ESC are set to bi-directional.
  */
 #ifndef ESC_MIN_THROTTLE
-#define ESC_MIN_THROTTLE         1000       // Full reverse
+#define ESC_MIN_THROTTLE        1000       // Full reverse
 #endif
 #ifndef ESC_MID_THROTTLE
-#define ESC_MID_THROTTLE         1500       // Stop
+#define ESC_MID_THROTTLE        1500       // Stop
 #endif
 #ifndef ESC_MAX_THROTTLE
-#define ESC_MAX_THROTTLE         2000       // Full Forward
+#define ESC_MAX_THROTTLE        2000       // Full Forward
 #endif
 #ifndef ESC_ARM
-#define ESC_ARM                  500
+#define ESC_ARM                 0
 #endif
 #ifndef BC_MIN_ANGLE
 #define BC_MIN_ANGLE            0
@@ -71,5 +71,8 @@
 #define BC_MAX_ANGLE            180
 #endif
 
+#ifndef BC_CLI
+#define BC_CLI                  false
+#endif
 
 #endif   /*  CONFIGURATION_H */

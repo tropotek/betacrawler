@@ -36,6 +36,7 @@ class Throttle {
     void setup(void);
     void loop(void);
 
+    void enableReverse(bool b);
     void setLeftSpeed(int i);
     void setRightSpeed(int i);
     int getLeftSpeed(void);
@@ -44,9 +45,13 @@ class Throttle {
     ESC* getLeftEsc(void);
     ESC* getRightEsc(void);
 
+    bool hasReverse(void);
     void arm(bool b);
     bool isArmed(void);
     void speed(int i);
+    void stop(void);
+    
+    String toString(void);
     
   private:
     int _esc0Pin = 0;
@@ -55,6 +60,7 @@ class Throttle {
     bool _armed = false;
     int _leftSpeed = 0;
     int _rightSpeed = 0;
+    bool reverse = false;
 
     ESC* _leftEsc;
     ESC* _rightEsc;

@@ -24,22 +24,24 @@ Betacrawler::Betacrawler(Mixer* pMixer, Throttle* pThrottle) {
 }
 Betacrawler::~Betacrawler() { }
 
-
 void Betacrawler::setup(void) {
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, HIGH);
     getSettings()->init();
+    getThrottle()->enableReverse(getSettings()->hasReverse());
     getThrottle()->setup();
-
+    
     // We an object to manage the pan and tilt gimbol here
     // Update the pins file to your board to enable tilt (SVO1_PIN must be defined)
-#ifdef SVO1_PIN // Pan & Tilt
+#if defined(SVO1_PIN) // Pan & Tilt
     cam = new Pan(SVO0_PIN, SVO1_PIN);
-#else   // Pan only
+#elif defined(SVO0_PIN)   // Pan only
     cam = new Pan(SVO0_PIN);
 #endif
-    getCam()->setFlutter(getSettings()->getFlutter()*2);
 
+    if (getCam() != nullptr) {
+        getCam()->setFlutter(getSettings()->getFlutter()*2);
+    }
 
 }
 
@@ -70,13 +72,12 @@ void Betacrawler::loop(void) {
 
 
     // Send values to the Pan/Tilt camera servos
-    getCam()->setPan(getMixer()->getPan());
-    getCam()->setTilt(getMixer()->getTilt());
-    // Update Pan
-    getCam()->loop();
-
-
-
+    if (getCam() != nullptr) {
+        getCam()->setPan(getMixer()->getPan());
+        getCam()->setTilt(getMixer()->getTilt());
+        // Update Pan
+        getCam()->loop();
+    }
 
     // --------------------- EXAMPLE AUX CODE ---------------------
     // TODO: Write code here to perform functions to use Aux2, Aux3, Aux4
@@ -100,16 +101,12 @@ void Betacrawler::loop(void) {
 
 
     // Good place to output debug data to serial
-    if (tick%1000 == 0) { 
+    if (tick%500 == 0) { 
         // getSerial()->print("                                                                     \r");
         // getSerial()->print(getMixer()->toString());
         // getSerial()->print("\r");
-
    }
 }
-
-
-
 
 
 /**

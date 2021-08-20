@@ -18,12 +18,16 @@ Settings::~Settings() { }
 
 void Settings::init() {
     resetCfg();
-    readCfg();
+    if (!readCfg()) {
+        saveCfg();
+    }
 }
 void Settings::resetCfg() {
     data.signature[0] = TK_EEPROM_SIG[0];
     data.signature[1] = TK_EEPROM_SIG[1];
     setFlutter(DEFAULT_FLUTTER);
+    setDeadzone(DEFAULT_DEADZONE);
+    setExpo(DEFAULT_EXPO);
     char map[] = DEFAULT_TX_MAP;
     setTxMap(map);
     setTxMode(DEFAULT_TX_MODE);
@@ -35,8 +39,7 @@ bool Settings::readCfg(void) {
     EEPROM.get(TK_EEPROM_ADDR, data);
     if (data.signature[0] != TK_EEPROM_SIG[0] && data.signature[1] != TK_EEPROM_SIG[1]) {
         // TODO: We need to ouotput the error somehow as this could be called before the serial is initalized
-        Serial.println("Error 1001: Reset and save your settings.");
-        //saveCfg();
+        //Serial.println("Error 1001: Reset and save your settings.");
         return false;
     }
 #endif
@@ -58,10 +61,19 @@ void Settings::eraseEeprom(void) {
 #endif
 }
 
-
 void Settings::setFlutter(uint8_t i) {
     i = constrain(i, 0, 100);
     data.flutter = (uint8_t)i;
+}
+
+void Settings::setDeadzone(uint8_t i) {
+    i = constrain(i, 0, 100);
+    data.deadzone = (uint8_t)i;
+}
+
+void Settings::setExpo(int8_t i) {
+    i = constrain(i, -100, 100);
+    data.expo = (int8_t)i;
 }
 
 void Settings::setTxMode(uint8_t i) {
@@ -80,9 +92,16 @@ void Settings::setTxMap(char str[]) {
     }
 }
 
-
 uint8_t Settings::getFlutter(void) {
     return data.flutter;
+}
+
+uint8_t Settings::getDeadzone(void) {
+    return data.deadzone;
+}
+
+int8_t Settings::getExpo(void) {
+    return data.expo;
 }
 
 uint8_t Settings::getTxMode(void) {
@@ -97,12 +116,13 @@ char* Settings::getTxMap(void) {
     return data.txMap;
 }
 
-
 String Settings::toString(void) {
     String str;
     str = "Settings:\n";
     str += " version        " + String(VERSION) + "\n";
     str += " flutter        " + String(getFlutter()) + "\n";
+    str += " deadzone       " + String(getDeadzone()) + "\n";
+    str += " expo           " + String(getExpo()) + "\n";
     str += " txmode         " + String(getTxMode()) + "\n";
     String rev = hasReverse() ? "Enabled" : "Disabled";
     str += " reverse        " + rev + "\n";

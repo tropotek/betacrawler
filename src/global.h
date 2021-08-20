@@ -50,7 +50,7 @@ Throttle throttle(ESC0_PIN, ESC1_PIN);
 Mixer mixer(&ppm, &settings);
 
 
-#ifdef BC_CLI
+#if BC_CLI
     Betacrawler BTC(&mixer, &throttle, &cli);
 #else
     Betacrawler BTC(&mixer, &throttle);

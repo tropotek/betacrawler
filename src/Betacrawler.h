@@ -44,7 +44,7 @@ class Betacrawler {
     Mixer* mixer;
     Throttle* throttle;
     Cmd* cli = nullptr;
-    Pan* cam;
+    Pan* cam = nullptr;
 };
 
 #endif    /** BC_BETACRAWLER_H **/

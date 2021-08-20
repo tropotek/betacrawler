@@ -119,6 +119,12 @@ void Cmd::cmdGet(String arg, String val) {
     if (arg.equals("flutter")) {
         getSerial()->println("flutter: " + String(getSettings()->getFlutter()));
     } 
+    else if (arg.equals("deadzone")) {
+        getSerial()->println("deadzone: " + String(getSettings()->getDeadzone()));
+    }
+    else if (arg.equals("expo")) {
+        getSerial()->println("expo: " + String(getSettings()->getExpo()));
+    }
     else if (arg.equals("txmap")) {
         getSerial()->println("txmap: " + String(getSettings()->getTxMap()));
     }
@@ -144,6 +150,12 @@ void Cmd::cmdSet(String arg, String val) {
     val.toLowerCase();
     if (arg.equals("flutter")) {
         getSettings()->setFlutter(val.toInt());
+    }
+    else if (arg.equals("deadzone")) {
+        getSettings()->setDeadzone(val.toInt());
+    }
+    else if (arg.equals("expo")) {
+        getSettings()->setExpo(val.toInt());
     }
     else if (arg.equals("txmode")) {
         getSettings()->setTxMode(val.toInt());
