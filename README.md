@@ -6,12 +6,12 @@ Facebook: [Betacrawler Community](https://www.facebook.com/groups/30743233049666
 Betacrawler is a RC tank or robot controler firmware for arduino and STM32 processors using a PPM controller 2 ESCs and a standard Radio Transmitter (OpenTx Recommended).  
 
 Use [Atom](https://atom.io/) or [VSCode](https://code.visualstudio.com/download) with the [Platform IO](https://platformio.org/) plugin to compile.  
-If your not sure how to use PlatformIO here is a tutorial to get you started (https://youtu.be/EIkGTwLOD7o)
+If your not sure how to use PlatformIO here is a tutorial to [get you started](https://youtu.be/EIkGTwLOD7o)
 
 If you have a model that requires tracks or any other 2 wheeled model that you wish to control with a single 
 stick from a controler then this could be the base code for you.
 
-The aim is to create a platform that uses a standard radio transmitter generaly using (OpenTx)[https://www.open-tx.org/downloads]. I have use a FrSky x-lite with the all-in-one module I had laying around for testing. Be sure that your radio and receiver are able to bind before using.
+The aim is to create a platform that uses a standard radio transmitter generaly using [OpenTx](https://www.open-tx.org/downloads). I have use a FrSky x-lite with the all-in-one module I had laying around for testing. Be sure that your radio and receiver are able to bind before using.
 
 It controls 2 ESC's for throttle on one stick and the remaining stick can be configured to use a Pan/Tilt camera platform.
 Then Aux 1 channel is reserved for Arming and you can configure any remaining channels and add your own code.
@@ -165,7 +165,7 @@ But I assume if you have come here then you have the model part sorted out alrea
 
 ##### Wiring
 
-![Arduino And PPM](media/ArduinoPPM.jpg)
+![Arduino And PPM](docs/media/arduino/ArduinoPPM.jpg)
 
 
 #### Step 2 - ESC's
@@ -182,7 +182,7 @@ Note: If your ESC's have an onboard 5v BEC you can use that instad of using an e
 
 ##### Wiring
 
-![Arduino And PPM](media/ESC_Motor.jpg)
+![Arduino And PPM](docs/media/arduino/ESC_Motor.jpg)
 
 
 
@@ -200,7 +200,7 @@ If it needs 5v you must connect to a 5v BEC from the PDB or ESC (if available).
 
 ##### Wiring
 
-![Arduino And PPM](media/FPV_SERVO.jpg)
+![Arduino And PPM](docs/media/arduino/FPV_SERVO.jpg)
 
 
 ### All Parts
