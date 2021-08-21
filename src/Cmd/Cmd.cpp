@@ -114,7 +114,7 @@ void Cmd::parse(String cmdStr) {
 }
 
 void Cmd::cmdGet(String arg, String val) {
-    getSerial()->println("---- Not implemented ----");
+    
     
     if (arg.equals("flutter")) {
         getSerial()->println("flutter: " + String(getSettings()->getFlutter()));

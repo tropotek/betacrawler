@@ -1,126 +1,156 @@
 # Betacrawler
 
-## TODO: This is out of date and needs to be updated for Version 2.0 of Betacrawler
 
 Facebook: [Betacrawler Community](https://www.facebook.com/groups/307432330496662)
 
-Betacrawler is a RC tank controler firmware for arduino processors.  
-Use [Atom](https://atom.io/) and the [Platform IO](https://platformio.org/) IDE to compile.  
-If your not sure how to use PlatformIO here is a tutorial to get you started (https://youtu.be/EIkGTwLOD7o)
+Betacrawler is a RC tank or robot controler firmware for arduino and STM32 processors using a PPM controller 2 ESCs and a standard Radio Transmitter (OpenTx Recommended).  
 
-However if you still want to use the [Arduino IDE](https://www.arduino.cc/en/main/software) open the betacrawler/betacrawler.ino file and you 
-can compile the project from there.
+Use [Atom](https://atom.io/) or [VSCode](https://code.visualstudio.com/download) with the [Platform IO](https://platformio.org/) plugin to compile.  
+If your not sure how to use PlatformIO here is a tutorial to [get you started](https://youtu.be/EIkGTwLOD7o)
 
-Betacrawler has a number of basic settings that can be changed in the configuration.h file.
+If you have a model that requires tracks or any other 2 wheeled model that you wish to control with a single 
+stick from a controler then this could be the base code for you.
 
-There are 2 modes of operation available:
-  - __Single Stick:__ Use a single stick to control the left right
-            motors, leaving the other stick availalbe for cam pan/tilt.
-  - __Dual Stick:__ Use both sticks to control the left and right motors indepentantly.
+The aim is to create a platform that uses a standard radio transmitter generaly using [OpenTx](https://www.open-tx.org/downloads). I have use a FrSky x-lite with the all-in-one module I had laying around for testing. Be sure that your radio and receiver are able to bind before using.
 
-This project has been inspired by the [Betaflight](https://github.com/betaflight) FPV firmware.
+It controls 2 ESC's for throttle on one stick and the remaining stick can be configured to use a Pan/Tilt camera platform.
+Then Aux 1 channel is reserved for Arming and you can configure any remaining channels and add your own code.
+
+Betacrawler has a USB CLI (Command Line Interface) enabled for STM32 boards as I have not found a way to get Arduino boards
+to read the serial while at the same time read in the data from the PPM radio receiver that uses an intterupt channel.
+If anyone knows how to do this feel free to update the code and request that it be added to the main.
+
+---
+## Known Issues
+ - Be carful when using Serial.println() or outputting to the serial. You may notice random signals getting sent to the ESC and Servos. I am still trying to find out the cause of this, could be something to do with the clock timing when sending the signals to the Servo.
+ - I still cannot figure out how to use an interuppt for the PPM in conjuntion with the Serial CLI input for Arduino as there is a conflict there and the CLI commands get corrupted.
+
+---
 
 ## Configuration
 
-To configure the firmware for your setup open the configuration.h file and edit
-the required parameters as needed.
+Before you compile for your board we need to do some configuration. This part assumes you have decided on your hardware and found the corret pin locations on your selected board. 
 
-```cpp
-/*
- * Serial baud rate
- */
-#define SERIAL_BAUD             115200
+### platformio.ini
 
-/*
- * Your controller's minumim stick value
- */
-#define RX_MIN                  1140
+First you need to select the board variant you are going to use. 
+```ini
+[platformio]
+;default_envs  = pro16MHzatmega328
+default_envs  = blackpill_f411ce
+;default_envs  = blackpill_f401cc
+;default_envs  = genericSTM32F411CE
+;default_envs  = genericSTM32F401CE
 
-/*
- * Your controller's maxumim stick value
- */
-#define RX_MAX                  1860
-
-/*
- * A filter to reduce stick position noise
- * Increase this if you find erratic motor movements 
- *   when the stick is in a hold position.
- * 
- */
-#define FLUTTER                 10
-
-/*
- * Set the mode of operation.
- * MODE_SINGLE: Use the left stick for all motor throttle movement
- * MODE_DUAL: Use left and right as seperate throttles for each motor
- */
-#define STICK_MODE              MODE_SINGLE
-
-/*
- * If you are using a servo to move your camera enable this
- */
-#define CAM_PAN_ENABLED         true        // Enable cam servo 0
-#define CAM_TILT_ENABLED        true        // Enable cam servo 1
-
-/*
- * If you want the pan/tilt to be diabled on disarm
- */
-#define DISABLE_PAN_TILT_ON_DISARM
 ```
 
-Also be sure to check the pins section to ensure you have your hardware connected correctly. 
-You can change the default pins as requred.
+If you want to add your own or customise the buid you can edit the files found in the /ini folder. In theory any hardware that supports the Arduino framework can be used.
 
-```cpp
-// ------------- PIN Configuration -------------
 
-/*
- * PPM Receiver pin
- */
-#define PPM_RX_PIN              3
+### configuration.h
 
-/*
- * ESC pins
- */
-#define ESC0_PIN                8
-#define ESC1_PIN                9
+Contains all the default values that will be used, if you are using the CLI these can be updated later, if you are using arduino then you will need to update these before you upload to the board.
 
-/*
- * Servo 0 Use this servo for the pan of a cam mount.
- */
-#define SVO0_PIN                11
+### pins.h
 
-/*
- * Servo 1 Use this servo for the tilt of a cam mount.
- */
-#define SVO1_PIN                12
+In the /pins folder you have to select the board varian you are using and update the pin values to the locations you are using on your setup. If you have no SVO0_PIN or SVO1_PIN pins defined then the pan/tilt feature is disabled.
 
-/*
- * LED Pin, used when the system is armed.
- */
-#define LED_PIN                 13
+### Build Betacrawler
+
+Now you should be able to compile the code. However if you get a Servo conflict or error. For STM32 boards, you may have to delete the folder in `.pio/libdeps/<boardNmae>/Servo` to force it to use the internal STM32 lib. 
+
+---
+
+## CLI 
+
+### First run with CLI
+
+First up you will list the config using `list` and you will see garble in the setting values. From here you need to import fresh settings to the Eeprom. So just type `reset` may take a min or two then type `save` and if you list the settings now you will see the default config.
+
+### Available Commands:
+
+```
+> help
+Use the following commands:
+  help:  To view this help.
+  show:  To show the current settings.
+  get <param>: Display the value of a settings parameter.
+  set <param> <value>: Set the value of a settings parameter.
+  reset:  Factory Reset and save the settings.
+  save:  Save settings to memory.
+  reboot:  restart the system
 ```
 
+Type `help` or `?` at anytime to see the main menu. Most of the options are self explanitory. Its the get and set options that we will explain further.
 
+When you type `list` or `l` you will be shown the current setup.
+
+```
+> l
+Settings:
+ version        2.0.0
+ flutter        10
+ deadzone       50
+ expo           -30
+ tlimit         40
+ txmode         2
+ reverse        Enabled
+ txmap          TAER1234
+```
+
+From here you can `get` or `set` any of these values (except version of course). 
+
+### flutter
+This value smoths out the stick movement and tries to compensate for any jitter in the sticks. A higher value the more you have to move the stick before it registers and a new position.
+
+Valid Values: 0-100
+
+### deadzone
+The size of the deadzone at the stop point on the throttle stick. With reverse enabled this is around the center of the tick. With reverse disabled this deadzone affects the bottom position of the stick.
+
+Valid Values: 0-100
+
+### expo
+Negative values require more stick movement to get to full throttle. Positive values require lest stick movement to register throttle change.
+
+Valid values: -100 to 100
+
+### tlimit
+The percentage of the total throttle to allow. This allows you limit the trottle as needed
+
+Valid Values: 1-100
+
+### txmode
+Based on your radio transmitter you can setup the radio mode type to allow Betacrawler to know how to use your radio.
+If you are unsure what your radio mode is [try here](https://www.google.com/search?client=firefox-b-d&q=radio+transmitter+mode)
+
+### reverse
+If you have bi-direction enabled on your ESC's you will enable reverse. Then the throttle stick will be the self centering stick on the controller.
+
+If you do not have bi-directional ESC's then you must set this ti false. and the throttle stick will be the one that does not self center.
+
+You need to connect your ESC to Blheli or Configurator to change your ESC's.
+
+[See here](https://oscarliang.com/flash-blheli-s-esc-firmware-fc-pass-through/) for more info.
+
+### txmap
+Depending on your radio type you can map the channles here.
+You will need to chack your radio setup to configure this. This is generally a good default for OpenTX. 
+
+[See Here](https://oscarliang.com/channel-map/) for more info.
+
+---
 
 ## Hardware Setup
 
-This is the setup I have used to get this project up and running, your project may differ. 
-This should get you started if you are not sure how it all fits together.
+This setup assumes that you already have a radio transmitter and know how to bind it up to your selected PPM receiver.
 
-This setup assumes that you already have a radio transmitter and know how to bind it up 
-to your selected PPM receiver. This is the one used in testing [8CH Transmitter DSM2 Compatible](https://www.banggood.com/custlink/KGDYcLmCMg).  
-
-The transmitter has also been modified to remove the spring on both left and right throttle sticks. 
-This helps when using Dual Stick mode.
-
-For Single Stick Mode the channels are configured for Transmitters using the left stick (MODE 2).   
-You can change the channels in the configuration if you prefer to use the right stick (MODE 1).
+It is only a suggested way using Arduino. If you need more info on this then feel free to join the Facebook group and ask any questions you may have.
 
 
-#### Tank Model
+#### Your Model
 
-To start with you will need a Tank model. If you have a 3D Printer and a bit of time on your hands
+To start with you will need a Tank or robot model. If you have a 3D Printer and a bit of time on your hands
 a fantastic starting model is the [RC Tank - By Staind](https://www.thingiverse.com/thing:2414983).
 
 But I assume if you have come here then you have the model part sorted out already. ;-)
@@ -135,7 +165,7 @@ But I assume if you have come here then you have the model part sorted out alrea
 
 ##### Wiring
 
-![Arduino And PPM](media/ArduinoPPM.jpg)
+![Arduino And PPM](docs/media/arduino/ArduinoPPM.jpg)
 
 
 #### Step 2 - ESC's
@@ -152,7 +182,7 @@ Note: If your ESC's have an onboard 5v BEC you can use that instad of using an e
 
 ##### Wiring
 
-![Arduino And PPM](media/ESC_Motor.jpg)
+![Arduino And PPM](docs/media/arduino/ESC_Motor.jpg)
 
 
 
@@ -170,7 +200,7 @@ If it needs 5v you must connect to a 5v BEC from the PDB or ESC (if available).
 
 ##### Wiring
 
-![Arduino And PPM](media/FPV_SERVO.jpg)
+![Arduino And PPM](docs/media/arduino/FPV_SERVO.jpg)
 
 
 ### All Parts
@@ -180,6 +210,7 @@ All these parts are only suggestions, you will need get the parts that are right
 The 5v BEC is only needed if you are not using a PDB (Power Distribution Board) with an onboard 5v Bec.
 
   * [Arduino Nano V3](https://www.banggood.com/custlink/mKDyWl3pU3)
+  * [STM32 Blackpill](https://www.aliexpress.com/item/4001062944589.html)
   * [Arduino Nano Expansion Board](https://www.banggood.com/custlink/KKmRpavpqC) (optional: For bench testing)
   * [Tiny 2.4G DSM2 6CH PPM Receiver](https://www.banggood.com/custlink/GDmycOmcUI)
   * [Matek Mini PDB With 5V/12V BEC](https://www.banggood.com/custlink/m3vErjGJM1)
@@ -191,7 +222,7 @@ The 5v BEC is only needed if you are not using a PDB (Power Distribution Board) 
   * [Foxeer Razer 1.8mm Lens 1200TVL](https://www.banggood.com/custlink/vvDyrOmpu2)
   * [AKK FX337CH 25/200/400/600mW VTX](https://www.banggood.com/custlink/m3mypOGH3m)
   * [SMA 5,8G Antenna](https://www.banggood.com/custlink/vGKRcOGPGc)
-  * [8CH Transmitter DSM2 Compatible](https://www.banggood.com/custlink/KGDYcLmCMg)
+  * [Transmitter DSM2 Compatible](https://www.banggood.com/FrSky-Taranis-X-Lite-S-2_4GHz-24CH-ACCST-D16-ACCESS-Mode2-Transmitter-with-PARA-Wireless-Training-Function-and-Quick-charge-System-p-1440288.html) you may also need a DSM [module](https://www.banggood.com/IRangeX-IRX4-LITE-CC2500-NRF24L01+-A7105-CYRF6936-4-IN-1-Multiprotocol-TX-Module-for-Frsky-X-lite-p-1346927.html) 
 
 
 
@@ -203,16 +234,11 @@ My knowledge of C++ and arduino is limited and I would like to see where this pr
 
 If we get enough of a community we can grow the features of Betacrawler.
 
-If your not into programming, and you still want to contribute, pleae consider supporting me through one of these options:
-
-  * [PayPal](https://www.paypal.com/paypalme/tropotek)
-  * [Patreon](https://www.patreon.com/tropotek)
-
 Follow this project on [Facebook Group](https://www.facebook.com/groups/307432330496662) to ask any questions and any additions you would like to see.
 
 
 ## Resources Used
-  - The tank model tested with betacrawler [RX Tank - By Staind](https://www.thingiverse.com/thing:2414983)
+
   - [PPM Reciver](https://github.com/Nikkilae/PPM-reader)
   - [ESC/Servo](https://www.instructables.com/id/ESC-Programming-on-Arduino-Hobbyking-ESC/)
   - [ESC bi-directional](https://www.youtube.com/watch?v=jBr-ZLMt4W4)
