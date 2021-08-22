@@ -98,8 +98,9 @@
  * 
  * NOTE: This will only work for STM32, the CLI does not work for arduino`s (AVR)
  */
+#if !defined(BC_AVR)   // Not available for Arduino basic boards
 #define BC_CLI                      true
-
+#endif
 
 // DO NOT MOVE This....
 #include "Application.h"

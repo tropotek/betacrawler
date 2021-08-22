@@ -133,7 +133,7 @@ String Settings::toString(void) {
     str += " flutter        " + String(getFlutter()) + "\n";
     str += " deadzone       " + String(getDeadzone()) + "\n";
     str += " expo           " + String(getExpo()) + "\n";
-    str += " tLimit         " + String(getThrottleLimit()) + "\n";
+    str += " tlimit         " + String(getThrottleLimit()) + "\n";
     str += " txmode         " + String(getTxMode()) + "\n";
     String rev = hasReverse() ? "Enabled" : "Disabled";
     str += " reverse        " + rev + "\n";

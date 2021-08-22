@@ -34,7 +34,7 @@
 
 #include "Settings/Settings.h"
 #include "Cmd/Cmd.h"
-//#include <EEPROM.h>
+
 #include "PPMReader/PPMReader.h"
 #include "Throttle/Throttle.h"
 #include "Mixer/Mixer.h"

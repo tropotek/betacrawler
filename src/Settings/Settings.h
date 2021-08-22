@@ -23,7 +23,9 @@
 #define BC_SETTINGS_H
 
 #include "configuration.h"
+#if BC_CLI
 #include <EEPROM.h>
+#endif
 
 class Settings {
   public:
