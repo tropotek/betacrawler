@@ -3,20 +3,22 @@
 
 Facebook: [Betacrawler Community](https://www.facebook.com/groups/307432330496662)
 
-Betacrawler is a RC tank or robot controler firmware for arduino and STM32 processors using a PPM controller 2 ESCs and a standard Radio Transmitter (OpenTx Recommended).  
+Betacrawler is a RC tank or robot controler firmware for arduino and STM32 processors using a PPM receiver, 2 ESCs and a standard Radio Transmitter (OpenTx Recommended).  
 
 Use [Atom](https://atom.io/) or [VSCode](https://code.visualstudio.com/download) with the [Platform IO](https://platformio.org/) plugin to compile.  
 If your not sure how to use PlatformIO here is a tutorial to [get you started](https://youtu.be/EIkGTwLOD7o)
 
-If you have a model that requires tracks or any other 2 wheeled model that you wish to control with a single 
-stick from a controler then this could be the base code for you.
+If you have a model that requires tracks or any other 2 wheeled drived model and you wish to control it with a single 
+stick then this could be the base code for you.
 
-The aim is to create a platform that uses a standard radio transmitter generaly using [OpenTx](https://www.open-tx.org/downloads). I have use a FrSky x-lite with the all-in-one module I had laying around for testing. Be sure that your radio and receiver are able to bind before using.
+The aim is to create a platform that uses a standard radio transmitter generaly using [OpenTx](https://www.open-tx.org/downloads). Be sure that your radio and receiver are able to bind before using.
 
-It controls 2 ESC's for throttle on one stick and the remaining stick can be configured to use a Pan/Tilt camera platform.
-Then Aux 1 channel is reserved for Arming and you can configure any remaining channels and add your own code.
+Betacrawler controls 2 ESC's for throttle on one stick and the remaining stick can be configured to use a Pan/Tilt a camera platform.
+Aux 1 channel is reserved for Arming however you can configure any remaining Aux channels and add your own code.
 
-Betacrawler has a USB CLI (Command Line Interface) enabled for STM32 boards as I have not found a way to get Arduino boards
+Betacrawler has a USB CLI (Command Line Interface) enabled for STM32 boards. 
+
+Note: I have not found a way to get Arduino boards
 to read the serial while at the same time read in the data from the PPM radio receiver that uses an intterupt channel.
 If anyone knows how to do this feel free to update the code and request that it be added to the main.
 
@@ -24,12 +26,15 @@ If anyone knows how to do this feel free to update the code and request that it 
 ## Known Issues
  - Be carful when using Serial.println() or outputting to the serial. You may notice random signals getting sent to the ESC and Servos. I am still trying to find out the cause of this, could be something to do with the clock timing when sending the signals to the Servo.
  - I still cannot figure out how to use an interuppt for the PPM in conjuntion with the Serial CLI input for Arduino as there is a conflict there and the CLI commands get corrupted.
+ - PlatformIO seems to import the Servo lib for STM32 boards. You need to delete the downloaded one and use the one that is part of the chipset libs.
+ - For STM32 boards sometime you may have an issue with the bootloader in DFU mode. I use the (ImpulseRC Driver Fixer)[https://impulserc.com/pages/downloads] to fix this.
 
 ---
 
 ## Configuration
 
-Before you compile for your board we need to do some configuration. This part assumes you have decided on your hardware and found the corret pin locations on your selected board. 
+Before you compile, you need to do some configuration. 
+This part assumes you have decided on your hardware and found the corret pin locations on your selected board.
 
 ### platformio.ini
 
@@ -44,7 +49,7 @@ default_envs  = blackpill_f411ce
 
 ```
 
-If you want to add your own or customise the buid you can edit the files found in the /ini folder. In theory any hardware that supports the Arduino framework can be used.
+If you want to add your own or customise the buid you can edit the files found in the /ini folder. In theory any hardware that supports the Arduino framework could be used.
 
 
 ### configuration.h
