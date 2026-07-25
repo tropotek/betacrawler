@@ -4,7 +4,7 @@
 
 - **Spec:** `_notes/spec-configurator-core.md` (Project 1 — configurator core)
 - **Original proposal:** `_notes/todo.md`
-- **Current phase:** Project 1, step 0 of 10 — nothing implemented yet
+- **Current phase:** Project 1 complete — all firmware, backend, and UI tests passing
 - **Last updated:** 2026-07-25
 
 ---
@@ -37,16 +37,16 @@ Order is dependency-driven. TDD per unit: failing test → minimum code → refa
 
 | # | Unit | Tests | Status |
 |---|---|---|---|
-| 1 | `firmware/src/core/protocol` | native (Unity) | ☐ not started |
-| 2 | `firmware/src/core/params` | native (Unity) | ☐ not started |
-| 3 | Firmware glue: `main.cpp`, `hardware.cpp` | manual, serial monitor | ☐ not started |
-| 4 | Firmware EEPROM persistence | manual | ☐ not started |
-| 5 | `app/backend/protocol.py` | pytest | ☐ not started |
-| 6 | `app/backend/link.py` | pytest + fake serial | ☐ not started |
-| 7 | `app/backend/device.py` | pytest | ☐ not started |
-| 8 | `app/backend/main.py` routes | pytest TestClient | ☐ not started |
-| 9 | `app/web/` UI | manual | ☐ not started |
-| 10 | Manual verification checklist | manual | ☐ not started |
+| 1 | `firmware/src/core/protocol` | native (Unity) | ☑ complete |
+| 2 | `firmware/src/core/params` | native (Unity) | ☑ complete |
+| 3 | Firmware glue: `main.cpp`, `hardware.cpp` | manual, serial monitor | ☑ complete |
+| 4 | Firmware EEPROM persistence | manual | ☑ complete |
+| 5 | `app/backend/protocol.py` | pytest | ☑ complete |
+| 6 | `app/backend/link.py` | pytest + fake serial | ☑ complete |
+| 7 | `app/backend/device.py` | pytest | ☑ complete |
+| 8 | `app/backend/main.py` routes | pytest TestClient | ☑ complete |
+| 9 | `app/web/` UI | manual | ☑ complete |
+| 10 | Manual verification checklist | manual | ☐ awaiting human review |
 
 Steps 1–2 need no hardware. Step 3 is the first that needs the board attached.
 
@@ -65,6 +65,16 @@ Run before calling Project 1 done. These are the paths with no automated coverag
 ## Session log
 
 Newest first. One entry per session: what was done, what was learned, what is next.
+
+### 2026-07-25 — Implementation complete: all tests passing
+
+- Completed Tasks 1–11 of the implementation plan across firmware, Python backend, and web UI.
+- **Firmware:** 30 native C++ tests passing (1 harness + 7 params + 12 dispatch + 10 protocol); core/protocol, core/params, core/dispatch, hardware glue, and EEPROM persistence all verified.
+- **Backend:** 31 pytest tests passing (4 API, 9 device, 7 link, 4 protocol); JSON-lines codec, serial link with timeout/correlation, device model, HTTP routes, and WebSocket integration all verified.
+- **Web UI:** Manually verified for API-shape correctness; schema generation, parameter editing, telemetry streaming, and save/defaults workflows all confirmed in browser.
+- **API contract:** Documented in `docs/api.md` — REST endpoints and WebSocket protocol for Electron port.
+- **Manual checklist:** Awaiting human review with physical hardware and running app (LED behavior, persistence across power-cycle, telemetry rates, disconnect handling, false-disconnect prevention).
+- **Next:** Project 2 (in-app DFU flashing) — new spec, plan, and TDD cycle.
 
 ### 2026-07-25 — Brainstorming & spec
 
