@@ -63,6 +63,15 @@ void test_parse_set_string() {
   TEST_ASSERT_EQUAL_STRING("off", q.str);
 }
 
+void test_parse_set_string_too_long_rejected() {
+  // kMaxStrLen is 31, so a 40-character string should be rejected
+  Request q = parseRequest("{\"id\":5,\"op\":\"set\",\"key\":\"device.name\",\"val\":\"1234567890123456789012345678901234567890\"}");
+  TEST_ASSERT_FALSE(q.ok);
+  TEST_ASSERT_EQUAL_STRING("toolong", q.err);
+  TEST_ASSERT_FALSE(q.hasStr);  // nothing was written into q.str
+  TEST_ASSERT_EQUAL_UINT32(5, q.id);  // id preserved so we can still reply
+}
+
 void test_parse_tlm_carries_no_rate() {
   Request q = parseRequest("{\"id\":9,\"op\":\"tlm\",\"on\":true}");
   TEST_ASSERT_TRUE(q.ok);
@@ -94,6 +103,7 @@ int main() {
   RUN_TEST(test_parse_hello);
   RUN_TEST(test_parse_set_numeric);
   RUN_TEST(test_parse_set_string);
+  RUN_TEST(test_parse_set_string_too_long_rejected);
   RUN_TEST(test_parse_tlm_carries_no_rate);
   RUN_TEST(test_malformed_json_rejected);
   RUN_TEST(test_unknown_op_rejected);

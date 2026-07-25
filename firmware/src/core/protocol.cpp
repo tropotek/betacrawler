@@ -62,8 +62,13 @@ Request parseRequest(const char* line) {
   JsonVariant val = doc["val"];
   if (!val.isNull()) {
     if (val.is<const char*>()) {
+      const char* s = val.as<const char*>();
+      if (strlen(s) > kMaxStrLen) {
+        q.err = "toolong";
+        return q;   // q.ok stays false — same pattern as the badjson/badop early returns
+      }
       q.hasStr = true;
-      strncpy(q.str, val.as<const char*>(), kMaxStrLen);
+      strncpy(q.str, s, kMaxStrLen);
       q.str[kMaxStrLen] = '\0';
     } else {
       q.hasNum = true;
