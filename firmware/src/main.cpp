@@ -2,6 +2,7 @@
 #include "core/dispatch.h"
 #include "core/protocol.h"
 #include "hardware.h"
+#include "storage.h"
 
 using namespace core;
 
@@ -17,14 +18,8 @@ struct ArduinoSink : HardwareSink {
   }
 };
 
-// Replaced by FlashStore in Task 6.
-struct NullStore : Persistence {
-  bool save(const Params&) override { return false; }
-  bool load(Params*) override { return false; }
-};
-
 static ArduinoSink g_sink;
-static NullStore   g_store;
+static FlashStore  g_store;
 static Dispatcher  g_dispatch(g_params, g_sink, g_store);
 
 static char g_out[kMaxLineOut];
@@ -34,6 +29,7 @@ void setup() {
   Serial.begin(115200);
   hw::begin();
   g_led.begin();
+  g_store.load(&g_params);   // falls back to defaults on magic/version/CRC mismatch
   g_led.apply(g_params.num(PARAM_LED_MODE), g_params.num(PARAM_LED_BLINK_HZ));
 }
 
