@@ -36,9 +36,13 @@ class DeviceModel:
 
     # --- lifecycle ----------------------------------------------------------
     def connect(self, port: str):
-        self._link.connect(port)
         try:
-            hello = self._link.request("hello")
+            self._link.connect(port)
+        except Exception as exc:
+            raise DeviceError("connect_failed", str(exc)) from exc
+
+        try:
+            hello = self._send("hello")
             if hello.get("proto") != PROTO_VERSION:
                 raise ProtoMismatch(
                     f"device speaks proto {hello.get('proto')}, "
@@ -49,9 +53,9 @@ class DeviceModel:
                 "proto": hello.get("proto"),
                 "board": hello.get("board"),
             }
-            self._schema = self._link.request("schema")["params"]
+            self._schema = self._send("schema")["params"]
             self._by_key = {p["key"]: p for p in self._schema}
-            self._values = self._link.request("getall")["vals"]
+            self._values = self._send("getall")["vals"]
         except Exception:
             self._link.disconnect()
             self._schema, self._by_key, self._values, self._info = [], {}, {}, {}

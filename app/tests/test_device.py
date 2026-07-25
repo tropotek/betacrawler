@@ -116,3 +116,30 @@ def test_successful_set_updates_the_cache():
         assert dev.values()["led.blink_hz"] == 15
     finally:
         dev.disconnect()
+
+
+def test_handshake_timeout_raises_device_error():
+    """Timeout during hello/schema/getall handshake wraps in DeviceError."""
+    def silent_responder(req, emit):
+        # Never reply — forces timeout
+        pass
+
+    fake = FakeSerial(responder=silent_responder)
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    with pytest.raises(DeviceError) as exc:
+        dev.connect("/dev/fake")
+    assert exc.value.code == "timeout"
+    assert dev.status()["state"] == "disconnected"
+
+
+def test_connect_port_open_failure_raises_device_error():
+    """Port-open failure wraps in DeviceError."""
+    def bad_open(port):
+        raise IOError(f"Port {port} not found")
+
+    dev = DeviceModel(SerialLink(open_port=bad_open))
+    with pytest.raises(DeviceError) as exc:
+        dev.connect("/dev/nonexistent")
+    assert exc.value.code == "connect_failed"
+    assert "Port /dev/nonexistent not found" in str(exc.value)
+    assert dev.status()["state"] == "disconnected"
