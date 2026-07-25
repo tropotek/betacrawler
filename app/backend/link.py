@@ -26,11 +26,12 @@ class RequestTimeout(Exception):
 
 
 class _Pending:
-    __slots__ = ("event", "response")
+    __slots__ = ("event", "response", "raw")
 
     def __init__(self):
         self.event = threading.Event()
         self.response = None
+        self.raw = None
 
 
 def list_candidate_ports() -> list[dict]:
@@ -93,6 +94,18 @@ class SerialLink:
         self._fail_all_pending()
 
     def request(self, op: str, timeout: float = 1.0, **fields) -> dict:
+        return self._do_request(op, timeout, **fields)[2]
+
+    def request_raw(self, op: str, timeout: float = 1.0, **fields) -> tuple[str, str, dict]:
+        """Like request(), but also returns the exact wire lines sent/received.
+
+        Used by DeviceModel's terminal_* methods to power the debug Terminal
+        page's "show raw JSON" toggle; request() itself doesn't need this and
+        keeps its original signature/contract.
+        """
+        return self._do_request(op, timeout, **fields)
+
+    def _do_request(self, op: str, timeout: float = 1.0, **fields) -> tuple[str, str, dict]:
         port = self._port
         if port is None or self._state != "connected":
             raise NotConnected("no serial connection")
@@ -104,6 +117,7 @@ class SerialLink:
             self._pending[req_id] = slot
 
         line = protocol.encode(req_id, op, **fields)
+        sent = line.rstrip("\n")
         try:
             with self._write_lock:
                 port.write(line.encode())
@@ -119,7 +133,7 @@ class SerialLink:
         self._drop_pending(req_id)
         if slot.response is None:
             raise NotConnected("connection lost while waiting")
-        return slot.response
+        return sent, slot.raw or "", slot.response
 
     # --- internals ----------------------------------------------------------
     def _drop_pending(self, req_id: int):
@@ -168,6 +182,7 @@ class SerialLink:
                     slot = self._pending.get(msg["id"])
                 if slot is not None:
                     slot.response = msg
+                    slot.raw = raw.decode(errors="replace").strip()
                     slot.event.set()
                 else:
                     log.debug("response for unknown id %s", msg.get("id"))

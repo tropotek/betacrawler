@@ -29,6 +29,7 @@ const Api = {
   setParam:  (key, val)  => Api.send('PUT', `/api/params/${encodeURIComponent(key)}`, { val }),
   save:      ()          => Api.send('POST', '/api/params/save'),
   defaults:  ()          => Api.send('POST', '/api/params/defaults'),
+  sendTerminalCommand: (command) => Api.send('POST', '/api/terminal', { command }),
   socket:    ()          => new WebSocket(
     `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`),
 };
@@ -224,8 +225,8 @@ el('defaults').addEventListener('click', async () => {
 });
 
 // --- side-menu navigation ---------------------------------------------------
-const PAGES = ['home', 'config', 'telemetry', 'help'];
-const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry']);
+const PAGES = ['home', 'config', 'telemetry', 'terminal', 'help'];
+const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry', 'terminal']);
 
 function showPage(page) {
   for (const p of PAGES) el(`page-${p}`).classList.toggle('d-none', p !== page);
@@ -258,6 +259,64 @@ document.querySelectorAll('[data-page]').forEach((btn) => {
   });
 });
 
+// --- terminal ----------------------------------------------------------------
+const TERM_MAX_LINES = 500;   // caps growth when "show device traffic" streams tlm at up to 50Hz
+const termHistory = [];
+let termHistoryIdx = 0;
+
+function termAppend(text) {
+  const out = el('term-output');
+  const lines = (out.value ? out.value.split('\n') : []).concat(text.split('\n'));
+  out.value = lines.slice(-TERM_MAX_LINES).join('\n');
+  out.scrollTop = out.scrollHeight;
+}
+
+async function termRun(text) {
+  if (!text.trim()) return;
+  termHistory.push(text);
+  termHistoryIdx = termHistory.length;
+  termAppend(`> ${text}`);
+  el('term-send').disabled = true;
+  try {
+    const r = await Api.sendTerminalCommand(text);
+    termAppend(r.friendly);
+    if (el('term-raw').checked) {
+      if (r.raw_sent) termAppend(`  >> ${r.raw_sent}`);
+      if (r.raw_recv) termAppend(`  << ${r.raw_recv}`);
+    }
+  } catch (e) {
+    termAppend(`ERROR: ${e.message}`);
+  } finally {
+    el('term-send').disabled = false;
+  }
+}
+
+el('term-send').addEventListener('click', () => {
+  const input = el('term-input');
+  termRun(input.value);
+  input.value = '';
+});
+
+el('term-input').addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') {
+    el('term-send').click();
+  } else if (ev.key === 'ArrowUp') {
+    if (termHistoryIdx > 0) { termHistoryIdx--; el('term-input').value = termHistory[termHistoryIdx]; }
+    ev.preventDefault();
+  } else if (ev.key === 'ArrowDown') {
+    if (termHistoryIdx < termHistory.length - 1) {
+      termHistoryIdx++;
+      el('term-input').value = termHistory[termHistoryIdx];
+    } else {
+      termHistoryIdx = termHistory.length;
+      el('term-input').value = '';
+    }
+    ev.preventDefault();
+  }
+});
+
+el('term-clear').addEventListener('click', () => { el('term-output').value = ''; });
+
 function openSocket() {
   const ws = Api.socket();
   ws.onmessage = (ev) => {
@@ -266,6 +325,9 @@ function openSocket() {
     else if (msg.type === 'state') {
       const d = msg.data;
       setState(typeof d === 'string' ? d : d.state, typeof d === 'object' ? d : null);
+    }
+    if (el('term-traffic').checked) {
+      termAppend(`<< [${msg.type}] ${JSON.stringify(msg.data)}`);
     }
   };
   ws.onclose = () => setTimeout(openSocket, 1000);   // survive backend restarts

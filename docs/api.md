@@ -16,6 +16,16 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 | PUT | `/api/params/{key}` | `{"val": V}` | `{ok, key, val}` |
 | POST | `/api/params/save` | — | `{ok}` |
 | POST | `/api/params/defaults` | — | `{ok, vals}` |
+| POST | `/api/terminal` | `{"command": "get led.blink_hz"}` | `{ok, friendly, raw_sent, raw_recv}` |
+
+`/api/terminal` powers the debug Terminal page's shell-like command line
+(`get <key>`, `set <key> <value>`, `save`, `defaults`, `help`). It is a
+deliberate exception to the error-status table below: it **always returns
+200**. Command-level failures (unknown command/key, bad value, disconnected,
+...) are carried in `ok:false` + `friendly`, console-style, not as an HTTP
+error status. `raw_sent`/`raw_recv` are the literal wire JSON lines exchanged
+for that command — empty for `help`, or for any error caught before a line is
+ever written to the port (e.g. an unknown key or a malformed argument count).
 
 ### Error responses
 

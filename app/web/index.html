@@ -37,6 +37,9 @@
     <symbol id="graph-up" viewBox="0 0 16 16">
       <path fill-rule="evenodd" d="M0 0h1v15h15v1H0V0Zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07Z"/>
     </symbol>
+    <symbol id="terminal-fill" viewBox="0 0 16 16">
+      <path d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2.646 2.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 1 1-.708-.708L5.293 8 2.646 5.354a.5.5 0 0 1 0-.708M7 9.5a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1z"/>
+    </symbol>
     <symbol id="question-circle" viewBox="0 0 16 16">
       <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
       <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286m1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94"/>
@@ -96,6 +99,12 @@
                   Telemetry
                 </button>
               </li>
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="terminal">
+                  <svg class="bi"><use href="#terminal-fill"/></svg>
+                  Terminal
+                </button>
+              </li>
             </ul>
             <hr class="my-3">
             <ul class="nav flex-column mb-auto">
@@ -124,8 +133,9 @@
             <li>It should appear in the port dropdown above, marked "(STM32)" when detected automatically.</li>
             <li>Click <strong>Connect</strong>.</li>
           </ol>
-          <p>Once connected, use <strong>Configuration</strong> to view and change device settings, and
-             <strong>Telemetry</strong> to watch live sensor data. Both are unavailable until a device is
+          <p>Once connected, use <strong>Configuration</strong> to view and change device settings,
+             <strong>Telemetry</strong> to watch live sensor data, and <strong>Terminal</strong> for direct
+             command-line access to the device for debugging. All three are unavailable until a device is
              connected — you'll see them greyed out in the menu here.</p>
           <p>Need help? See the <strong>Help</strong> page for troubleshooting tips.</p>
         </div>
@@ -203,6 +213,27 @@
                 </div>
               </div>
             </template>
+          </div>
+        </div>
+
+        <div id="page-terminal" class="d-none">
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Terminal</h1>
+          </div>
+          <div class="form-check form-switch form-check-inline">
+            <input class="form-check-input" type="checkbox" id="term-raw">
+            <label class="form-check-label" for="term-raw">Show raw JSON</label>
+          </div>
+          <div class="form-check form-switch form-check-inline mb-2">
+            <input class="form-check-input" type="checkbox" id="term-traffic">
+            <label class="form-check-label" for="term-traffic">Show device traffic</label>
+          </div>
+          <textarea id="term-output" class="form-control font-monospace mb-2" rows="20" readonly></textarea>
+          <div class="d-flex gap-2">
+            <input id="term-input" type="text" class="form-control font-monospace"
+                   placeholder="get led.blink_hz — try 'help'" autocomplete="off">
+            <button id="term-send" class="btn btn-primary">Send</button>
+            <button id="term-clear" class="btn btn-outline-secondary">Clear</button>
           </div>
         </div>
 

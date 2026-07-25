@@ -100,6 +100,55 @@ class DeviceModel:
             raise DeviceError(resp.get("err", "err"), "defaults failed")
         self._values = self._send("getall")["vals"]
 
+    # --- terminal (debug page) -----------------------------------------------
+    # Mirrors set/save/load_defaults above but also returns the exact wire
+    # lines exchanged, for the Terminal page's "show raw JSON" toggle. Kept as
+    # separate methods rather than a `raw` flag on the existing ones so the
+    # well-tested public contract of set()/save()/load_defaults() never has
+    # to change shape based on a flag.
+    def terminal_get(self, key: str):
+        if key not in self._by_key:
+            raise DeviceError("nokey", f"unknown parameter {key!r}")
+        sent, recv, resp = self._send_raw("get", key=key)
+        if not resp.get("ok"):
+            raise DeviceError(resp.get("err", "err"), f"device rejected get {key}")
+        val = resp["val"]
+        self._values[key] = val
+        return sent, recv, val
+
+    def terminal_set(self, key: str, raw_value: str):
+        spec = self._by_key.get(key)
+        if spec is None:
+            raise DeviceError("nokey", f"unknown parameter {key!r}")
+        if spec["type"] == "u8":
+            try:
+                val = int(raw_value)
+            except ValueError:
+                raise DeviceError("badtype", "expected an integer") from None
+        else:
+            val = raw_value
+
+        self._validate(spec, val)
+
+        sent, recv, resp = self._send_raw("set", key=key, val=val)
+        if not resp.get("ok"):
+            raise DeviceError(resp.get("err", "err"), f"device rejected {key}")
+        self._values[key] = val
+        return sent, recv, val
+
+    def terminal_save(self):
+        sent, recv, resp = self._send_raw("save", timeout=5.0)
+        if not resp.get("ok"):
+            raise DeviceError(resp.get("err", "err"), "save failed")
+        return sent, recv
+
+    def terminal_defaults(self):
+        sent, recv, resp = self._send_raw("defaults")
+        if not resp.get("ok"):
+            raise DeviceError(resp.get("err", "err"), "defaults failed")
+        self._values = self._send("getall")["vals"]
+        return sent, recv
+
     # --- internals ----------------------------------------------------------
     @staticmethod
     def _validate(spec: dict, val):
@@ -122,8 +171,11 @@ class DeviceModel:
                     "toolong", f"max {spec['maxlen']} characters")
 
     def _send(self, op: str, timeout: float = 1.0, **fields) -> dict:
+        return self._send_raw(op, timeout, **fields)[2]
+
+    def _send_raw(self, op: str, timeout: float = 1.0, **fields):
         try:
-            return self._link.request(op, timeout=timeout, **fields)
+            return self._link.request_raw(op, timeout=timeout, **fields)
         except RequestTimeout as exc:
             raise DeviceError("timeout", str(exc)) from exc
         except NotConnected as exc:

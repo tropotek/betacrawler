@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, StrictInt, StrictStr
 
+from . import terminal
 from .device import DeviceModel, DeviceError, ProtoMismatch
 from .link import list_candidate_ports
 
@@ -27,6 +28,10 @@ class ValueBody(BaseModel):
     # rule and defeats device.py's own isinstance(val, bool) guard for
     # anything going through this HTTP route.
     val: StrictInt | StrictStr
+
+
+class TerminalBody(BaseModel):
+    command: str
 
 
 class Broadcaster:
@@ -166,6 +171,19 @@ def create_app(device: DeviceModel | None = None) -> FastAPI:
     def defaults():
         device.load_defaults()
         return {"ok": True, "vals": device.values()}
+
+    @app.post("/api/terminal")
+    def terminal_command(body: TerminalBody):
+        # Always 200: terminal.run() never raises, so command-level failures
+        # (unknown key, bad value, disconnected, ...) are carried in the
+        # `ok`/`friendly` fields shell-REPL style, not as an HTTP error status.
+        result = terminal.run(device, body.command)
+        return {
+            "ok": result.ok,
+            "friendly": result.friendly,
+            "raw_sent": result.raw_sent,
+            "raw_recv": result.raw_recv,
+        }
 
     @app.websocket("/ws")
     async def ws_endpoint(ws: WebSocket):

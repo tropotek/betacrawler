@@ -34,6 +34,12 @@ def device_responder(proto=1):
             emit({"id": rid, "ok": True, "params": SCHEMA})
         elif op == "getall":
             emit({"id": rid, "ok": True, "vals": dict(VALUES)})
+        elif op == "get":
+            key = req["key"]
+            if key in VALUES:
+                emit({"id": rid, "ok": True, "key": key, "val": VALUES[key]})
+            else:
+                emit({"id": rid, "ok": False, "err": "nokey"})
         elif op == "set":
             emit({"id": rid, "ok": True})
         elif op in ("save", "defaults"):
