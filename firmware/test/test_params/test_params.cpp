@@ -2,9 +2,6 @@
 #include <string.h>
 #include "core/params.h"
 
-// Link implementation for native test build
-#include "../../src/core/params.cpp"
-
 using namespace core;
 
 void test_defaults_match_spec() {
