@@ -11,6 +11,10 @@
     .bi { display: inline-block; width: 1rem; height: 1rem; vertical-align: -0.125em; fill: currentColor; }
     .sidebar .nav-link { font-size: .875rem; font-weight: 500; color: var(--bs-body-color); }
     .sidebar .nav-link.active { color: #2470dc; }
+    /* Bootstrap's own .nav-link.disabled color rule loses to the override
+       above -- same specificity, but this block comes later in the cascade
+       -- so the disabled state needs its own explicit rule here instead. */
+    .sidebar .nav-link.disabled { color: var(--bs-secondary-color); }
     .navbar-brand { padding-top: .75rem; padding-bottom: .75rem; }
     /* Bootstrap's width utilities (unlike margin/display) have no responsive
        breakpoint variants in the default build -- "w-md-auto" isn't a real
