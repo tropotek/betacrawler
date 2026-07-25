@@ -15,3 +15,6 @@ venv/
 # Editor / OS
 .vscode/
 .DS_Store
+
+# superpowers subagent-driven-development scratch (ledgers, briefs, reports)
+.superpowers/
