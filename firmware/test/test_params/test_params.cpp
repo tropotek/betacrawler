@@ -38,6 +38,13 @@ void test_enum_set_by_name() {
   TEST_ASSERT_EQUAL_STRING("off", p.str(PARAM_LED_MODE));
 }
 
+void test_led_mode_supports_fade() {
+  Params p;
+  TEST_ASSERT_EQUAL(SetResult::Ok, p.setStr(PARAM_LED_MODE, "fade"));
+  TEST_ASSERT_EQUAL_STRING("fade", p.str(PARAM_LED_MODE));
+  TEST_ASSERT_EQUAL_INT32(3, p.num(PARAM_LED_MODE));  // stored as index
+}
+
 void test_string_too_long_rejected_not_truncated() {
   Params p;
   char long_name[64];
@@ -77,6 +84,7 @@ int main() {
   RUN_TEST(test_find_param_by_key);
   RUN_TEST(test_numeric_range_rejected_not_clamped);
   RUN_TEST(test_enum_set_by_name);
+  RUN_TEST(test_led_mode_supports_fade);
   RUN_TEST(test_string_too_long_rejected_not_truncated);
   RUN_TEST(test_wrong_type_rejected);
   RUN_TEST(test_load_defaults_restores_after_changes);

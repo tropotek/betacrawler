@@ -3,12 +3,12 @@
 
 namespace core {
 
-static const char* const kLedModes[] = {"off", "on", "blink"};
+static const char* const kLedModes[] = {"off", "on", "blink", "fade"};
 
 static const ParamDef kDefs[PARAM_COUNT] = {
   {"led.mode",     ParamType::Enum, "LED Mode",       nullptr,
-   0, 0, kLedModes, 3, 0, 2, nullptr},
-  {"led.blink_hz", ParamType::U8,   "Blink Rate",     "Hz",
+   0, 0, kLedModes, 4, 0, 2, nullptr},
+  {"led.blink_hz", ParamType::U8,   "Rate",           "Hz",
    1, 20, nullptr, 0, 0, 2, nullptr},
   {"device.name",  ParamType::Str,  "Device Name",    nullptr,
    0, 0, nullptr, 0, kMaxStrLen, 0, "app-demo"},
