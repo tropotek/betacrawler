@@ -53,6 +53,7 @@ function setState(state, info) {
   el('connect').textContent = connected ? 'Disconnect' : 'Connect';
   el('fw').textContent = connected && info && info.fw ? `${info.fw} · proto ${info.proto}` : '';
   el('form').querySelectorAll('input,select').forEach((i) => { i.disabled = !connected; });
+  updateNavAvailability();
 }
 
 // Telemetry-staleness: distinct from a hard disconnect. The port is still
@@ -221,6 +222,7 @@ el('connect').addEventListener('click', async () => {
       setState(st.state, st);
       await loadDevice();
       setState(st.state, st);
+      showPage('config');
     }
   } catch (e) { showError(e.message); }
 });
@@ -241,12 +243,38 @@ el('defaults').addEventListener('click', async () => {
   } catch (e) { showError(e.message); }
 });
 
-document.querySelectorAll('[data-tab]').forEach((btn) => {
+// --- side-menu navigation ---------------------------------------------------
+const PAGES = ['home', 'config', 'telemetry', 'help'];
+const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry']);
+
+function showPage(page) {
+  for (const p of PAGES) el(`page-${p}`).classList.toggle('d-none', p !== page);
+  document.querySelectorAll('[data-page]').forEach((btn) => {
+    const isActive = btn.dataset.page === page;
+    btn.classList.toggle('active', isActive);
+    if (isActive) btn.setAttribute('aria-current', 'page');
+    else btn.removeAttribute('aria-current');
+  });
+  // On narrow viewports the sidebar is a Bootstrap offcanvas overlay; close
+  // it once a page is chosen. A no-op when it isn't currently shown (desktop
+  // widths, or the offcanvas was never opened).
+  const sidebar = document.getElementById('sidebarMenu');
+  window.bootstrap?.Offcanvas.getInstance(sidebar)?.hide();
+}
+
+function updateNavAvailability() {
+  document.querySelectorAll('[data-page]').forEach((btn) => {
+    const needsConnection = CONNECTION_REQUIRED_PAGES.has(btn.dataset.page);
+    const disabled = needsConnection && !connected;
+    btn.classList.toggle('disabled', disabled);
+    btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+  });
+}
+
+document.querySelectorAll('[data-page]').forEach((btn) => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-tab]').forEach((b) => b.classList.remove('active'));
-    btn.classList.add('active');
-    el('tab-config').classList.toggle('d-none', btn.dataset.tab !== 'config');
-    el('tab-telemetry').classList.toggle('d-none', btn.dataset.tab !== 'telemetry');
+    if (btn.classList.contains('disabled')) return;
+    showPage(btn.dataset.page);
   });
 });
 
@@ -305,6 +333,10 @@ function startWatchdog() {
 }
 
 (async function init() {
+  // Home is always the landing page, even on a page reload while a device
+  // is still connected server-side -- auto-navigating to Configuration is
+  // reserved for an explicit Connect click (see that handler), not a reload.
+  showPage('home');
   await refreshPorts();
   const st = await Api.status();
   setState(st.state, st);

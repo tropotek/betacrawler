@@ -4,41 +4,196 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>app-demo configurator</title>
+  <link rel="icon" href="favicon.ico">
   <link rel="stylesheet" href="vendor/bootstrap.min.css">
+  <style>
+    /* Adapted from Bootstrap's Dashboard example (getbootstrap.com/docs/5.3/examples/dashboard/) */
+    .bi { display: inline-block; width: 1rem; height: 1rem; vertical-align: -0.125em; fill: currentColor; }
+    .sidebar .nav-link { font-size: .875rem; font-weight: 500; color: var(--bs-body-color); }
+    .sidebar .nav-link.active { color: #2470dc; }
+    .navbar-brand { padding-top: .75rem; padding-bottom: .75rem; }
+    /* Bootstrap's width utilities (unlike margin/display) have no responsive
+       breakpoint variants in the default build -- "w-md-auto" isn't a real
+       class, so this override has to be a real media query instead. */
+    #connection-controls { width: 100%; }
+    @media (min-width: 768px) {
+      #connection-controls { width: auto; }
+    }
+  </style>
 </head>
 <body class="bg-body-tertiary">
-  <nav class="navbar bg-dark border-bottom" data-bs-theme="dark">
-    <div class="container-fluid gap-2">
-      <span class="navbar-brand mb-0 h1">app-demo</span>
-      <select id="port" class="form-select form-select-sm w-auto"></select>
-      <button id="connect" class="btn btn-sm btn-primary">Connect</button>
-      <span id="state" class="badge text-bg-secondary">disconnected</span>
-      <span id="fw" class="text-secondary small ms-auto"></span>
-    </div>
-  </nav>
+  <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
+    <symbol id="house-fill" viewBox="0 0 16 16">
+      <path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L8 2.207l6.646 6.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.707 1.5Z"/>
+      <path d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293l6-6Z"/>
+    </symbol>
+    <symbol id="gear-wide-connected" viewBox="0 0 16 16">
+      <path d="M7.068.727c.243-.97 1.62-.97 1.864 0l.071.286a.96.96 0 0 0 1.622.434l.205-.211c.695-.719 1.888-.03 1.613.931l-.08.284a.96.96 0 0 0 1.187 1.187l.283-.081c.96-.275 1.65.918.931 1.613l-.211.205a.96.96 0 0 0 .434 1.622l.286.071c.97.243.97 1.62 0 1.864l-.286.071a.96.96 0 0 0-.434 1.622l.211.205c.719.695.03 1.888-.931 1.613l-.284-.08a.96.96 0 0 0-1.187 1.187l.081.283c.275.96-.918 1.65-1.613.931l-.205-.211a.96.96 0 0 0-1.622.434l-.071.286c-.243.97-1.62.97-1.864 0l-.071-.286a.96.96 0 0 0-1.622-.434l-.205.211c-.695.719-1.888.03-1.613-.931l.08-.284a.96.96 0 0 0-1.186-1.187l-.284.081c-.96.275-1.65-.918-.931-1.613l.211-.205a.96.96 0 0 0-.434-1.622l-.286-.071c-.97-.243-.97-1.62 0-1.864l.286-.071a.96.96 0 0 0 .434-1.622l-.211-.205c-.719-.695-.03-1.888.931-1.613l.284.08a.96.96 0 0 0 1.187-1.186l-.081-.284c-.275-.96.918-1.65 1.613-.931l.205.211a.96.96 0 0 0 1.622-.434l.071-.286zM12.973 8.5H8.25l-2.834 3.779A4.998 4.998 0 0 0 12.973 8.5zm0-1a4.998 4.998 0 0 0-7.557-3.779l2.834 3.78h4.723zM5.048 3.967c-.03.021-.058.043-.087.065l.087-.065zm-.431.355A4.984 4.984 0 0 0 3.002 8c0 1.455.622 2.765 1.615 3.678L7.375 8 4.617 4.322zm.344 7.646.087.065-.087-.065z"/>
+    </symbol>
+    <symbol id="graph-up" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M0 0h1v15h15v1H0V0Zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07Z"/>
+    </symbol>
+    <symbol id="question-circle" viewBox="0 0 16 16">
+      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+      <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286m1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94"/>
+    </symbol>
+  </svg>
 
-  <div class="container py-3">
-    <div id="alert" class="alert alert-danger d-none" role="alert"></div>
+  <header class="navbar navbar-dark sticky-top bg-dark p-0 shadow">
+    <div class="container-fluid flex-wrap gap-2 py-2">
+      <span class="navbar-brand me-0 px-3 flex-shrink-0">app-demo</span>
 
-    <ul class="nav nav-tabs" role="tablist">
-      <li class="nav-item"><button class="nav-link active" data-tab="config">Configuration</button></li>
-      <li class="nav-item"><button class="nav-link" data-tab="telemetry">Telemetry</button></li>
-    </ul>
+      <button class="navbar-toggler ms-auto flex-shrink-0 d-md-none" type="button" data-bs-toggle="offcanvas"
+              data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-    <div id="tab-config" class="tab-pane py-3">
-      <form id="form" class="row g-3"></form>
-      <div class="mt-3 d-flex gap-2 align-items-center">
-        <button id="save" class="btn btn-success btn-sm">Save to flash</button>
-        <button id="defaults" class="btn btn-outline-secondary btn-sm">Load defaults</button>
-        <span id="dirty" class="text-warning small d-none">unsaved changes</span>
+      <!-- One flex item, so it wraps to its own row as a unit on narrow
+           screens instead of each control wrapping independently. Width is
+           set via the #connection-controls media query above, not a
+           w-md-auto utility class (doesn't exist -- see that comment). -->
+      <div id="connection-controls" class="d-flex align-items-center gap-2 flex-wrap ms-md-auto">
+        <select id="port" class="form-select form-select-sm w-auto"></select>
+        <button id="connect" class="btn btn-sm btn-primary">Connect</button>
+        <span id="state" class="badge text-bg-secondary">disconnected</span>
+        <span id="fw" class="text-secondary small d-none d-md-inline"></span>
       </div>
     </div>
+  </header>
 
-    <div id="tab-telemetry" class="tab-pane py-3 d-none">
-      <div id="tlm" class="row g-3"></div>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="sidebar border-end col-md-3 col-lg-2 p-0 bg-body-tertiary">
+        <div class="offcanvas-md offcanvas-start bg-body-tertiary" tabindex="-1" id="sidebarMenu"
+             aria-labelledby="sidebarMenuLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="sidebarMenuLabel">app-demo</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"
+                    data-bs-target="#sidebarMenu" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto">
+            <ul class="nav flex-column">
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2 active" data-page="home"
+                        aria-current="page">
+                  <svg class="bi"><use href="#house-fill"/></svg>
+                  Home
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="config">
+                  <svg class="bi"><use href="#gear-wide-connected"/></svg>
+                  Configuration
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="telemetry">
+                  <svg class="bi"><use href="#graph-up"/></svg>
+                  Telemetry
+                </button>
+              </li>
+            </ul>
+            <hr class="my-3">
+            <ul class="nav flex-column mb-auto">
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="help">
+                  <svg class="bi"><use href="#question-circle"/></svg>
+                  Help
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div id="alert" class="alert alert-danger d-none mt-3" role="alert"></div>
+
+        <div id="page-home">
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Home</h1>
+          </div>
+          <p>This app connects to an STM32 Black Pill running the app-demo firmware over USB.</p>
+          <p><strong>To connect:</strong></p>
+          <ol>
+            <li>Plug the board into a USB port.</li>
+            <li>It should appear in the port dropdown above, marked "(STM32)" when detected automatically.</li>
+            <li>Click <strong>Connect</strong>.</li>
+          </ol>
+          <p>Once connected, use <strong>Configuration</strong> to view and change device settings, and
+             <strong>Telemetry</strong> to watch live sensor data. Both are unavailable until a device is
+             connected — you'll see them greyed out in the menu here.</p>
+          <p>Need help? See the <strong>Help</strong> page for troubleshooting tips.</p>
+        </div>
+
+        <div id="page-config" class="d-none">
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Configuration</h1>
+          </div>
+          <form id="form" class="row g-3"></form>
+          <div class="mt-3 d-flex gap-2 align-items-center">
+            <button id="save" class="btn btn-success btn-sm">Save to flash</button>
+            <button id="defaults" class="btn btn-outline-secondary btn-sm">Load defaults</button>
+            <span id="dirty" class="text-warning small d-none">unsaved changes</span>
+          </div>
+        </div>
+
+        <div id="page-telemetry" class="d-none">
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Telemetry</h1>
+          </div>
+          <div id="tlm" class="row g-3"></div>
+        </div>
+
+        <div id="page-help" class="d-none">
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Help</h1>
+          </div>
+
+          <p><strong>The board doesn't appear in the port dropdown</strong></p>
+          <ul>
+            <li>Check the USB cable is a data cable, not a charge-only cable.</li>
+            <li>Make sure the board is powered — you should see LED activity on it.</li>
+            <li>Try unplugging and replugging the cable, then check the dropdown again.</li>
+          </ul>
+
+          <p><strong>Connect fails or times out</strong></p>
+          <ul>
+            <li>Confirm you selected the right port — a detected STM32 board is marked "(STM32)" in the dropdown.</li>
+            <li>Make sure no other program (a serial monitor, another instance of this app) already has the port open.</li>
+            <li>Try disconnecting and reconnecting.</li>
+          </ul>
+
+          <p><strong>Connected, but no telemetry appears</strong></p>
+          <ul>
+            <li>Check the Telemetry Rate setting on the Configuration page isn't set very low.</li>
+            <li>Try disconnecting and reconnecting.</li>
+          </ul>
+
+          <p><strong>Changing a setting doesn't seem to do anything</strong></p>
+          <ul>
+            <li>Changes apply to the device immediately, but only persist through a power cycle after you click <strong>Save</strong>.</li>
+            <li>An invalid value (out of range, too long) is rejected and shown with a red outline — check for that.</li>
+          </ul>
+
+          <p><strong>The status badge shows "stale"</strong></p>
+          <ul>
+            <li>This means the device is still connected but hasn't sent telemetry recently — often just a
+                brief pause during a Save (writing to flash takes about a second). If it doesn't clear on its
+                own, try disconnecting and reconnecting.</li>
+          </ul>
+
+          <p><strong>A saved setting didn't survive a restart</strong></p>
+          <ul>
+            <li>Confirm you clicked <strong>Save</strong> after changing the value, not just changed the field
+                — edits apply live but aren't written to flash until Save.</li>
+          </ul>
+        </div>
+      </main>
     </div>
   </div>
 
+  <script src="vendor/bootstrap.bundle.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
