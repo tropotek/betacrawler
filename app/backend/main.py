@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictInt, StrictStr
 
 from .device import DeviceModel, DeviceError, ProtoMismatch
 from .link import list_candidate_ports
@@ -22,7 +22,11 @@ class ConnectBody(BaseModel):
 
 
 class ValueBody(BaseModel):
-    val: int | str
+    # Strict variants: pydantic's plain `int | str` coerces `true` -> 1 and
+    # `5.0` -> 5, which contradicts the project's "reject, never coerce"
+    # rule and defeats device.py's own isinstance(val, bool) guard for
+    # anything going through this HTTP route.
+    val: StrictInt | StrictStr
 
 
 class Broadcaster:
@@ -74,6 +78,11 @@ class Broadcaster:
             try:
                 await ws.send_json(payload)
             except Exception:
+                # Almost always just a client that disconnected mid-send.
+                # Logged at debug (with traceback) rather than silently
+                # discarded so a genuine serialization bug in `payload`
+                # doesn't look identical to "client went away".
+                log.debug("dropping ws client %r", ws, exc_info=True)
                 self._clients.discard(ws)
 
 

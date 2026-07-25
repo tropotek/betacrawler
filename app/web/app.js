@@ -29,11 +29,13 @@ const Api = {
   setParam:  (key, val)  => Api.send('PUT', `/api/params/${encodeURIComponent(key)}`, { val }),
   save:      ()          => Api.send('POST', '/api/params/save'),
   defaults:  ()          => Api.send('POST', '/api/params/defaults'),
-  socket:    ()          => new WebSocket(`ws://${location.host}/ws`),
+  socket:    ()          => new WebSocket(
+    `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`),
 };
 
 const el = (id) => document.getElementById(id);
 let connected = false;
+let stale = false;
 
 function showError(msg) {
   const a = el('alert');
@@ -44,12 +46,35 @@ function showError(msg) {
 
 function setState(state, info) {
   connected = state === 'connected';
+  stale = false;   // any ground-truth state transition supersedes staleness
   const badge = el('state');
   badge.textContent = state;
   badge.className = 'badge ' + (connected ? 'text-bg-success' : 'text-bg-secondary');
   el('connect').textContent = connected ? 'Disconnect' : 'Connect';
   el('fw').textContent = connected && info && info.fw ? `${info.fw} · proto ${info.proto}` : '';
   el('form').querySelectorAll('input,select').forEach((i) => { i.disabled = !connected; });
+}
+
+// Telemetry-staleness: distinct from a hard disconnect. The port is still
+// open and /api/status still says "connected", but no telemetry frame has
+// arrived for 3 missed intervals -- the firmware may have wedged. Shown as
+// an amber "stale" badge rather than silently re-affirming green
+// "connected". Does not touch `connected` or disable the form: as far as
+// the OS/serial port is concerned the device is still there.
+function setStale() {
+  if (!connected || stale) return;
+  stale = true;
+  const badge = el('state');
+  badge.textContent = 'stale';
+  badge.className = 'badge text-bg-warning';
+}
+
+function clearStale() {
+  if (!stale) return;
+  stale = false;
+  const badge = el('state');
+  badge.textContent = 'connected';
+  badge.className = 'badge text-bg-success';
 }
 
 // --- schema-driven form ----------------------------------------------------
@@ -225,6 +250,7 @@ let tlmPeriodMs = 100;
 
 function noteTelemetry() {
   lastTlmAt = Date.now();
+  clearStale();   // a fresh frame proves the firmware is alive again
 }
 
 function setTelemetryPeriodFrom(values) {
@@ -242,7 +268,14 @@ function startWatchdog() {
     if (!lastTlmAt || Date.now() - lastTlmAt <= tlmPeriodMs * 3) return;
     try {
       const st = await Api.status();
-      setState(st.state, st);
+      if (st.state === 'connected') {
+        // Port-level state is fine but telemetry has gone quiet -- the
+        // firmware itself may be wedged. Distinct "stale" signal; a true
+        // disconnect (port lost) still falls through to setState() below.
+        setStale();
+      } else {
+        setState(st.state, st);
+      }
     } catch {
       setState('disconnected');
     }

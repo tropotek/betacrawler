@@ -55,6 +55,14 @@ def test_out_of_range_set_returns_400_with_code(client):
     assert r.json()["err"] == "range"
 
 
+def test_set_rejects_bool_and_float_coercion(client):
+    """ValueBody uses StrictInt | StrictStr so `true` and `5.0` are rejected
+    (422) rather than silently coerced to 1 / 5 -- see main.py's ValueBody."""
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    assert client.put("/api/params/led.blink_hz", json={"val": True}).status_code == 422
+    assert client.put("/api/params/led.blink_hz", json={"val": 5.0}).status_code == 422
+
+
 def test_unknown_key_returns_400(client):
     client.post("/api/connect", json={"port": "/dev/fake"})
     r = client.put("/api/params/no.such", json={"val": 1})
