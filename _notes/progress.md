@@ -4,7 +4,7 @@
 
 - **Spec:** `_notes/spec-configurator-core.md` (Project 1 — configurator core)
 - **Original proposal:** `_notes/todo.md`
-- **Current phase:** Project 1 complete — all firmware, backend, and UI tests passing
+- **Current phase:** Implementation complete; manual hardware checklist outstanding
 - **Last updated:** 2026-07-25
 
 ---
@@ -88,7 +88,32 @@ Newest first. One entry per session: what was done, what was learned, what is ne
 
 Record anything implementation forced to change, with the reason. Empty is good.
 
-*(none yet)*
+- **Task 5 — native test build filter is an include-list, not an exclude-list.**
+  `firmware/platformio.ini`'s `[env:native]` uses `build_src_filter = +<core/*>`
+  rather than excluding Arduino-only files one by one. An include-list keeps
+  future Arduino-only sources (hardware.cpp, storage.cpp, main.cpp, ...) out of
+  native tests automatically, with no repeated manual edits every time a new
+  Arduino-dependent file is added.
+- **Task 10 — `PUT /api/params/{key}` has an explicit connection-state guard
+  before calling `device.set()`.** `DeviceModel.set()` checks the cached
+  schema (by key) before it checks link state, so a never-connected device
+  (empty schema cache) would otherwise report `nokey`/400 for every key
+  instead of the spec-required `disconnected`/409. The route in
+  `app/backend/main.py` checks `device.status()["state"] != "connected"`
+  first and raises `DeviceError("disconnected", ...)` itself, so callers get
+  a consistent 409 regardless of whether the key happens to be one this
+  device instance remembers.
+- **Task 3 — `parseRequest` rejects oversized `val` strings outright
+  (`toolong`) instead of the originally-planned truncate-then-validate.**
+  The plan's original approach was to silently truncate an overlong string
+  and let downstream validation (`Params::setStr`) catch it. In practice,
+  truncating before validation meant the string could never actually exceed
+  `maxLen` by the time it reached `setStr`, so `SetResult::TooLong` could
+  never fire via the real wire protocol. `firmware/src/core/protocol.cpp`'s
+  `parseRequest` now rejects (returns `err="toolong"`) any incoming string
+  value longer than `kMaxStrLen` before it is ever stored, matching the
+  project's "reject, never truncate" rule end-to-end instead of only inside
+  `Params`.
 
 ## Open questions
 
