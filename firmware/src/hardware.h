@@ -6,7 +6,7 @@ namespace hw {
 class LedDriver {
  public:
   void begin();
-  void apply(int32_t modeIdx, int32_t blinkHz);  // 0=off 1=on 2=blink
+  void apply(int32_t modeIdx, int32_t blinkHz);  // 0=off 1=on 2=blink 3=fade
   void tick(uint32_t nowMs);
 
  private:

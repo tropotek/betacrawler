@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "hardware.h"
+#include "core/led_curve.h"
 
 namespace hw {
 
@@ -35,6 +36,12 @@ static float readTempC(int32_t vddaMv) {
 }
 
 // --- LED: PC13 is ACTIVE-LOW (LOW = on) and has no timer channel -----------
+
+// Software PWM carrier for fade mode: 2000us (500Hz) -- well above the
+// flicker-fusion threshold and far faster than the slowest breathing
+// cycle (1000/hz ms, minimum 50ms at hz=20).
+static const uint32_t kFadeCarrierUs = 2000;
+
 void LedDriver::write(bool on) { digitalWrite(LED_BUILTIN, on ? LOW : HIGH); }
 
 void LedDriver::begin() {
@@ -50,13 +57,25 @@ void LedDriver::apply(int32_t modeIdx, int32_t blinkHz) {
 }
 
 void LedDriver::tick(uint32_t nowMs) {
-  if (mode_ != 2) return;
-  uint32_t halfPeriod = 500u / (uint32_t)hz_;   // hz_ full cycles per second
-  if (halfPeriod == 0) halfPeriod = 1;
-  if (nowMs - lastToggle_ >= halfPeriod) {
-    lastToggle_ = nowMs;
-    on_ = !on_;
-    write(on_);
+  if (mode_ == 2) {
+    uint32_t halfPeriod = 500u / (uint32_t)hz_;   // hz_ full cycles per second
+    if (halfPeriod == 0) halfPeriod = 1;
+    if (nowMs - lastToggle_ >= halfPeriod) {
+      lastToggle_ = nowMs;
+      on_ = !on_;
+      write(on_);
+    }
+  } else if (mode_ == 3) {
+    uint32_t periodMs = 1000u / (uint32_t)hz_;    // one full breath per hz_ seconds
+    if (periodMs == 0) periodMs = 1;
+    uint32_t phaseMs = nowMs % periodMs;
+    uint8_t duty = core::breathingDuty(phaseMs, periodMs);
+    uint32_t carrierUs = micros() % kFadeCarrierUs;
+    bool shouldBeOn = carrierUs < (kFadeCarrierUs * (uint32_t)duty) / 100u;
+    if (shouldBeOn != on_) {
+      on_ = shouldBeOn;
+      write(on_);
+    }
   }
 }
 
