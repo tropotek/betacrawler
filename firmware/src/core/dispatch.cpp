@@ -128,7 +128,12 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
       doc["ok"] = true;
       break;
 
-    default:
+    case Op::Unknown:
+      // parseRequest() never lets an Unknown op reach here with q.ok true
+      // (it sets q.err="badop" and returns early instead) -- this case only
+      // exists so the switch stays exhaustive over every Op value. With no
+      // `default:`, -Wswitch will flag it (and any future Op added without
+      // a case) at compile time instead of silently falling through here.
       doc["ok"] = false;
       doc["err"] = "badop";
       break;

@@ -39,7 +39,19 @@ bool FlashStore::save(const core::Params& p) {
   for (size_t i = 0; i < sizeof(Header); ++i) eeprom_buffered_write_byte(off++, hp[i]);
   for (size_t i = 0; i < payloadLen; ++i)     eeprom_buffered_write_byte(off++, payload[i]);
   eeprom_buffer_flush();                      // ONE erase+write, stalls ~1s
-  return true;
+
+  // eeprom_buffer_flush() is void -- it cannot report a write failure. Read
+  // the header back through the same buffered-read path load() uses and
+  // confirm it matches what was just written, so a genuine flash failure
+  // has a real (if rare) way to surface as {"ok":false,"err":"flash"}
+  // instead of that being structurally dead code.
+  eeprom_buffer_fill();
+  Header check;
+  uint8_t* cp = reinterpret_cast<uint8_t*>(&check);
+  size_t roff = 0;
+  for (size_t i = 0; i < sizeof(Header); ++i) cp[i] = eeprom_buffered_read_byte(roff++);
+
+  return check.magic == h.magic && check.version == h.version && check.crc == h.crc;
 }
 
 bool FlashStore::load(core::Params* p) {

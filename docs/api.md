@@ -22,6 +22,7 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 | Status | Meaning | Body |
 |---|---|---|
 | 400 | Value rejected | `{"err": "range"\|"enum"\|"toolong"\|"nokey"\|"badtype", "detail": "..."}` |
+| 400 | Save failed (flash write/read-back mismatch) | `{"err": "flash", "detail": "..."}` |
 | 409 | Not connected | `{"err": "disconnected", ...}` |
 | 502 | Connect failed / protocol mismatch | `{"detail": "..."}` |
 | 504 | Device did not answer in time | `{"err": "timeout", ...}` |
