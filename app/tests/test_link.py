@@ -1,3 +1,4 @@
+import json
 import threading
 import time
 
@@ -54,6 +55,47 @@ def test_out_of_order_responses_resolve_correctly():
 
     assert results["first"]["who"] == "first"
     assert results["second"]["who"] == "second"
+
+
+def test_concurrent_requests_do_not_interleave_on_the_wire():
+    """Two overlapping request() calls must never tear/interleave each
+    other's bytes on the wire.
+
+    FakeSerial's default write() runs the responder synchronously inside a
+    single Python call, so it can never expose a missing write lock — the
+    whole write "looks" atomic regardless of what SerialLink does. Here we
+    ask FakeSerial to dribble each write out in small chunks with real
+    sleeps between them (write_delay), which approximates actual OS-level
+    write latency: if SerialLink didn't serialize writers, two threads'
+    chunks would visibly interleave in raw_written.
+    """
+    def responder(req, emit):
+        emit({"id": req["id"], "ok": True})
+
+    fake = FakeSerial(responder=responder, write_delay=0.005)
+    link = SerialLink(open_port=lambda port: fake)
+    link.connect("/dev/fake")
+    results = {}
+
+    def call(name):
+        results[name] = link.request("get", key=name, timeout=2.0)
+
+    t1 = threading.Thread(target=call, args=("a",))
+    t2 = threading.Thread(target=call, args=("b",))
+    t1.start(); t2.start()
+    t1.join(3); t2.join(3)
+    link.disconnect()
+
+    assert results["a"]["ok"] is True
+    assert results["b"]["ok"] is True
+
+    # Reconstruct exactly what hit the "wire". If the two writes interleaved,
+    # this will not cleanly split into two well-formed JSON lines.
+    lines = [l for l in bytes(fake.raw_written).split(b"\n") if l]
+    assert len(lines) == 2, f"expected 2 intact lines on the wire, got: {lines!r}"
+    parsed = [json.loads(l) for l in lines]
+    assert {p["id"] for p in parsed} == {parsed[0]["id"], parsed[1]["id"]}
+    assert len({p["id"] for p in parsed}) == 2
 
 
 def test_late_response_times_out():

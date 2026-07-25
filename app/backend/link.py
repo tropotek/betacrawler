@@ -58,6 +58,7 @@ class SerialLink:
         self._stop = threading.Event()
         self._pending: dict[int, _Pending] = {}
         self._lock = threading.Lock()
+        self._write_lock = threading.Lock()
         self._next_id = 1
         self._subs = []
         self._state = "disconnected"
@@ -104,7 +105,8 @@ class SerialLink:
 
         line = protocol.encode(req_id, op, **fields)
         try:
-            port.write(line.encode())
+            with self._write_lock:
+                port.write(line.encode())
         except Exception as exc:
             self._drop_pending(req_id)
             self._on_port_lost()

@@ -6,6 +6,7 @@ disconnects, or garbage bytes. This can, deterministically.
 import json
 import queue
 import threading
+import time
 
 
 class FakeDisconnected(Exception):
@@ -13,12 +14,22 @@ class FakeDisconnected(Exception):
 
 
 class FakeSerial:
-    def __init__(self, responder=None, timeout=0.05):
+    def __init__(self, responder=None, timeout=0.05, write_delay=None):
         # responder(request_dict, emit) -> None. emit(obj_or_str) queues a line.
         self.responder = responder
         self.timeout = timeout
         self.is_open = True
         self.written = []
+        # write_delay, when set, makes write() dribble `data` onto the wire in
+        # small chunks with a sleep between each — approximating real OS-level
+        # write latency. A single write() call no longer completes as one
+        # atomic GIL-protected op, so two threads racing on write() without
+        # external synchronization will visibly tear/interleave each other's
+        # bytes in raw_written. Without this, write()'s whole body runs
+        # between GIL checks often enough that a caller-side lock bug never
+        # shows up in a fake that "replies" synchronously in-process.
+        self.write_delay = write_delay
+        self.raw_written = bytearray()
         self._lines = queue.Queue()
         self._gone = False
         self._lock = threading.Lock()
@@ -39,6 +50,16 @@ class FakeSerial:
             raise FakeDisconnected("port gone")
         with self._lock:
             self.written.append(data)
+        if self.write_delay:
+            chunk_size = 4
+            for i in range(0, len(data), chunk_size):
+                chunk = data[i:i + chunk_size]
+                with self._lock:
+                    self.raw_written.extend(chunk)
+                time.sleep(self.write_delay)
+        else:
+            with self._lock:
+                self.raw_written.extend(data)
         req = json.loads(data.decode())
         if self.responder:
             self.responder(req, self.emit)
