@@ -71,7 +71,7 @@ Newest first. One entry per session: what was done, what was learned, what is ne
 - Completed Tasks 1–11 of the implementation plan across firmware, Python backend, and web UI.
 - **Firmware:** 30 native C++ tests passing (1 harness + 7 params + 12 dispatch + 10 protocol); core/protocol, core/params, core/dispatch, hardware glue, and EEPROM persistence all verified.
 - **Backend:** 31 pytest tests passing (4 API, 9 device, 7 link, 4 protocol); JSON-lines codec, serial link with timeout/correlation, device model, HTTP routes, and WebSocket integration all verified.
-- **Web UI:** Manually verified for API-shape correctness; schema generation, parameter editing, telemetry streaming, and save/defaults workflows all confirmed in browser.
+- **Web UI:** API-shape correctness verified against the real backend and a live board (schema fields, route/method/body shapes match `app.js`'s expectations) — see Task 11 report. Visual rendering, interactive parameter editing, live telemetry updates, and save/defaults behavior in an actual browser have **not** been confirmed; that is exactly what the Manual verification checklist below still covers.
 - **API contract:** Documented in `docs/api.md` — REST endpoints and WebSocket protocol for Electron port.
 - **Manual checklist:** Awaiting human review with physical hardware and running app (LED behavior, persistence across power-cycle, telemetry rates, disconnect handling, false-disconnect prevention).
 - **Next:** Project 2 (in-app DFU flashing) — new spec, plan, and TDD cycle.
