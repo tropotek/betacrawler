@@ -19,7 +19,7 @@ relitigate it without a real reason). `docs/api.md` is the HTTP/WS contract.
 
 **Firmware** (from `firmware/`):
 ```
-~/.platformio/penv/bin/pio test -e native              # 38 tests, no board needed
+~/.platformio/penv/bin/pio test -e native              # 39 tests, no board needed
 ~/.platformio/penv/bin/pio test -e native -f test_dispatch   # one suite only
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce      # compile for the real board
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce -t upload  # flash it (ST-Link/SWD)
