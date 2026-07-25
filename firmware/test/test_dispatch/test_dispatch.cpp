@@ -55,6 +55,18 @@ void test_rejected_set_does_not_touch_hardware() {
   TEST_ASSERT_NOT_NULL(strstr(out, "\"err\":\"range\""));
 }
 
+void test_set_enum_by_name_forwards_index_to_hardware() {
+  Params p; MockSink sink; MockStore store;
+  Dispatcher d(p, sink, store);
+
+  Request q = parseRequest("{\"id\":10,\"op\":\"set\",\"key\":\"led.mode\",\"val\":\"fade\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_EQUAL_INT(1, sink.calls);
+  TEST_ASSERT_EQUAL(PARAM_LED_MODE, sink.lastId);
+  TEST_ASSERT_EQUAL_INT32(3, sink.lastNum);   // hardware sees the index, not the name
+}
+
 void test_set_unknown_key_returns_nokey() {
   Params p; MockSink sink; MockStore store;
   Dispatcher d(p, sink, store);
@@ -222,6 +234,7 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_set_applies_to_hardware_exactly_once);
   RUN_TEST(test_rejected_set_does_not_touch_hardware);
+  RUN_TEST(test_set_enum_by_name_forwards_index_to_hardware);
   RUN_TEST(test_set_unknown_key_returns_nokey);
   RUN_TEST(test_hello_reports_proto_version);
   RUN_TEST(test_schema_lists_all_params_and_fits_buffer);

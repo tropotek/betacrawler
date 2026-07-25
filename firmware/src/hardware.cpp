@@ -38,8 +38,8 @@ static float readTempC(int32_t vddaMv) {
 // --- LED: PC13 is ACTIVE-LOW (LOW = on) and has no timer channel -----------
 
 // Software PWM carrier for fade mode: 2000us (500Hz) -- well above the
-// flicker-fusion threshold and far faster than the slowest breathing
-// cycle (1000/hz ms, minimum 50ms at hz=20).
+// flicker-fusion threshold and far faster than even the fastest breathing
+// cycle (50ms at hz=20, i.e. 25 carrier periods per breath).
 static const uint32_t kFadeCarrierUs = 2000;
 
 void LedDriver::write(bool on) { digitalWrite(LED_BUILTIN, on ? LOW : HIGH); }
@@ -65,8 +65,8 @@ void LedDriver::tick(uint32_t nowMs) {
       on_ = !on_;
       write(on_);
     }
-  } else if (mode_ == 3) {
-    uint32_t periodMs = 1000u / (uint32_t)hz_;    // one full breath per hz_ seconds
+  } else if (mode_ >= 3) {
+    uint32_t periodMs = 1000u / (uint32_t)hz_;    // hz_ full breaths per second (same convention as blink above)
     if (periodMs == 0) periodMs = 1;
     uint32_t phaseMs = nowMs % periodMs;
     uint8_t duty = core::breathingDuty(phaseMs, periodMs);

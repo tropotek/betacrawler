@@ -19,7 +19,7 @@ relitigate it without a real reason). `docs/api.md` is the HTTP/WS contract.
 
 **Firmware** (from `firmware/`):
 ```
-~/.platformio/penv/bin/pio test -e native              # 31 tests, no board needed
+~/.platformio/penv/bin/pio test -e native              # 38 tests, no board needed
 ~/.platformio/penv/bin/pio test -e native -f test_dispatch   # one suite only
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce      # compile for the real board
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce -t upload  # flash it (ST-Link/SWD)
@@ -51,7 +51,7 @@ UI tests exist by design, and no browser/headless-render tooling is available in
 **Three tiers, deliberately isolated so most of the stack tests without hardware:**
 
 ```
-firmware/src/core/     pure C++, zero Arduino — protocol.cpp, params.cpp, dispatch.cpp
+firmware/src/core/     pure C++, zero Arduino — protocol.cpp, params.cpp, dispatch.cpp, led_curve.cpp
                         native-tested (Unity), no board needed
 firmware/src/          Arduino glue: main.cpp, hardware.cpp (LED/telemetry), storage.cpp (flash)
                         excluded from native tests by platformio.ini's
