@@ -1,0 +1,17 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Editor / OS
+.vscode/
+.DS_Store
