@@ -78,85 +78,17 @@ function clearStale() {
   badge.className = 'badge text-bg-success';
 }
 
-// --- schema-driven form ----------------------------------------------------
+// --- schema-driven form (Alpine) --------------------------------------------
 // Display-order preference only -- the firmware's schema order (its source
 // of truth for the wire format and flash layout) is untouched. A key not
 // listed here just keeps its original schema position, so new params need
 // no update here to render correctly.
 const FORM_ORDER = ['device.name', 'tlm.rate'];
 
-function orderedForDisplay(schema) {
-  return [...schema].sort((a, b) => {
-    const ia = FORM_ORDER.indexOf(a.key);
-    const ib = FORM_ORDER.indexOf(b.key);
-    return (ia === -1 ? FORM_ORDER.length : ia) - (ib === -1 ? FORM_ORDER.length : ib);
-  });
-}
+// u8 fields rendered as a range slider instead of a plain number input.
+const SLIDER_FIELDS = new Set(['led.blink_hz']);
 
-function buildForm(schema, values) {
-  const form = el('form');
-  form.innerHTML = '';
-  for (const p of orderedForDisplay(schema)) {
-    const col = document.createElement('div');
-    col.className = 'col-md-6';
-
-    const label = document.createElement('label');
-    label.className = 'form-label';
-    label.textContent = p.unit ? `${p.label} (${p.unit})` : p.label;
-    label.htmlFor = `f-${p.key}`;
-
-    let input;
-    if (p.type === 'enum') {
-      input = document.createElement('select');
-      input.className = 'form-select';
-      for (const opt of p.options) {
-        const o = document.createElement('option');
-        o.value = o.textContent = opt;
-        input.appendChild(o);
-      }
-    } else if (p.type === 'str') {
-      input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'form-control';
-      input.maxLength = p.maxlen;
-    } else {
-      input = document.createElement('input');
-      input.type = 'number';
-      input.className = 'form-control';
-      input.min = p.min;
-      input.max = p.max;
-    }
-
-    input.id = `f-${p.key}`;
-    input.value = values[p.key];
-    input.addEventListener('change', () => onFieldChange(p, input));
-
-    const help = document.createElement('div');
-    help.className = 'form-text';
-    help.id = `h-${p.key}`;
-    help.textContent = p.type === 'u8' ? `${p.min}–${p.max}`
-                     : p.type === 'str' ? `max ${p.maxlen} chars` : '';
-
-    col.append(label, input, help);
-    form.appendChild(col);
-  }
-}
-
-async function onFieldChange(spec, input) {
-  const raw = input.value;
-  const val = spec.type === 'u8' ? Number(raw) : raw;
-  try {
-    await Api.setParam(spec.key, val);
-    input.classList.remove('is-invalid');
-    el('dirty').classList.remove('d-none');
-    if (spec.key === 'tlm.rate') tlmPeriodMs = 1000 / Number(val);
-  } catch (e) {
-    input.classList.add('is-invalid');
-    showError(`${spec.label}: ${e.message}`);
-  }
-}
-
-// --- telemetry -------------------------------------------------------------
+// --- telemetry ---------------------------------------------------------------
 const TLM_FIELDS = {
   up: 'Uptime (ms)', clk: 'Clock (MHz)', temp: 'Temp (°C)',
   vdd: 'VDD (V)', ram: 'Free RAM (B)', btn: 'Button',
@@ -171,26 +103,73 @@ function formatTelemetryValue(key, value) {
   return Math.round(value * 10) / 10;
 }
 
-function renderTelemetry(data) {
-  noteTelemetry();
-  const box = el('tlm');
-  if (!box.children.length) {
-    for (const [k, label] of Object.entries(TLM_FIELDS)) {
-      const col = document.createElement('div');
-      col.className = 'col-6 col-md-4';
-      col.innerHTML =
-        `<div class="card"><div class="card-body py-2">
-           <div class="text-secondary small">${label}</div>
-           <div class="fs-4" id="t-${k}">–</div>
-         </div></div>`;
-      box.appendChild(col);
-    }
-  }
-  for (const k of Object.keys(TLM_FIELDS)) {
-    if (data[k] !== undefined) {
-      el(`t-${k}`).textContent = formatTelemetryValue(k, data[k]);
-    }
-  }
+// The config form and telemetry cards are the two most repetitive,
+// DOM-construction-heavy regions of this file -- markup for both now lives in
+// index.html as <template x-for> blocks. These two stores are the only
+// bridge the surrounding plain JS (loadDevice/openSocket/watchdog) needs to
+// push data in or read state back out: Alpine.store() is reachable from
+// anywhere with no element handle, unlike Alpine.$data()/refs.
+document.addEventListener('alpine:init', () => {
+  Alpine.store('config', {
+    schema: [],
+    values: {},
+    invalid: {},
+
+    get fields() {
+      return [...this.schema]
+        .sort((a, b) => {
+          const ia = FORM_ORDER.indexOf(a.key);
+          const ib = FORM_ORDER.indexOf(b.key);
+          return (ia === -1 ? FORM_ORDER.length : ia) - (ib === -1 ? FORM_ORDER.length : ib);
+        })
+        .map((p) => ({
+          ...p,
+          isSlider: p.type === 'u8' && SLIDER_FIELDS.has(p.key),
+          help: p.type === 'u8' ? `${p.min}–${p.max}`
+              : p.type === 'str' ? `max ${p.maxlen} chars` : '',
+        }));
+    },
+
+    load(schema, values) {
+      this.schema = schema;
+      this.values = { ...values };
+      this.invalid = {};
+    },
+
+    async commit(field) {
+      const raw = this.values[field.key];
+      const val = field.type === 'u8' ? Number(raw) : raw;
+      try {
+        await Api.setParam(field.key, val);
+        this.invalid[field.key] = false;
+        el('dirty').classList.remove('d-none');
+        if (field.key === 'tlm.rate') tlmPeriodMs = 1000 / Number(val);
+      } catch (e) {
+        this.invalid[field.key] = true;
+        showError(`${field.label}: ${e.message}`);
+      }
+    },
+  });
+
+  Alpine.store('telemetry', {
+    fields: TLM_FIELDS,
+    data: {},
+
+    render(raw) {
+      noteTelemetry();
+      for (const k of Object.keys(this.fields)) {
+        if (raw[k] !== undefined) this.data[k] = formatTelemetryValue(k, raw[k]);
+      }
+    },
+  });
+});
+
+// setState()'s form-disable loop runs synchronously right after loadDevice()
+// returns, but Alpine applies store-triggered DOM writes on the next
+// microtask -- this lets loadDevice() wait for that flush so the elements it
+// expects to find and enable actually exist yet.
+function alpineNextTick() {
+  return new Promise((resolve) => Alpine.nextTick(resolve));
 }
 
 // --- wiring ----------------------------------------------------------------
@@ -209,7 +188,8 @@ async function refreshPorts() {
 
 async function loadDevice() {
   const [schema, values] = await Promise.all([Api.schema(), Api.params()]);
-  buildForm(schema, values);
+  Alpine.store('config').load(schema, values);
+  await alpineNextTick();
   setTelemetryPeriodFrom(values);
 }
 
@@ -282,7 +262,7 @@ function openSocket() {
   const ws = Api.socket();
   ws.onmessage = (ev) => {
     const msg = JSON.parse(ev.data);
-    if (msg.type === 'tlm') renderTelemetry(msg.data);
+    if (msg.type === 'tlm') Alpine.store('telemetry').render(msg.data);
     else if (msg.type === 'state') {
       const d = msg.data;
       setState(typeof d === 'string' ? d : d.state, typeof d === 'object' ? d : null);
