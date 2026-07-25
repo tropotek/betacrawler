@@ -78,10 +78,24 @@ function clearStale() {
 }
 
 // --- schema-driven form ----------------------------------------------------
+// Display-order preference only -- the firmware's schema order (its source
+// of truth for the wire format and flash layout) is untouched. A key not
+// listed here just keeps its original schema position, so new params need
+// no update here to render correctly.
+const FORM_ORDER = ['device.name', 'tlm.rate'];
+
+function orderedForDisplay(schema) {
+  return [...schema].sort((a, b) => {
+    const ia = FORM_ORDER.indexOf(a.key);
+    const ib = FORM_ORDER.indexOf(b.key);
+    return (ia === -1 ? FORM_ORDER.length : ia) - (ib === -1 ? FORM_ORDER.length : ib);
+  });
+}
+
 function buildForm(schema, values) {
   const form = el('form');
   form.innerHTML = '';
-  for (const p of schema) {
+  for (const p of orderedForDisplay(schema)) {
     const col = document.createElement('div');
     col.className = 'col-md-6';
 
@@ -144,8 +158,17 @@ async function onFieldChange(spec, input) {
 // --- telemetry -------------------------------------------------------------
 const TLM_FIELDS = {
   up: 'Uptime (ms)', clk: 'Clock (MHz)', temp: 'Temp (°C)',
-  vdd: 'VDD (mV)', ram: 'Free RAM (B)', btn: 'Button',
+  vdd: 'VDD (V)', ram: 'Free RAM (B)', btn: 'Button',
 };
+
+// The wire protocol sends vdd as integer millivolts by design (see
+// docs/api.md) -- only the display converts to Volts, so this never touches
+// what's actually sent to/validated against the device.
+function formatTelemetryValue(key, value) {
+  if (typeof value !== 'number') return value;
+  if (key === 'vdd') return (value / 1000).toFixed(2);
+  return Math.round(value * 10) / 10;
+}
 
 function renderTelemetry(data) {
   noteTelemetry();
@@ -164,8 +187,7 @@ function renderTelemetry(data) {
   }
   for (const k of Object.keys(TLM_FIELDS)) {
     if (data[k] !== undefined) {
-      const v = typeof data[k] === 'number' ? Math.round(data[k] * 10) / 10 : data[k];
-      el(`t-${k}`).textContent = v;
+      el(`t-${k}`).textContent = formatTelemetryValue(k, data[k]);
     }
   }
 }
