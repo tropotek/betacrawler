@@ -182,6 +182,37 @@ void test_telemetry_frame_is_built_from_the_registry() {
   TEST_ASSERT_NULL(strstr(out, "\"id\""));   // id-less: this is what makes interleaving safe
 }
 
+void test_log_line_is_unsolicited_and_well_formed() {
+  size_t n = writeLog(out, sizeof(out), "display: ST7789 240x240 init=138ms");
+
+  TEST_ASSERT_TRUE(n > 0);
+  TEST_ASSERT_EQUAL_STRING(
+      "{\"log\":\"display: ST7789 240x240 init=138ms\"}", out);
+  // id-less, exactly like telemetry -- that is what makes the backend treat
+  // it as unsolicited (app/backend/protocol.py's is_log).
+  TEST_ASSERT_NULL(strstr(out, "\"id\""));
+}
+
+void test_log_escapes_characters_that_would_break_the_line() {
+  // A driver builds these with snprintf from board macros; one stray quote
+  // must not be able to desync the host's line parser.
+  size_t n = writeLog(out, sizeof(out), "say \"hi\"\\done");
+
+  TEST_ASSERT_TRUE(n > 0);
+  TEST_ASSERT_EQUAL_STRING("{\"log\":\"say \\\"hi\\\"\\\\done\"}", out);
+}
+
+void test_log_refuses_to_emit_a_truncated_line() {
+  // Truncating JSON would produce a line the host cannot parse, which is
+  // worse than dropping the message: emit nothing instead.
+  char small[16];
+  size_t n = writeLog(small, sizeof(small),
+                      "a message far longer than the buffer allows");
+
+  TEST_ASSERT_EQUAL(0, n);
+  TEST_ASSERT_EQUAL_STRING("", small);
+}
+
 // --- the real board config ---------------------------------------------------
 
 void test_hello_reports_proto_version() {
@@ -339,6 +370,9 @@ int main() {
   RUN_TEST(test_tlm_op_toggles_streaming);
   RUN_TEST(test_bad_request_still_gets_a_reply);
   RUN_TEST(test_telemetry_frame_is_built_from_the_registry);
+  RUN_TEST(test_log_line_is_unsolicited_and_well_formed);
+  RUN_TEST(test_log_escapes_characters_that_would_break_the_line);
+  RUN_TEST(test_log_refuses_to_emit_a_truncated_line);
   RUN_TEST(test_hello_reports_proto_version);
   RUN_TEST(test_hello_reports_build_identity_from_config);
   RUN_TEST(test_hello_lists_the_enabled_modules);

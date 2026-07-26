@@ -37,6 +37,17 @@ size_t writeTelemetry(char* out, size_t cap, const Registry& reg, const TlmValue
   return serializeJson(doc, out, cap);
 }
 
+size_t writeLog(char* out, size_t cap, const char* msg) {
+  if (!out || cap == 0) return 0;
+  JsonDocument doc;
+  doc["log"] = msg;
+  // measureJson excludes the NUL that serializeJson writes. A line that will
+  // not fit is dropped rather than truncated: half a JSON object on the wire
+  // would desync the host's line parser, which is worse than a lost message.
+  if (measureJson(doc) + 1 > cap) { out[0] = '\0'; return 0; }
+  return serializeJson(doc, out, cap);
+}
+
 size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
   JsonDocument doc;
   doc["id"] = q.id;

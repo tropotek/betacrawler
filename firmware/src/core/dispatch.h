@@ -17,6 +17,15 @@ struct Persistence {
 // that enables a new sensor module publishes it with no change here.
 size_t writeTelemetry(char* out, size_t cap, const Registry& reg, const TlmValue* vals);
 
+// Serializes an unsolicited log line, `{"log":"..."}`. Id-less like telemetry,
+// which is what makes the backend route it as a device log
+// (app/backend/protocol.py's is_log, main.py's WS "log" message).
+//
+// Exists so a driver never hand-rolls JSON: `msg` is escaped properly, and a
+// message too long for `cap` yields nothing rather than a truncated line the
+// host could not parse. Returns the length written, 0 on refusal.
+size_t writeLog(char* out, size_t cap, const char* msg);
+
 class Dispatcher {
  public:
   Dispatcher(Registry& reg, Params& p, Persistence& store)
