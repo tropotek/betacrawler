@@ -3,6 +3,8 @@
 #include "core/dispatch.h"
 #include "core/protocol.h"
 #include "core/registry.h"
+#include "core/boot_log.h"
+#include "core/version.h"
 #include "storage.h"
 
 using namespace core;
@@ -20,6 +22,31 @@ static TlmValue g_tlm[FW_MAX_TLM];
 static uint32_t g_lastTlm = 0;
 static ParamId  g_tlmRateId = kNoParam;
 
+// Space between the heap top and the current stack -- the cheapest "is this
+// build about to run out of RAM" signal there is, and worth capturing at boot
+// before anything has had a chance to grow.
+extern "C" char* sbrk(int incr);
+static int freeRamBytes() {
+  char top;
+  return (int)(&top - (char*)sbrk(0));
+}
+
+// Replays everything recorded during setup(). Called at the end of boot (for
+// whoever is watching the serial monitor) and again after every `hello` --
+// which is what makes boot health visible in the app's Terminal, since the
+// host connects long after these lines were produced.
+static void emitBootLog() {
+  BootLog& b = bootLog();
+  for (uint8_t i = 0; i < b.count(); ++i) {
+    size_t n = writeLog(g_out, sizeof(g_out), b.line(i));
+    if (n > 0) Serial.println(g_out);
+  }
+  if (b.dropped()) {
+    size_t n = writeLog(g_out, sizeof(g_out), "boot: log full, lines dropped");
+    if (n > 0) Serial.println(g_out);
+  }
+}
+
 void setup() {
   Serial.begin(FW_SERIAL_BAUD);
   registerModules(g_reg);
@@ -30,13 +57,32 @@ void setup() {
   g_params.loadDefaults();
 
   g_reg.findParam("tlm.rate", &g_tlmRateId);
-  g_store.load(&g_params);   // falls back to defaults on magic/version/fingerprint/CRC mismatch
-  g_reg.begin(g_params);
+
+  char msg[BootLog::kMaxLen];
+  snprintf(msg, sizeof(msg), "boot: %s %s (%s) built %s", projectName(),
+           version(), boardId(), buildDate());
+  bootLog().add(msg);
+
+  // Whether saved settings survived is a genuine health fact, not a detail: a
+  // fingerprint mismatch quietly reverting a configured board to defaults is
+  // exactly the sort of thing that is baffling without a boot record.
+  bool stored = g_store.load(&g_params);   // falls back to defaults on magic/version/fingerprint/CRC mismatch
+  snprintf(msg, sizeof(msg), "boot: settings=%s", stored ? "restored" : "defaults");
+  bootLog().add(msg);
+
+  g_reg.begin(g_params);   // modules may add their own boot lines here
+
+  snprintf(msg, sizeof(msg), "boot: modules=%u params=%u tlm=%u ram=%dB",
+           (unsigned)g_reg.moduleCount(), (unsigned)g_reg.paramCount(),
+           (unsigned)g_reg.tlmCount(), freeRamBytes());
+  bootLog().add(msg);
 
   // Push every stored value at its module, exactly as the `defaults` op does.
   // This replaces main.cpp's old explicit g_led.apply(...) call: no module is
   // special-cased, so a new one is picked up here for free.
   for (uint8_t i = 0; i < g_reg.paramCount(); ++i) g_reg.notify(i, g_params);
+
+  emitBootLog();
 }
 
 void loop() {
@@ -50,6 +96,10 @@ void loop() {
         Request q = parseRequest(g_reader.line());
         size_t n = g_dispatch.handle(q, g_out, sizeof(g_out));
         if (n > 0) Serial.println(g_out);
+        // Follow a handshake with the boot record. Deliberately after the
+        // response and as separate unsolicited lines, so `hello`'s shape is
+        // unchanged and every existing consumer keeps working.
+        if (q.ok && q.op == Op::Hello) emitBootLog();
       }
     }
   }

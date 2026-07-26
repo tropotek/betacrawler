@@ -418,6 +418,14 @@ function openSocket() {
     else if (msg.type === 'state') {
       const d = msg.data;
       setState(typeof d === 'string' ? d : d.state, typeof d === 'object' ? d : null);
+    } else if (msg.type === 'log') {
+      // Device log lines are unprompted, so they are marked to distinguish
+      // them from a reply to something the user typed. The firmware replays
+      // its boot record after every `hello`, which is what puts boot health
+      // here on connect — those lines were produced long before the browser
+      // existed, and showing them only under "device traffic" buried them
+      // among telemetry frames.
+      termAppend(`[device] ${msg.data}`);
     }
     if (el('term-traffic').checked) {
       termAppend(`<< [${msg.type}] ${JSON.stringify(msg.data)}`);

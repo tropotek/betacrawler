@@ -112,9 +112,12 @@ Server pushes only; clients send nothing. Every frame is
   rather than hardcoding it.
 - `state` — status object, or the string `"disconnected"`
 - `log` — device log string. Unsolicited `{"log": "..."}` lines from the
-  firmware, e.g. the display module's startup diagnostic. Emitted during the
-  device's `setup()`, so a client that connects later will not see them —
-  the serial monitor is the reliable place to read boot-time logs.
+  firmware. The device holds its boot record (identity, whether saved settings
+  survived, module/param counts, free RAM, plus any per-module line such as the
+  display's init timing) and **replays it after every `hello`**, so a client
+  that connects long after boot still receives it. The UI shows these in the
+  Terminal prefixed `[device]`. Buffer is 8 lines; if boot produced more, a
+  final `boot: log full, lines dropped` says so rather than hiding it.
 
 A `save` stalls the board ~1s and telemetry will gap. **That is not a
 disconnect** — do not treat it as one.

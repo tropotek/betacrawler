@@ -21,7 +21,7 @@ relitigate it without a real reason). `docs/api.md` is the HTTP/WS contract.
 
 **Firmware** (from `firmware/`):
 ```
-~/.platformio/penv/bin/pio test -e native              # 73 tests, no board needed
+~/.platformio/penv/bin/pio test -e native              # 80 tests, no board needed
 ~/.platformio/penv/bin/pio test -e native -f test_dispatch   # one suite only
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce      # compile for the real board
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce -t upload  # flash it (ST-Link/SWD)
@@ -32,7 +32,7 @@ Two ST-Link/V2 units may be attached at once — if upload grabs the wrong one, 
 
 **Backend** (from `app/`, venv already at `app/.venv/`):
 ```
-.venv/bin/pytest -v                                     # 89 tests, no board needed
+.venv/bin/pytest -v                                     # 90 tests, no board needed
 .venv/bin/pytest tests/test_link.py -v                  # one file only
 .venv/bin/uvicorn backend.main:app --port 8080           # serves API + app/web/ together
 ```
@@ -57,7 +57,7 @@ firmware/include/      config.h (project name/version/baud/capacity limits) and
                         boards/<board>.h (FEATURE_* flags + pin map). Selected per-env by
                         -D BOARD_HEADER; _template.h documents adding a board.
 firmware/src/core/     pure C++, zero Arduino — protocol, params, registry, dispatch,
-                        led_curve, tlm_format, version, device_params. Native-tested (Unity).
+                        led_curve, tlm_format, boot_log, version, device_params. Native-tested (Unity).
 firmware/src/features/ behaviours, one folder per module (led/)
 firmware/src/hardware/ device drivers, one folder per module (system/, button/, st7789_240x240/;
                         WiFi and other peripherals go here)
@@ -99,6 +99,14 @@ exactly one hardware call, on the owning module, with that module's own local in
 with no board attached. This is the one invariant most worth preserving if you touch
 `dispatch.cpp` or `registry.cpp`. Modules always receive a **module-local** index, never a global
 one — `Module::globalParam(local)` maps back when a driver needs to read a value.
+
+**Boot health**: `core/boot_log.h` holds a fixed buffer of lines recorded during `setup()` —
+firmware identity, whether saved settings survived the fingerprint check, module/param/telemetry
+counts, free RAM, plus whatever modules add (the display contributes its init timing). `main.cpp`
+emits it at the end of boot *and again after every `hello`*. The replay is the point: USB CDC
+enumerates well after `setup()` runs and the app connects later still, so a line merely printed at
+boot reaches nobody. `hello`'s response shape is deliberately unchanged — the record follows it as
+separate unsolicited `{"log":...}` lines, which `app.js` renders in the Terminal as `[device] …`.
 
 **Observing modules** use `Module::attach(const Registry&, const Params&)`, called on every module
 before any module's `begin()`. It exists for modules that must *read* the rest of the device — the

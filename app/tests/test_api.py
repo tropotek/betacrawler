@@ -259,3 +259,41 @@ def test_broadcaster_bridges_message_from_reader_thread(client):
             )
         assert kind == "ok", f"receive_json raised: {payload!r}"
         assert payload == {"type": "tlm", "data": {"uptime_ms": 42}}
+
+
+def test_device_log_line_reaches_the_websocket_as_a_log_frame(client):
+    """Boot health depends on this whole path working.
+
+    The firmware replays its boot record as unsolicited `{"log": ...}` lines
+    after every `hello`, so a host that connects long after boot still sees
+    what happened. That is only useful if the line survives the reader thread,
+    the broadcaster bridge and the WS encoding as a distinct `log` frame --
+    the UI shows those in the Terminal, separately from telemetry.
+    """
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    fake = client.app.state.fake
+
+    with client.websocket_connect("/ws") as ws:
+        assert ws.receive_json()["type"] == "state"
+        fake.emit({"log": "boot: app-demo 1.0.0 (blackpill_f411ce)"})
+
+        # Same bounded-wait pattern as the broadcaster test above: a dropped
+        # message must fail in 2s rather than hang the run.
+        result: "queue.Queue" = queue.Queue(maxsize=1)
+
+        def _recv():
+            try:
+                result.put(("ok", ws.receive_json()))
+            except Exception as exc:  # pragma: no cover - defensive
+                result.put(("err", exc))
+
+        threading.Thread(target=_recv, daemon=True).start()
+        try:
+            kind, payload = result.get(timeout=2.0)
+        except queue.Empty:
+            pytest.fail("device log line never arrived on the websocket")
+        assert kind == "ok", f"receive_json raised: {payload!r}"
+        assert payload == {
+            "type": "log",
+            "data": "boot: app-demo 1.0.0 (blackpill_f411ce)",
+        }

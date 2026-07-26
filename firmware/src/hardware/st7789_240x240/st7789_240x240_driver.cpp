@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "hardware/st7789_240x240/st7789_240x240_driver.h"
-#include "core/dispatch.h"      // writeLog
+#include "core/boot_log.h"
 #include "core/tlm_format.h"
 #include "core/version.h"
 #include "config.h"
@@ -233,9 +233,12 @@ void St7789Driver::logInit(uint32_t elapsedMs) {
   // fabrication. What this line does say is true: the module ran, with these
   // pins, in this long. A blank screen alongside it means wiring, not
   // firmware.
-  char line[192];
-  size_t n = core::writeLog(line, sizeof(line), msg);
-  if (n > 0) Serial.println(line);
+  //
+  // Recorded rather than printed: main.cpp emits the boot log once at the end
+  // of setup() and again after every `hello`, so this survives long enough for
+  // the app to show it. Printing here would reach only a monitor that happened
+  // to be attached at boot.
+  core::bootLog().add(msg);
 }
 
 void St7789Driver::initHardware() {
