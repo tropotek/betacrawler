@@ -275,7 +275,7 @@ def test_device_log_line_reaches_the_websocket_as_a_log_frame(client):
 
     with client.websocket_connect("/ws") as ws:
         assert ws.receive_json()["type"] == "state"
-        fake.emit({"log": "boot: app-demo 1.0.0 (blackpill_f411ce)"})
+        fake.emit({"log": "boot: silkscreen 1.0.0 (blackpill_f411ce)"})
 
         # Same bounded-wait pattern as the broadcaster test above: a dropped
         # message must fail in 2s rather than hang the run.
@@ -295,5 +295,5 @@ def test_device_log_line_reaches_the_websocket_as_a_log_frame(client):
         assert kind == "ok", f"receive_json raised: {payload!r}"
         assert payload == {
             "type": "log",
-            "data": "boot: app-demo 1.0.0 (blackpill_f411ce)",
+            "data": "boot: silkscreen 1.0.0 (blackpill_f411ce)",
         }

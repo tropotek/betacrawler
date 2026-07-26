@@ -37,7 +37,7 @@ def dump_ini(schema: list[dict], values: dict, info: dict) -> str:
     is skipped, so a stale cache entry can never end up in a file that later
     gets fed back to a device.
     """
-    lines = ["; app-demo settings dump"]
+    lines = ["; silkscreen settings dump"]
     ident = " ".join(part for part in (info.get("fw"),
                                        f"({info['board']})" if info.get("board") else None)
                      if part)

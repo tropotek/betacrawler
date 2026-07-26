@@ -10,7 +10,7 @@ import pytest
 from backend.settings_ini import dump_ini, parse_ini
 from tests.test_device import SCHEMA, VALUES
 
-INFO = {"fw": "app-demo 1.0.0", "board": "blackpill_f411ce"}
+INFO = {"fw": "silkscreen 1.0.0", "board": "blackpill_f411ce"}
 
 
 def sections_in_order(text):
@@ -25,7 +25,7 @@ def test_dump_starts_with_identifying_comments():
     header = [l for l in text.splitlines() if l.startswith(";")]
     assert header, "dump must be self-identifying once pasted into a file"
     blob = "\n".join(header)
-    assert "app-demo 1.0.0" in blob
+    assert "silkscreen 1.0.0" in blob
     assert "blackpill_f411ce" in blob
     # Every header line is a comment, so the file parses even with them.
     assert text.splitlines()[0].startswith(";")

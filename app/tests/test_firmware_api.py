@@ -27,22 +27,22 @@ from tests.test_firmware import DFU_LIST, DFU_DOWNLOAD, make_image, runner_for
 def bundle(tmp_path):
     blob = make_image()
     (tmp_path / "blackpill_f411ce").mkdir()
-    (tmp_path / "blackpill_f411ce" / "app-demo-1.0.0.bin").write_bytes(blob)
+    (tmp_path / "blackpill_f411ce" / "silkscreen-1.0.0.bin").write_bytes(blob)
     (tmp_path / "manifest.json").write_text(json.dumps({
         "app_version": "1.0.0",
         "images": [{
-            "id": "blackpill_f411ce-app-demo-1.0.0",
-            "board": "blackpill_f411ce", "name": "app-demo",
+            "id": "blackpill_f411ce-silkscreen-1.0.0",
+            "board": "blackpill_f411ce", "name": "silkscreen",
             "version": "1.0.0", "built": "Jul 26 2026 15:02:35", "proto": 1,
-            "method": "dfu", "file": "blackpill_f411ce/app-demo-1.0.0.bin",
+            "method": "dfu", "file": "blackpill_f411ce/silkscreen-1.0.0.bin",
             "size": len(blob), "sha256": hashlib.sha256(blob).hexdigest(),
             "notes": "led, button, st7789_240x240",
         }, {
             # A second board, so "recommended" has something to choose wrong.
-            "id": "otherboard-app-demo-1.0.0",
-            "board": "otherboard", "name": "app-demo",
+            "id": "otherboard-silkscreen-1.0.0",
+            "board": "otherboard", "name": "silkscreen",
             "version": "1.0.0", "built": "Jul 26 2026 15:02:35", "proto": 1,
-            "method": "dfu", "file": "otherboard/app-demo-1.0.0.bin",
+            "method": "dfu", "file": "otherboard/silkscreen-1.0.0.bin",
             "size": len(blob), "sha256": hashlib.sha256(blob).hexdigest(),
             "notes": "led",
         }],
@@ -86,14 +86,14 @@ def test_catalog_lists_bundled_images(client):
     body = client.get("/api/firmware/catalog").json()
     assert body["app_version"] == "1.0.0"
     assert {i["id"] for i in body["images"]} == {
-        "blackpill_f411ce-app-demo-1.0.0", "otherboard-app-demo-1.0.0"}
+        "blackpill_f411ce-silkscreen-1.0.0", "otherboard-silkscreen-1.0.0"}
 
 
 def test_catalog_marks_a_missing_binary_unavailable(client):
     # otherboard's manifest entry has no file on disk.
     images = {i["id"]: i for i in client.get("/api/firmware/catalog").json()["images"]}
-    assert images["blackpill_f411ce-app-demo-1.0.0"]["available"] is True
-    assert images["otherboard-app-demo-1.0.0"]["available"] is False
+    assert images["blackpill_f411ce-silkscreen-1.0.0"]["available"] is True
+    assert images["otherboard-silkscreen-1.0.0"]["available"] is False
 
 
 def test_no_recommendation_before_a_board_has_been_seen(client):
@@ -108,7 +108,7 @@ def test_recommendation_follows_the_connected_board(client):
     client.post("/api/connect", json={"port": "/dev/fake"})
     body = client.get("/api/firmware/catalog").json()
     assert body["board"] == "blackpill_f411ce"
-    assert body["recommended"] == "blackpill_f411ce-app-demo-1.0.0"
+    assert body["recommended"] == "blackpill_f411ce-silkscreen-1.0.0"
 
 
 def test_an_unavailable_image_is_never_recommended(bundle):
@@ -172,7 +172,7 @@ def test_enter_dfu_on_firmware_built_without_it(bundle):
 
 def test_flash_a_bundled_image(client):
     r = client.post("/api/firmware/flash",
-                    json={"id": "blackpill_f411ce-app-demo-1.0.0"})
+                    json={"id": "blackpill_f411ce-silkscreen-1.0.0"})
     assert r.status_code == 200
     assert r.json()["ok"] is True
     _settle(client)
@@ -186,12 +186,12 @@ def test_flash_an_unknown_id(client):
 
 
 def test_flash_rejects_a_corrupted_bundled_image(client, bundle):
-    path = bundle / "blackpill_f411ce" / "app-demo-1.0.0.bin"
+    path = bundle / "blackpill_f411ce" / "silkscreen-1.0.0.bin"
     blob = bytearray(path.read_bytes())
     blob[64] ^= 0xFF
     path.write_bytes(bytes(blob))
     r = client.post("/api/firmware/flash",
-                    json={"id": "blackpill_f411ce-app-demo-1.0.0"})
+                    json={"id": "blackpill_f411ce-silkscreen-1.0.0"})
     assert r.status_code == 400
     assert "checksum" in r.json()["detail"]
 
@@ -228,7 +228,7 @@ def test_progress_reaches_the_websocket_as_flash_frames(client):
     with client.websocket_connect("/ws") as ws:
         assert ws.receive_json()["type"] == "state"
         client.post("/api/firmware/flash",
-                    json={"id": "blackpill_f411ce-app-demo-1.0.0"})
+                    json={"id": "blackpill_f411ce-silkscreen-1.0.0"})
 
         frames = _drain(ws, until=lambda f: f["data"].get("phase") == "done")
 
@@ -247,7 +247,7 @@ def test_a_failed_flash_reports_an_error_frame(bundle):
         with c.websocket_connect("/ws") as ws:
             assert ws.receive_json()["type"] == "state"
             c.post("/api/firmware/flash",
-                   json={"id": "blackpill_f411ce-app-demo-1.0.0"})
+                   json={"id": "blackpill_f411ce-silkscreen-1.0.0"})
             frames = _drain(ws, until=lambda f: f["data"].get("phase") == "error")
         assert frames[-1]["data"]["phase"] == "error"
     app.state.device.disconnect()
@@ -277,11 +277,11 @@ def test_two_flashes_at_once_is_a_conflict(bundle):
                      flasher=DfuFlasher(runner=runner))
     with TestClient(app) as c:
         first = c.post("/api/firmware/flash",
-                       json={"id": "blackpill_f411ce-app-demo-1.0.0"})
+                       json={"id": "blackpill_f411ce-silkscreen-1.0.0"})
         assert first.status_code == 200
         _wait_busy(c)
         second = c.post("/api/firmware/flash",
-                        json={"id": "blackpill_f411ce-app-demo-1.0.0"})
+                        json={"id": "blackpill_f411ce-silkscreen-1.0.0"})
         assert second.status_code == 409
         assert second.json()["err"] == "busy"
         release.set()
@@ -369,7 +369,7 @@ def test_dfu_status_does_not_enumerate_during_a_flash(bundle):
     with TestClient(app) as c:
         c.get("/api/firmware/dfu-status")          # primes the cache
         c.post("/api/firmware/flash",
-               json={"id": "blackpill_f411ce-app-demo-1.0.0"})
+               json={"id": "blackpill_f411ce-silkscreen-1.0.0"})
         # The session's own wait_for_device() legitimately enumerates first;
         # what must never happen is enumerating once the download is under way.
         assert downloading.wait(3.0), "download never started"

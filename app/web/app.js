@@ -2,7 +2,7 @@
 
 // The app (backend + this UI) is versioned independently of the firmware:
 // they are separate projects that happen to live in one repo, and their
-// numbers are not meant to track each other. app-demo is a template, so this
+// numbers are not meant to track each other. silkscreen is a template, so this
 // stays 1.0.0 -- a fork bumps it. The firmware's own version lives in
 // firmware/include/config.h and arrives over the wire in `hello`.
 const APP_VERSION = '1.0.0';

@@ -1,14 +1,14 @@
 #pragma once
 // Project-level firmware configuration.
 //
-// This is the one file to edit when forking app-demo into a real project:
+// This is the one file to edit when forking silkscreen into a real project:
 // name, version, serial speed and the capacity limits below. Which *hardware*
 // exists is not decided here -- that lives in the board header, included at
 // the bottom.
 
 // --- project identity -------------------------------------------------------
-#define FW_PROJECT_NAME "app-demo"
-// app-demo is a template. It stays at 1.0.0 forever; a fork bumps this. The
+#define FW_PROJECT_NAME "silkscreen"
+// silkscreen is a template. It stays at 1.0.0 forever; a fork bumps this. The
 // app (backend + web UI) is versioned separately in app/web/app.js -- the two
 // are unrelated projects and their numbers are not meant to track each other.
 #define FW_VERSION      "1.0.0"

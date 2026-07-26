@@ -26,7 +26,7 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 
 ### Status fields
 
-`fw` is a display string (`"app-demo 1.0.0"`) and is the stable field to show
+`fw` is a display string (`"silkscreen 1.0.0"`) and is the stable field to show
 in a UI. `name`/`ver`/`built` are its structured form, and `mods` lists the
 modules the connected firmware was built with (`["device","system","button",
 "led"]`). Firmware predating the module refactor omits all four; the backend
@@ -114,11 +114,11 @@ release time. `/api/firmware/catalog` serves that manifest:
 ```json
 {"app_version": "1.0.0",
  "board": "blackpill_f411ce",
- "recommended": "blackpill_f411ce-app-demo-1.0.0",
+ "recommended": "blackpill_f411ce-silkscreen-1.0.0",
  "images": [
-   {"id": "blackpill_f411ce-app-demo-1.0.0", "board": "blackpill_f411ce",
-    "name": "app-demo", "version": "1.0.0", "built": "Jul 26 2026 16:25:03",
-    "proto": 1, "method": "dfu", "file": "blackpill_f411ce/app-demo-1.0.0.bin",
+   {"id": "blackpill_f411ce-silkscreen-1.0.0", "board": "blackpill_f411ce",
+    "name": "silkscreen", "version": "1.0.0", "built": "Jul 26 2026 16:25:03",
+    "proto": 1, "method": "dfu", "file": "blackpill_f411ce/silkscreen-1.0.0.bin",
     "size": 86652, "sha256": "...", "notes": "led, button, st7789_240x240, dfu",
     "available": true}]}
 ```

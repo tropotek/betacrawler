@@ -87,7 +87,7 @@ def test_validate_accepts_a_plausible_image():
 
 
 def test_validate_accepts_msp_at_the_very_top_of_sram():
-    # Not a hypothetical: a real app-demo build has MSP == 0x20020000 exactly.
+    # Not a hypothetical: a real silkscreen build has MSP == 0x20020000 exactly.
     # An exclusive upper bound here would reject every genuine image.
     validate_image(make_image(msp=0x2002_0000))
 
