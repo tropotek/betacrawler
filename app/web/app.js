@@ -7,14 +7,30 @@
 // firmware/include/config.h and arrives over the wire in `hello`.
 const APP_VERSION = '1.0.0';
 
+// The single seam between this UI and whatever is on the other end: every
+// request and every pushed frame goes through here, and there is no fetch, no
+// WebSocket and no URL anywhere else in this file. That is what makes an
+// Electron build a rewrite of this one object rather than of the app -- swap
+// these bodies for IPC calls and nothing below changes.
+//
+// Two rules keep that true, and both have been broken before: nothing outside
+// here may construct a request, and nothing in here may take or return a
+// browser-only type (a File, a WebSocket) that an IPC transport could not
+// produce.
 const Api = {
+  // Prefixed onto every request path. '' is same-origin, which is the browser
+  // build. A shell that loads this page from file:// -- where a leading '/'
+  // resolves to the filesystem root, not the backend -- sets this to the
+  // backend's origin instead, with no trailing slash.
+  base: '',
+
   async get(path) {
-    const r = await fetch(path);
+    const r = await fetch(Api.base + path);
     if (!r.ok) throw await Api._err(r);
     return r.json();
   },
   async send(method, path, body) {
-    const r = await fetch(path, {
+    const r = await fetch(Api.base + path, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -23,7 +39,7 @@ const Api = {
     return r.json();
   },
   async sendBody(path, body) {
-    const r = await fetch(path, {
+    const r = await fetch(Api.base + path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/octet-stream' },
       body,
@@ -51,13 +67,38 @@ const Api = {
   dfuStatus: ()          => Api.get('/api/firmware/dfu-status'),
   enterDfu:  ()          => Api.send('POST', '/api/firmware/enter-dfu'),
   flashBundled: (id)     => Api.send('POST', '/api/firmware/flash', { id }),
-  // The image goes up as the raw request body, not multipart: it keeps the
-  // backend free of a python-multipart dependency and lets fetch take the
-  // File object directly, with no FormData wrapper.
-  flashUpload: (file)    => Api.sendBody(
-    `/api/firmware/flash-upload?filename=${encodeURIComponent(file.name)}`, file),
-  socket:    ()          => new WebSocket(
-    `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`),
+  // The image goes up as the raw request body, not multipart: that keeps the
+  // backend free of a python-multipart dependency. Takes bytes rather than the
+  // File itself even though fetch would accept a File as a body directly --
+  // a File cannot cross an IPC boundary, and this would otherwise be the one
+  // method whose signature pins the UI to an HTTP transport.
+  flashUpload: (bytes, filename) => Api.sendBody(
+    `/api/firmware/flash-upload?filename=${encodeURIComponent(filename)}`, bytes),
+
+  // The push channel, exposed as a subscription rather than as a socket.
+  // `handler` receives one parsed {type, data} frame per message; reconnection
+  // lives in here, not at the call site. Returns an unsubscribe function.
+  //
+  // Deliberately does not hand the WebSocket back. A transport with no socket
+  // to hold -- Electron IPC -- has to be able to satisfy this same contract,
+  // and the moment a caller reaches for .onclose it cannot.
+  subscribe(handler) {
+    let ws = null, retry = null, stopped = false;
+    const open = () => {
+      ws = new WebSocket(Api._wsUrl());
+      ws.onmessage = (ev) => handler(JSON.parse(ev.data));
+      ws.onclose = () => { if (!stopped) retry = setTimeout(open, 1000); };
+    };
+    open();
+    return () => { stopped = true; clearTimeout(retry); ws?.close(); };
+  },
+
+  _wsUrl() {
+    // From `base` when it is set, from the page's own origin otherwise --
+    // `new URL` resolves both, and an empty base yields the current origin.
+    const origin = new URL(Api.base || './', location.href);
+    return `${origin.protocol === 'https:' ? 'wss:' : 'ws:'}//${origin.host}/ws`;
+  },
 };
 
 const el = (id) => document.getElementById(id);
@@ -167,7 +208,7 @@ function formatTelemetryValue(def, value) {
 // The config form and telemetry cards are the two most repetitive,
 // DOM-construction-heavy regions of this file -- markup for both now lives in
 // index.html as <template x-for> blocks. These two stores are the only
-// bridge the surrounding plain JS (loadDevice/openSocket/watchdog) needs to
+// bridge the surrounding plain JS (loadDevice/subscribeEvents/watchdog) needs to
 // push data in or read state back out: Alpine.store() is reachable from
 // anywhere with no element handle, unlike Alpine.$data()/refs.
 document.addEventListener('alpine:init', () => {
@@ -667,17 +708,21 @@ el('fw-upload-file').addEventListener('change', async (ev) => {
   store.begin();
   firmwareLog(`> flash ${file.name} (${file.size} bytes)`);
   try {
-    await Api.flashUpload(file);
+    // Read here rather than handing the File to Api: the transport seam takes
+    // bytes, so that it can be something other than fetch one day.
+    await Api.flashUpload(await file.arrayBuffer(), file.name);
   } catch (e) {
     store.onFlashEvent({ phase: 'error', line: e.message });
     showError(e.message);
   }
 });
 
-function openSocket() {
-  const ws = Api.socket();
-  ws.onmessage = (ev) => {
-    const msg = JSON.parse(ev.data);
+// One handler for every frame the backend pushes. Nothing here knows there is
+// a socket underneath -- Api.subscribe owns the transport and its reconnection
+// across backend restarts -- which is what lets an Electron build swap it for
+// IPC without this function changing at all.
+function subscribeEvents() {
+  Api.subscribe((msg) => {
     if (msg.type === 'tlm') Alpine.store('telemetry').render(msg.data);
     else if (msg.type === 'state') {
       const d = msg.data;
@@ -699,8 +744,7 @@ function openSocket() {
     if (el('term-traffic').checked) {
       termAppend(`<< [${msg.type}] ${JSON.stringify(msg.data)}`);
     }
-  };
-  ws.onclose = () => setTimeout(openSocket, 1000);   // survive backend restarts
+  });
 }
 
 // --- disconnect watchdog ---------------------------------------------------
@@ -755,6 +799,6 @@ function startWatchdog() {
   const st = await Api.status();
   setState(st.state, st);
   if (st.state === 'connected') await loadDevice();
-  openSocket();
+  subscribeEvents();
   startWatchdog();
 })();

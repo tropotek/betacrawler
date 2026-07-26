@@ -314,8 +314,8 @@ def create_app(device: DeviceModel | None = None,
 
         Takes the image as the raw request body rather than a multipart form.
         That avoids a `python-multipart` dependency for a single endpoint, and
-        the browser side is simpler too — `fetch` accepts a File object as a
-        body directly, with no FormData wrapper.
+        the caller only has to produce bytes — no FormData wrapper, and no
+        browser-only type in the app's transport seam (see `Api.flashUpload`).
 
         Unlike a bundled image there is no checksum to check this against, so
         validate_image() is the only thing standing between "picked the wrong

@@ -91,6 +91,16 @@ app/web/                static HTML/JS only, talks to the backend exclusively th
                         directly outside it.
 ```
 
+**The `Api` seam has rules, and they are cheap to keep and expensive to retrofit.** Beyond "no
+`fetch`/`WebSocket` outside it": no `Api` method may take or return a browser-only type (a `File`,
+a `Blob`, the `WebSocket` itself) — bytes, strings, plain objects and callbacks only; every path
+goes through `Api.base` so nothing assumes an origin; and the push channel stays
+`Api.subscribe(handler) -> unsubscribe`, owning its own reconnection, rather than handing a socket
+back to a caller that would touch `.onclose`. All three were audited and fixed on 2026-07-27 —
+`flashUpload` really did take a `File`, because `fetch` accepts one, which is exactly how this
+kind of coupling gets in. Full contract, a grep check for the mechanical part, and the port
+assessment: `_notes/review-electron-port-readiness.md`.
+
 **Modules are the core idea.** A board header's `FEATURE_*` flags decide what compiles in;
 `src/modules.cpp` registers those modules into a `core::Registry` at boot, which flattens their
 parameters into one table and their telemetry fields into one frame. `core/` never names a

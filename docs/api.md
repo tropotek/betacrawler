@@ -145,8 +145,7 @@ vector table instead (initial SP in SRAM, Thumb reset vector in flash) and
 rejects sizes outside 1KB–512KB — which is what catches the realistic mistake of
 picking `firmware.elf` or `firmware.hex` out of `.pio/build` instead of
 `firmware.bin`. It takes the image as the **raw request body**, not a multipart
-form: one fewer backend dependency, and `fetch` accepts a `File` object
-directly.
+form: one fewer backend dependency, and the caller only has to produce bytes.
 
 Only one flash runs at a time; a second request is `409 {"err": "busy"}`.
 
