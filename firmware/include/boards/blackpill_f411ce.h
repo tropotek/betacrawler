@@ -43,4 +43,9 @@
 #define DISPLAY_DC      PB1
 #define DISPLAY_RST     PB0
 #define DISPLAY_ROTATION 0
-#define DISPLAY_SPI_HZ  8000000
+// 24MHz: the STM32F411 SPI1 prescaler quantises this to 96/4. The ST7789
+// tolerates far more, and at the old 8MHz (which quantised down to 6MHz) a
+// cycle-mode page flip stalled telemetry 353ms -- past the frontend's 300ms
+// staleness threshold at tlm.rate 10, i.e. a false "stale" badge every 5s.
+// Lower it here if a long or noisy ribbon shows artifacts.
+#define DISPLAY_SPI_HZ  24000000

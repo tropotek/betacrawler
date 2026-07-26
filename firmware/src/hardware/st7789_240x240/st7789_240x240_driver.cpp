@@ -33,7 +33,13 @@
 #define DISPLAY_SPI_HZ 8000000
 #endif
 #ifndef DISPLAY_INIT_BUDGET_MS
-#define DISPLAY_INIT_BUDGET_MS 400
+// Measured, not guessed: gfx->begin() takes a consistent 590ms on this panel
+// (three boots, identical to the millisecond) -- it is almost all mandated
+// reset/SLPOUT delay inside the ST7789 init sequence. The budget sits above
+// that with headroom so WARN slow-init means something; an earlier 400ms
+// guess fired on every healthy boot, which is precisely the kind of false
+// alarm the honest-diagnostic design exists to avoid.
+#define DISPLAY_INIT_BUDGET_MS 900
 #endif
 
 namespace st7789 {
@@ -219,6 +225,9 @@ void St7789Driver::initHardware() {
   logInit(elapsed);
 
   // Splash, so "is it alive" is answerable at a glance on the panel itself.
+  // Drawn, then left up by a deadline checked in tick() -- deliberately not a
+  // delay(), because setup() blocking here would hold off the command loop
+  // and push out the moment the device can answer `hello`.
   gfx->fillScreen(COL_BG);
   gfx->setTextSize(2);
   gfx->setTextColor(COL_ACCENT);
@@ -230,9 +239,7 @@ void St7789Driver::initHardware() {
   gfx->print(core::version());
   gfx->setCursor(10, 140);
   gfx->print(core::boardId());
-  delay(800);
-
-  repaint();
+  splashUntil_ = millis() + kSplashMs;
 }
 
 void St7789Driver::begin() {
@@ -269,6 +276,15 @@ int32_t St7789Driver::livePage() const {
 
 void St7789Driver::tick(uint32_t nowMs) {
   if (mode_ == MODE_OFF || !inited_) return;   // off costs nothing
+
+  // Hold the splash for its dwell, then fall into the normal page.
+  if (splashUntil_) {
+    if ((int32_t)(nowMs - splashUntil_) < 0) return;
+    splashUntil_ = 0;
+    repaint();
+    lastDraw_ = nowMs;
+    return;
+  }
 
   if (page_ == PAGE_CYCLE && nowMs - lastFlip_ >= kCycleMs) {
     lastFlip_ = nowMs;

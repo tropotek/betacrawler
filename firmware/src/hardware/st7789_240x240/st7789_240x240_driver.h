@@ -77,6 +77,9 @@ class St7789Driver : public core::Module {
   static const uint8_t kSlots = 8;
   char     shown_[kSlots][28] = {};
 
+  static const uint32_t kSplashMs = 800;
+  uint32_t splashUntil_ = 0;     // non-zero while the splash is still up
+
   bool     inited_    = false;   // gfx->begin() has run
   int32_t  shownPage_ = PAGE_INFO;
   uint32_t lastDraw_  = 0;
