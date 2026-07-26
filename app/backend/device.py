@@ -60,6 +60,12 @@ class DeviceModel:
                 "ver": hello.get("ver"),
                 "built": hello.get("built"),
                 "mods": hello.get("mods", []),
+                # Optional device capabilities, e.g. ["dfu"]. Firmware built
+                # without FEATURE_DFU -- and any firmware predating `caps`
+                # entirely -- reports nothing, which is what lets the UI grey
+                # out "Reboot to DFU" instead of offering a button that
+                # answers `nodfu`.
+                "caps": hello.get("caps", []),
             }
             schema = self._send("schema")
             self._schema = schema["params"]
@@ -116,6 +122,35 @@ class DeviceModel:
         if not resp.get("ok"):
             raise DeviceError(resp.get("err", "err"), "defaults failed")
         self._values = self._send("getall")["vals"]
+
+    def enter_dfu(self):
+        """Ask the device to reboot into its ROM bootloader.
+
+        The firmware answers BEFORE resetting (it flushes the response, waits
+        briefly, then resets) — so an `ok` here means "request accepted", and
+        the port disappearing a moment later is the expected outcome rather
+        than a fault. Without that ordering there would be no way to tell a
+        successful reboot from a board that simply died.
+
+        Disconnecting immediately is deliberate: the port is about to become
+        invalid, and letting the reader thread discover that as an I/O error
+        would surface a spurious "connection lost" to the user at the exact
+        moment things are working correctly.
+        """
+        resp = self._send("dfu", timeout=2.0)
+        if not resp.get("ok"):
+            err = resp.get("err", "err")
+            # `nodfu` is FEATURE_DFU turned off; `badop` is firmware old enough
+            # not to know the op at all. Different causes, identical meaning to
+            # whoever is looking at the button, and the same fix -- so they get
+            # the same message rather than leaking "badop" into the UI.
+            if err in ("nodfu", "badop"):
+                raise DeviceError(
+                    "nodfu",
+                    "this firmware does not support rebooting to DFU. Use the "
+                    "BOOT0 button method instead.")
+            raise DeviceError(err, "could not enter DFU mode")
+        self._link.disconnect()
 
     # --- terminal (debug page) -----------------------------------------------
     # Mirrors set/save/load_defaults above but also returns the exact wire

@@ -5,16 +5,21 @@
 #include "core/registry.h"
 #include "core/boot_log.h"
 #include "core/version.h"
+#include "dfu.h"
 #include "storage.h"
 
 using namespace core;
 
 // No feature is named anywhere in this file. Which modules exist is decided by
 // the board header via src/modules.cpp; everything here works off the registry.
+// DfuTrigger is not a module -- it has no parameters and no telemetry -- so it
+// is wired directly, exactly like FlashStore, and compiles to a stub that
+// answers "unsupported" when FEATURE_DFU is off.
 static Registry   g_reg;
 static Params     g_params(g_reg);
 static FlashStore g_store(g_reg);
-static Dispatcher g_dispatch(g_reg, g_params, g_store);
+static dfu::DfuTrigger g_boot;
+static Dispatcher g_dispatch(g_reg, g_params, g_store, &g_boot);
 static LineReader g_reader;
 
 static char     g_out[kMaxLineOut];
@@ -100,6 +105,15 @@ void loop() {
         // response and as separate unsolicited lines, so `hello`'s shape is
         // unchanged and every existing consumer keeps working.
         if (q.ok && q.op == Op::Hello) emitBootLog();
+        // A `dfu` request only ARMED the reboot; it happens here, once the
+        // response is genuinely on the wire. Reset any earlier and the host
+        // never sees the ack, leaving it unable to distinguish "rebooting
+        // into the bootloader" from "the board just died".
+        if (g_boot.pending()) {
+          Serial.flush();
+          delay(50);        // USB CDC: flush() queues, the host still has to poll
+          g_boot.reboot();  // does not return
+        }
       }
     }
   }

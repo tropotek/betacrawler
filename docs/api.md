@@ -18,6 +18,11 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 | POST | `/api/params/defaults` | — | `{ok, vals}` |
 | POST | `/api/params/restore` | `{"ini": "[led]\nmode = on\n"}` | `{ok, applied, skipped, vals}` |
 | POST | `/api/terminal` | `{"command": "get led.blink_hz"}` | `{ok, friendly, raw_sent, raw_recv}` |
+| GET | `/api/firmware/catalog` | — | `{app_version, images, board, recommended}` |
+| GET | `/api/firmware/dfu-status` | — | `{present, devices, busy}` |
+| POST | `/api/firmware/enter-dfu` | — | `{ok, ...status}` |
+| POST | `/api/firmware/flash` | `{"id": "<catalog id>"}` | `{ok, id}` |
+| POST | `/api/firmware/flash-upload` | raw `.bin` bytes | `{ok, filename, size}` |
 
 ### Status fields
 
@@ -26,6 +31,16 @@ in a UI. `name`/`ver`/`built` are its structured form, and `mods` lists the
 modules the connected firmware was built with (`["device","system","button",
 "led"]`). Firmware predating the module refactor omits all four; the backend
 reports them as `null` / `[]` rather than failing the handshake.
+
+`caps` lists device capabilities that are **not** modules — things the device
+can *do* rather than things it *has*. Currently only `"dfu"`, present when the
+firmware was built with `FEATURE_DFU`. Same additive contract as `mods`:
+firmware that predates it omits the key and the backend reports `[]`.
+
+`built` is the firmware's own `__DATE__ " " __TIME__`, and the firmware bundle's
+manifest records the identical string. That makes "is the device running *this*
+image?" an exact comparison rather than a version-number guess — two builds of
+the same version number are still told apart.
 
 ### Schema
 
@@ -90,6 +105,51 @@ error status. `raw_sent`/`raw_recv` are the literal wire JSON lines exchanged
 for that command — empty for `help`, or for any error caught before a line is
 ever written to the port (e.g. an unknown key or a malformed argument count).
 
+### Firmware bundle and DFU flashing
+
+The app ships the firmware images that match it, under `app/firmware/`, with a
+`manifest.json` describing each. `app/tools/bundle_firmware.py` produces both at
+release time. `/api/firmware/catalog` serves that manifest:
+
+```json
+{"app_version": "1.0.0",
+ "board": "blackpill_f411ce",
+ "recommended": "blackpill_f411ce-app-demo-1.0.0",
+ "images": [
+   {"id": "blackpill_f411ce-app-demo-1.0.0", "board": "blackpill_f411ce",
+    "name": "app-demo", "version": "1.0.0", "built": "Jul 26 2026 16:25:03",
+    "proto": 1, "method": "dfu", "file": "blackpill_f411ce/app-demo-1.0.0.bin",
+    "size": 86652, "sha256": "...", "notes": "led, button, st7789_240x240, dfu",
+    "available": true}]}
+```
+
+`recommended` is the image whose `board` matches the last device that completed
+a `hello`, and is `null` when no board has been connected in this session. **A
+board in DFU mode reports `0483:df11` and nothing else** — it cannot say what it
+is — so there is no honest recommendation to make without that prior handshake.
+
+Every firmware route works while disconnected, on purpose: a board that needs
+re-flashing is frequently a board that cannot be talked to. The exception is
+`enter-dfu`, which by definition needs a live device; it answers `409
+disconnected` otherwise.
+
+`enter-dfu` sends the firmware's `dfu` op. The firmware **replies before it
+resets** — flushing the response, then rebooting — so `ok:true` means "request
+accepted" and the port vanishing a moment later is the expected outcome, not a
+fault. The backend closes the link immediately for the same reason.
+
+`flash` re-verifies the bundled file's size and sha256 on disk before writing
+anything; the manifest and the binary are two files that can drift apart.
+`flash-upload` has no checksum to check against, so it validates the image's
+vector table instead (initial SP in SRAM, Thumb reset vector in flash) and
+rejects sizes outside 1KB–512KB — which is what catches the realistic mistake of
+picking `firmware.elf` or `firmware.hex` out of `.pio/build` instead of
+`firmware.bin`. It takes the image as the **raw request body**, not a multipart
+form: one fewer backend dependency, and `fetch` accepts a `File` object
+directly.
+
+Only one flash runs at a time; a second request is `409 {"err": "busy"}`.
+
 ### Error responses
 
 | Status | Meaning | Body |
@@ -97,14 +157,17 @@ ever written to the port (e.g. an unknown key or a malformed argument count).
 | 400 | Value rejected | `{"err": "range"\|"enum"\|"toolong"\|"nokey"\|"badtype", "detail": "..."}` |
 | 400 | Restore body is not valid INI | `{"err": "badini", "detail": "..."}` |
 | 400 | Save failed (flash write/read-back mismatch) | `{"err": "flash", "detail": "..."}` |
+| 400 | Bad image, bad catalog entry, failed flash | `{"err": "firmware", "detail": "..."}` |
+| 400 | Firmware cannot reboot to DFU | `{"err": "nodfu", "detail": "..."}` |
 | 409 | Not connected | `{"err": "disconnected", ...}` |
+| 409 | A flash is already running | `{"err": "busy", "detail": "..."}` |
 | 502 | Connect failed / protocol mismatch | `{"detail": "..."}` |
 | 504 | Device did not answer in time | `{"err": "timeout", ...}` |
 
 ## WebSocket `/ws`
 
 Server pushes only; clients send nothing. Every frame is
-`{"type": "tlm"|"state"|"log"|"raw", "data": ...}`.
+`{"type": "tlm"|"state"|"log"|"flash"|"raw", "data": ...}`.
 
 - `tlm` — one key per entry in the schema's `tlm` array. For the stock
   blackpill build that is `{up, clk, ram, temp, vdd, btn}`, but the field set
@@ -118,6 +181,18 @@ Server pushes only; clients send nothing. Every frame is
   that connects long after boot still receives it. The UI shows these in the
   Terminal prefixed `[device]`. Buffer is 8 lines; if boot produced more, a
   final `boot: log full, lines dropped` says so rather than hiding it.
+
+- `flash` — firmware-flashing progress:
+  `{phase, pct, op, line}`. `phase` is `waiting` → `flashing` → `done`|`error`.
+  `op` names which of dfu-util's two passes a percentage belongs to (`erase`
+  then `download`, each running 0–100%); a single bar keyed on a bare
+  percentage would reach 100%, snap back and climb again. `line` is dfu-util's
+  own output, passed through unfiltered — including the "Invalid DFU suffix"
+  warning every raw `.bin` produces.
+
+  Deliberately **not** sent as `log`. Log frames are the *device* talking and
+  the UI renders them as `[device] …`; flashing output comes from dfu-util
+  running on the host, and filing it under `log` would misattribute it.
 
 A `save` stalls the board ~1s and telemetry will gap. **That is not a
 disconnect** — do not treat it as one.

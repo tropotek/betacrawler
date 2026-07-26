@@ -37,6 +37,7 @@ static Op opFromString(const char* s) {
   if (strcmp(s, "save") == 0)     return Op::Save;
   if (strcmp(s, "defaults") == 0) return Op::Defaults;
   if (strcmp(s, "tlm") == 0)      return Op::Tlm;
+  if (strcmp(s, "dfu") == 0)      return Op::Dfu;
   return Op::Unknown;
 }
 

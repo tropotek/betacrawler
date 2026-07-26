@@ -1,16 +1,19 @@
 """FastAPI surface. This is the contract an Electron port must reimplement."""
 import asyncio
 import logging
+import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, StrictInt, StrictStr
 
 from . import settings_ini, terminal
 from .device import DeviceModel, DeviceError, ProtoMismatch
+from .firmware import (
+    Catalog, DfuFlasher, FlashBusy, FlashSession, FirmwareError, validate_image)
 from .link import list_candidate_ports
 
 log = logging.getLogger(__name__)
@@ -36,6 +39,10 @@ class TerminalBody(BaseModel):
 
 class RestoreBody(BaseModel):
     ini: str
+
+
+class FlashBody(BaseModel):
+    id: str
 
 
 class Broadcaster:
@@ -80,7 +87,21 @@ class Broadcaster:
             payload = {"type": "state", "data": msg["state"]}
         else:
             payload = {"type": "raw", "data": msg}
-        asyncio.run_coroutine_threadsafe(self._fanout(payload), self._loop)
+        self.publish_event(payload["type"], payload["data"])
+
+    def publish_event(self, kind: str, data):
+        """Fan out an arbitrary typed event from any thread.
+
+        The flash worker uses this for `{"type": "flash"}` frames. Those are
+        deliberately NOT sent as `log`: app.js renders `log` in the Terminal as
+        `[device] …`, and flashing progress does not come from the device — it
+        comes from dfu-util running on this host.
+        """
+        if self._loop is None:
+            log.warning("broadcaster not bound to a loop yet; dropping %s", kind)
+            return
+        asyncio.run_coroutine_threadsafe(
+            self._fanout({"type": kind, "data": data}), self._loop)
 
     async def _fanout(self, payload: dict):
         for ws in list(self._clients):
@@ -95,10 +116,21 @@ class Broadcaster:
                 self._clients.discard(ws)
 
 
-def create_app(device: DeviceModel | None = None) -> FastAPI:
+def create_app(device: DeviceModel | None = None,
+               catalog: Catalog | None = None,
+               flasher: DfuFlasher | None = None) -> FastAPI:
     device = device or DeviceModel()
+    catalog = catalog or Catalog()
+    flasher = flasher or DfuFlasher()
     bus = Broadcaster()
     device.subscribe(bus.publish_threadsafe)
+    flash = FlashSession(flasher, on_event=lambda ev: bus.publish_event("flash", ev))
+    # Uploaded images land here. One directory per app instance, so parallel
+    # test runs (and two servers on one machine) cannot scribble on each
+    # other's scratch file.
+    upload_dir = Path(tempfile.mkdtemp(prefix="app-demo-fw-"))
+    # Last successful DFU enumeration, served while a flash holds the device.
+    last_devices: list[dict] = []
 
     # lifespan, not the deprecated @app.on_event("startup")
     @asynccontextmanager
@@ -116,6 +148,14 @@ def create_app(device: DeviceModel | None = None) -> FastAPI:
             status = 504
         return JSONResponse(status_code=status,
                             content={"err": exc.code, "detail": str(exc)})
+
+    @app.exception_handler(FirmwareError)
+    async def _firmware_error(_request, exc: FirmwareError):
+        # Same {"err", "detail"} shape as every other error in docs/api.md.
+        status = 409 if isinstance(exc, FlashBusy) else 400
+        code = "busy" if isinstance(exc, FlashBusy) else "firmware"
+        return JSONResponse(status_code=status,
+                            content={"err": code, "detail": str(exc)})
 
     @app.get("/api/ports")
     def ports():
@@ -209,6 +249,84 @@ def create_app(device: DeviceModel | None = None) -> FastAPI:
                 skipped.append({"key": key, "reason": str(exc)})
         return {"ok": bool(applied) and not skipped,
                 "applied": applied, "skipped": skipped, "vals": device.values()}
+
+    # --- firmware / DFU -----------------------------------------------------
+    # Everything here works while DISCONNECTED, on purpose: a board that needs
+    # re-flashing is frequently a board that cannot be talked to. The one
+    # exception is enter-dfu, which by definition needs a live device.
+
+    @app.get("/api/firmware/catalog")
+    def firmware_catalog():
+        """What this app shipped with, plus which entry suits the last board seen.
+
+        A board in DFU mode reports `0483:df11` and nothing else — it cannot
+        say what it is. So `recommended` is derived from the `board` string of
+        the last successful `hello`, and is null when no board has been
+        connected in this session. The UI says so rather than guessing.
+        """
+        board = device.status().get("board")
+        images = catalog.images()
+        recommended = next(
+            (img["id"] for img in images
+             if board and img.get("board") == board and img.get("available")),
+            None)
+        return {"app_version": catalog.app_version(),
+                "images": images,
+                "board": board,
+                "recommended": recommended}
+
+    @app.get("/api/firmware/dfu-status")
+    def firmware_dfu_status():
+        # Never enumerate while a flash is running. `dfu-util -l` OPENS the USB
+        # device, and the UI polls this every 1.5s -- so a long download would
+        # be interrupted repeatedly by a second process claiming the same
+        # interface mid-write. Serving the last known list keeps the UI honest
+        # (the board is, after all, still in DFU) and keeps exactly one process
+        # touching the device at a time.
+        if flash.busy:
+            return {"present": True, "devices": last_devices, "busy": True}
+        last_devices[:] = flasher.devices()
+        return {"present": bool(last_devices), "devices": last_devices,
+                "busy": False}
+
+    @app.post("/api/firmware/enter-dfu")
+    def firmware_enter_dfu():
+        if device.status()["state"] != "connected":
+            raise DeviceError("disconnected", "not connected")
+        device.enter_dfu()
+        # The port is gone by now (see DeviceModel.enter_dfu), so this reports
+        # the post-reboot state rather than the one the caller started in.
+        return {"ok": True, **device.status()}
+
+    @app.post("/api/firmware/flash")
+    def firmware_flash(body: FlashBody):
+        # verify() re-hashes the file on disk instead of trusting the
+        # manifest: the two can drift (a bad merge, a partial checkout), and
+        # the cost of being wrong is a board that no longer boots.
+        path = catalog.verify(body.id)
+        img = catalog.get(body.id)
+        flash.start(path, f"{img['name']} {img['version']} ({img['board']})")
+        return {"ok": True, "id": body.id}
+
+    @app.post("/api/firmware/flash-upload")
+    async def firmware_flash_upload(request: Request, filename: str = "uploaded image"):
+        """The Advanced path: flash a .bin the user picked themselves.
+
+        Takes the image as the raw request body rather than a multipart form.
+        That avoids a `python-multipart` dependency for a single endpoint, and
+        the browser side is simpler too — `fetch` accepts a File object as a
+        body directly, with no FormData wrapper.
+
+        Unlike a bundled image there is no checksum to check this against, so
+        validate_image() is the only thing standing between "picked the wrong
+        file out of .pio/build" and a board that no longer enumerates.
+        """
+        blob = await request.body()
+        validate_image(blob)
+        path = upload_dir / "upload.bin"
+        path.write_bytes(blob)
+        flash.start(path, filename)
+        return {"ok": True, "filename": filename, "size": len(blob)}
 
     @app.post("/api/terminal")
     def terminal_command(body: TerminalBody):

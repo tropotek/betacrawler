@@ -52,6 +52,15 @@ struct MockStore : Persistence {
   bool load(Params*) override { return false; }
 };
 
+// The reboot-to-bootloader seam. Counting calls is the point: a `dfu` op must
+// arm the reboot exactly once, and a refused one must not touch it at all.
+struct MockBootloader : Bootloader {
+  bool available = true;
+  int  enterCalls = 0;
+  bool supported() const override { return available; }
+  bool enterDfu() override { ++enterCalls; return available; }
+};
+
 static Registry fakeReg;
 static Registry realReg;
 static MockDriver driver;
@@ -352,6 +361,107 @@ void test_schema_golden_fixture_matches_firmware() {
   }
 }
 
+// --- reboot to DFU -----------------------------------------------------------
+
+void test_dfu_op_arms_the_bootloader_exactly_once() {
+  Params p(fakeReg); MockStore store; MockBootloader boot;
+  Dispatcher d(fakeReg, p, store, &boot);
+
+  Request q = parseRequest("{\"id\":20,\"op\":\"dfu\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_EQUAL_INT(1, boot.enterCalls);
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"ok\":true"));
+}
+
+// The response has to be produced BEFORE the MCU resets, or the host cannot
+// tell a successful reboot from a board that died. The seam only arms; main.cpp
+// resets afterwards. This asserts the op still answers with a complete,
+// well-formed line.
+void test_dfu_op_answers_before_any_reset() {
+  Params p(fakeReg); MockStore store; MockBootloader boot;
+  Dispatcher d(fakeReg, p, store, &boot);
+
+  Request q = parseRequest("{\"id\":21,\"op\":\"dfu\"}");
+  size_t n = d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_TRUE(n > 0);
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"id\":21"));
+  TEST_ASSERT_EQUAL_CHAR('}', out[n - 1]);
+}
+
+void test_dfu_op_on_a_board_without_support_reports_nodfu() {
+  Params p(fakeReg); MockStore store; MockBootloader boot;
+  boot.available = false;
+  Dispatcher d(fakeReg, p, store, &boot);
+
+  Request q = parseRequest("{\"id\":22,\"op\":\"dfu\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"ok\":false"));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"err\":\"nodfu\""));
+}
+
+// FEATURE_DFU off wires no Bootloader at all. The op must still be answered
+// rather than crash on a null seam.
+void test_dfu_op_with_no_bootloader_wired_reports_nodfu() {
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);          // no bootloader argument
+
+  Request q = parseRequest("{\"id\":23,\"op\":\"dfu\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"err\":\"nodfu\""));
+}
+
+void test_hello_advertises_dfu_in_caps_when_supported() {
+  Params p(realReg); MockStore store; MockBootloader boot;
+  Dispatcher d(realReg, p, store, &boot);
+
+  Request q = parseRequest("{\"id\":24,\"op\":\"hello\"}");
+  d.handle(q, out, sizeof(out));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"caps\":[\"dfu\"]"));
+}
+
+void test_hello_caps_is_empty_without_dfu_support() {
+  Params p(realReg); MockStore store; MockBootloader boot;
+  boot.available = false;
+  Dispatcher d(realReg, p, store, &boot);
+
+  Request q = parseRequest("{\"id\":25,\"op\":\"hello\"}");
+  d.handle(q, out, sizeof(out));
+  // Present but empty, not absent: the app reads a missing `caps` the same
+  // way, but an empty array is the honest answer for firmware that HAS the
+  // field and simply cannot do it.
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"caps\":[]"));
+  TEST_ASSERT_NULL(strstr(out, "\"dfu\""));
+}
+
+// hello's existing shape is a contract (app.js, docs/api.md, the Python
+// tests). `caps` is additive and must not have disturbed it.
+void test_hello_keeps_its_existing_fields_alongside_caps() {
+  Params p(realReg); MockStore store; MockBootloader boot;
+  Dispatcher d(realReg, p, store, &boot);
+
+  Request q = parseRequest("{\"id\":26,\"op\":\"hello\"}");
+  d.handle(q, out, sizeof(out));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"app-demo 1.0.0\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"proto\":1"));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"mods\":["));
+}
+
+// A `dfu` request must not be mistaken for anything else, and a near-miss
+// must still not resolve to Dfu.
+void test_dfu_is_parsed_as_its_own_op() {
+  Request q = parseRequest("{\"id\":27,\"op\":\"dfu\"}");
+  TEST_ASSERT_TRUE(q.ok);
+  TEST_ASSERT_EQUAL_INT((int)Op::Dfu, (int)q.op);
+
+  Request bad = parseRequest("{\"id\":28,\"op\":\"dfuu\"}");
+  TEST_ASSERT_FALSE(bad.ok);
+  TEST_ASSERT_EQUAL_STRING("badop", bad.err);
+}
+
 void setUp() { driver.calls = 0; }
 void tearDown() {}
 
@@ -380,5 +490,13 @@ int main() {
   RUN_TEST(test_schema_lists_all_params_and_fits_buffer);
   RUN_TEST(test_schema_carries_groups_and_the_telemetry_descriptor);
   RUN_TEST(test_schema_golden_fixture_matches_firmware);
+  RUN_TEST(test_dfu_op_arms_the_bootloader_exactly_once);
+  RUN_TEST(test_dfu_op_answers_before_any_reset);
+  RUN_TEST(test_dfu_op_on_a_board_without_support_reports_nodfu);
+  RUN_TEST(test_dfu_op_with_no_bootloader_wired_reports_nodfu);
+  RUN_TEST(test_hello_advertises_dfu_in_caps_when_supported);
+  RUN_TEST(test_hello_caps_is_empty_without_dfu_support);
+  RUN_TEST(test_hello_keeps_its_existing_fields_alongside_caps);
+  RUN_TEST(test_dfu_is_parsed_as_its_own_op);
   return UNITY_END();
 }

@@ -76,6 +76,12 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
       // has no LED" apart from "the LED controls failed to load".
       JsonArray mods = doc["mods"].to<JsonArray>();
       for (uint8_t i = 0; i < reg_.moduleCount(); ++i) mods.add(reg_.moduleId(i));
+      // Optional device capabilities that are not modules -- things the
+      // device can DO rather than things it HAS. Additive, exactly as `mods`
+      // was: firmware without it simply omits the key, and the app treats a
+      // missing `caps` as "none", so no existing consumer is affected.
+      JsonArray caps = doc["caps"].to<JsonArray>();
+      if (boot_ && boot_->supported()) caps.add("dfu");
       break;
     }
 
@@ -171,6 +177,14 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
     case Op::Tlm:
       tlmOn_ = q.tlmOn;
       doc["ok"] = true;
+      break;
+
+    case Op::Dfu:
+      // Same shape as Op::Save's `err:"flash"` -- the seam returns a bool and
+      // the failure gets a name. `enterDfu()` only ARMS the reboot; main.cpp
+      // performs it after this response has been flushed to the host.
+      doc["ok"] = boot_ && boot_->enterDfu();
+      if (!doc["ok"]) doc["err"] = "nodfu";
       break;
 
     case Op::Unknown:

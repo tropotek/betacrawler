@@ -33,6 +33,18 @@
 #define FEATURE_LED     1
 #define FEATURE_BUTTON  0
 #define FEATURE_ST7789_240X240 0
+// Reboot-to-bootloader, so the app can flash this board over USB without a
+// jumper. Requires DFU_SYSMEM_ADDR below. Only enable it on a part that has a
+// USB DFU bootloader in ROM -- every STM32F4 does; check the reference manual
+// for anything else.
+#define FEATURE_DFU     0
+
+// Required when FEATURE_DFU is 1: the base of system memory, where this
+// part's ROM bootloader lives. Family-specific -- 0x1FFF0000 on an F411,
+// different on an F103 or an H7. Look up the "system memory" row in the
+// device's reference manual; a wrong value here means the jump lands nowhere
+// and the board simply reboots into the app.
+// #define DFU_SYSMEM_ADDR 0x1FFF0000
 
 // --- pin map ----------------------------------------------------------------
 // Only the pins the enabled features need. Each module's driver documents

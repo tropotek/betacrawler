@@ -12,6 +12,22 @@ struct Persistence {
   virtual bool load(Params* p) = 0;
 };
 
+// The reboot-to-bootloader seam, exactly parallel to Persistence above: an
+// effect `core/` must be able to request but must not implement. src/dfu.cpp
+// supplies the Arduino half, the way storage.cpp does for Persistence. It is
+// not a Module because it has no parameters and no telemetry -- the registry
+// would buy it nothing.
+//
+// enterDfu() ARMS the reboot; it must not reset the MCU itself. The response
+// to the `dfu` op has to reach the host before the port disappears, or the app
+// cannot tell a successful reboot from a board that died. main.cpp prints the
+// reply, flushes, and only then performs the reset.
+struct Bootloader {
+  virtual ~Bootloader() {}
+  virtual bool supported() const = 0;   // reported in hello's `caps`
+  virtual bool enterDfu() = 0;          // false if this board cannot
+};
+
 // Serializes one telemetry frame from values collected by the registry. The
 // field set comes entirely from the registered modules' TlmDefs, so a board
 // that enables a new sensor module publishes it with no change here.
@@ -28,8 +44,12 @@ size_t writeLog(char* out, size_t cap, const char* msg);
 
 class Dispatcher {
  public:
-  Dispatcher(Registry& reg, Params& p, Persistence& store)
-      : reg_(reg), p_(p), store_(store) {}
+  // `boot` is optional and defaults to none: a board built without DFU
+  // support genuinely has no bootloader seam, the same way Registry::add()
+  // accepts a null driver for a module with no hardware half.
+  Dispatcher(Registry& reg, Params& p, Persistence& store,
+             Bootloader* boot = nullptr)
+      : reg_(reg), p_(p), store_(store), boot_(boot) {}
 
   // Writes a response line (no trailing newline) into out. Returns length.
   size_t handle(const Request& q, char* out, size_t cap);
@@ -40,6 +60,7 @@ class Dispatcher {
   Registry&    reg_;
   Params&      p_;
   Persistence& store_;
+  Bootloader*  boot_;
   bool         tlmOn_ = true;
 };
 

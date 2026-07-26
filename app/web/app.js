@@ -22,6 +22,15 @@ const Api = {
     if (!r.ok) throw await Api._err(r);
     return r.json();
   },
+  async sendBody(path, body) {
+    const r = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body,
+    });
+    if (!r.ok) throw await Api._err(r);
+    return r.json();
+  },
   async _err(r) {
     let detail = r.statusText;
     try { const j = await r.json(); detail = j.detail || j.err || detail; } catch {}
@@ -38,6 +47,15 @@ const Api = {
   defaults:  ()          => Api.send('POST', '/api/params/defaults'),
   sendTerminalCommand: (command) => Api.send('POST', '/api/terminal', { command }),
   restoreIni: (ini)      => Api.send('POST', '/api/params/restore', { ini }),
+  firmwareCatalog: ()    => Api.get('/api/firmware/catalog'),
+  dfuStatus: ()          => Api.get('/api/firmware/dfu-status'),
+  enterDfu:  ()          => Api.send('POST', '/api/firmware/enter-dfu'),
+  flashBundled: (id)     => Api.send('POST', '/api/firmware/flash', { id }),
+  // The image goes up as the raw request body, not multipart: it keeps the
+  // backend free of a python-multipart dependency and lets fetch take the
+  // File object directly, with no FormData wrapper.
+  flashUpload: (file)    => Api.sendBody(
+    `/api/firmware/flash-upload?filename=${encodeURIComponent(file.name)}`, file),
   socket:    ()          => new WebSocket(
     `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`),
 };
@@ -45,6 +63,10 @@ const Api = {
 const el = (id) => document.getElementById(id);
 let connected = false;
 let stale = false;
+// Last `hello` payload, kept because more than the navbar needs it now: the
+// Firmware page reads `caps` to decide whether the device can reboot itself
+// into DFU, and `built`/`ver` to mark which bundled image is already running.
+let deviceInfo = {};
 
 function showError(msg) {
   const a = el('alert');
@@ -56,6 +78,9 @@ function showError(msg) {
 function setState(state, info) {
   connected = state === 'connected';
   stale = false;   // any ground-truth state transition supersedes staleness
+  // Only replace it on a connect: a disconnect keeps the last identity around
+  // so the Firmware page can still say which board it was.
+  if (connected && info) deviceInfo = info;
   // Unsaved RAM-only changes died with the connection; leaving the Save
   // button armed would just produce a "disconnected" error on click.
   if (!connected) setDirty(false);
@@ -73,6 +98,10 @@ function setState(state, info) {
   el('form').querySelectorAll('input,select').forEach((i) => { i.disabled = !connected; });
   updateNavAvailability();
   updateTerminalAvailability();
+  // Optional-chained: setState can run before Alpine has initialised (this
+  // script is not deferred, Alpine's is), and the Firmware page re-syncs on
+  // entry anyway.
+  window.Alpine?.store('firmware')?.syncDevice(connected, deviceInfo);
 }
 
 // Telemetry-staleness: distinct from a hard disconnect. The port is still
@@ -197,6 +226,130 @@ document.addEventListener('alpine:init', () => {
       }
     },
   });
+
+  // --- firmware / DFU --------------------------------------------------------
+  // Unlike config and telemetry, this store is NOT schema-driven — there is no
+  // device to ask. It reflects the app's own bundle plus whatever dfu-util can
+  // see, which is why the whole page keeps working while disconnected.
+  Alpine.store('firmware', {
+    images: [],
+    recommended: null,
+    board: null,          // board of the last device connected, or null
+    selected: null,
+    dfuPresent: false,
+    busy: false,
+    phase: 'idle',        // idle | waiting | flashing | done | error
+    pct: 0,
+    op: null,
+
+    // Connection state is mirrored in here rather than read from the
+    // module-level `connected`/`deviceInfo`. Those are plain variables, and
+    // Alpine only re-renders on changes to reactive store properties -- the
+    // getters below would render once and then never update.
+    deviceConnected: false,
+    device: {},
+
+    syncDevice(isConnected, info) {
+      const next = info || {};
+      // Connecting is what makes a recommendation possible at all -- the
+      // catalog's `recommended` is derived from the board in `hello`. Without
+      // re-fetching here, connecting while already sitting on this page
+      // leaves the recommendation permanently null.
+      const changed = this.deviceConnected !== isConnected
+        || this.device.board !== next.board
+        || this.device.built !== next.built;
+      this.deviceConnected = isConnected;
+      this.device = next;
+      if (changed) this.refresh();
+    },
+
+    get deviceSummary() {
+      if (!this.deviceConnected) {
+        return this.board
+          ? `not connected (last seen: ${this.board})`
+          : 'not connected';
+      }
+      const d = this.device;
+      return [d.fw, d.board, d.built && `built ${d.built}`]
+        .filter(Boolean).join(' · ');
+    },
+
+    // An exact match, not a version-number comparison: the manifest records
+    // the same build timestamp the device reports in `hello`, so two builds
+    // of the same version number are still told apart.
+    isRunning(img) {
+      return this.deviceConnected && !!this.device.built
+        && img.built === this.device.built && img.version === this.device.ver;
+    },
+
+    get canEnterDfu() {
+      return this.deviceConnected && !this.dfuPresent && !this.busy
+        && (this.device.caps || []).includes('dfu');
+    },
+
+    get canFlash() {
+      const img = this.images.find((i) => i.id === this.selected);
+      return !!img && img.available && this.dfuPresent && !this.busy;
+    },
+
+    get statusText() {
+      switch (this.phase) {
+        case 'waiting':  return 'waiting for a device in DFU mode…';
+        // dfu-util runs two passes, erase then download, each 0-100%. Naming
+        // the current one is why the bar reaching 100% twice isn't confusing.
+        case 'flashing': return this.op ? `${this.op}…` : 'flashing…';
+        case 'done':     return 'flash complete';
+        case 'error':    return 'flash failed';
+        default:         return '';
+      }
+    },
+
+    async refresh() {
+      try {
+        const cat = await Api.firmwareCatalog();
+        this.images = cat.images;
+        this.recommended = cat.recommended;
+        this.board = cat.board;
+        // Only preselect; never override a choice already made by hand.
+        if (!this.selected && cat.recommended) this.selected = cat.recommended;
+      } catch (e) { showError(e.message); }
+    },
+
+    async pollDfu() {
+      try {
+        const st = await Api.dfuStatus();
+        this.dfuPresent = st.present;
+        this.busy = st.busy;
+      } catch { /* backend restarting; the next tick retries */ }
+    },
+
+    onFlashEvent(ev) {
+      this.phase = ev.phase;
+      if (ev.op) this.op = ev.op;
+      if (typeof ev.pct === 'number') this.pct = ev.pct;
+      if (ev.phase === 'error') this.pct = 100;
+      if (ev.line) firmwareLog(ev.line);
+      if (ev.phase === 'done' || ev.phase === 'error') {
+        this.busy = false;
+        this.op = null;
+        // A finished flash changes what is on the board, so the "currently
+        // running" marker is stale until the device is reconnected and
+        // re-identified. Re-reading the catalog costs nothing and keeps the
+        // recommendation honest.
+        this.refresh();
+      } else {
+        this.busy = true;
+      }
+    },
+
+    begin() {
+      this.phase = 'waiting';
+      this.pct = 0;
+      this.op = null;
+      this.busy = true;
+      el('fw-log').value = '';
+    },
+  });
 });
 
 // setState()'s form-disable loop runs synchronously right after loadDevice()
@@ -280,16 +433,24 @@ el('defaults').addEventListener('click', async () => {
 });
 
 // --- side-menu navigation ---------------------------------------------------
-const PAGES = ['home', 'config', 'telemetry', 'terminal', 'help'];
+const PAGES = ['home', 'config', 'telemetry', 'terminal', 'firmware', 'help'];
 // Terminal is deliberately NOT here. It is readable while disconnected so you
 // can sit on it and watch the device's boot record arrive when you connect --
 // the firmware replays that after `hello`, and being forced to connect first
 // and navigate second is exactly the moment you would miss it. Its controls
 // are disabled instead of the whole page (updateTerminalAvailability).
+//
+// Firmware is not here either, for a stronger version of the same reason: a
+// board that needs re-flashing is frequently a board that cannot be talked
+// to, and gating the recovery tool on a working device would be exactly
+// backwards.
 const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry']);
 
 function showPage(page) {
   for (const p of PAGES) el(`page-${p}`).classList.toggle('d-none', p !== page);
+  // Polling for a DFU device costs a `dfu-util -l` subprocess per tick, so it
+  // runs only while the page that displays it is actually on screen.
+  setDfuPolling(page === 'firmware');
   document.querySelectorAll('[data-page]').forEach((btn) => {
     const isActive = btn.dataset.page === page;
     btn.classList.toggle('active', isActive);
@@ -433,6 +594,86 @@ el('term-save').addEventListener('click', async () => {
   }
 });
 
+// --- firmware page -----------------------------------------------------------
+const FW_MAX_LINES = 400;
+let dfuPollTimer = null;
+
+function firmwareLog(text) {
+  const out = el('fw-log');
+  const lines = (out.value ? out.value.split('\n') : []).concat(text);
+  out.value = lines.slice(-FW_MAX_LINES).join('\n');
+  out.scrollTop = out.scrollHeight;
+}
+
+function setDfuPolling(on) {
+  const store = window.Alpine?.store('firmware');
+  if (on && store && !dfuPollTimer) {
+    store.syncDevice(connected, deviceInfo);
+    store.refresh();
+    store.pollDfu();
+    dfuPollTimer = setInterval(() => store.pollDfu(), 1500);
+  } else if (!on && dfuPollTimer) {
+    clearInterval(dfuPollTimer);
+    dfuPollTimer = null;
+  }
+}
+
+el('fw-enter-dfu').addEventListener('click', async () => {
+  const store = Alpine.store('firmware');
+  try {
+    await Api.enterDfu();
+    // The device acked and is now resetting; its port is already gone, so
+    // reflect that immediately rather than waiting for the watchdog to
+    // notice and report it as a fault.
+    setState('disconnected');
+    firmwareLog('device acknowledged the DFU request and is rebooting');
+    // The ROM bootloader takes a moment to enumerate.
+    setTimeout(() => store.pollDfu(), 1200);
+  } catch (e) {
+    showError(e.message);
+    firmwareLog(`ERROR: ${e.message}`);
+  }
+});
+
+el('fw-flash').addEventListener('click', async () => {
+  const store = Alpine.store('firmware');
+  const img = store.images.find((i) => i.id === store.selected);
+  if (!img) return;
+  if (!window.confirm(
+      `Flash ${img.name} ${img.version} (${img.board}) to the board?\n\n`
+      + 'This overwrites the firmware currently on it.')) return;
+  store.begin();
+  firmwareLog(`> flash ${img.id}`);
+  try {
+    await Api.flashBundled(img.id);
+  } catch (e) {
+    // Progress arrives over the WebSocket, but a request rejected outright
+    // (bad checksum, another flash already running) never gets that far.
+    store.onFlashEvent({ phase: 'error', line: e.message });
+    showError(e.message);
+  }
+});
+
+el('fw-upload').addEventListener('click', () => el('fw-upload-file').click());
+
+el('fw-upload-file').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  ev.target.value = '';   // so re-picking the same file fires `change` again
+  if (!file) return;
+  const store = Alpine.store('firmware');
+  if (!window.confirm(
+      `Flash ${file.name} to the board?\n\n`
+      + 'Nothing verifies this file matches your board.')) return;
+  store.begin();
+  firmwareLog(`> flash ${file.name} (${file.size} bytes)`);
+  try {
+    await Api.flashUpload(file);
+  } catch (e) {
+    store.onFlashEvent({ phase: 'error', line: e.message });
+    showError(e.message);
+  }
+});
+
 function openSocket() {
   const ws = Api.socket();
   ws.onmessage = (ev) => {
@@ -441,6 +682,11 @@ function openSocket() {
     else if (msg.type === 'state') {
       const d = msg.data;
       setState(typeof d === 'string' ? d : d.state, typeof d === 'object' ? d : null);
+    } else if (msg.type === 'flash') {
+      // Its own frame type, not `log`: log frames are the DEVICE talking and
+      // render in the Terminal as `[device] …`. This is dfu-util running on
+      // the host, and putting it in the Terminal would misattribute it.
+      Alpine.store('firmware').onFlashEvent(msg.data);
     } else if (msg.type === 'log') {
       // Device log lines are unprompted, so they are marked to distinguish
       // them from a reply to something the user typed. The firmware replays

@@ -16,6 +16,19 @@
 #define FEATURE_LED     1
 #define FEATURE_BUTTON  1
 #define FEATURE_ST7789_240X240 1
+// Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
+// bootloader in ROM, so this costs a magic word and a reset -- no bootloader
+// to flash, and nothing to erase it. Turning it off only removes the app's
+// one-click path; BOOT0 + NRST still reaches the same ROM code.
+#define FEATURE_DFU     1
+
+// --- DFU --------------------------------------------------------------------
+// System-memory base, where the STM32 ROM bootloader lives. This is
+// family-specific (0x1FFF0000 on the F411; an F103 or an H7 differ), so it
+// belongs here rather than in src/dfu.cpp -- porting to another STM32 is then
+// a header edit, not a source edit. Check the "system memory" row of the
+// device's reference manual before copying this to a new part.
+#define DFU_SYSMEM_ADDR 0x1FFF0000
 
 // --- pin map ----------------------------------------------------------------
 // Deferred to the Arduino variant's own names (LED_BUILTIN = PC13,

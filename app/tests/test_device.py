@@ -29,7 +29,7 @@ VALUES = {"led.mode": "blink", "led.blink_hz": 2,
           "disp.mode": "on", "disp.page": "info", "disp.rate": 2}
 
 
-def device_responder(proto=1):
+def device_responder(proto=1, caps=("dfu",)):
     def responder(req, emit):
         op = req["op"]
         rid = req["id"]
@@ -38,7 +38,8 @@ def device_responder(proto=1):
                   "proto": proto, "board": "blackpill_f411ce",
                   "name": "app-demo", "ver": "1.0.0",
                   "built": "Jul 26 2026 14:03:11",
-                  "mods": ["device", "system", "button", "led", "st7789_240x240"]})
+                  "mods": ["device", "system", "button", "led", "st7789_240x240"],
+                  "caps": list(caps)})
         elif op == "schema":
             emit({"id": rid, "ok": True, "params": SCHEMA, "tlm": TLM_SCHEMA})
         elif op == "getall":
@@ -53,6 +54,11 @@ def device_responder(proto=1):
             emit({"id": rid, "ok": True})
         elif op in ("save", "defaults"):
             emit({"id": rid, "ok": True})
+        elif op == "dfu":
+            # Mirrors the firmware: it answers BEFORE resetting, so an `ok`
+            # here means "request accepted", not "already rebooted".
+            emit({"id": rid, "ok": True} if "dfu" in caps
+                 else {"id": rid, "ok": False, "err": "nodfu"})
         else:
             emit({"id": rid, "ok": False, "err": "badop"})
     return responder
@@ -229,3 +235,88 @@ def test_connect_port_open_failure_raises_device_error():
     assert exc.value.code == "connect_failed"
     assert "Port /dev/nonexistent not found" in str(exc.value)
     assert dev.status()["state"] == "disconnected"
+
+
+# --- DFU ---------------------------------------------------------------------
+
+def _connected(caps=("dfu",)):
+    fake = FakeSerial(responder=device_responder(caps=caps))
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    dev.connect("/dev/fake")
+    return dev
+
+
+def test_caps_are_reported_in_status():
+    dev = _connected()
+    try:
+        assert dev.status()["caps"] == ["dfu"]
+    finally:
+        dev.disconnect()
+
+
+def test_caps_default_to_empty_for_firmware_that_predates_them():
+    """`caps` was added after Project 1 shipped. Older firmware omits it, and
+    must come through as "no capabilities" rather than a KeyError."""
+    dev = _connected(caps=())
+    try:
+        assert dev.status()["caps"] == []
+    finally:
+        dev.disconnect()
+
+
+def test_enter_dfu_drops_the_link():
+    """The port vanishes a moment after the ack, so the link is closed here.
+
+    Letting the reader thread discover the dead port instead would surface a
+    spurious "connection lost" at the exact moment things worked correctly.
+    """
+    dev = _connected()
+    try:
+        dev.enter_dfu()
+        assert dev.status()["state"] == "disconnected"
+    finally:
+        dev.disconnect()
+
+
+def test_enter_dfu_on_firmware_without_dfu_support():
+    dev = _connected(caps=())
+    try:
+        with pytest.raises(DeviceError) as exc:
+            dev.enter_dfu()
+        assert exc.value.code == "nodfu"
+        assert "BOOT0" in str(exc.value)
+        # Still connected: a refused request must not drop a working link.
+        assert dev.status()["state"] == "connected"
+    finally:
+        dev.disconnect()
+
+
+def test_enter_dfu_on_firmware_too_old_to_know_the_op():
+    """Real firmware from before this feature answers `badop`.
+
+    Verified against the actual board: a pre-DFU build returns badop, and
+    surfacing that raw would put a protocol token in front of a user whose
+    actual problem -- and fix -- is identical to FEATURE_DFU being off.
+    """
+    def old_firmware(req, emit):
+        rid = req["id"]
+        if req["op"] == "hello":
+            emit({"id": rid, "ok": True, "fw": "app-demo 1.0.0", "proto": 1,
+                  "board": "blackpill_f411ce"})
+        elif req["op"] == "schema":
+            emit({"id": rid, "ok": True, "params": SCHEMA, "tlm": TLM_SCHEMA})
+        elif req["op"] == "getall":
+            emit({"id": rid, "ok": True, "vals": dict(VALUES)})
+        else:
+            emit({"id": rid, "ok": False, "err": "badop"})
+
+    fake = FakeSerial(responder=old_firmware)
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    dev.connect("/dev/fake")
+    try:
+        with pytest.raises(DeviceError) as exc:
+            dev.enter_dfu()
+        assert exc.value.code == "nodfu"
+        assert "BOOT0" in str(exc.value)
+    finally:
+        dev.disconnect()

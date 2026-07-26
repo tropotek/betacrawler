@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Betaflight-Configurator-style tool for an STM32 Black Pill (STM32F411CE): firmware exposes
 device config/telemetry over USB serial as JSON lines, a Python/FastAPI backend bridges that to
-HTTP+WebSocket, and a static Bootstrap web UI drives it. This is **Project 1 ("configurator
-core")** of a larger effort — DFU flashing (Project 2) has not been started.
+HTTP+WebSocket, and a static Bootstrap web UI drives it. **Project 1 ("configurator core")** and
+**Project 2 (in-app DFU flashing)** are both done.
 
 `_notes/todo.md` is the live document — what's next, and a Done list of what shipped. Read it
 first in any new session. `docs/api.md` is the HTTP/WS contract, and this file describes the
@@ -25,7 +25,7 @@ it stands today. Where the archive and the code disagree, the code is right.
 
 **Firmware** (from `firmware/`):
 ```
-~/.platformio/penv/bin/pio test -e native              # 80 tests, no board needed
+~/.platformio/penv/bin/pio test -e native              # 88 tests, no board needed
 ~/.platformio/penv/bin/pio test -e native -f test_dispatch   # one suite only
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce      # compile for the real board
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce -t upload  # flash it (ST-Link/SWD)
@@ -36,9 +36,15 @@ Two ST-Link/V2 units may be attached at once — if upload grabs the wrong one, 
 
 **Backend** (from `app/`, venv already at `app/.venv/`):
 ```
-.venv/bin/pytest -v                                     # 90 tests, no board needed
+.venv/bin/pytest -v                                     # 147 tests, no board needed
 .venv/bin/pytest tests/test_link.py -v                  # one file only
 .venv/bin/uvicorn backend.main:app --port 8080           # serves API + app/web/ together
+```
+
+**Firmware bundle** (from the repo root), after any firmware change worth shipping:
+```
+python3 app/tools/bundle_firmware.py                    # builds, then updates app/firmware/
+python3 app/tools/bundle_firmware.py --dry-run          # report only
 ```
 
 **Web UI**: no build step. `app/web/{index.html,app.js}` are static files served directly by the
@@ -71,9 +77,13 @@ firmware/src/          Arduino glue: main.cpp, storage.cpp (flash)
 app/backend/           protocol.py (codec) -> link.py (threaded serial, id correlation) ->
                         device.py (schema cache + validation) -> main.py (FastAPI routes/WS).
                         terminal.py parses the Terminal page's commands; settings_ini.py is a
-                        pure INI codec for settings backup/restore (no device, no coercion).
+                        pure INI codec for settings backup/restore (no device, no coercion);
+                        firmware.py is the bundle catalog + dfu-util wrapper.
                         pytest-tested against a fake serial port (app/tests/fake_serial.py),
                         no board needed
+app/firmware/          the firmware images this app version ships with, plus manifest.json.
+                        Binaries ARE committed — that is the point, not an accident.
+app/tools/             bundle_firmware.py, run at release time to produce the above
 
 app/web/                static HTML/JS only, talks to the backend exclusively through the
                         `Api` object in app.js — that object is the ENTIRE porting surface
@@ -174,6 +184,30 @@ bounds, so changing the enabled module set — or a parameter's range — discar
 rather than reinterpreting stored bytes against a different table.
 `storage.cpp`'s `save()` does a read-back verification after the flush so a real flash failure has
 an actual way to report `{"err":"flash"}` instead of that path being dead code.
+
+**In-app firmware updates (Project 2).** The app ships the firmware that matches it: built
+images live in `app/firmware/` with a `manifest.json`, produced by
+`app/tools/bundle_firmware.py` at release time (it builds first, then derives every manifest
+field from the sources and the binary — nothing is typed in). **The `.bin` files are committed
+deliberately**; that is what makes app/firmware pairing a checked-in fact rather than user
+discipline. Don't "clean them up". A file picker survives only as a collapsed *Advanced* path,
+where a vector-table check is all that stands between picking `firmware.elf` out of `.pio/build`
+and a board that no longer enumerates.
+
+Getting into DFU has two paths, and **both must keep working**: the `dfu` wire op (one click) and
+BOOT0+NRST by hand (for a board whose firmware is broken). That is also why the Firmware page,
+like the Terminal, is *not* in `CONNECTION_REQUIRED_PAGES` — gating the recovery tool on a working
+device is exactly backwards. Two orderings in the firmware are load-bearing and easy to
+"simplify" into bugs: `Bootloader::enterDfu()` only **arms** the reboot so `main.cpp` can flush
+the response first (otherwise the host cannot tell a reboot from a dead board), and `initVariant()`
+**clears the RTC magic before jumping** (otherwise a failed jump is an unrecoverable boot loop).
+`src/dfu.cpp` is Arduino glue beside `storage.cpp`, not a module — it has no params and no
+telemetry, so the registry would buy it nothing. Full detail: `_notes/spec-dfu-upload.md`.
+
+**Nothing can identify a board in DFU mode** — every STM32F4 bootloader reports `0483:df11` and
+nothing else. The app carries the `board` string forward from the last `hello` and says so plainly
+when it has none, rather than guessing. Any future "auto-detect the right firmware" idea runs into
+this wall first.
 
 **Disconnect detection has two independent layers**: the backend's `SerialLink` detects OS-level
 port loss (unplug) immediately. The frontend watchdog additionally declares a distinct "stale"
