@@ -9,11 +9,15 @@ device config/telemetry over USB serial as JSON lines, a Python/FastAPI backend 
 HTTP+WebSocket, and a static Bootstrap web UI drives it. This is **Project 1 ("configurator
 core")** of a larger effort — DFU flashing (Project 2) has not been started.
 
-Read `_notes/progress.md` first in any new session — it's the living status doc and says exactly
-what's done and what's next. `_notes/spec-firmware-modules.md` is the current firmware design
-(module registry, board configs, versioning); `_notes/_archive/spec-configurator-core.md` is the
-original approved design for the configurator itself. Both are approved designs (don't
-relitigate it without a real reason). `docs/api.md` is the HTTP/WS contract.
+`_notes/todo.md` is the live document — what's next, and a Done list of what shipped. Read it
+first in any new session. `docs/api.md` is the HTTP/WS contract, and this file describes the
+architecture.
+
+**`_notes/_archive/` is history, not documentation.** It holds superseded specs, implementation
+plans and the retired `progress.md` status doc. Read it when you need the *reasoning* behind a
+past decision — the specs there are approved designs, so don't relitigate them without a real
+reason — but **never update anything in it**, and don't treat it as a description of the code as
+it stands today. Where the archive and the code disagree, the code is right.
 
 ## Commands
 
@@ -89,7 +93,7 @@ feature. Each module is split in two:
 That split is load-bearing, not stylistic: it is why `pio test -e native` can assemble the *real*
 device's schema and keep `test/golden/schema.json` honest with no board attached. Don't put a
 `ParamDef` in a driver file. Full recipes for adding a module or a board:
-`_notes/spec-firmware-modules.md`.
+`_notes/_archive/spec-firmware-modules.md`.
 
 **The hardware/persistence seam**: `core/` never touches a GPIO pin or a flash write directly.
 It talks through `core::Module` (one per module — `onParamChanged`/`tick`/`readTelemetry`, in
@@ -126,7 +130,7 @@ about what a telemetry frame says. **Nothing detects whether a panel is physical
 there is no MISO to read a controller ID back over, and `Arduino_HWSPI::begin()` returns true
 unconditionally, so never treat `gfx->begin()`'s bool as a presence check. The driver is write-only
 and therefore cannot block the loop when the panel is absent; it emits a truthful startup `log`
-line instead of a fabricated warning. Full detail: `_notes/spec-display.md`.
+line instead of a fabricated warning. Full detail: `_notes/_archive/spec-display.md`.
 
 **Build gotcha, already fixed — don't undo it:** `config.h` reaches the board header via
 `#include BOARD_HEADER`, a macro-expanded include SCons cannot resolve, so board-header edits did
