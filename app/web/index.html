@@ -263,13 +263,14 @@
           <textarea id="term-output" class="form-control font-monospace mb-2" rows="20" readonly></textarea>
           <div id="term-command-row" class="d-flex gap-2">
             <input id="term-input" type="text" class="form-control font-monospace"
-                   placeholder="get led.blink_hz — try 'help'" autocomplete="off">
-            <button id="term-send" class="btn btn-primary">Send</button>
+                   placeholder="connect a device to send commands"
+                   autocomplete="off" disabled>
+            <button id="term-send" class="btn btn-primary" disabled>Send</button>
             <button id="term-clear" class="btn btn-outline-secondary">Clear</button>
             <!-- Counterpart to the `dump` command: dump prints INI you paste
                  into a file, this reads such a file back. The file is read in
                  the browser and POSTed as text; the backend never sees a path. -->
-            <button id="term-restore" class="btn btn-outline-secondary text-nowrap">Restore from INI…</button>
+            <button id="term-restore" class="btn btn-outline-secondary text-nowrap" disabled>Restore from INI…</button>
             <input id="term-restore-file" type="file" accept=".ini,.txt,text/plain" class="d-none">
             <!-- Same flash write as the Configuration page's button, driven by
                  the same dirty flag: enabled only once something has been

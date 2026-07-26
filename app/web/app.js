@@ -72,6 +72,7 @@ function setState(state, info) {
     : 'not connected';
   el('form').querySelectorAll('input,select').forEach((i) => { i.disabled = !connected; });
   updateNavAvailability();
+  updateTerminalAvailability();
 }
 
 // Telemetry-staleness: distinct from a hard disconnect. The port is still
@@ -280,7 +281,12 @@ el('defaults').addEventListener('click', async () => {
 
 // --- side-menu navigation ---------------------------------------------------
 const PAGES = ['home', 'config', 'telemetry', 'terminal', 'help'];
-const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry', 'terminal']);
+// Terminal is deliberately NOT here. It is readable while disconnected so you
+// can sit on it and watch the device's boot record arrive when you connect --
+// the firmware replays that after `hello`, and being forced to connect first
+// and navigate second is exactly the moment you would miss it. Its controls
+// are disabled instead of the whole page (updateTerminalAvailability).
+const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry']);
 
 function showPage(page) {
   for (const p of PAGES) el(`page-${p}`).classList.toggle('d-none', p !== page);
@@ -295,6 +301,18 @@ function showPage(page) {
   // widths, or the offcanvas was never opened).
   const sidebar = document.getElementById('sidebarMenu');
   window.bootstrap?.Offcanvas.getInstance(sidebar)?.hide();
+}
+
+// Only the controls that actually talk to the device. Clear stays live -- it
+// edits the local output buffer -- and Save is governed by setDirty(), which a
+// disconnect already resets.
+function updateTerminalAvailability() {
+  el('term-input').disabled = !connected;
+  el('term-send').disabled = !connected;
+  el('term-restore').disabled = !connected;
+  el('term-input').placeholder = connected
+    ? 'type a command, e.g. get led.mode'
+    : 'connect a device to send commands';
 }
 
 function updateNavAvailability() {
@@ -341,7 +359,9 @@ async function termRun(text) {
   } catch (e) {
     termAppend(`ERROR: ${e.message}`);
   } finally {
-    el('term-send').disabled = false;
+    // Not an unconditional re-enable: the command may well have been what
+    // revealed the device is gone.
+    el('term-send').disabled = !connected;
   }
 }
 

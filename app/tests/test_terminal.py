@@ -278,3 +278,27 @@ def test_terminal_endpoint_command_error_still_returns_200(client):
     body = r.json()
     assert body["ok"] is False
     assert "unknown command" in body["friendly"]
+
+
+def test_commands_report_disconnection_rather_than_unknown_key():
+    """A disconnected device has an empty schema cache, so DeviceModel's own
+    checks would call every key 'unknown parameter' -- true of the cache, but a
+    lie about what is actually wrong. Matters more now that the Terminal page is
+    reachable while disconnected."""
+    dev = DeviceModel(SerialLink(open_port=lambda p: None))
+    assert dev.status()["state"] != "connected"
+
+    for command in ("get led.mode", "set led.mode on", "save", "defaults",
+                    "list", "dump"):
+        result = terminal.run(dev, command)
+        assert result.ok is False, command
+        assert "not connected" in result.friendly, command
+        assert result.raw_sent == "", command
+
+
+def test_help_still_works_while_disconnected():
+    """help is pure text and must not require a device."""
+    dev = DeviceModel(SerialLink(open_port=lambda p: None))
+    result = terminal.run(dev, "help")
+    assert result.ok is True
+    assert "get <key>" in result.friendly
