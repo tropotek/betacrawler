@@ -1,0 +1,39 @@
+{
+    "folders": [
+        {
+            "name": "app-demo",
+            "path": "."
+        },
+        {
+            "name": "firmware",
+            "path": "firmware"
+        }
+    ],
+    "settings": {
+        "platformio-ide.activateProjectOnTextEditorChange": true,
+        "files.exclude": {
+            "firmware": true
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "platformio.platformio-ide"
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Run backend server",
+                "type": "shell",
+                "command": "${workspaceFolder:app-demo}/run-server.sh",
+                "problemMatcher": [],
+                "presentation": {
+                    "panel": "dedicated",
+                    "clear": true,
+                    "focus": false
+                }
+            }
+        ]
+    }
+}
