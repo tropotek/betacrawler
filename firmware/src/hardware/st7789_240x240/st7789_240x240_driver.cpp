@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Arduino_GFX_Library.h>
+#include "FreeSans9pt7b.h"   // must follow Arduino_GFX_Library.h
 #include <stdio.h>
 #include <string.h>
 
@@ -88,8 +89,10 @@ enum {
   INFO_ROW_H = 22,
   INFO_LAB_X = 6,
   INFO_VAL_X = 44,
-  INFO_LAB_DY = 4,     // centres an 8px label against a 16px value
+  INFO_LAB_DY = 3,     // centres an 8px label against the value's cap height
   INFO_MOD_H  = 12,    // module list stays size 1: it is a list, not a reading
+  INFO_BASE_DY = 12,   // FreeSans9pt is baseline-positioned, not top-positioned
+  INFO_VAL_H  = 18,    // area cleared before repainting a value
 };
 
 enum { ICON_CLOCK = 0, ICON_STOPWATCH, ICON_THERMO, ICON_BOLT, ICON_RAM };
@@ -154,6 +157,20 @@ void St7789Driver::setValue(int x, int y, const char* text, uint16_t colour,
   gfx->setTextColor(colour, bg);
   gfx->setCursor(x, y);
   gfx->print(text);
+}
+
+// Draws an info-page value in FreeSans9pt. Proportional glyphs mean the
+// per-glyph background fill leaves gaps, so the row is cleared first -- only
+// ever on an actual change, since callers gate this behind changed().
+void St7789Driver::drawInfoValue(int row, const char* text, uint16_t colour) {
+  const int y = BODY_TOP + row * INFO_ROW_H;
+  gfx->fillRect(INFO_VAL_X, y, DISPLAY_W - INFO_VAL_X, INFO_VAL_H, COL_BG);
+  gfx->setFont(&FreeSans9pt7b);
+  gfx->setTextSize(1);
+  gfx->setTextColor(colour);
+  gfx->setCursor(INFO_VAL_X, y + INFO_BASE_DY);
+  gfx->print(text);
+  gfx->setFont(NULL);          // every other caller expects the built-in font
 }
 
 bool St7789Driver::changed(uint8_t slot, const char* text) {
@@ -377,7 +394,7 @@ void St7789Driver::drawInfoStatic() {
   gfx->print("MODS");
   gfx->setTextColor(COL_ACCENT, COL_BG);
   for (uint8_t i = 0; i < reg_->moduleCount(); ++i) {
-    int y = modsTop() + 14 + i * INFO_MOD_H;
+    int y = modsTop() + i * INFO_MOD_H;
     if (y > DISPLAY_H - 8) break;          // runs off the bottom: fine, drop it
     gfx->setCursor(INFO_VAL_X, y);
     gfx->print(reg_->moduleId(i));
@@ -389,19 +406,18 @@ void St7789Driver::drawInfoValues() {
 
   snprintf(buf, sizeof(buf), "%s %s", core::projectName(), core::version());
   if (changed(1, buf))
-    setValue(INFO_VAL_X, BODY_TOP + I_FW * INFO_ROW_H, buf, COL_TEXT, 2);
+    drawInfoValue(I_FW, buf, COL_TEXT);
 
-  // "Mmm DD YYYY HH:MM:SS" is 20 chars -- 4 too many at size 2. The year is
-  // the least useful part when the question is "is this the build I just
-  // flashed", so it goes and the time stays: "Jul 26 14:26".
+  // The year fits again at 9pt (proportional, ~7px average against size 2's
+  // fixed 12), so the panel is back to showing the whole build stamp bar
+  // seconds: "Jul 26 2026 14:26".
   const char* d = core::buildDate();
-  snprintf(buf, sizeof(buf), "%.6s %.5s", d, d + 12);
+  snprintf(buf, sizeof(buf), "%.11s %.5s", d, d + 12);
   if (changed(2, buf))
-    setValue(INFO_VAL_X, BODY_TOP + I_BUILT * INFO_ROW_H, buf, COL_TEXT, 2);
+    drawInfoValue(I_BUILT, buf, COL_TEXT);
 
   if (changed(3, core::boardId()))
-    setValue(INFO_VAL_X, BODY_TOP + I_BOARD * INFO_ROW_H, core::boardId(),
-             COL_TEXT, 2);
+    drawInfoValue(I_BOARD, core::boardId(), COL_TEXT);
 
   // Absent LED module: say so rather than leaving a stale or blank row.
   if (pLedMode_ != core::kNoParam) {
@@ -417,9 +433,8 @@ void St7789Driver::drawInfoValues() {
   } else {
     snprintf(buf, sizeof(buf), "--");
   }
-  strncat(buf, "  ", sizeof(buf) - strlen(buf) - 1);   // cover a shorter value
   if (changed(4, buf))
-    setValue(INFO_VAL_X, BODY_TOP + I_LED * INFO_ROW_H, buf, COL_TEXT, 2);
+    drawInfoValue(I_LED, buf, COL_TEXT);
 }
 
 void St7789Driver::drawStatsStatic() {

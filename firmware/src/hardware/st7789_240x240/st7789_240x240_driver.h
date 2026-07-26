@@ -40,6 +40,7 @@ class St7789Driver : public core::Module {
   void drawHeaderStatic();         // the bar itself -- only on a full repaint
   void drawHeaderLive();           // name + heartbeat -- every refresh
   void drawInfoStatic();
+  void drawInfoValue(int row, const char* text, uint16_t colour);
   void drawInfoValues();
   void drawStatsStatic();
   void drawStatsValues();
