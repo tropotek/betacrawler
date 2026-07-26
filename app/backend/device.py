@@ -27,6 +27,7 @@ class DeviceModel:
     def __init__(self, link: SerialLink | None = None):
         self._link = link or SerialLink()
         self._schema: list[dict] = []
+        self._tlm_schema: list[dict] = []
         self._by_key: dict[str, dict] = {}
         self._values: dict = {}
         self._info: dict = {}
@@ -48,17 +49,30 @@ class DeviceModel:
                     f"device speaks proto {hello.get('proto')}, "
                     f"this app speaks {PROTO_VERSION}"
                 )
+            # `fw` stays the display string; name/ver/built/mods are the
+            # structured fields the modular firmware added beside it. Older
+            # firmware simply omits them and they come through as None.
             self._info = {
                 "fw": hello.get("fw"),
                 "proto": hello.get("proto"),
                 "board": hello.get("board"),
+                "name": hello.get("name"),
+                "ver": hello.get("ver"),
+                "built": hello.get("built"),
+                "mods": hello.get("mods", []),
             }
-            self._schema = self._send("schema")["params"]
+            schema = self._send("schema")
+            self._schema = schema["params"]
+            # Descriptor for the telemetry fields this build publishes. The
+            # firmware's module set decides it, so the UI needs no per-field
+            # knowledge; a board with an extra sensor just gets an extra card.
+            self._tlm_schema = schema.get("tlm", [])
             self._by_key = {p["key"]: p for p in self._schema}
             self._values = self._send("getall")["vals"]
         except Exception:
             self._link.disconnect()
-            self._schema, self._by_key, self._values, self._info = [], {}, {}, {}
+            self._schema, self._tlm_schema = [], []
+            self._by_key, self._values, self._info = {}, {}, {}
             raise
 
     def disconnect(self):
@@ -68,8 +82,11 @@ class DeviceModel:
     def status(self) -> dict:
         return {"state": self._link.state, **self._info}
 
-    def schema(self) -> list[dict]:
-        return self._schema
+    def schema(self) -> dict:
+        """Both descriptors the UI renders from: config controls and telemetry
+        cards. One round trip, one cache, because the firmware sends them in
+        one `schema` response."""
+        return {"params": self._schema, "tlm": self._tlm_schema}
 
     def values(self) -> dict:
         return dict(self._values)

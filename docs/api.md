@@ -10,13 +10,47 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 | GET | `/api/ports` | — | `[{port, desc, vid, pid, match}]` |
 | POST | `/api/connect` | `{"port": "/dev/ttyACM0"}` | status object |
 | POST | `/api/disconnect` | — | status object |
-| GET | `/api/status` | — | `{state, fw, proto, board}` |
-| GET | `/api/schema` | — | array of param descriptors |
+| GET | `/api/status` | — | `{state, fw, proto, board, name, ver, built, mods}` |
+| GET | `/api/schema` | — | `{params: [...], tlm: [...]}` |
 | GET | `/api/params` | — | `{key: value}` |
 | PUT | `/api/params/{key}` | `{"val": V}` | `{ok, key, val}` |
 | POST | `/api/params/save` | — | `{ok}` |
 | POST | `/api/params/defaults` | — | `{ok, vals}` |
 | POST | `/api/terminal` | `{"command": "get led.blink_hz"}` | `{ok, friendly, raw_sent, raw_recv}` |
+
+### Status fields
+
+`fw` is a display string (`"app-demo 1.0.0"`) and is the stable field to show
+in a UI. `name`/`ver`/`built` are its structured form, and `mods` lists the
+modules the connected firmware was built with (`["device","system","button",
+"led"]`). Firmware predating the module refactor omits all four; the backend
+reports them as `null` / `[]` rather than failing the handshake.
+
+### Schema
+
+One response, two descriptors — the firmware's registered modules are the sole
+source of truth for both, so a board that enables another module gains form
+controls and telemetry cards with **no change to the backend or the UI**.
+
+```json
+{
+  "params": [
+    {"key": "led.mode", "type": "enum", "options": ["off","on","blink","fade"],
+     "def": "blink", "label": "LED Mode", "group": "LED"},
+    {"key": "led.blink_hz", "type": "u8", "min": 1, "max": 20, "def": 2,
+     "label": "Rate", "unit": "Hz", "group": "LED"}
+  ],
+  "tlm": [
+    {"key": "temp", "label": "Temp", "unit": "°C", "dec": 1, "group": "System"},
+    {"key": "vdd", "label": "VDD", "unit": "V", "div": 1000, "dec": 2, "group": "System"}
+  ]
+}
+```
+
+`group` is a UI heading; both pages render one section per group, in the order
+the groups first appear. On a telemetry field, `div` and `dec` are **display
+hints only** — the wire always carries the device's native units (`vdd` is
+integer millivolts) and only the browser divides and rounds.
 
 `/api/terminal` powers the debug Terminal page's shell-like command line
 (`get <key>`, `set <key> <value>`, `save`, `defaults`, `help`). It is a
@@ -42,7 +76,10 @@ ever written to the port (e.g. an unknown key or a malformed argument count).
 Server pushes only; clients send nothing. Every frame is
 `{"type": "tlm"|"state"|"log"|"raw", "data": ...}`.
 
-- `tlm` — `{up, clk, temp, vdd, ram, btn}`
+- `tlm` — one key per entry in the schema's `tlm` array. For the stock
+  blackpill build that is `{up, clk, ram, temp, vdd, btn}`, but the field set
+  is whatever the firmware's modules publish — read it from the descriptor
+  rather than hardcoding it.
 - `state` — status object, or the string `"disconnected"`
 - `log` — device log string
 

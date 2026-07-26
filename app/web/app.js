@@ -1,5 +1,12 @@
 'use strict';
 
+// The app (backend + this UI) is versioned independently of the firmware:
+// they are separate projects that happen to live in one repo, and their
+// numbers are not meant to track each other. app-demo is a template, so this
+// stays 1.0.0 -- a fork bumps it. The firmware's own version lives in
+// firmware/include/config.h and arrives over the wire in `hello`.
+const APP_VERSION = '1.0.0';
+
 const Api = {
   async get(path) {
     const r = await fetch(path);
@@ -53,6 +60,12 @@ function setState(state, info) {
   badge.className = 'badge ' + (connected ? 'text-bg-success' : 'text-bg-secondary');
   el('connect').textContent = connected ? 'Disconnect' : 'Connect';
   el('fw').textContent = connected && info && info.fw ? `${info.fw} · proto ${info.proto}` : '';
+  el('fw').title = connected && info && info.built ? `built ${info.built}` : '';
+  el('help-fw').textContent = connected && info && info.fw
+    ? [info.fw, info.board, info.built && `built ${info.built}`,
+       info.mods && info.mods.length && `modules: ${info.mods.join(', ')}`]
+      .filter(Boolean).join(' · ')
+    : 'not connected';
   el('form').querySelectorAll('input,select').forEach((i) => { i.disabled = !connected; });
   updateNavAvailability();
 }
@@ -80,28 +93,41 @@ function clearStale() {
 }
 
 // --- schema-driven form (Alpine) --------------------------------------------
-// Display-order preference only -- the firmware's schema order (its source
-// of truth for the wire format and flash layout) is untouched. A key not
-// listed here just keeps its original schema position, so new params need
-// no update here to render correctly.
-const FORM_ORDER = ['device.name', 'tlm.rate'];
+// Display order is the firmware's registration order -- there is deliberately
+// no override table here. The device decides which module comes first, and
+// the UI follows, so reordering modules in firmware/src/modules.cpp reorders
+// the form with no change on this side.
 
-// u8 fields rendered as a range slider instead of a plain number input.
+// u8 fields rendered as a range slider instead of a plain number input. Purely
+// a presentation choice, so it is the one thing that stays keyed by name here.
 const SLIDER_FIELDS = new Set(['led.blink_hz']);
 
-// --- telemetry ---------------------------------------------------------------
-const TLM_FIELDS = {
-  up: 'Uptime (ms)', clk: 'Clock (MHz)', temp: 'Temp (°C)',
-  vdd: 'VDD (V)', ram: 'Free RAM (B)', btn: 'Button',
-};
+// Groups items that carry a `group` field into [{name, items}], preserving
+// the order each group first appears. Shared by the config form and the
+// telemetry page, which group identically.
+function groupItems(items, decorate = (x) => x) {
+  const order = [];
+  const byName = new Map();
+  for (const item of items) {
+    const name = item.group || '';
+    if (!byName.has(name)) { byName.set(name, []); order.push(name); }
+    byName.get(name).push(decorate(item));
+  }
+  return order.map((name) => ({ name, items: byName.get(name) }));
+}
 
-// The wire protocol sends vdd as integer millivolts by design (see
-// docs/api.md) -- only the display converts to Volts, so this never touches
-// what's actually sent to/validated against the device.
-function formatTelemetryValue(key, value) {
+// --- telemetry ---------------------------------------------------------------
+// There is no hardcoded field list any more: labels, units and formatting all
+// arrive in the schema's `tlm` descriptor, so a firmware module that publishes
+// a new reading shows up here with no JavaScript change.
+//
+// `div`/`dec` keep the wire honest: the device sends vdd as integer
+// millivolts (see docs/api.md) and only this display divides by 1000. What is
+// sent to, and validated by, the device is never touched.
+function formatTelemetryValue(def, value) {
   if (typeof value !== 'number') return value;
-  if (key === 'vdd') return (value / 1000).toFixed(2);
-  return Math.round(value * 10) / 10;
+  const scaled = def.div ? value / def.div : value;
+  return scaled.toFixed(def.dec || 0);
 }
 
 // The config form and telemetry cards are the two most repetitive,
@@ -116,19 +142,13 @@ document.addEventListener('alpine:init', () => {
     values: {},
     invalid: {},
 
-    get fields() {
-      return [...this.schema]
-        .sort((a, b) => {
-          const ia = FORM_ORDER.indexOf(a.key);
-          const ib = FORM_ORDER.indexOf(b.key);
-          return (ia === -1 ? FORM_ORDER.length : ia) - (ib === -1 ? FORM_ORDER.length : ib);
-        })
-        .map((p) => ({
-          ...p,
-          isSlider: p.type === 'u8' && SLIDER_FIELDS.has(p.key),
-          help: p.type === 'u8' ? `${p.min}–${p.max}`
-              : p.type === 'str' ? `max ${p.maxlen} chars` : '',
-        }));
+    get groups() {
+      return groupItems(this.schema, (p) => ({
+        ...p,
+        isSlider: p.type === 'u8' && SLIDER_FIELDS.has(p.key),
+        help: p.type === 'u8' ? `${p.min}–${p.max}`
+            : p.type === 'str' ? `max ${p.maxlen} chars` : '',
+      }));
     },
 
     load(schema, values) {
@@ -153,13 +173,22 @@ document.addEventListener('alpine:init', () => {
   });
 
   Alpine.store('telemetry', {
-    fields: TLM_FIELDS,
+    schema: [],
     data: {},
+
+    get groups() { return groupItems(this.schema); },
+
+    load(tlmSchema) {
+      this.schema = tlmSchema;
+      this.data = {};
+    },
 
     render(raw) {
       noteTelemetry();
-      for (const k of Object.keys(this.fields)) {
-        if (raw[k] !== undefined) this.data[k] = formatTelemetryValue(k, raw[k]);
+      for (const def of this.schema) {
+        if (raw[def.key] !== undefined) {
+          this.data[def.key] = formatTelemetryValue(def, raw[def.key]);
+        }
       }
     },
   });
@@ -189,7 +218,8 @@ async function refreshPorts() {
 
 async function loadDevice() {
   const [schema, values] = await Promise.all([Api.schema(), Api.params()]);
-  Alpine.store('config').load(schema, values);
+  Alpine.store('config').load(schema.params, values);
+  Alpine.store('telemetry').load(schema.tlm);
   await alpineNextTick();
   setTelemetryPeriodFrom(values);
 }
@@ -375,6 +405,8 @@ function startWatchdog() {
 }
 
 (async function init() {
+  el('app-version').textContent = `v${APP_VERSION}`;
+  el('help-app-version').textContent = APP_VERSION;
   // Home is always the landing page, even on a page reload while a device
   // is still connected server-side -- auto-navigating to Configuration is
   // reserved for an explicit Connect click (see that handler), not a reload.

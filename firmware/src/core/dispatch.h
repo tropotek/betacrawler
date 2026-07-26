@@ -1,37 +1,26 @@
 #pragma once
-#include "core/params.h"
+#include "core/registry.h"
 #include "core/protocol.h"
 
 namespace core {
 
-// The seam: core never touches GPIO, it announces changes through this.
-struct HardwareSink {
-  virtual ~HardwareSink() {}
-  virtual void onParamChanged(ParamId id, const Params& p) = 0;
-};
-
-// The same principle applied to flash, so `save` is testable natively.
+// The persistence seam, so `save` is testable natively. (The hardware seam is
+// now core::Module -- one per module, in core/module.h.)
 struct Persistence {
   virtual ~Persistence() {}
   virtual bool save(const Params& p) = 0;
   virtual bool load(Params* p) = 0;
 };
 
-struct Telemetry {
-  uint32_t up;    // ms
-  uint32_t clk;   // MHz
-  float    temp;  // degC
-  int32_t  vdd;   // mV
-  int32_t  ram;   // free bytes
-  uint8_t  btn;   // 0|1
-};
-
-size_t writeTelemetry(char* out, size_t cap, const Telemetry& t);
+// Serializes one telemetry frame from values collected by the registry. The
+// field set comes entirely from the registered modules' TlmDefs, so a board
+// that enables a new sensor module publishes it with no change here.
+size_t writeTelemetry(char* out, size_t cap, const Registry& reg, const TlmValue* vals);
 
 class Dispatcher {
  public:
-  Dispatcher(Params& p, HardwareSink& sink, Persistence& store)
-      : p_(p), sink_(sink), store_(store) {}
+  Dispatcher(Registry& reg, Params& p, Persistence& store)
+      : reg_(reg), p_(p), store_(store) {}
 
   // Writes a response line (no trailing newline) into out. Returns length.
   size_t handle(const Request& q, char* out, size_t cap);
@@ -39,10 +28,10 @@ class Dispatcher {
   bool telemetryEnabled() const { return tlmOn_; }
 
  private:
-  Params&       p_;
-  HardwareSink& sink_;
-  Persistence&  store_;
-  bool          tlmOn_ = true;
+  Registry&    reg_;
+  Params&      p_;
+  Persistence& store_;
+  bool         tlmOn_ = true;
 };
 
 }  // namespace core

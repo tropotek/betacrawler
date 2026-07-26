@@ -1,5 +1,7 @@
 #include "core/dispatch.h"
+#include "core/version.h"
 #include <ArduinoJson.h>
+#include <stdio.h>
 #include <string.h>
 
 namespace core {
@@ -15,20 +17,23 @@ static const char* errName(SetResult r) {
   }
 }
 
-static void putValue(JsonObject o, const char* name, ParamId id, const Params& p) {
-  if (defs()[id].type == ParamType::U8) o[name] = p.num(id);
-  else                                  o[name] = p.str(id);
+static void putValue(JsonObject o, const char* name, ParamId id,
+                     const Registry& reg, const Params& p) {
+  if (reg.paramDef(id).type == ParamType::U8) o[name] = p.num(id);
+  else                                        o[name] = p.str(id);
 }
 
-size_t writeTelemetry(char* out, size_t cap, const Telemetry& t) {
+size_t writeTelemetry(char* out, size_t cap, const Registry& reg, const TlmValue* vals) {
   JsonDocument doc;
   JsonObject o = doc["tlm"].to<JsonObject>();
-  o["up"]   = t.up;
-  o["clk"]  = t.clk;
-  o["temp"] = t.temp;
-  o["vdd"]  = t.vdd;
-  o["ram"]  = t.ram;
-  o["btn"]  = t.btn;
+  for (uint8_t i = 0; i < reg.tlmCount(); ++i) {
+    const TlmDef& d = reg.tlmDef(i);
+    switch (d.type) {
+      case TlmType::U32: o[d.key] = vals[i].u; break;
+      case TlmType::I32: o[d.key] = vals[i].i; break;
+      case TlmType::F32: o[d.key] = vals[i].f; break;
+    }
+  }
   return serializeJson(doc, out, cap);
 }
 
@@ -43,18 +48,31 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
   }
 
   switch (q.op) {
-    case Op::Hello:
+    case Op::Hello: {
       doc["ok"] = true;
-      doc["fw"] = "app-demo 0.1.0";
+      // `fw` stays a single display string so every existing consumer
+      // (app.js's navbar, docs/api.md) keeps working untouched; the
+      // structured fields beside it are purely additive.
+      char fw[64];
+      snprintf(fw, sizeof(fw), "%s %s", projectName(), version());
+      doc["fw"]    = fw;
+      doc["name"]  = projectName();
+      doc["ver"]   = version();
+      doc["built"] = buildDate();
       doc["proto"] = kProtoVersion;
-      doc["board"] = "blackpill_f411ce";
+      doc["board"] = boardId();
+      // Which modules this build actually has. Lets the app tell "this board
+      // has no LED" apart from "the LED controls failed to load".
+      JsonArray mods = doc["mods"].to<JsonArray>();
+      for (uint8_t i = 0; i < reg_.moduleCount(); ++i) mods.add(reg_.moduleId(i));
       break;
+    }
 
     case Op::Schema: {
       doc["ok"] = true;
       JsonArray arr = doc["params"].to<JsonArray>();
-      for (uint8_t i = 0; i < PARAM_COUNT; ++i) {
-        const ParamDef& d = defs()[i];
+      for (uint8_t i = 0; i < reg_.paramCount(); ++i) {
+        const ParamDef& d = reg_.paramDef(i);
         JsonObject e = arr.add<JsonObject>();
         e["key"] = d.key;
         switch (d.type) {
@@ -79,34 +97,51 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
         }
         e["label"] = d.label;
         if (d.unit) e["unit"] = d.unit;
+        e["group"] = reg_.paramGroup(i);
+      }
+
+      // Telemetry descriptor: the same "firmware is the source of truth" rule
+      // the parameter table already follows, extended to the Telemetry page.
+      // The browser renders cards straight from this, so a new sensor module
+      // needs no JavaScript change to appear.
+      JsonArray tarr = doc["tlm"].to<JsonArray>();
+      for (uint8_t i = 0; i < reg_.tlmCount(); ++i) {
+        const TlmDef& d = reg_.tlmDef(i);
+        JsonObject e = tarr.add<JsonObject>();
+        e["key"] = d.key;
+        e["label"] = d.label;
+        if (d.unit) e["unit"] = d.unit;
+        if (d.div > 1) e["div"] = d.div;
+        if (d.dec) e["dec"] = d.dec;
+        e["group"] = reg_.tlmGroup(i);
       }
       break;
     }
 
     case Op::Get: {
       ParamId id;
-      if (!findParam(q.key, &id)) { doc["ok"] = false; doc["err"] = "nokey"; break; }
+      if (!reg_.findParam(q.key, &id)) { doc["ok"] = false; doc["err"] = "nokey"; break; }
       doc["ok"] = true;
       doc["key"] = q.key;
-      putValue(doc.as<JsonObject>(), "val", id, p_);
+      putValue(doc.as<JsonObject>(), "val", id, reg_, p_);
       break;
     }
 
     case Op::GetAll: {
       doc["ok"] = true;
       JsonObject vals = doc["vals"].to<JsonObject>();
-      for (uint8_t i = 0; i < PARAM_COUNT; ++i)
-        putValue(vals, defs()[i].key, static_cast<ParamId>(i), p_);
+      for (uint8_t i = 0; i < reg_.paramCount(); ++i)
+        putValue(vals, reg_.paramDef(i).key, i, reg_, p_);
       break;
     }
 
     case Op::Set: {
       ParamId id;
-      if (!findParam(q.key, &id)) { doc["ok"] = false; doc["err"] = "nokey"; break; }
+      if (!reg_.findParam(q.key, &id)) { doc["ok"] = false; doc["err"] = "nokey"; break; }
       SetResult r = q.hasStr ? p_.setStr(id, q.str)
                              : p_.setNum(id, q.num);
       if (r != SetResult::Ok) { doc["ok"] = false; doc["err"] = errName(r); break; }
-      sink_.onParamChanged(id, p_);   // only ever on success
+      reg_.notify(id, p_);   // only ever on success
       doc["ok"] = true;
       break;
     }
@@ -118,8 +153,7 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
 
     case Op::Defaults:
       p_.loadDefaults();
-      for (uint8_t i = 0; i < PARAM_COUNT; ++i)
-        sink_.onParamChanged(static_cast<ParamId>(i), p_);
+      for (uint8_t i = 0; i < reg_.paramCount(); ++i) reg_.notify(i, p_);
       doc["ok"] = true;
       break;
 

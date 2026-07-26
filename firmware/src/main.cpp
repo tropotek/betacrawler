@@ -1,36 +1,42 @@
 #include <Arduino.h>
+#include "config.h"
 #include "core/dispatch.h"
 #include "core/protocol.h"
-#include "hardware.h"
+#include "core/registry.h"
 #include "storage.h"
 
 using namespace core;
 
-static Params      g_params;
-static hw::LedDriver g_led;
-static LineReader  g_reader;
+// No feature is named anywhere in this file. Which modules exist is decided by
+// the board header via src/modules.cpp; everything here works off the registry.
+static Registry   g_reg;
+static Params     g_params(g_reg);
+static FlashStore g_store(g_reg);
+static Dispatcher g_dispatch(g_reg, g_params, g_store);
+static LineReader g_reader;
 
-struct ArduinoSink : HardwareSink {
-  void onParamChanged(ParamId id, const Params& p) override {
-    if (id == PARAM_LED_MODE || id == PARAM_LED_BLINK_HZ) {
-      g_led.apply(p.num(PARAM_LED_MODE), p.num(PARAM_LED_BLINK_HZ));
-    }
-  }
-};
-
-static ArduinoSink g_sink;
-static FlashStore  g_store;
-static Dispatcher  g_dispatch(g_params, g_sink, g_store);
-
-static char g_out[kMaxLineOut];
+static char     g_out[kMaxLineOut];
+static TlmValue g_tlm[FW_MAX_TLM];
 static uint32_t g_lastTlm = 0;
+static ParamId  g_tlmRateId = kNoParam;
 
 void setup() {
-  Serial.begin(115200);
-  hw::begin();
-  g_led.begin();
-  g_store.load(&g_params);   // falls back to defaults on magic/version/CRC mismatch
-  g_led.apply(g_params.num(PARAM_LED_MODE), g_params.num(PARAM_LED_BLINK_HZ));
+  Serial.begin(FW_SERIAL_BAUD);
+  registerModules(g_reg);
+
+  // g_params was constructed during static init, before registerModules()
+  // ran, so it defaulted an empty table. Now that the registry is populated,
+  // load the real defaults before anything reads a value.
+  g_params.loadDefaults();
+
+  g_reg.findParam("tlm.rate", &g_tlmRateId);
+  g_store.load(&g_params);   // falls back to defaults on magic/version/fingerprint/CRC mismatch
+  g_reg.begin();
+
+  // Push every stored value at its module, exactly as the `defaults` op does.
+  // This replaces main.cpp's old explicit g_led.apply(...) call: no module is
+  // special-cased, so a new one is picked up here for free.
+  for (uint8_t i = 0; i < g_reg.paramCount(); ++i) g_reg.notify(i, g_params);
 }
 
 void loop() {
@@ -48,16 +54,15 @@ void loop() {
     }
   }
 
-  g_led.tick(now);
+  g_reg.tick(now);
 
-  if (g_dispatch.telemetryEnabled()) {
-    uint32_t period = 1000u / (uint32_t)g_params.num(PARAM_TLM_RATE);
+  if (g_dispatch.telemetryEnabled() && g_tlmRateId != kNoParam) {
+    uint32_t period = 1000u / (uint32_t)g_params.num(g_tlmRateId);
     if (period == 0) period = 1;
     if (now - g_lastTlm >= period) {
       g_lastTlm = now;
-      Telemetry t;
-      hw::readTelemetry(&t);
-      size_t n = writeTelemetry(g_out, sizeof(g_out), t);
+      g_reg.collectTelemetry(g_tlm);
+      size_t n = writeTelemetry(g_out, sizeof(g_out), g_reg, g_tlm);
       if (n > 0) Serial.println(g_out);
     }
   }

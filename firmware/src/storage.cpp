@@ -6,12 +6,19 @@
 using namespace core;
 
 static const uint32_t kMagic = 0x4D444C31;  // "MDL1"
-static const uint16_t kVersion = 1;
+// 2: header gained `fingerprint` when parameters moved into modules.
+static const uint16_t kVersion = 2;
 
 struct Header {
   uint32_t magic;
   uint16_t version;
   uint16_t crc;
+  // Identifies the parameter layout this blob was written against (see
+  // Registry::fingerprint). The magic/version/CRC trio proves the bytes are
+  // intact; this proves they still *mean* the same thing. Without it,
+  // flipping FEATURE_LED off would leave a valid-looking blob whose values
+  // silently shift one parameter to the left on the next load.
+  uint32_t fingerprint;
 };
 
 static uint16_t crc16(const uint8_t* d, size_t n) {
@@ -26,12 +33,13 @@ static uint16_t crc16(const uint8_t* d, size_t n) {
 
 bool FlashStore::save(const core::Params& p) {
   const uint8_t* payload = reinterpret_cast<const uint8_t*>(p.raw());
-  const size_t payloadLen = sizeof(Value) * PARAM_COUNT;
+  const size_t payloadLen = sizeof(Value) * reg_.paramCount();
 
   Header h;
   h.magic = kMagic;
   h.version = kVersion;
   h.crc = crc16(payload, payloadLen);
+  h.fingerprint = reg_.fingerprint();
 
   eeprom_buffer_fill();                       // pull page into RAM
   size_t off = 0;
@@ -51,7 +59,8 @@ bool FlashStore::save(const core::Params& p) {
   size_t roff = 0;
   for (size_t i = 0; i < sizeof(Header); ++i) cp[i] = eeprom_buffered_read_byte(roff++);
 
-  return check.magic == h.magic && check.version == h.version && check.crc == h.crc;
+  return check.magic == h.magic && check.version == h.version &&
+         check.crc == h.crc && check.fingerprint == h.fingerprint;
 }
 
 bool FlashStore::load(core::Params* p) {
@@ -62,10 +71,13 @@ bool FlashStore::load(core::Params* p) {
   size_t off = 0;
   for (size_t i = 0; i < sizeof(Header); ++i) hp[i] = eeprom_buffered_read_byte(off++);
 
+  // Any mismatch -- corrupt, older firmware, or a different set of enabled
+  // modules -- falls back to defaults rather than guessing.
   if (h.magic != kMagic || h.version != kVersion) return false;
+  if (h.fingerprint != reg_.fingerprint()) return false;
 
-  const size_t payloadLen = sizeof(Value) * PARAM_COUNT;
-  static uint8_t buf[sizeof(Value) * PARAM_COUNT];
+  const size_t payloadLen = sizeof(Value) * reg_.paramCount();
+  static uint8_t buf[sizeof(Value) * FW_MAX_PARAMS];
   for (size_t i = 0; i < payloadLen; ++i) buf[i] = eeprom_buffered_read_byte(off++);
 
   if (crc16(buf, payloadLen) != h.crc) return false;

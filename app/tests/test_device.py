@@ -18,7 +18,12 @@ from tests.fake_serial import FakeSerial
 _GOLDEN_SCHEMA_PATH = (
     Path(__file__).resolve().parents[2] / "firmware" / "test" / "golden" / "schema.json"
 )
-SCHEMA = json.loads(_GOLDEN_SCHEMA_PATH.read_text())["params"]
+_GOLDEN = json.loads(_GOLDEN_SCHEMA_PATH.read_text())
+SCHEMA = _GOLDEN["params"]
+# The telemetry descriptor comes from the same fixture, so the field set the
+# fake device advertises is the real firmware's -- adding a sensor module to a
+# board cannot leave these tests passing against a stale field list.
+TLM_SCHEMA = _GOLDEN["tlm"]
 VALUES = {"led.mode": "blink", "led.blink_hz": 2,
           "device.name": "app-demo", "tlm.rate": 10}
 
@@ -28,10 +33,13 @@ def device_responder(proto=1):
         op = req["op"]
         rid = req["id"]
         if op == "hello":
-            emit({"id": rid, "ok": True, "fw": "app-demo 0.1.0",
-                  "proto": proto, "board": "blackpill_f411ce"})
+            emit({"id": rid, "ok": True, "fw": "app-demo 1.0.0",
+                  "proto": proto, "board": "blackpill_f411ce",
+                  "name": "app-demo", "ver": "1.0.0",
+                  "built": "Jul 26 2026 14:03:11",
+                  "mods": ["device", "system", "button", "led"]})
         elif op == "schema":
-            emit({"id": rid, "ok": True, "params": SCHEMA})
+            emit({"id": rid, "ok": True, "params": SCHEMA, "tlm": TLM_SCHEMA})
         elif op == "getall":
             emit({"id": rid, "ok": True, "vals": dict(VALUES)})
         elif op == "get":
@@ -60,8 +68,51 @@ def test_connect_caches_schema_and_values():
     try:
         assert dev.status()["state"] == "connected"
         assert dev.status()["proto"] == 1
-        assert len(dev.schema()) == 4
+        assert len(dev.schema()["params"]) == 4
+        assert len(dev.schema()["tlm"]) == 6
         assert dev.values()["led.blink_hz"] == 2
+    finally:
+        dev.disconnect()
+
+
+def test_connect_caches_build_identity_and_module_list():
+    """The structured hello fields must survive into status(), which is what
+    the UI reads -- they are additive, so a regression here is silent."""
+    dev, _ = make_device()
+    dev.connect("/dev/fake")
+    try:
+        st = dev.status()
+        assert st["fw"] == "app-demo 1.0.0"     # display string, unchanged contract
+        assert st["name"] == "app-demo"
+        assert st["ver"] == "1.0.0"
+        assert st["built"].startswith("Jul 26 2026")
+        assert st["mods"] == ["device", "system", "button", "led"]
+    finally:
+        dev.disconnect()
+
+
+def test_missing_optional_hello_fields_do_not_break_connect():
+    """Firmware predating the module refactor omits name/ver/built/mods.
+    Connecting must still succeed rather than KeyError on the handshake."""
+    def old_firmware(req, emit):
+        rid = req["id"]
+        if req["op"] == "hello":
+            emit({"id": rid, "ok": True, "fw": "app-demo 0.1.0",
+                  "proto": 1, "board": "blackpill_f411ce"})
+        elif req["op"] == "schema":
+            emit({"id": rid, "ok": True, "params": SCHEMA})
+        elif req["op"] == "getall":
+            emit({"id": rid, "ok": True, "vals": dict(VALUES)})
+        else:
+            emit({"id": rid, "ok": True})
+
+    fake = FakeSerial(responder=old_firmware)
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    dev.connect("/dev/fake")
+    try:
+        assert dev.status()["ver"] is None
+        assert dev.status()["mods"] == []
+        assert dev.schema()["tlm"] == []      # no descriptor -> no telemetry cards
     finally:
         dev.disconnect()
 
