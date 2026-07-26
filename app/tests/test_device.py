@@ -25,7 +25,8 @@ SCHEMA = _GOLDEN["params"]
 # board cannot leave these tests passing against a stale field list.
 TLM_SCHEMA = _GOLDEN["tlm"]
 VALUES = {"led.mode": "blink", "led.blink_hz": 2,
-          "device.name": "app-demo", "tlm.rate": 10}
+          "device.name": "app-demo", "tlm.rate": 10,
+          "disp.mode": "on", "disp.page": "info", "disp.rate": 2}
 
 
 def device_responder(proto=1):
@@ -37,7 +38,7 @@ def device_responder(proto=1):
                   "proto": proto, "board": "blackpill_f411ce",
                   "name": "app-demo", "ver": "1.0.0",
                   "built": "Jul 26 2026 14:03:11",
-                  "mods": ["device", "system", "button", "led"]})
+                  "mods": ["device", "system", "button", "led", "display"]})
         elif op == "schema":
             emit({"id": rid, "ok": True, "params": SCHEMA, "tlm": TLM_SCHEMA})
         elif op == "getall":
@@ -68,7 +69,7 @@ def test_connect_caches_schema_and_values():
     try:
         assert dev.status()["state"] == "connected"
         assert dev.status()["proto"] == 1
-        assert len(dev.schema()["params"]) == 4
+        assert len(dev.schema()["params"]) == 7
         assert len(dev.schema()["tlm"]) == 6
         assert dev.values()["led.blink_hz"] == 2
     finally:
@@ -86,7 +87,7 @@ def test_connect_caches_build_identity_and_module_list():
         assert st["name"] == "app-demo"
         assert st["ver"] == "1.0.0"
         assert st["built"].startswith("Jul 26 2026")
-        assert st["mods"] == ["device", "system", "button", "led"]
+        assert st["mods"] == ["device", "system", "button", "led", "display"]
     finally:
         dev.disconnect()
 

@@ -37,7 +37,8 @@ def test_connect_then_schema_and_params(client):
 
     schema = client.get("/api/schema").json()
     assert {p["key"] for p in schema["params"]} == {
-        "led.mode", "led.blink_hz", "device.name", "tlm.rate"}
+        "led.mode", "led.blink_hz", "device.name", "tlm.rate",
+        "disp.mode", "disp.page", "disp.rate"}
     # Telemetry descriptor rides along in the same response, so the UI renders
     # its cards from the device rather than a hardcoded field list.
     assert {t["key"] for t in schema["tlm"]} == {
@@ -170,7 +171,7 @@ def test_restore_of_a_dump_round_trips_cleanly(client):
     body = client.post("/api/params/restore", json={"ini": dump}).json()
     assert body["ok"] is True
     assert body["skipped"] == []
-    assert len(body["applied"]) == 4
+    assert len(body["applied"]) == 7
 
 
 def test_restore_of_malformed_ini_returns_400(client):

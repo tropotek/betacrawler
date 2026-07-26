@@ -13,8 +13,9 @@
 #define BOARD_ID "blackpill_f411ce"
 
 // --- features ---------------------------------------------------------------
-#define FEATURE_LED    1
-#define FEATURE_BUTTON 1
+#define FEATURE_LED     1
+#define FEATURE_BUTTON  1
+#define FEATURE_DISPLAY 1
 
 // --- pin map ----------------------------------------------------------------
 // Deferred to the Arduino variant's own names (LED_BUILTIN = PC13,
@@ -29,3 +30,17 @@
 // KEY button, pulled up; the driver samples its idle level at boot rather
 // than assuming a polarity.
 #define BUTTON_PIN      USER_BTN
+
+// ST7789 240x240 IPS (GMT130) on hardware SPI1: SCK=PA5, MOSI=PA7 come from
+// the SPI peripheral itself, so only the two control pins are named here.
+// The module brings out no CS (DISPLAY_CS defaults to GFX_NOT_DEFINED) and
+// BLK is tied to 3V3, so there is no backlight control either.
+//
+// Nothing detects whether the panel is actually plugged in -- it cannot be
+// done on this wiring, there being no MISO to read an ID back over. The
+// driver is write-only and so costs the same either way; see
+// _notes/spec-display.md.
+#define DISPLAY_DC      PB1
+#define DISPLAY_RST     PB0
+#define DISPLAY_ROTATION 0
+#define DISPLAY_SPI_HZ  8000000

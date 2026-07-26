@@ -35,7 +35,7 @@ def test_dump_sections_follow_schema_order():
     """Schema order is the firmware's module registration order -- the same
     rule the config form follows. A dump should read like the UI looks."""
     assert sections_in_order(dump_ini(SCHEMA, VALUES, INFO)) == [
-        "device", "tlm", "led"]
+        "device", "tlm", "led", "disp"]
 
 
 def test_dump_includes_every_schema_key_that_has_a_value():
