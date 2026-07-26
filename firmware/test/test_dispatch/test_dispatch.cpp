@@ -48,8 +48,26 @@ struct MockDriver : Module {
 struct MockStore : Persistence {
   int  saveCalls = 0;
   bool saveOk = true;
-  bool save(const Params&) override { ++saveCalls; return saveOk; }
-  bool load(Params*) override { return false; }
+  // `load` used to hardcode false. It now replays whatever save() captured,
+  // so a revert test can prove the values came back from the STORE rather
+  // than from loadDefaults() coincidentally producing the same numbers.
+  int   loadCalls = 0;
+  bool  hasStored = false;
+  Value stored[FW_MAX_PARAMS] = {};
+
+  bool save(const Params& p) override {
+    ++saveCalls;
+    if (!saveOk) return false;
+    memcpy(stored, p.raw(), sizeof(stored));
+    hasStored = true;
+    return true;
+  }
+  bool load(Params* p) override {
+    ++loadCalls;
+    if (!hasStored) return false;      // nothing valid stored, as on a fresh board
+    memcpy(p->rawMutable(), stored, sizeof(stored));
+    return true;
+  }
 };
 
 // The reboot-to-bootloader seam. Counting calls is the point: a `dfu` op must
@@ -462,6 +480,78 @@ void test_dfu_is_parsed_as_its_own_op() {
   TEST_ASSERT_EQUAL_STRING("badop", bad.err);
 }
 
+// --- revert -----------------------------------------------------------------
+// The last stored point lives in flash and the device owns it. These assert
+// the two outcomes callers must be able to tell apart, and that the hardware
+// is resynced either way.
+
+void test_revert_restores_the_values_last_saved() {
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);
+
+  p.setNum(P_RATE, 9);
+  Request save = parseRequest("{\"id\":1,\"op\":\"save\"}");
+  d.handle(save, out, sizeof(out));
+
+  p.setNum(P_RATE, 15);              // an unsaved edit, to be discarded
+
+  Request q = parseRequest("{\"id\":2,\"op\":\"revert\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_EQUAL_INT32(9, p.num(P_RATE));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"ok\":true"));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"src\":\"flash\""));
+}
+
+void test_revert_notifies_every_param_so_hardware_resyncs() {
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);
+
+  Request save = parseRequest("{\"id\":3,\"op\":\"save\"}");
+  d.handle(save, out, sizeof(out));
+  p.setNum(P_RATE, 15);
+  driver.calls = 0;
+
+  Request q = parseRequest("{\"id\":4,\"op\":\"revert\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_EQUAL_INT(fakeReg.paramCount(), driver.calls);
+}
+
+void test_revert_with_nothing_stored_falls_back_to_defaults() {
+  Params p(fakeReg); MockStore store;    // never saved
+  Dispatcher d(fakeReg, p, store);
+  p.setNum(P_RATE, 15);
+  driver.calls = 0;
+
+  Request q = parseRequest("{\"id\":5,\"op\":\"revert\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_EQUAL_INT32(2, p.num(P_RATE));            // the ParamDef default
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"ok\":true"));     // never an error
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"src\":\"defaults\""));
+  TEST_ASSERT_EQUAL_INT(fakeReg.paramCount(), driver.calls);
+}
+
+void test_revert_consults_the_store_exactly_once() {
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);
+
+  Request q = parseRequest("{\"id\":6,\"op\":\"revert\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_EQUAL_INT(1, store.loadCalls);
+}
+
+void test_revert_is_parsed_as_its_own_op() {
+  Request q = parseRequest("{\"id\":7,\"op\":\"revert\"}");
+  TEST_ASSERT_TRUE(q.ok);
+  TEST_ASSERT_TRUE(q.op == Op::Revert);
+
+  Request bad = parseRequest("{\"id\":8,\"op\":\"revertx\"}");
+  TEST_ASSERT_FALSE(bad.ok);
+}
+
 void setUp() { driver.calls = 0; }
 void tearDown() {}
 
@@ -498,5 +588,10 @@ int main() {
   RUN_TEST(test_hello_caps_is_empty_without_dfu_support);
   RUN_TEST(test_hello_keeps_its_existing_fields_alongside_caps);
   RUN_TEST(test_dfu_is_parsed_as_its_own_op);
+  RUN_TEST(test_revert_restores_the_values_last_saved);
+  RUN_TEST(test_revert_notifies_every_param_so_hardware_resyncs);
+  RUN_TEST(test_revert_with_nothing_stored_falls_back_to_defaults);
+  RUN_TEST(test_revert_consults_the_store_exactly_once);
+  RUN_TEST(test_revert_is_parsed_as_its_own_op);
   return UNITY_END();
 }

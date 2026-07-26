@@ -174,6 +174,25 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
       doc["ok"] = true;
       break;
 
+    case Op::Revert: {
+      // The last stored point lives in flash, and the device owns it -- this
+      // is the only op that reads the Persistence seam back. FlashStore::load()
+      // is atomic (every magic/version/fingerprint/CRC check runs before its
+      // single memcpy), so a board with nothing valid stored reaches
+      // loadDefaults() with RAM untouched rather than half-applied.
+      const bool stored = store_.load(&p_);
+      if (!stored) p_.loadDefaults();
+      for (uint8_t i = 0; i < reg_.paramCount(); ++i) reg_.notify(i, p_);
+      doc["ok"] = true;
+      // Which source was actually used. The host needs it for two things: to
+      // say "no saved settings -- loaded defaults instead" rather than landing
+      // the user somewhere they did not ask for, and to decide whether there
+      // is now anything worth writing to flash (there is, in the fallback
+      // case, and there is not in the normal one).
+      doc["src"] = stored ? "flash" : "defaults";
+      break;
+    }
+
     case Op::Tlm:
       tlmOn_ = q.tlmOn;
       doc["ok"] = true;
