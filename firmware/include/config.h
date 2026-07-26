@@ -55,3 +55,6 @@
 #ifndef FEATURE_BUTTON
 #define FEATURE_BUTTON 0
 #endif
+#ifndef FEATURE_DISPLAY
+#define FEATURE_DISPLAY 0
+#endif

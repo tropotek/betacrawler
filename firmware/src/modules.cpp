@@ -52,6 +52,17 @@
 #  endif
 #endif
 
+#if FEATURE_DISPLAY
+#  include "hardware/display/display_params.h"
+#  if FW_TARGET_ARDUINO
+#    include "hardware/display/display_driver.h"
+     static display::DisplayDriver g_display;
+#    define DISPLAY_DRV (&g_display)
+#  else
+#    define DISPLAY_DRV nullptr
+#  endif
+#endif
+
 namespace core {
 
 // Registration order fixes the order of the schema, the telemetry frame and
@@ -65,6 +76,13 @@ void registerModules(Registry& reg) {
 #endif
 #if FEATURE_LED
   reg.add(led::kDesc, LED_DRV);
+#endif
+  // Last on purpose: the display observes the modules above it, and
+  // Registry::begin() attaches every module before beginning any, so
+  // registration order does not affect what it can read -- but reading the
+  // list in the order things appear on screen is easier to follow.
+#if FEATURE_DISPLAY
+  reg.add(display::kDesc, DISPLAY_DRV);
 #endif
 }
 
