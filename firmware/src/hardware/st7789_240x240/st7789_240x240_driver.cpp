@@ -81,10 +81,15 @@ enum {
   BTN_CY     = 216,
   BTN_R      = 18,
 
-  // info page: denser, text size 1, so a build date fits on one line
-  INFO_ROW_H = 18,
-  INFO_LAB_X = 10,
-  INFO_VAL_X = 74,
+  // info page: size-1 labels against size-2 values. The small label is what
+  // buys the width -- "BUILT" costs 30px at size 1 against 60px at size 2, so
+  // the value column starts at 44 instead of ~80 and gets 196px (16 chars at
+  // size 2) rather than the ~13 a same-size label would have left.
+  INFO_ROW_H = 22,
+  INFO_LAB_X = 6,
+  INFO_VAL_X = 44,
+  INFO_LAB_DY = 4,     // centres an 8px label against a 16px value
+  INFO_MOD_H  = 12,    // module list stays size 1: it is a list, not a reading
 };
 
 enum { ICON_CLOCK = 0, ICON_STOPWATCH, ICON_THERMO, ICON_BOLT, ICON_RAM };
@@ -349,15 +354,33 @@ void St7789Driver::drawHeaderLive() {
 
 // The info page answers the todo directly: name, firmware version, and the
 // LED's mode and rate.
-static const char* const kInfoLabels[] = {"FW", "BUILT", "BOARD", "MODS", "LED"};
-enum { I_FW = 0, I_BUILT, I_BOARD, I_MODS, I_LED, I_COUNT };
+// MODS moved to the end and broken one-per-line: as a single wrapped string it
+// read badly, and it is the one row whose length grows with the board config.
+// Last means a long list runs off the bottom instead of pushing anything else
+// off -- accepted for now.
+static const char* const kInfoLabels[] = {"FW", "BUILT", "BOARD", "LED"};
+enum { I_FW = 0, I_BUILT, I_BOARD, I_LED, I_COUNT };
+
+static int modsTop() { return BODY_TOP + I_COUNT * INFO_ROW_H + 6; }
 
 void St7789Driver::drawInfoStatic() {
   gfx->setTextSize(1);
+  gfx->setTextColor(COL_LABEL, COL_BG);
   for (int i = 0; i < I_COUNT; ++i) {
-    gfx->setTextColor(COL_LABEL, COL_BG);
-    gfx->setCursor(INFO_LAB_X, BODY_TOP + i * INFO_ROW_H);
+    gfx->setCursor(INFO_LAB_X, BODY_TOP + i * INFO_ROW_H + INFO_LAB_DY);
     gfx->print(kInfoLabels[i]);
+  }
+
+  // The module list never changes after boot, so it belongs here rather than
+  // in drawInfoValues() -- that keeps it out of every steady-state refresh.
+  gfx->setCursor(INFO_LAB_X, modsTop());
+  gfx->print("MODS");
+  gfx->setTextColor(COL_ACCENT, COL_BG);
+  for (uint8_t i = 0; i < reg_->moduleCount(); ++i) {
+    int y = modsTop() + 14 + i * INFO_MOD_H;
+    if (y > DISPLAY_H - 8) break;          // runs off the bottom: fine, drop it
+    gfx->setCursor(INFO_VAL_X, y);
+    gfx->print(reg_->moduleId(i));
   }
 }
 
@@ -366,24 +389,19 @@ void St7789Driver::drawInfoValues() {
 
   snprintf(buf, sizeof(buf), "%s %s", core::projectName(), core::version());
   if (changed(1, buf))
-    setValue(INFO_VAL_X, BODY_TOP + I_FW * INFO_ROW_H, buf, COL_TEXT, 1);
+    setValue(INFO_VAL_X, BODY_TOP + I_FW * INFO_ROW_H, buf, COL_TEXT, 2);
 
-  if (changed(2, core::buildDate()))
-    setValue(INFO_VAL_X, BODY_TOP + I_BUILT * INFO_ROW_H, core::buildDate(),
-             COL_TEXT, 1);
+  // "Mmm DD YYYY HH:MM:SS" is 20 chars -- 4 too many at size 2. The year is
+  // the least useful part when the question is "is this the build I just
+  // flashed", so it goes and the time stays: "Jul 26 14:26".
+  const char* d = core::buildDate();
+  snprintf(buf, sizeof(buf), "%.6s %.5s", d, d + 12);
+  if (changed(2, buf))
+    setValue(INFO_VAL_X, BODY_TOP + I_BUILT * INFO_ROW_H, buf, COL_TEXT, 2);
+
   if (changed(3, core::boardId()))
     setValue(INFO_VAL_X, BODY_TOP + I_BOARD * INFO_ROW_H, core::boardId(),
-             COL_TEXT, 1);
-
-  // The module list is the one genuinely registry-derived thing on the page,
-  // and it is worth it: it says exactly which modules this build has.
-  buf[0] = '\0';
-  for (uint8_t i = 0; i < reg_->moduleCount(); ++i) {
-    if (i) strncat(buf, " ", sizeof(buf) - strlen(buf) - 1);
-    strncat(buf, reg_->moduleId(i), sizeof(buf) - strlen(buf) - 1);
-  }
-  if (changed(4, buf))
-    setValue(INFO_VAL_X, BODY_TOP + I_MODS * INFO_ROW_H, buf, COL_ACCENT, 1);
+             COL_TEXT, 2);
 
   // Absent LED module: say so rather than leaving a stale or blank row.
   if (pLedMode_ != core::kNoParam) {
@@ -399,9 +417,9 @@ void St7789Driver::drawInfoValues() {
   } else {
     snprintf(buf, sizeof(buf), "--");
   }
-  strncat(buf, "    ", sizeof(buf) - strlen(buf) - 1);   // cover a shorter value
-  if (changed(5, buf))
-    setValue(INFO_VAL_X, BODY_TOP + I_LED * INFO_ROW_H, buf, COL_TEXT, 1);
+  strncat(buf, "  ", sizeof(buf) - strlen(buf) - 1);   // cover a shorter value
+  if (changed(4, buf))
+    setValue(INFO_VAL_X, BODY_TOP + I_LED * INFO_ROW_H, buf, COL_TEXT, 2);
 }
 
 void St7789Driver::drawStatsStatic() {
