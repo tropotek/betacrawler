@@ -16,6 +16,7 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 | PUT | `/api/params/{key}` | `{"val": V}` | `{ok, key, val}` |
 | POST | `/api/params/save` | — | `{ok}` |
 | POST | `/api/params/defaults` | — | `{ok, vals}` |
+| POST | `/api/params/restore` | `{"ini": "[led]\nmode = on\n"}` | `{ok, applied, skipped, vals}` |
 | POST | `/api/terminal` | `{"command": "get led.blink_hz"}` | `{ok, friendly, raw_sent, raw_recv}` |
 
 ### Status fields
@@ -52,8 +53,34 @@ the groups first appear. On a telemetry field, `div` and `dec` are **display
 hints only** — the wire always carries the device's native units (`vdd` is
 integer millivolts) and only the browser divides and rounds.
 
+### Settings backup and restore
+
+`dump` (a Terminal command) renders the device's settings as INI text; section
+= the part of a key before the first dot, option = the rest, so `led.blink_hz`
+becomes `[led]`/`blink_hz`. A key with no dot goes under `[general]`. The header
+lines are `;` comments, so a dump parses straight back in.
+
+`POST /api/params/restore` is the other half: it applies such a file to the
+device. It is deliberately **partial-tolerant** — a key this firmware doesn't
+have (a dump taken from a board with more modules enabled) or a value it
+rejects goes into `skipped`, and every other key still applies:
+
+```json
+{"ok": false,
+ "applied": ["led.mode"],
+ "skipped": [{"key": "wifi.ssid", "reason": "unknown parameter 'wifi.ssid'"}],
+ "vals": {"led.mode": "on", "...": "..."}}
+```
+
+`ok` is true only when at least one key applied and nothing was skipped.
+Restore writes to RAM only — it never sends a `save`, so persisting stays an
+explicit user action, exactly like editing a field in the config form. Text
+that isn't valid INI is rejected whole, before anything reaches the device
+(400 `{"err": "badini"}`); a disconnected device is 409, as everywhere else.
+
 `/api/terminal` powers the debug Terminal page's shell-like command line
-(`get <key>`, `set <key> <value>`, `save`, `defaults`, `help`). It is a
+(`get <key>`, `set <key> <value>`, `save`, `defaults`, `list`, `dump`,
+`help`). It is a
 deliberate exception to the error-status table below: it **always returns
 200**. Command-level failures (unknown command/key, bad value, disconnected,
 ...) are carried in `ok:false` + `friendly`, console-style, not as an HTTP
@@ -66,6 +93,7 @@ ever written to the port (e.g. an unknown key or a malformed argument count).
 | Status | Meaning | Body |
 |---|---|---|
 | 400 | Value rejected | `{"err": "range"\|"enum"\|"toolong"\|"nokey"\|"badtype", "detail": "..."}` |
+| 400 | Restore body is not valid INI | `{"err": "badini", "detail": "..."}` |
 | 400 | Save failed (flash write/read-back mismatch) | `{"err": "flash", "detail": "..."}` |
 | 409 | Not connected | `{"err": "disconnected", ...}` |
 | 502 | Connect failed / protocol mismatch | `{"detail": "..."}` |

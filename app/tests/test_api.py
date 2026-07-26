@@ -1,3 +1,4 @@
+import json
 import queue
 import threading
 
@@ -85,6 +86,114 @@ def test_save_and_defaults(client):
     client.post("/api/connect", json={"port": "/dev/fake"})
     assert client.post("/api/params/save").status_code == 200
     assert client.post("/api/params/defaults").status_code == 200
+
+
+# --- restore from INI ---------------------------------------------------------
+
+GOOD_INI = """
+; a settings backup
+[led]
+mode = on
+blink_hz = 9
+
+[device]
+name = bench rig
+"""
+
+
+def wire_ops(fake):
+    """Every op the fake device was asked to perform, in order."""
+    return [json.loads(line.decode())["op"] for line in fake.written]
+
+
+def test_restore_applies_every_key_and_reports_them(client):
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    fake = client.app.state.fake
+    before = len(fake.written)
+
+    r = client.post("/api/params/restore", json={"ini": GOOD_INI})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ok"] is True
+    assert set(body["applied"]) == {"led.mode", "led.blink_hz", "device.name"}
+    assert body["skipped"] == []
+    # One `set` per key actually reached the device.
+    assert wire_ops(fake)[before:] == ["set", "set", "set"]
+    assert body["vals"]["led.blink_hz"] == 9
+    assert body["vals"]["device.name"] == "bench rig"
+
+
+def test_restore_coerces_values_through_the_schema(client):
+    """INI values are text; a u8 must arrive at the device as a number."""
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    client.post("/api/params/restore", json={"ini": "[led]\nblink_hz = 9\n"})
+    sent = [json.loads(line.decode()) for line in client.app.state.fake.written]
+    last = sent[-1]
+    assert last["op"] == "set"
+    assert last["val"] == 9 and isinstance(last["val"], int)
+
+
+def test_restore_skips_unknown_keys_but_applies_the_rest(client):
+    """Restoring a dump from a board with more modules enabled is normal --
+    the extra keys are reported, not fatal."""
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    ini = "[wifi]\nssid = home\n\n[led]\nblink_hz = 9\n"
+    body = client.post("/api/params/restore", json={"ini": ini}).json()
+    assert body["ok"] is False
+    assert body["applied"] == ["led.blink_hz"]
+    assert [s["key"] for s in body["skipped"]] == ["wifi.ssid"]
+    assert "unknown parameter" in body["skipped"][0]["reason"]
+
+
+def test_restore_skips_an_invalid_value_but_applies_the_rest(client):
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    ini = "[led]\nblink_hz = 99\nmode = on\n"        # blink_hz max is 20
+    body = client.post("/api/params/restore", json={"ini": ini}).json()
+    assert body["ok"] is False
+    assert body["applied"] == ["led.mode"]
+    assert body["skipped"][0]["key"] == "led.blink_hz"
+    assert "1..20" in body["skipped"][0]["reason"]
+
+
+def test_restore_does_not_write_to_flash(client):
+    """Restore applies to RAM only; persisting stays an explicit Save, exactly
+    like editing a field in the config form."""
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    fake = client.app.state.fake
+    client.post("/api/params/restore", json={"ini": GOOD_INI})
+    assert "save" not in wire_ops(fake)
+
+
+def test_restore_of_a_dump_round_trips_cleanly(client):
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    dump = client.post("/api/terminal", json={"command": "dump"}).json()["friendly"]
+    body = client.post("/api/params/restore", json={"ini": dump}).json()
+    assert body["ok"] is True
+    assert body["skipped"] == []
+    assert len(body["applied"]) == 4
+
+
+def test_restore_of_malformed_ini_returns_400(client):
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    fake = client.app.state.fake
+    before = len(fake.written)
+    r = client.post("/api/params/restore", json={"ini": "not an ini file"})
+    assert r.status_code == 400
+    assert r.json()["err"] == "badini"
+    assert len(fake.written) == before          # nothing half-applied
+
+
+def test_restore_while_disconnected_returns_409(client):
+    r = client.post("/api/params/restore", json={"ini": GOOD_INI})
+    assert r.status_code == 409
+    assert r.json()["err"] == "disconnected"
+
+
+def test_restore_of_an_empty_file_applies_nothing(client):
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    body = client.post("/api/params/restore", json={"ini": "; empty\n"}).json()
+    assert body["ok"] is False
+    assert body["applied"] == []
 
 
 def test_websocket_receives_telemetry(client):

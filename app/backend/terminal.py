@@ -9,6 +9,7 @@ port (see tests/test_terminal.py).
 """
 from dataclasses import dataclass
 
+from . import settings_ini
 from .device import DeviceModel, DeviceError
 
 HELP_TEXT = "\n".join([
@@ -17,6 +18,9 @@ HELP_TEXT = "\n".join([
     "  set <key> <value>    set a parameter",
     "  save                 commit current values to flash",
     "  defaults             reset all values to firmware defaults",
+    "  list                 list every setting with its valid values",
+    "  dump                 print all settings as INI text (copy it to a file;",
+    "                       'Restore from INI' feeds it back)",
     "  help                 show this text",
 ])
 
@@ -27,6 +31,61 @@ class TerminalResult:
     friendly: str
     raw_sent: str = ""
     raw_recv: str = ""
+
+
+def _valid_values(spec: dict) -> str:
+    """The human form of a parameter's constraint, e.g. "1..20"."""
+    kind = spec["type"]
+    if kind == "u8":
+        return f"{spec['min']}..{spec['max']}"
+    if kind == "enum":
+        return "|".join(spec["options"])
+    if kind == "str":
+        return f"max {spec['maxlen']} chars"
+    return ""
+
+
+def _list_text(schema: list[dict]) -> str:
+    """Render the schema as an aligned, group-headed settings reference.
+
+    Everything here comes out of the descriptor the firmware published, so a
+    board that enables another module documents itself -- there is deliberately
+    no per-key text in this file.
+    """
+    if not schema:
+        return "No settings — is a device connected?"
+
+    rows = []
+    for spec in schema:
+        label = spec.get("label") or spec["key"]
+        unit = spec.get("unit")
+        rows.append({
+            "group": spec.get("group") or "",
+            "cells": [spec["key"],
+                      f"{label} ({unit})" if unit else label,
+                      spec["type"],
+                      _valid_values(spec),
+                      f"(default: {spec.get('def')})"],
+        })
+    widths = [max(len(r["cells"][i]) for r in rows) for i in range(len(rows[0]["cells"]))]
+
+    # Grouped by first appearance rather than straight down the schema, so a
+    # schema interleaving two modules' keys still prints one heading each.
+    order, by_group = [], {}
+    for row in rows:
+        if row["group"] not in by_group:
+            by_group[row["group"]] = []
+            order.append(row["group"])
+        by_group[row["group"]].append(row["cells"])
+
+    lines = ["Settings — change one with: set <key> <value>"]
+    for group in order:
+        lines.append("")
+        lines.append(group)
+        for cells in by_group[group]:
+            padded = "  ".join(c.ljust(w) for c, w in zip(cells, widths))
+            lines.append(f"  {padded}".rstrip())
+    return "\n".join(lines)
 
 
 def run(device: DeviceModel, command: str) -> TerminalResult:
@@ -65,6 +124,19 @@ def run(device: DeviceModel, command: str) -> TerminalResult:
                 return TerminalResult(False, "ERROR: usage: defaults")
             sent, recv = device.terminal_defaults()
             return TerminalResult(True, "OK: reset to defaults", sent, recv)
+
+        if cmd == "list":
+            if args:
+                return TerminalResult(False, "ERROR: usage: list")
+            return TerminalResult(True, _list_text(device.schema()["params"]))
+
+        if cmd == "dump":
+            if args:
+                return TerminalResult(False, "ERROR: usage: dump")
+            sent, recv, vals = device.terminal_getall()
+            text = settings_ini.dump_ini(
+                device.schema()["params"], vals, device.status())
+            return TerminalResult(True, text, sent, recv)
 
         return TerminalResult(False, f"ERROR: unknown command {cmd!r}. Type 'help' for a list.")
     except DeviceError as exc:

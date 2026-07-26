@@ -37,6 +37,7 @@ const Api = {
   save:      ()          => Api.send('POST', '/api/params/save'),
   defaults:  ()          => Api.send('POST', '/api/params/defaults'),
   sendTerminalCommand: (command) => Api.send('POST', '/api/terminal', { command }),
+  restoreIni: (ini)      => Api.send('POST', '/api/params/restore', { ini }),
   socket:    ()          => new WebSocket(
     `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`),
 };
@@ -55,6 +56,9 @@ function showError(msg) {
 function setState(state, info) {
   connected = state === 'connected';
   stale = false;   // any ground-truth state transition supersedes staleness
+  // Unsaved RAM-only changes died with the connection; leaving the Save
+  // button armed would just produce a "disconnected" error on click.
+  if (!connected) setDirty(false);
   const badge = el('state');
   badge.textContent = state;
   badge.className = 'badge ' + (connected ? 'text-bg-success' : 'text-bg-secondary');
@@ -163,7 +167,7 @@ document.addEventListener('alpine:init', () => {
       try {
         await Api.setParam(field.key, val);
         this.invalid[field.key] = false;
-        el('dirty').classList.remove('d-none');
+        setDirty(true);
         if (field.key === 'tlm.rate') tlmPeriodMs = 1000 / Number(val);
       } catch (e) {
         this.invalid[field.key] = true;
@@ -238,11 +242,24 @@ el('connect').addEventListener('click', async () => {
   } catch (e) { showError(e.message); }
 });
 
+// One dirty flag, two readouts: the Configuration page's "applied — not saved"
+// note and the Terminal's Save button. Anything that changes the device's RAM
+// -- a form field, a restore -- goes through here, so both pages agree about
+// whether there is something worth writing to flash.
+function setDirty(dirty) {
+  el('dirty').classList.toggle('d-none', !dirty);
+  el('term-save').disabled = !dirty;
+}
+
+async function saveToFlash() {
+  // Flash erase stalls the board ~1s; telemetry will gap. That is expected.
+  await Api.save();
+  setDirty(false);
+}
+
 el('save').addEventListener('click', async () => {
   try {
-    // Flash erase stalls the board ~1s; telemetry will gap. That is expected.
-    await Api.save();
-    el('dirty').classList.add('d-none');
+    await saveToFlash();
   } catch (e) { showError(e.message); }
 });
 
@@ -251,6 +268,10 @@ el('defaults').addEventListener('click', async () => {
     await Api.defaults();
     await loadDevice();
     setState('connected');
+    // The firmware's `defaults` op reloads RAM and re-notifies the modules but
+    // never touches flash (core/dispatch.cpp, Op::Defaults), so the device is
+    // now exactly as unsaved as after editing a field by hand.
+    setDirty(true);
   } catch (e) { showError(e.message); }
 });
 
@@ -346,6 +367,48 @@ el('term-input').addEventListener('keydown', (ev) => {
 });
 
 el('term-clear').addEventListener('click', () => { el('term-output').value = ''; });
+
+// --- restore from INI --------------------------------------------------------
+// The other half of `dump`. The report text is built here from the backend's
+// applied/skipped lists rather than sent as prose, so this stays the only
+// place that decides how the terminal reads.
+el('term-restore').addEventListener('click', () => el('term-restore-file').click());
+
+el('term-restore-file').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  // Reset immediately so re-picking the same file after an edit still fires
+  // a `change` event.
+  ev.target.value = '';
+  if (!file) return;
+  termAppend(`> restore from ${file.name}`);
+  try {
+    const r = await Api.restoreIni(await file.text());
+    termAppend(`applied ${r.applied.length} setting(s)`
+      + (r.applied.length ? `: ${r.applied.join(', ')}` : ''));
+    for (const s of r.skipped) termAppend(`  skipped ${s.key}: ${s.reason}`);
+    if (r.applied.length) {
+      // Values are live on the device but not in flash — same state as
+      // editing a field by hand, so surface the same reminder.
+      await loadDevice();
+      setDirty(true);
+      termAppend('Not saved to flash yet — click "Save to flash".');
+    }
+  } catch (e) {
+    termAppend(`ERROR: ${e.message}`);
+  }
+});
+
+el('term-save').addEventListener('click', async () => {
+  termAppend('> save to flash');
+  el('term-save').disabled = true;      // the write stalls the board ~1s
+  try {
+    await saveToFlash();
+    termAppend('OK: saved to flash');
+  } catch (e) {
+    termAppend(`ERROR: ${e.message}`);
+    setDirty(true);                     // still unsaved — let them retry
+  }
+});
 
 function openSocket() {
   const ws = Api.socket();

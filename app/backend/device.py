@@ -133,6 +133,19 @@ class DeviceModel:
         self._values[key] = val
         return sent, recv, val
 
+    def terminal_getall(self):
+        """Re-read every value from the device and refresh the cache.
+
+        `dump` uses this rather than values(): a settings backup should be the
+        device's own answer, not whatever this process last happened to see,
+        and it gives the raw-JSON toggle a real exchange to display.
+        """
+        sent, recv, resp = self._send_raw("getall")
+        if not resp.get("ok"):
+            raise DeviceError(resp.get("err", "err"), "getall failed")
+        self._values = resp["vals"]
+        return sent, recv, dict(self._values)
+
     def terminal_set(self, key: str, raw_value: str):
         spec = self._by_key.get(key)
         if spec is None:

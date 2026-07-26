@@ -32,7 +32,7 @@ Two ST-Link/V2 units may be attached at once — if upload grabs the wrong one, 
 
 **Backend** (from `app/`, venv already at `app/.venv/`):
 ```
-.venv/bin/pytest -v                                     # 57 tests, no board needed
+.venv/bin/pytest -v                                     # 89 tests, no board needed
 .venv/bin/pytest tests/test_link.py -v                  # one file only
 .venv/bin/uvicorn backend.main:app --port 8080           # serves API + app/web/ together
 ```
@@ -64,7 +64,9 @@ firmware/src/modules.cpp  THE wiring file — one #if block per module. Compiled
 firmware/src/          Arduino glue: main.cpp, storage.cpp (flash)
 
 app/backend/           protocol.py (codec) -> link.py (threaded serial, id correlation) ->
-                        device.py (schema cache + validation) -> main.py (FastAPI routes/WS)
+                        device.py (schema cache + validation) -> main.py (FastAPI routes/WS).
+                        terminal.py parses the Terminal page's commands; settings_ini.py is a
+                        pure INI codec for settings backup/restore (no device, no coercion).
                         pytest-tested against a fake serial port (app/tests/fake_serial.py),
                         no board needed
 

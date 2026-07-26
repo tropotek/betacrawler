@@ -23,6 +23,11 @@
     @media (min-width: 768px) {
       #connection-controls { width: auto; }
     }
+    /* Three buttons share the terminal's command row; on a phone they squeeze
+       the input down to a couple of characters. Giving the input a real flex
+       basis makes it wrap onto its own line instead of collapsing. */
+    #term-command-row { flex-wrap: wrap; }
+    #term-input { flex: 1 1 14rem; }
   </style>
 </head>
 <body class="bg-body-tertiary">
@@ -256,11 +261,20 @@
             <label class="form-check-label" for="term-traffic">Show device traffic</label>
           </div>
           <textarea id="term-output" class="form-control font-monospace mb-2" rows="20" readonly></textarea>
-          <div class="d-flex gap-2">
+          <div id="term-command-row" class="d-flex gap-2">
             <input id="term-input" type="text" class="form-control font-monospace"
                    placeholder="get led.blink_hz — try 'help'" autocomplete="off">
             <button id="term-send" class="btn btn-primary">Send</button>
             <button id="term-clear" class="btn btn-outline-secondary">Clear</button>
+            <!-- Counterpart to the `dump` command: dump prints INI you paste
+                 into a file, this reads such a file back. The file is read in
+                 the browser and POSTed as text; the backend never sees a path. -->
+            <button id="term-restore" class="btn btn-outline-secondary text-nowrap">Restore from INI…</button>
+            <input id="term-restore-file" type="file" accept=".ini,.txt,text/plain" class="d-none">
+            <!-- Same flash write as the Configuration page's button, driven by
+                 the same dirty flag: enabled only once something has been
+                 applied to RAM and not yet persisted. -->
+            <button id="term-save" class="btn btn-success text-nowrap" disabled>Save to flash</button>
           </div>
         </div>
 
@@ -310,6 +324,19 @@
             <li>This means the device is still connected but hasn't sent telemetry recently — often just a
                 brief pause during a Save (writing to flash takes about a second). If it doesn't clear on its
                 own, try disconnecting and reconnecting.</li>
+          </ul>
+
+          <p><strong>Backing up and restoring settings</strong></p>
+          <ul>
+            <li>On the Terminal page, type <code>dump</code> to print every setting as INI text, then
+                copy it into a file. <code>list</code> shows what each setting accepts.</li>
+            <li><strong>Restore from INI…</strong> reads such a file back. Settings the connected
+                firmware doesn't have — or values it rejects — are listed as skipped and the rest
+                still apply.</li>
+            <li>A restore applies to the device immediately but is <strong>not</strong> written to
+                flash. Click <strong>Save to flash</strong> — the button beside Restore, or the one
+                on the Configuration page — to keep it. It stays greyed out until there is
+                something unsaved.</li>
           </ul>
 
           <p><strong>A saved setting didn't survive a restart</strong></p>

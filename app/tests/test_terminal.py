@@ -5,8 +5,9 @@ from backend import terminal
 from backend.device import DeviceModel
 from backend.link import SerialLink
 from backend.main import create_app
+from backend.settings_ini import parse_ini
 from tests.fake_serial import FakeSerial
-from tests.test_device import VALUES, device_responder, make_device
+from tests.test_device import SCHEMA, VALUES, device_responder, make_device
 
 
 @pytest.fixture
@@ -24,7 +25,7 @@ def test_help_lists_commands_and_touches_no_wire_traffic(connected_device):
     before = len(fake.written)
     result = terminal.run(dev, "help")
     assert result.ok
-    for cmd in ("get", "set", "save", "defaults", "help"):
+    for cmd in ("get", "set", "save", "defaults", "dump", "list", "help"):
         assert cmd in result.friendly
     assert result.raw_sent == ""
     assert result.raw_recv == ""
@@ -143,6 +144,67 @@ def test_save_and_defaults_reject_extra_args(connected_device):
     dev, _ = connected_device
     assert not terminal.run(dev, "save now").ok
     assert not terminal.run(dev, "defaults now").ok
+
+
+# --- dump ---------------------------------------------------------------------
+
+def test_dump_returns_parseable_ini_covering_every_setting(connected_device):
+    dev, _ = connected_device
+    result = terminal.run(dev, "dump")
+    assert result.ok
+    assert dict(parse_ini(result.friendly)) == {
+        k: str(v) for k, v in VALUES.items()}
+
+
+def test_dump_reads_the_device_rather_than_the_cache(connected_device):
+    """One `getall` on the wire: a dump is meant to be the device's truth, and
+    the raw-JSON toggle needs real lines to show."""
+    dev, fake = connected_device
+    before = len(fake.written)
+    result = terminal.run(dev, "dump")
+    assert len(fake.written) == before + 1
+    assert "getall" in result.raw_sent
+    assert result.raw_recv != ""
+
+
+def test_dump_rejects_extra_args(connected_device):
+    dev, fake = connected_device
+    before = len(fake.written)
+    assert not terminal.run(dev, "dump now").ok
+    assert len(fake.written) == before
+
+
+# --- list ---------------------------------------------------------------------
+
+def test_list_describes_every_setting_and_touches_no_wire_traffic(connected_device):
+    dev, fake = connected_device
+    before = len(fake.written)
+    result = terminal.run(dev, "list")
+    assert result.ok
+    assert len(fake.written) == before        # schema is already cached
+    assert result.raw_sent == ""
+
+    for spec in SCHEMA:
+        assert spec["key"] in result.friendly
+        assert str(spec["def"]) in result.friendly
+        if spec["type"] == "u8":
+            assert f"{spec['min']}..{spec['max']}" in result.friendly
+        elif spec["type"] == "enum":
+            assert "|".join(spec["options"]) in result.friendly
+        elif spec["type"] == "str":
+            assert f"max {spec['maxlen']}" in result.friendly
+
+
+def test_list_groups_settings_under_their_schema_group(connected_device):
+    dev, _ = connected_device
+    friendly = terminal.run(dev, "list").friendly
+    for group in {spec["group"] for spec in SCHEMA}:
+        assert group in friendly
+
+
+def test_list_rejects_extra_args(connected_device):
+    dev, _ = connected_device
+    assert not terminal.run(dev, "list all").ok
 
 
 # --- misc --------------------------------------------------------------------

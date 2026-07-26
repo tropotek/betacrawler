@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, StrictInt, StrictStr
 
-from . import terminal
+from . import settings_ini, terminal
 from .device import DeviceModel, DeviceError, ProtoMismatch
 from .link import list_candidate_ports
 
@@ -32,6 +32,10 @@ class ValueBody(BaseModel):
 
 class TerminalBody(BaseModel):
     command: str
+
+
+class RestoreBody(BaseModel):
+    ini: str
 
 
 class Broadcaster:
@@ -171,6 +175,40 @@ def create_app(device: DeviceModel | None = None) -> FastAPI:
     def defaults():
         device.load_defaults()
         return {"ok": True, "vals": device.values()}
+
+    @app.post("/api/params/restore")
+    def restore(body: RestoreBody):
+        """Apply a settings dump produced by the Terminal's `dump` command.
+
+        Deliberately partial-tolerant: a key this firmware doesn't have (a
+        dump taken from a board with more modules enabled) or a value it
+        rejects is reported in `skipped`, and every other key still applies.
+        Aborting on the first bad line would make a restore all-or-nothing
+        across firmware versions, which is exactly when you need it most.
+
+        Applies to RAM only -- persisting stays an explicit Save, the same
+        rule the config form follows.
+        """
+        if device.status()["state"] != "connected":
+            raise DeviceError("disconnected", "not connected")
+        try:
+            pairs = settings_ini.parse_ini(
+                body.ini, known_keys=[p["key"] for p in device.schema()["params"]])
+        except ValueError as exc:
+            # DeviceError rather than HTTPException so this comes back in the
+            # same {"err", "detail"} shape as every other 400 in docs/api.md
+            # (HTTPException would nest it under "detail").
+            raise DeviceError("badini", str(exc)) from exc
+
+        applied, skipped = [], []
+        for key, raw in pairs:
+            try:
+                device.terminal_set(key, raw)
+                applied.append(key)
+            except DeviceError as exc:
+                skipped.append({"key": key, "reason": str(exc)})
+        return {"ok": bool(applied) and not skipped,
+                "applied": applied, "skipped": skipped, "vals": device.values()}
 
     @app.post("/api/terminal")
     def terminal_command(body: TerminalBody):
