@@ -3,7 +3,7 @@
 Deliberately routes everything through DeviceModel's schema-validated
 terminal_* methods rather than a raw byte passthrough -- there is no generic
 passthrough op on the wire (firmware/src/core/protocol.cpp's opFromString
-only knows hello|schema|get|getall|set|save|defaults|tlm), and parsing here
+only knows hello|schema|get|getall|set|save|defaults|revert|tlm), and parsing here
 instead of in JS is what makes this unit-testable against the fake serial
 port (see tests/test_terminal.py).
 """
@@ -18,6 +18,7 @@ HELP_TEXT = "\n".join([
     "  set <key> <value>    set a parameter",
     "  save                 commit current values to flash",
     "  defaults             reset all values to firmware defaults",
+    "  revert               discard unsaved changes, reload from flash",
     "  list                 list every setting with its valid values",
     "  dump                 print all settings as INI text (copy it to a file;",
     "                       'Restore from INI' feeds it back)",
@@ -136,6 +137,15 @@ def run(device: DeviceModel, command: str) -> TerminalResult:
                 return TerminalResult(False, "ERROR: usage: defaults")
             sent, recv = device.terminal_defaults()
             return TerminalResult(True, "OK: reset to defaults", sent, recv)
+
+        if cmd == "revert":
+            if args:
+                return TerminalResult(False, "ERROR: usage: revert")
+            sent, recv, src = device.terminal_revert()
+            msg = ("OK: reloaded settings from flash" if src == "flash"
+                   else "OK: no saved settings on this board "
+                        "— loaded defaults instead")
+            return TerminalResult(True, msg, sent, recv)
 
         if cmd == "list":
             if args:

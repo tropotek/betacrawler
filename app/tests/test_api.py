@@ -89,6 +89,16 @@ def test_save_and_defaults(client):
     assert client.post("/api/params/defaults").status_code == 200
 
 
+def test_revert_returns_the_source_and_values(client):
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    resp = client.post("/api/params/revert")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["ok"] is True
+    assert body["src"] == "flash"
+    assert body["vals"]["led.mode"] == "blink"
+
+
 # --- restore from INI ---------------------------------------------------------
 
 GOOD_INI = """

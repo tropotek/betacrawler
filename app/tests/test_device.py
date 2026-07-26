@@ -29,7 +29,7 @@ VALUES = {"led.mode": "blink", "led.blink_hz": 2,
           "disp.mode": "on", "disp.page": "info", "disp.rate": 2}
 
 
-def device_responder(proto=1, caps=("dfu",)):
+def device_responder(proto=1, caps=("dfu",), revert_src="flash"):
     def responder(req, emit):
         op = req["op"]
         rid = req["id"]
@@ -54,6 +54,10 @@ def device_responder(proto=1, caps=("dfu",)):
             emit({"id": rid, "ok": True})
         elif op in ("save", "defaults"):
             emit({"id": rid, "ok": True})
+        elif op == "revert":
+            # Mirrors the firmware: never an error, but says which source it
+            # used so the host can tell "back to saved" from "fell back".
+            emit({"id": rid, "ok": True, "src": revert_src})
         elif op == "dfu":
             # Mirrors the firmware: it answers BEFORE resetting, so an `ok`
             # here means "request accepted", not "already rebooted".
@@ -318,5 +322,26 @@ def test_enter_dfu_on_firmware_too_old_to_know_the_op():
             dev.enter_dfu()
         assert exc.value.code == "nodfu"
         assert "BOOT0" in str(exc.value)
+    finally:
+        dev.disconnect()
+
+
+def test_revert_reports_the_source_and_refreshes_values():
+    dev, _ = make_device()
+    dev.connect("/dev/fake")
+    try:
+        dev.set("led.blink_hz", 15)
+        assert dev.revert() == "flash"
+        assert dev.values() == VALUES        # re-read from the device, not assumed
+    finally:
+        dev.disconnect()
+
+
+def test_revert_reports_the_defaults_fallback():
+    fake = FakeSerial(responder=device_responder(revert_src="defaults"))
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    dev.connect("/dev/fake")
+    try:
+        assert dev.revert() == "defaults"
     finally:
         dev.disconnect()

@@ -216,6 +216,11 @@ def create_app(device: DeviceModel | None = None,
         device.load_defaults()
         return {"ok": True, "vals": device.values()}
 
+    @app.post("/api/params/revert")
+    def revert():
+        src = device.revert()
+        return {"ok": True, "src": src, "vals": device.values()}
+
     @app.post("/api/params/restore")
     def restore(body: RestoreBody):
         """Apply a settings dump produced by the Terminal's `dump` command.

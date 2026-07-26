@@ -123,6 +123,21 @@ class DeviceModel:
             raise DeviceError(resp.get("err", "err"), "defaults failed")
         self._values = self._send("getall")["vals"]
 
+    def revert(self):
+        """Reload the settings last written to the device's flash.
+
+        Returns which source the firmware used: "flash" normally, or
+        "defaults" when the board has nothing valid stored -- a fresh board,
+        or settings discarded because the enabled module set changed the
+        fingerprint. The caller needs to know, because only the "flash" case
+        leaves the device with nothing unsaved.
+        """
+        resp = self._send("revert")
+        if not resp.get("ok"):
+            raise DeviceError(resp.get("err", "err"), "revert failed")
+        self._values = self._send("getall")["vals"]
+        return resp.get("src", "flash")
+
     def enter_dfu(self):
         """Ask the device to reboot into its ROM bootloader.
 
@@ -213,6 +228,13 @@ class DeviceModel:
             raise DeviceError(resp.get("err", "err"), "defaults failed")
         self._values = self._send("getall")["vals"]
         return sent, recv
+
+    def terminal_revert(self):
+        sent, recv, resp = self._send_raw("revert")
+        if not resp.get("ok"):
+            raise DeviceError(resp.get("err", "err"), "revert failed")
+        self._values = self._send("getall")["vals"]
+        return sent, recv, resp.get("src", "flash")
 
     # --- internals ----------------------------------------------------------
     @staticmethod

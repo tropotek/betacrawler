@@ -25,7 +25,7 @@ def test_help_lists_commands_and_touches_no_wire_traffic(connected_device):
     before = len(fake.written)
     result = terminal.run(dev, "help")
     assert result.ok
-    for cmd in ("get", "set", "save", "defaults", "dump", "list", "help"):
+    for cmd in ("get", "set", "save", "defaults", "revert", "dump", "list", "help"):
         assert cmd in result.friendly
     assert result.raw_sent == ""
     assert result.raw_recv == ""
@@ -144,6 +144,33 @@ def test_save_and_defaults_reject_extra_args(connected_device):
     dev, _ = connected_device
     assert not terminal.run(dev, "save now").ok
     assert not terminal.run(dev, "defaults now").ok
+
+
+def test_revert_reloads_from_flash(connected_device):
+    dev, _ = connected_device
+    terminal.run(dev, "set led.blink_hz 15")
+    result = terminal.run(dev, "revert")
+    assert result.ok
+    assert result.friendly == "OK: reloaded settings from flash"
+    assert dev.values() == VALUES
+
+
+def test_revert_says_so_when_it_fell_back_to_defaults():
+    fake = FakeSerial(responder=device_responder(revert_src="defaults"))
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    dev.connect("/dev/fake")
+    try:
+        result = terminal.run(dev, "revert")
+        assert result.ok
+        assert result.friendly == (
+            "OK: no saved settings on this board — loaded defaults instead")
+    finally:
+        dev.disconnect()
+
+
+def test_revert_rejects_extra_args(connected_device):
+    dev, _ = connected_device
+    assert not terminal.run(dev, "revert now").ok
 
 
 # --- dump ---------------------------------------------------------------------
