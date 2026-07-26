@@ -237,7 +237,10 @@ el('connect').addEventListener('click', async () => {
       setState(st.state, st);
       await loadDevice();
       setState(st.state, st);
-      showPage('config');
+      // Deliberately stays on whatever page you were on. Connecting enables
+      // the gated nav items (updateNavAvailability) and that is enough --
+      // jumping to Configuration threw away the page you had chosen, which is
+      // wrong when you connected in order to watch Telemetry or the Terminal.
     }
   } catch (e) { showError(e.message); }
 });
@@ -478,9 +481,9 @@ function startWatchdog() {
 (async function init() {
   el('app-version').textContent = `v${APP_VERSION}`;
   el('help-app-version').textContent = APP_VERSION;
-  // Home is always the landing page, even on a page reload while a device
-  // is still connected server-side -- auto-navigating to Configuration is
-  // reserved for an explicit Connect click (see that handler), not a reload.
+  // Home is always the landing page, including on a reload while a device is
+  // still connected server-side. Nothing navigates for you any more -- page
+  // choice is the user's, and connecting only enables the gated nav items.
   showPage('home');
   await refreshPorts();
   const st = await Api.status();
