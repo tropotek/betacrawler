@@ -1,6 +1,6 @@
-#include "hardware/display/display_params.h"
+#include "hardware/st7789_240x240/st7789_240x240_params.h"
 
-namespace display {
+namespace st7789 {
 
 using core::ParamDef;
 using core::ParamType;
@@ -22,9 +22,9 @@ static const ParamDef kParams[] = {
 };
 
 const core::ModuleDesc kDesc = {
-  "display", "Display",
+  "st7789_240x240", "Display",
   kParams, (uint8_t)(sizeof(kParams) / sizeof(kParams[0])),
   nullptr, 0,     // the panel reports no telemetry -- it only renders it
 };
 
-}  // namespace display
+}  // namespace st7789

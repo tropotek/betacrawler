@@ -39,7 +39,9 @@ controls and telemetry cards with **no change to the backend or the UI**.
     {"key": "led.mode", "type": "enum", "options": ["off","on","blink","fade"],
      "def": "blink", "label": "LED Mode", "group": "LED"},
     {"key": "led.blink_hz", "type": "u8", "min": 1, "max": 20, "def": 2,
-     "label": "Rate", "unit": "Hz", "group": "LED"}
+     "label": "Rate", "unit": "Hz", "group": "LED"},
+    {"key": "disp.page", "type": "enum", "options": ["info","stats","cycle"],
+     "def": "info", "label": "Page", "group": "Display"}
   ],
   "tlm": [
     {"key": "temp", "label": "Temp", "unit": "°C", "dec": 1, "group": "System"},
@@ -109,7 +111,10 @@ Server pushes only; clients send nothing. Every frame is
   is whatever the firmware's modules publish — read it from the descriptor
   rather than hardcoding it.
 - `state` — status object, or the string `"disconnected"`
-- `log` — device log string
+- `log` — device log string. Unsolicited `{"log": "..."}` lines from the
+  firmware, e.g. the display module's startup diagnostic. Emitted during the
+  device's `setup()`, so a client that connects later will not see them —
+  the serial monitor is the reliable place to read boot-time logs.
 
 A `save` stalls the board ~1s and telemetry will gap. **That is not a
 disconnect** — do not treat it as one.

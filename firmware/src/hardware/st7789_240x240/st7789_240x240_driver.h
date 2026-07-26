@@ -1,12 +1,12 @@
 #pragma once
-#include "hardware/display/display_params.h"
+#include "hardware/st7789_240x240/st7789_240x240_params.h"
 #include "core/registry.h"
 
 // Forward-declared so this header does not drag Arduino_GFX into every
 // translation unit that includes it (modules.cpp, notably).
 class Arduino_GFX;
 
-namespace display {
+namespace st7789 {
 
 // Requires DISPLAY_DC and DISPLAY_RST from the board header; DISPLAY_CS,
 // DISPLAY_ROTATION, DISPLAY_SPI_HZ and DISPLAY_INIT_BUDGET_MS are optional
@@ -17,7 +17,7 @@ namespace display {
 // nothing about. The coupling that buys is contained -- every key is resolved
 // once in attach(), and a key this board does not publish simply drops its
 // row, so FEATURE_LED 0 or a buttonless board still renders correctly.
-class DisplayDriver : public core::Module {
+class St7789Driver : public core::Module {
  public:
   void attach(const core::Registry& reg, const core::Params& p) override;
   void begin() override;
@@ -72,4 +72,4 @@ class DisplayDriver : public core::Module {
   bool     btnState_  = false;
 };
 
-}  // namespace display
+}  // namespace st7789

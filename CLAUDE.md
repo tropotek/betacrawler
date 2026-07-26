@@ -21,7 +21,7 @@ relitigate it without a real reason). `docs/api.md` is the HTTP/WS contract.
 
 **Firmware** (from `firmware/`):
 ```
-~/.platformio/penv/bin/pio test -e native              # 51 tests, no board needed
+~/.platformio/penv/bin/pio test -e native              # 73 tests, no board needed
 ~/.platformio/penv/bin/pio test -e native -f test_dispatch   # one suite only
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce      # compile for the real board
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce -t upload  # flash it (ST-Link/SWD)
@@ -57,9 +57,10 @@ firmware/include/      config.h (project name/version/baud/capacity limits) and
                         boards/<board>.h (FEATURE_* flags + pin map). Selected per-env by
                         -D BOARD_HEADER; _template.h documents adding a board.
 firmware/src/core/     pure C++, zero Arduino — protocol, params, registry, dispatch,
-                        led_curve, version, device_params. Native-tested (Unity).
+                        led_curve, tlm_format, version, device_params. Native-tested (Unity).
 firmware/src/features/ behaviours, one folder per module (led/)
-firmware/src/hardware/ device drivers, one folder per module (system/, button/; OLED/WiFi go here)
+firmware/src/hardware/ device drivers, one folder per module (system/, button/, st7789_240x240/;
+                        WiFi and other peripherals go here)
 firmware/src/modules.cpp  THE wiring file — one #if block per module. Compiled by BOTH envs.
 firmware/src/          Arduino glue: main.cpp, storage.cpp (flash)
 
@@ -98,6 +99,26 @@ exactly one hardware call, on the owning module, with that module's own local in
 with no board attached. This is the one invariant most worth preserving if you touch
 `dispatch.cpp` or `registry.cpp`. Modules always receive a **module-local** index, never a global
 one — `Module::globalParam(local)` maps back when a driver needs to read a value.
+
+**Observing modules** use `Module::attach(const Registry&, const Params&)`, called on every module
+before any module's `begin()`. It exists for modules that must *read* the rest of the device — the
+display is the only one so far. Access is const on purpose: an observer may look at the device, but
+must never reconfigure it behind `dispatch`'s back, which would skip validation and the change
+notification everything else depends on. Resolve keys there once (`findParam`/`findTlm`), never per
+tick — the registry is fixed after boot. Most modules override nothing and are unaffected.
+
+**The display is deliberately the exception to schema-driven rendering.** `app.js` builds itself
+entirely from the descriptor; the on-device dashboard (`hardware/st7789_240x240/`) uses a *curated* layout
+instead, because it must fit 240x240 exactly and a board may want to show things the registry knows
+nothing about. The coupling that buys is contained — every key is resolved once in `attach()` and a
+key the board doesn't publish drops its row — but it does mean `st7789_240x240_driver.cpp` is the one file
+outside a module's own folder that names other modules' keys. Values still render through
+`core::formatTlm()` from each field's own `TlmDef`, so the panel and the browser cannot disagree
+about what a telemetry frame says. **Nothing detects whether a panel is physically connected** —
+there is no MISO to read a controller ID back over, and `Arduino_HWSPI::begin()` returns true
+unconditionally, so never treat `gfx->begin()`'s bool as a presence check. The driver is write-only
+and therefore cannot block the loop when the panel is absent; it emits a truthful startup `log`
+line instead of a fabricated warning. Full detail: `_notes/spec-display.md`.
 
 **Build gotcha, already fixed — don't undo it:** `config.h` reaches the board header via
 `#include BOARD_HEADER`, a macro-expanded include SCons cannot resolve, so board-header edits did

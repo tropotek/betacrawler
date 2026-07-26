@@ -30,8 +30,9 @@
 // Any FEATURE_* left out here defaults to 0 in config.h, so listing only what
 // the board actually has is fine. Listing them explicitly (with 0) is clearer
 // when the board *could* support something that is deliberately off.
-#define FEATURE_LED    1
-#define FEATURE_BUTTON 0
+#define FEATURE_LED     1
+#define FEATURE_BUTTON  0
+#define FEATURE_ST7789_240X240 0
 
 // --- pin map ----------------------------------------------------------------
 // Only the pins the enabled features need. Each module's driver documents
@@ -41,3 +42,19 @@
 #define LED_ACTIVE_LOW  0        // 1 when driving the pin LOW lights the LED
 
 // #define BUTTON_PIN   USER_BTN   // required when FEATURE_BUTTON is 1
+
+// Required when FEATURE_ST7789_240X240 is 1. One module per panel type, named
+// after the controller and resolution -- a different screen gets its own module
+// and its own FEATURE_ flag, so two can never be enabled at once by accident.
+// The pin macros stay generic (DISPLAY_*) because only one is ever built in.
+// SCK/MOSI come from the SPI peripheral itself, so only the control pins are named. Optional, with defaults in
+// st7789_240x240_driver.cpp: DISPLAY_CS (GFX_NOT_DEFINED -- most GMT130 panels bring
+// no CS out), DISPLAY_ROTATION (0), DISPLAY_W/H (240), DISPLAY_SPI_HZ (8MHz),
+// DISPLAY_INIT_BUDGET_MS (400, past which the startup log line warns).
+//
+// Note: nothing detects whether the panel is plugged in. It cannot be done
+// without a MISO line to read the controller's ID back over, and the driver
+// is write-only, so an absent panel costs exactly what a present one does --
+// it just shows nothing. See _notes/spec-display.md.
+// #define DISPLAY_DC   PB1
+// #define DISPLAY_RST  PB0

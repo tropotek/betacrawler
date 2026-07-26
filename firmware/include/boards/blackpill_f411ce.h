@@ -15,7 +15,7 @@
 // --- features ---------------------------------------------------------------
 #define FEATURE_LED     1
 #define FEATURE_BUTTON  1
-#define FEATURE_DISPLAY 1
+#define FEATURE_ST7789_240X240 1
 
 // --- pin map ----------------------------------------------------------------
 // Deferred to the Arduino variant's own names (LED_BUILTIN = PC13,

@@ -38,7 +38,7 @@ def device_responder(proto=1):
                   "proto": proto, "board": "blackpill_f411ce",
                   "name": "app-demo", "ver": "1.0.0",
                   "built": "Jul 26 2026 14:03:11",
-                  "mods": ["device", "system", "button", "led", "display"]})
+                  "mods": ["device", "system", "button", "led", "st7789_240x240"]})
         elif op == "schema":
             emit({"id": rid, "ok": True, "params": SCHEMA, "tlm": TLM_SCHEMA})
         elif op == "getall":
@@ -87,7 +87,7 @@ def test_connect_caches_build_identity_and_module_list():
         assert st["name"] == "app-demo"
         assert st["ver"] == "1.0.0"
         assert st["built"].startswith("Jul 26 2026")
-        assert st["mods"] == ["device", "system", "button", "led", "display"]
+        assert st["mods"] == ["device", "system", "button", "led", "st7789_240x240"]
     finally:
         dev.disconnect()
 

@@ -3,17 +3,17 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "hardware/display/display_driver.h"
+#include "hardware/st7789_240x240/st7789_240x240_driver.h"
 #include "core/dispatch.h"      // writeLog
 #include "core/tlm_format.h"
 #include "core/version.h"
 #include "config.h"
 
 #ifndef DISPLAY_DC
-#error "FEATURE_DISPLAY is on but the board header defines no DISPLAY_DC"
+#error "FEATURE_ST7789_240X240 is on but the board header defines no DISPLAY_DC"
 #endif
 #ifndef DISPLAY_RST
-#error "FEATURE_DISPLAY is on but the board header defines no DISPLAY_RST"
+#error "FEATURE_ST7789_240X240 is on but the board header defines no DISPLAY_RST"
 #endif
 
 // Optional board knobs.
@@ -36,7 +36,7 @@
 #define DISPLAY_INIT_BUDGET_MS 400
 #endif
 
-namespace display {
+namespace st7789 {
 
 // File-scope statics rather than `new`: this firmware allocates nothing on the
 // heap, and the constructors only record pins.
@@ -123,7 +123,7 @@ static void iconChip(int x, int y, uint16_t c) {
   }
 }
 
-void DisplayDriver::drawRowIcon(uint8_t icon, int y, uint16_t c) {
+void St7789Driver::drawRowIcon(uint8_t icon, int y, uint16_t c) {
   switch (icon) {
     case ICON_CLOCK:     iconClock(ICON_X, y, c); break;
     case ICON_STOPWATCH: iconStopwatch(ICON_X, y, c); break;
@@ -137,7 +137,7 @@ void DisplayDriver::drawRowIcon(uint8_t icon, int y, uint16_t c) {
 // refresh costs a few hundred bytes of SPI instead of a full repaint, and
 // never flickers. This is why no framebuffer is needed (240x240x2 = 115KB
 // would not fit in 128KB of RAM anyway).
-void DisplayDriver::setValue(int x, int y, const char* text, uint16_t colour,
+void St7789Driver::setValue(int x, int y, const char* text, uint16_t colour,
                              uint8_t size) {
   gfx->setTextSize(size);
   gfx->setTextColor(colour, COL_BG);
@@ -147,7 +147,7 @@ void DisplayDriver::setValue(int x, int y, const char* text, uint16_t colour,
 
 // --- lifecycle ---------------------------------------------------------------
 
-void DisplayDriver::attach(const core::Registry& reg, const core::Params& p) {
+void St7789Driver::attach(const core::Registry& reg, const core::Params& p) {
   reg_ = &reg;
   params_ = &p;
 
@@ -183,7 +183,7 @@ void DisplayDriver::attach(const core::Registry& reg, const core::Params& p) {
   shownPage_ = (page_ == PAGE_CYCLE) ? PAGE_INFO : page_;
 }
 
-void DisplayDriver::logInit(uint32_t elapsedMs) {
+void St7789Driver::logInit(uint32_t elapsedMs) {
   char msg[128];
   snprintf(msg, sizeof(msg),
            "display: ST7789 %dx%d dc=%d rst=%d init=%lums%s",
@@ -202,7 +202,7 @@ void DisplayDriver::logInit(uint32_t elapsedMs) {
   if (n > 0) Serial.println(line);
 }
 
-void DisplayDriver::initHardware() {
+void St7789Driver::initHardware() {
   if (inited_) return;
   uint32_t t0 = millis();
   gfx->begin(DISPLAY_SPI_HZ);
@@ -227,7 +227,7 @@ void DisplayDriver::initHardware() {
   repaint();
 }
 
-void DisplayDriver::begin() {
+void St7789Driver::begin() {
   // Lazy: a board whose panel is absent or broken can be left dark from the
   // web UI (disp.mode = off, save) and then costs nothing at all -- no SPI, no
   // pin ownership, and none of the ST7789 reset sequence's ~130-260ms of
@@ -236,7 +236,7 @@ void DisplayDriver::begin() {
   initHardware();
 }
 
-void DisplayDriver::onParamChanged(uint8_t local, const core::Params& p) {
+void St7789Driver::onParamChanged(uint8_t local, const core::Params& p) {
   (void)local;
   const int32_t prevMode = mode_;
   const int32_t prevPage = page_;
@@ -255,11 +255,11 @@ void DisplayDriver::onParamChanged(uint8_t local, const core::Params& p) {
   }
 }
 
-int32_t DisplayDriver::livePage() const {
+int32_t St7789Driver::livePage() const {
   return page_ == PAGE_CYCLE ? shownPage_ : page_;
 }
 
-void DisplayDriver::tick(uint32_t nowMs) {
+void St7789Driver::tick(uint32_t nowMs) {
   if (mode_ == MODE_OFF || !inited_) return;   // off costs nothing
 
   if (page_ == PAGE_CYCLE && nowMs - lastFlip_ >= kCycleMs) {
@@ -281,14 +281,14 @@ void DisplayDriver::tick(uint32_t nowMs) {
 
 // --- painting ----------------------------------------------------------------
 
-void DisplayDriver::repaint() {
+void St7789Driver::repaint() {
   gfx->fillRect(0, HEADER_H, DISPLAY_W, DISPLAY_H - HEADER_H, COL_BG);
   drawHeader();
   if (livePage() == PAGE_STATS) { drawStatsStatic(); drawStatsValues(); }
   else                          { drawInfoStatic();  drawInfoValues(); }
 }
 
-void DisplayDriver::drawHeader() {
+void St7789Driver::drawHeader() {
   gfx->fillRect(0, 0, DISPLAY_W, HEADER_H, COL_HEADER);
   iconChip(10, 6, COL_ACCENT);
 
@@ -316,7 +316,7 @@ void DisplayDriver::drawHeader() {
 static const char* const kInfoLabels[] = {"FW", "BUILT", "BOARD", "MODS", "LED"};
 enum { I_FW = 0, I_BUILT, I_BOARD, I_MODS, I_LED, I_COUNT };
 
-void DisplayDriver::drawInfoStatic() {
+void St7789Driver::drawInfoStatic() {
   gfx->setTextSize(1);
   for (int i = 0; i < I_COUNT; ++i) {
     gfx->setTextColor(COL_LABEL, COL_BG);
@@ -325,7 +325,7 @@ void DisplayDriver::drawInfoStatic() {
   }
 }
 
-void DisplayDriver::drawInfoValues() {
+void St7789Driver::drawInfoValues() {
   char buf[64];
 
   snprintf(buf, sizeof(buf), "%s %s", core::projectName(), core::version());
@@ -362,7 +362,7 @@ void DisplayDriver::drawInfoValues() {
   setValue(INFO_VAL_X, BODY_TOP + I_LED * INFO_ROW_H, buf, COL_TEXT, 1);
 }
 
-void DisplayDriver::drawStatsStatic() {
+void St7789Driver::drawStatsStatic() {
   gfx->setTextSize(2);
   for (uint8_t i = 0; i < rowCount_; ++i) {
     int y = BODY_TOP + i * ROW_H;
@@ -381,7 +381,7 @@ void DisplayDriver::drawStatsStatic() {
   }
 }
 
-void DisplayDriver::drawStatsValues() {
+void St7789Driver::drawStatsValues() {
   core::TlmValue vals[FW_MAX_TLM];
   reg_->collectTelemetry(vals);
 
@@ -409,7 +409,7 @@ void DisplayDriver::drawStatsValues() {
   }
 }
 
-void DisplayDriver::drawButton(bool pressed) {
+void St7789Driver::drawButton(bool pressed) {
   if (pressed) {
     gfx->fillCircle(BTN_CX, BTN_CY, BTN_R, COL_GREEN);
     gfx->fillCircle(BTN_CX, BTN_CY, BTN_R - 6, 0x1D66);
@@ -421,4 +421,4 @@ void DisplayDriver::drawButton(bool pressed) {
   }
 }
 
-}  // namespace display
+}  // namespace st7789

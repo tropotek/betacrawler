@@ -1,7 +1,7 @@
 #pragma once
 #include "core/module.h"
 
-namespace display {
+namespace st7789 {
 
 extern const core::ModuleDesc kDesc;
 
@@ -19,4 +19,4 @@ enum : int32_t { PAGE_INFO = 0, PAGE_STATS = 1, PAGE_CYCLE = 2 };
 // How long CYCLE dwells on each page.
 constexpr uint32_t kCycleMs = 5000;
 
-}  // namespace display
+}  // namespace st7789
