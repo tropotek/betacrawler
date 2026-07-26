@@ -79,7 +79,24 @@ const char* Registry::tlmGroup(uint8_t global) const {
   return "";
 }
 
-void Registry::begin() {
+bool Registry::findTlm(const char* key, uint8_t* out) const {
+  for (uint8_t i = 0; i < modCount_; ++i) {
+    const Entry& e = mods_[i];
+    for (uint8_t k = 0; k < e.desc->tlmCount; ++k) {
+      if (strcmp(e.desc->tlm[k].key, key) == 0) {
+        *out = (uint8_t)(e.tlmBase + k);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+void Registry::begin(const Params& p) {
+  // Two passes on purpose: every module is attached before any module begins,
+  // so a driver's begin() can act on state another module published.
+  for (uint8_t i = 0; i < modCount_; ++i)
+    if (mods_[i].driver) mods_[i].driver->attach(*this, p);
   for (uint8_t i = 0; i < modCount_; ++i)
     if (mods_[i].driver) mods_[i].driver->begin();
 }

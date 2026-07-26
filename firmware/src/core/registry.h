@@ -31,9 +31,16 @@ class Registry {
   uint8_t       tlmCount() const { return tlmCount_; }
   const TlmDef& tlmDef(uint8_t global) const;
   const char*   tlmGroup(uint8_t global) const;
+  // Symmetric with findParam(): lets an observing module locate a telemetry
+  // field by key instead of hardcoding an index that shifts whenever the
+  // enabled module set changes.
+  bool          findTlm(const char* key, uint8_t* out) const;
 
   // --- lifecycle ------------------------------------------------------------
-  void begin();
+  // Attaches every driver, then begins every driver -- two passes, so a
+  // begin() can rely on all modules having been attached. Params is passed
+  // through to attach() for modules that observe other modules' values.
+  void begin(const Params& p);
   void tick(uint32_t nowMs);
   void notify(ParamId global, const Params& p);   // -> owner->onParamChanged(local, p)
   void collectTelemetry(TlmValue* out) const;     // fills tlmCount() entries

@@ -31,7 +31,7 @@ void setup() {
 
   g_reg.findParam("tlm.rate", &g_tlmRateId);
   g_store.load(&g_params);   // falls back to defaults on magic/version/fingerprint/CRC mismatch
-  g_reg.begin();
+  g_reg.begin(g_params);
 
   // Push every stored value at its module, exactly as the `defaults` op does.
   // This replaces main.cpp's old explicit g_led.apply(...) call: no module is

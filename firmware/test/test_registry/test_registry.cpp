@@ -31,6 +31,13 @@ static const TlmDef kBetaTlm[] = {
 };
 static const ModuleDesc kBetaDesc = {"beta", "Beta", kBetaParams, 1, kBetaTlm, 2};
 
+// Contributes nothing of its own -- it only observes, like a display.
+static const ModuleDesc kObserverDesc = {"obs", "Observer", nullptr, 0, nullptr, 0};
+
+// Lifecycle calls stamp this so ordering across modules is provable, not just
+// ordering within one module.
+static int g_seq = 0;
+
 struct FakeDriver : Module {
   int      beginCalls = 0;
   int      tickCalls = 0;
@@ -39,7 +46,19 @@ struct FakeDriver : Module {
   int32_t  lastValue = -1;
   uint32_t tlmSeed = 0;
 
-  void begin() override { ++beginCalls; }
+  int             attachCalls   = 0;
+  int             attachSeq     = 0;
+  int             beginSeq      = 0;
+  const Registry* attachedReg   = nullptr;
+  const Params*   attachedParams = nullptr;
+
+  void attach(const Registry& reg, const Params& p) override {
+    ++attachCalls;
+    attachSeq = ++g_seq;
+    attachedReg = &reg;
+    attachedParams = &p;
+  }
+  void begin() override { ++beginCalls; beginSeq = ++g_seq; }
   void tick(uint32_t) override { ++tickCalls; }
   void onParamChanged(uint8_t local, const Params& p) override {
     ++changeCalls;
@@ -48,6 +67,23 @@ struct FakeDriver : Module {
     lastValue = p.num(globalParam(local));
   }
   void readTelemetry(TlmValue* out) override { out[0].u = tlmSeed; }
+};
+
+// The display's pattern in miniature: a module that reads OTHER modules'
+// state, which is the whole reason attach() exists.
+struct ObserverDriver : Module {
+  int32_t seenLevel = -1;
+  bool    foundTlm  = false;
+  uint8_t tlmIdx    = 0xFF;
+  bool    foundMissing = true;
+
+  void attach(const Registry& reg, const Params& p) override {
+    ParamId id = kNoParam;
+    if (reg.findParam("alpha.level", &id)) seenLevel = p.num(id);
+    foundTlm = reg.findTlm("b.temp", &tlmIdx);
+    uint8_t junk = 0;
+    foundMissing = reg.findTlm("nope", &junk);
+  }
 };
 
 // --- tests -------------------------------------------------------------------
@@ -114,13 +150,70 @@ void test_notify_routes_to_owner_with_local_index() {
   TEST_ASSERT_EQUAL_UINT8(0, beta.lastLocal);
 }
 
-void test_begin_and_tick_reach_every_driver() {
+void test_every_module_is_attached_before_any_module_begins() {
+  // Two passes, not attach-then-begin per module: a driver's begin() may look
+  // at state another module published, so "everything attached" has to be true
+  // before the first begin() runs.
   Registry r;
+  Params p(r);
   FakeDriver alpha, beta;
   r.add(kAlphaDesc, &alpha);
   r.add(kBetaDesc, &beta);
 
-  r.begin();
+  g_seq = 0;
+  r.begin(p);
+
+  TEST_ASSERT_EQUAL_INT(1, alpha.attachCalls);
+  TEST_ASSERT_EQUAL_INT(1, beta.attachCalls);
+  TEST_ASSERT_TRUE(alpha.attachSeq < beta.beginSeq);
+  TEST_ASSERT_TRUE(beta.attachSeq  < alpha.beginSeq);
+}
+
+void test_attach_hands_over_the_registry_and_params() {
+  Registry r;
+  Params p(r);
+  FakeDriver alpha;
+  r.add(kAlphaDesc, &alpha);
+
+  r.begin(p);
+
+  TEST_ASSERT_EQUAL_PTR(&r, alpha.attachedReg);
+  TEST_ASSERT_EQUAL_PTR(&p, alpha.attachedParams);
+}
+
+void test_attach_lets_a_module_read_another_modules_state() {
+  Registry r;
+  Params p(r);
+  ObserverDriver obs;
+  r.add(kAlphaDesc);          // descriptor only -- alpha owns the value
+  r.add(kBetaDesc);
+  r.add(kObserverDesc, &obs);
+  p.loadDefaults();
+
+  r.begin(p);
+
+  TEST_ASSERT_EQUAL_INT32(40, obs.seenLevel);   // alpha.level's default
+  TEST_ASSERT_TRUE(obs.foundTlm);
+  TEST_ASSERT_EQUAL_UINT8(1, obs.tlmIdx);       // b.temp: alpha's a.load is 0
+  TEST_ASSERT_FALSE(obs.foundMissing);          // an absent key reports absent
+}
+
+void test_driverless_module_is_not_attached() {
+  Registry r;
+  Params p(r);
+  r.add(kAlphaDesc);          // no driver: must not be dereferenced
+  r.begin(p);                 // reaching here without a crash is the assertion
+  TEST_ASSERT_EQUAL_UINT8(1, r.moduleCount());
+}
+
+void test_begin_and_tick_reach_every_driver() {
+  Registry r;
+  Params p(r);
+  FakeDriver alpha, beta;
+  r.add(kAlphaDesc, &alpha);
+  r.add(kBetaDesc, &beta);
+
+  r.begin(p);
   r.tick(100);
   r.tick(200);
 
@@ -226,6 +319,10 @@ int main() {
   RUN_TEST(test_find_param_spans_modules);
   RUN_TEST(test_group_defaults_to_module_label_and_can_be_overridden);
   RUN_TEST(test_notify_routes_to_owner_with_local_index);
+  RUN_TEST(test_every_module_is_attached_before_any_module_begins);
+  RUN_TEST(test_attach_hands_over_the_registry_and_params);
+  RUN_TEST(test_attach_lets_a_module_read_another_modules_state);
+  RUN_TEST(test_driverless_module_is_not_attached);
   RUN_TEST(test_begin_and_tick_reach_every_driver);
   RUN_TEST(test_collect_telemetry_writes_each_module_into_its_own_slice);
   RUN_TEST(test_driverless_module_zeroes_its_telemetry_slice);

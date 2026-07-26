@@ -3,6 +3,8 @@
 
 namespace core {
 
+class Registry;
+
 // --- telemetry descriptors --------------------------------------------------
 
 enum class TlmType { U32, I32, F32 };
@@ -63,7 +65,21 @@ struct Module {
   // globalParam() without knowing, or caring, what else is registered.
   void bind(uint8_t paramBase) { paramBase_ = paramBase; }
 
-  // Called once at boot, after every module is registered.
+  // Called once by Registry::begin(), on EVERY module, before ANY module's
+  // begin(). The default is a no-op: only a module that must read other
+  // modules' state -- a display, a logger -- needs it, and the modules that
+  // came out of the original refactor override nothing.
+  //
+  // Access is deliberately const. An observer may look at the device; it may
+  // not reconfigure it behind dispatch's back, which would bypass validation
+  // and the change notification every other module relies on.
+  //
+  // Resolve keys here, once (findParam/findTlm), rather than per tick: the
+  // answer cannot change afterwards, since the registry is populated at boot
+  // and never modified.
+  virtual void attach(const Registry& reg, const Params& p) { (void)reg; (void)p; }
+
+  // Called once at boot, after every module is registered and attached.
   virtual void begin() {}
 
   // Called every loop iteration. Must not block -- a module that stalls here
