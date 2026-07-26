@@ -37,14 +37,21 @@ class St7789Driver : public core::Module {
 
   void initHardware();
   void repaint();                  // full: chrome + values
-  void drawHeader();
+  void drawHeaderStatic();         // the bar itself -- only on a full repaint
+  void drawHeaderLive();           // name + heartbeat -- every refresh
   void drawInfoStatic();
   void drawInfoValues();
   void drawStatsStatic();
   void drawStatsValues();
   void drawButton(bool pressed);
   void drawRowIcon(uint8_t icon, int y, uint16_t colour);
-  void setValue(int x, int y, const char* text, uint16_t colour, uint8_t size);
+  void setValue(int x, int y, const char* text, uint16_t colour, uint8_t size,
+                uint16_t bg = 0x0000);
+  // Returns false when `text` is already what slot `i` shows, so an unchanged
+  // value costs no SPI at all. Measured on hardware: without this a refresh
+  // delayed a telemetry frame by ~87ms, enough to trip the frontend's 3x
+  // staleness watchdog at tlm.rate 50.
+  bool changed(uint8_t slot, const char* text);
   void logInit(uint32_t elapsedMs);
   int32_t livePage() const;        // resolves PAGE_CYCLE to what is shown now
 
@@ -63,6 +70,12 @@ class St7789Driver : public core::Module {
   int32_t  mode_ = MODE_ON;
   int32_t  page_ = PAGE_INFO;
   int32_t  rate_ = 2;
+
+  // Last text painted into each value slot, so an unchanged one is skipped.
+  // Slots are page-local; repaint() clears them, since a page switch makes
+  // whatever was there meaningless.
+  static const uint8_t kSlots = 8;
+  char     shown_[kSlots][28] = {};
 
   bool     inited_    = false;   // gfx->begin() has run
   int32_t  shownPage_ = PAGE_INFO;

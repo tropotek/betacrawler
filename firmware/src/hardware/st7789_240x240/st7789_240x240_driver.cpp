@@ -138,11 +138,19 @@ void St7789Driver::drawRowIcon(uint8_t icon, int y, uint16_t c) {
 // never flickers. This is why no framebuffer is needed (240x240x2 = 115KB
 // would not fit in 128KB of RAM anyway).
 void St7789Driver::setValue(int x, int y, const char* text, uint16_t colour,
-                             uint8_t size) {
+                            uint8_t size, uint16_t bg) {
   gfx->setTextSize(size);
-  gfx->setTextColor(colour, COL_BG);
+  gfx->setTextColor(colour, bg);
   gfx->setCursor(x, y);
   gfx->print(text);
+}
+
+bool St7789Driver::changed(uint8_t slot, const char* text) {
+  if (slot >= kSlots) return true;
+  if (strncmp(shown_[slot], text, sizeof(shown_[0])) == 0) return false;
+  strncpy(shown_[slot], text, sizeof(shown_[0]) - 1);
+  shown_[slot][sizeof(shown_[0]) - 1] = '\0';
+  return true;
 }
 
 // --- lifecycle ---------------------------------------------------------------
@@ -274,7 +282,7 @@ void St7789Driver::tick(uint32_t nowMs) {
   if (nowMs - lastDraw_ < period) return;
   lastDraw_ = nowMs;
 
-  drawHeader();
+  drawHeaderLive();
   if (livePage() == PAGE_STATS) drawStatsValues();
   else                          drawInfoValues();
 }
@@ -283,30 +291,42 @@ void St7789Driver::tick(uint32_t nowMs) {
 
 void St7789Driver::repaint() {
   gfx->fillRect(0, HEADER_H, DISPLAY_W, DISPLAY_H - HEADER_H, COL_BG);
-  drawHeader();
+  memset(shown_, 0, sizeof(shown_));   // a page switch invalidates every slot
+  drawHeaderStatic();
+  drawHeaderLive();
   if (livePage() == PAGE_STATS) { drawStatsStatic(); drawStatsValues(); }
   else                          { drawInfoStatic();  drawInfoValues(); }
 }
 
-void St7789Driver::drawHeader() {
+// Split from drawHeaderLive() after measuring on hardware: repainting the
+// whole 240x42 bar on every refresh cost ~87ms of SPI, which showed up as a
+// delayed telemetry frame. The bar and its sub-line never change, so they
+// belong to a full repaint only.
+void St7789Driver::drawHeaderStatic() {
   gfx->fillRect(0, 0, DISPLAY_W, HEADER_H, COL_HEADER);
   iconChip(10, 6, COL_ACCENT);
-
-  gfx->setTextSize(2);
-  gfx->setTextColor(COL_TEXT);
-  gfx->setCursor(34, 6);
-  gfx->print(pName_ != core::kNoParam ? params_->str(pName_)
-                                      : core::projectName());
 
   char sub[48];
   snprintf(sub, sizeof(sub), "%s %s %s", core::boardId(), core::projectName(),
            core::version());
   gfx->setTextSize(1);
-  gfx->setTextColor(COL_ACCENT);
+  gfx->setTextColor(COL_ACCENT, COL_HEADER);
   gfx->setCursor(34, 27);
   gfx->print(sub);
+}
 
-  // Heartbeat: the cheapest possible "the loop is still running" signal.
+void St7789Driver::drawHeaderLive() {
+  // device.name is live -- it can be changed from the web UI at any time --
+  // but only repaints when it actually differs. Background is the header
+  // colour, not the page background, since it sits on the bar.
+  const char* name = pName_ != core::kNoParam ? params_->str(pName_)
+                                              : core::projectName();
+  char padded[28];
+  snprintf(padded, sizeof(padded), "%s   ", name);
+  if (changed(0, padded)) setValue(34, 6, padded, COL_TEXT, 2, COL_HEADER);
+
+  // Heartbeat: the cheapest possible "the loop is still running" signal, and
+  // the only thing that unconditionally paints on every refresh.
   beat_ = !beat_;
   gfx->fillCircle(228, 12, 4, beat_ ? COL_ACCENT : COL_HEADER);
 }
@@ -329,12 +349,15 @@ void St7789Driver::drawInfoValues() {
   char buf[64];
 
   snprintf(buf, sizeof(buf), "%s %s", core::projectName(), core::version());
-  setValue(INFO_VAL_X, BODY_TOP + I_FW * INFO_ROW_H, buf, COL_TEXT, 1);
+  if (changed(1, buf))
+    setValue(INFO_VAL_X, BODY_TOP + I_FW * INFO_ROW_H, buf, COL_TEXT, 1);
 
-  setValue(INFO_VAL_X, BODY_TOP + I_BUILT * INFO_ROW_H, core::buildDate(),
-           COL_TEXT, 1);
-  setValue(INFO_VAL_X, BODY_TOP + I_BOARD * INFO_ROW_H, core::boardId(),
-           COL_TEXT, 1);
+  if (changed(2, core::buildDate()))
+    setValue(INFO_VAL_X, BODY_TOP + I_BUILT * INFO_ROW_H, core::buildDate(),
+             COL_TEXT, 1);
+  if (changed(3, core::boardId()))
+    setValue(INFO_VAL_X, BODY_TOP + I_BOARD * INFO_ROW_H, core::boardId(),
+             COL_TEXT, 1);
 
   // The module list is the one genuinely registry-derived thing on the page,
   // and it is worth it: it says exactly which modules this build has.
@@ -343,7 +366,8 @@ void St7789Driver::drawInfoValues() {
     if (i) strncat(buf, " ", sizeof(buf) - strlen(buf) - 1);
     strncat(buf, reg_->moduleId(i), sizeof(buf) - strlen(buf) - 1);
   }
-  setValue(INFO_VAL_X, BODY_TOP + I_MODS * INFO_ROW_H, buf, COL_ACCENT, 1);
+  if (changed(4, buf))
+    setValue(INFO_VAL_X, BODY_TOP + I_MODS * INFO_ROW_H, buf, COL_ACCENT, 1);
 
   // Absent LED module: say so rather than leaving a stale or blank row.
   if (pLedMode_ != core::kNoParam) {
@@ -359,7 +383,9 @@ void St7789Driver::drawInfoValues() {
   } else {
     snprintf(buf, sizeof(buf), "--");
   }
-  setValue(INFO_VAL_X, BODY_TOP + I_LED * INFO_ROW_H, buf, COL_TEXT, 1);
+  strncat(buf, "    ", sizeof(buf) - strlen(buf) - 1);   // cover a shorter value
+  if (changed(5, buf))
+    setValue(INFO_VAL_X, BODY_TOP + I_LED * INFO_ROW_H, buf, COL_TEXT, 1);
 }
 
 void St7789Driver::drawStatsStatic() {
@@ -393,7 +419,10 @@ void St7789Driver::drawStatsValues() {
     // Trailing spaces cover a value that just got shorter; background-filled
     // text only paints the glyphs it draws.
     strncat(buf, "   ", sizeof(buf) - strlen(buf) - 1);
-    setValue(VALUE_X, BODY_TOP + i * ROW_H, buf, r.colour, 2);
+    // Temp and VDD barely move between refreshes; skipping an unchanged row
+    // is what keeps a steady-state refresh down to a few hundred bytes of SPI.
+    if (changed((uint8_t)(1 + i), buf))
+      setValue(VALUE_X, BODY_TOP + i * ROW_H, buf, r.colour, 2);
   }
 
   if (tBtn_ != 0xFF) {
