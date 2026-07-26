@@ -33,6 +33,25 @@
                     "clear": true,
                     "focus": false
                 }
+            },
+            {
+                "label": "Build release firmware",
+                "type": "shell",
+                "command": "python3 ${workspaceFolder:silkscreen}/app/tools/bundle_firmware.py ${input:releaseBoards}",
+                "problemMatcher": [],
+                "presentation": {
+                    "panel": "dedicated",
+                    "clear": true,
+                    "focus": true
+                }
+            }
+        ],
+        "inputs": [
+            {
+                "id": "releaseBoards",
+                "type": "promptString",
+                "description": "PlatformIO env(s) to build and ship, space-separated",
+                "default": "blackpill_f411ce"
             }
         ]
     }

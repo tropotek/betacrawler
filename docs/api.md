@@ -109,7 +109,9 @@ ever written to the port (e.g. an unknown key or a malformed argument count).
 
 The app ships the firmware images that match it, under `app/firmware/`, with a
 `manifest.json` describing each. `app/tools/bundle_firmware.py` produces both at
-release time. `/api/firmware/catalog` serves that manifest:
+release time; the folder is build output and is not in the repo, so a source
+checkout serves an empty catalog until that script has been run.
+`/api/firmware/catalog` serves that manifest:
 
 ```json
 {"app_version": "1.0.0",

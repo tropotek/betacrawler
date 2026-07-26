@@ -24,8 +24,9 @@ optional ST7789 240x240 panel. Everything below uses it as the worked example.
   as in the app. Values apply instantly; flash is written only when you press Save.
 - **Telemetry** — pushed from the board at a configurable rate, rendered as cards.
 - **Terminal** — type `get led.mode`, `set led.blink_hz 5`, `save`; see the raw JSON both ways.
-- **Firmware updates in-app** — the repo ships a prebuilt image matching this app version and
-  flashes it over USB DFU, no ST-Link needed after the first time.
+- **Firmware updates in-app** — the app carries an image matching its own version and flashes it
+  over USB DFU, no ST-Link needed after the first time. (In a fresh clone you build that image
+  once — see [step 3](#getting-started-in-vs-code); a packaged build already has it.)
 - **Settings backup/restore** as INI files.
 - **An on-device dashboard** on the optional SPI panel.
 
@@ -84,11 +85,26 @@ cd firmware
 
 `pio` is not on `PATH` after an IDE-only install — that full path is the reliable way to call it.
 
-*No ST-Link?* You don't need one. `app/firmware/` already contains a built image, so you can
-flash a brand-new board over USB with dfu-util alone — see [First flash without an
-ST-Link](#first-flash-without-an-st-link) below.
+*No ST-Link?* You don't need one — do step 3 first, then flash over USB with dfu-util alone. See
+[First flash without an ST-Link](#first-flash-without-an-st-link) below.
 
-**3. Start the backend**
+**3. Build the firmware the app ships**
+
+`app/firmware/` holds the image the in-app **Firmware** page flashes. It is build output, not
+source, so **a fresh clone does not have it** — run this once:
+
+```bash
+python3 app/tools/bundle_firmware.py blackpill_f411ce
+```
+
+Or **Terminal → Run Task → Build release firmware**. Re-run it after any firmware change worth
+shipping; name every board you ship in the one command, since that command *is* the release.
+
+Skip this and everything else still works — the app just shows an empty Firmware page telling you
+to run it. (A packaged build of the app already contains the images, because this script is what
+fills the folder before packaging.)
+
+**4. Start the backend**
 
 From the workspace, run the pre-configured VS Code task: **Terminal → Run Task → Run backend
 server**. It restarts cleanly over any instance it already left running. Or by hand:
@@ -101,7 +117,7 @@ app/.venv/bin/pip install -r app/requirements.txt
 
 `run-server.sh` takes `PORT=9000` and passes extra arguments straight to uvicorn (`--reload`).
 
-**4. Connect**
+**5. Connect**
 
 Open <http://127.0.0.1:8080>, pick the port and press Connect. The board appears as
 `/dev/ttyACM0` on Linux, `COMx` on Windows, `/dev/cu.usbmodem*` on macOS; the picker marks ports
@@ -127,8 +143,11 @@ working device would be exactly backwards.
 
 ## Updating firmware from the app
 
-The Firmware page flashes the image in `app/firmware/`, which is committed to the repo so that
-"this app version pairs with this firmware" is a checked-in fact rather than user discipline.
+The Firmware page flashes the images in `app/firmware/`. That folder is build output rather than
+source — a packaged app is built after the release script has filled it, so a release always
+carries firmware, while a source checkout has none until you run the script yourself. What keeps
+"this app version pairs with this firmware" honest is that the script is the only thing that ever
+writes there, and it derives every manifest field from the tree it just built.
 
 One click does the whole thing: the app asks the board to reboot into its ROM bootloader, waits
 for it to re-enumerate as `0483:df11`, runs dfu-util, and the board comes back on its own.
@@ -138,9 +157,11 @@ for it to re-enumerate as `0483:df11`, runs dfu-util, and the board comes back o
 A board with no silkscreen firmware on it can't be asked to reboot into DFU, so do it by hand —
 the same procedure rescues a board whose firmware is broken:
 
-1. Hold **BOOT0**, tap **NRST**, release BOOT0. The board goes quiet rather than showing any
+1. Make sure there is an image to flash: `python3 app/tools/bundle_firmware.py blackpill_f411ce`
+   (step 3 above). From a fresh clone the Firmware page is empty until you do.
+2. Hold **BOOT0**, tap **NRST**, release BOOT0. The board goes quiet rather than showing any
    sign of life — that is what DFU mode looks like.
-2. On the Firmware page, press Flash. (`dfu-util -l` should list the board if you want to check
+3. On the Firmware page, press Flash. (`dfu-util -l` should list the board if you want to check
    first.)
 
 Both routes into DFU are supported on purpose, and both are expected to keep working.
@@ -213,13 +234,20 @@ Nothing else needs editing. The parameters a module declares flow automatically 
 schema → backend → web form. **If adding a parameter requires touching `app.js`, something has
 drifted from the design.**
 
-**Ship a firmware build** after a change worth releasing:
+**Ship a firmware build** after a change worth releasing. Name every board the release covers in
+one command — that command *is* the release, and images from a previous run are pruned:
 
 ```bash
-python3 app/tools/bundle_firmware.py       # builds, then updates app/firmware/
+python3 app/tools/bundle_firmware.py board_a board_b
+python3 app/tools/bundle_firmware.py --add board_c    # merge instead of replacing
+python3 app/tools/bundle_firmware.py --dry-run        # report, write nothing
 ```
 
+Or **Terminal → Run Task → Build release firmware** in the workspace.
+
 Every manifest field is derived from the sources and the resulting binary — nothing is typed in.
+Every board is built and validated before anything is written, so a board that fails to compile
+leaves the previous release untouched rather than half-replaced.
 
 ## Layout
 
@@ -231,8 +259,9 @@ firmware/src/hardware/  device drivers, one folder per module
 firmware/src/modules.cpp  the wiring file — one #if block per module
 
 app/backend/            protocol.py → link.py → device.py → main.py (FastAPI)
-app/firmware/           the images this app version ships with, plus manifest.json
-app/tools/              bundle_firmware.py, run at release time
+app/firmware/           the images this app ships with, plus manifest.json. Gitignored: it is
+                        built by the script below, not committed
+app/tools/              bundle_firmware.py, run by hand at release time
 app/web/                static HTML/JS, no build step
 
 docs/api.md             the HTTP/WebSocket contract

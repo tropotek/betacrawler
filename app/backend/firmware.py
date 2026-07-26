@@ -107,9 +107,11 @@ class Catalog:
 
     def _load(self) -> dict:
         if not self.manifest_path.is_file():
-            # Not an error: a fork may legitimately ship no firmware yet. The
-            # UI shows an empty catalog and the Advanced upload path still
-            # works.
+            # Not an error, and the common case in a source checkout:
+            # app/firmware/ is gitignored build output, so it stays empty
+            # until someone runs app/tools/bundle_firmware.py. (A fork that
+            # ships no firmware at all lands here too.) The UI says so, and
+            # the Advanced upload path still works.
             return {"app_version": None, "images": []}
         try:
             data = json.loads(self.manifest_path.read_text())

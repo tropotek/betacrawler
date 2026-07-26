@@ -36,16 +36,20 @@ Two ST-Link/V2 units may be attached at once — if upload grabs the wrong one, 
 
 **Backend** (from `app/`, venv already at `app/.venv/`):
 ```
-.venv/bin/pytest -v                                     # 147 tests, no board needed
+.venv/bin/pytest -v                                     # 163 tests, no board needed
 .venv/bin/pytest tests/test_link.py -v                  # one file only
 .venv/bin/uvicorn backend.main:app --port 8080           # serves API + app/web/ together
 ```
 
-**Firmware bundle** (from the repo root), after any firmware change worth shipping:
+**Firmware bundle** (from the repo root), after any firmware change worth shipping. `app/firmware/`
+is gitignored build output, so a fresh checkout has none until this is run:
 ```
 python3 app/tools/bundle_firmware.py                    # builds, then updates app/firmware/
+python3 app/tools/bundle_firmware.py board_a board_b    # the whole release set, in one go
+python3 app/tools/bundle_firmware.py --add other_board  # merge, don't prune the rest
 python3 app/tools/bundle_firmware.py --dry-run          # report only
 ```
+Also available as the **Build release firmware** task in `silkscreen.code-workspace`.
 
 **Web UI**: no build step. `app/web/{index.html,app.js}` are static files served directly by the
 FastAPI app above (`main.py` mounts `app/web/` at `/`). Manual verification only — no automated
@@ -82,8 +86,8 @@ app/backend/           protocol.py (codec) -> link.py (threaded serial, id corre
                         pytest-tested against a fake serial port (app/tests/fake_serial.py),
                         no board needed
 app/firmware/          the firmware images this app version ships with, plus manifest.json.
-                        Binaries ARE committed — that is the point, not an accident.
-app/tools/             bundle_firmware.py, run at release time to produce the above
+                        GITIGNORED build output — produced by the script below, not committed.
+app/tools/             bundle_firmware.py, run by hand at release time to produce the above
 
 app/web/                static HTML/JS only, talks to the backend exclusively through the
                         `Api` object in app.js — that object is the ENTIRE porting surface
@@ -198,11 +202,29 @@ an actual way to report `{"err":"flash"}` instead of that path being dead code.
 **In-app firmware updates (Project 2).** The app ships the firmware that matches it: built
 images live in `app/firmware/` with a `manifest.json`, produced by
 `app/tools/bundle_firmware.py` at release time (it builds first, then derives every manifest
-field from the sources and the binary — nothing is typed in). **The `.bin` files are committed
-deliberately**; that is what makes app/firmware pairing a checked-in fact rather than user
-discipline. Don't "clean them up". A file picker survives only as a collapsed *Advanced* path,
-where a vector-table check is all that stands between picking `firmware.elf` out of `.pio/build`
-and a board that no longer enumerates.
+field from the sources and the binary — nothing is typed in). A file picker survives only as a
+collapsed *Advanced* path, where a vector-table check is all that stands between picking
+`firmware.elf` out of `.pio/build` and a board that no longer enumerates.
+
+**`app/firmware/` is gitignored build output, not source — that is the current, deliberate
+decision, reversed on 2026-07-27 from the opposite one.** The binaries used to be committed so
+that app/firmware pairing was a checked-in fact; they now aren't, because the folder is what a
+release *produces* on the way to a packaged executable, and committing a binary per firmware
+change per board does not scale past one board. The pairing guarantee did not go away, it moved:
+the script is the only thing that writes there, and it derives every field from the tree it just
+built. The manifest is ignored alongside the binaries on purpose — a committed manifest whose
+`sha256` fields describe absent files is precisely the drift the script exists to prevent.
+**So: don't re-commit them, and don't "fix" the `.gitignore` entry.** A source checkout having
+no firmware until someone runs the script is the expected state, and only a developer ever sees
+it; a packaged app is built after the script has run.
+
+A multi-board run is **all-or-nothing**: `plan_entry()` builds and validates every env before
+`release()` writes anything, so a second board failing to compile cannot leave a manifest that
+looks like a complete release and isn't. By default the manifest describes exactly the envs named
+in that one command and images from a previous run are pruned; `--add` merges instead. Pruning
+only ever deletes files a *previous manifest listed* — never a wildcard sweep of the directory,
+which would take a binary someone had put there by hand. `app/tests/test_bundle_firmware.py`
+covers those invariants against a fixture tree with the `pio run` call injected out.
 
 Getting into DFU has two paths, and **both must keep working**: the `dfu` wire op (one click) and
 BOOT0+NRST by hand (for a board whose firmware is broken). That is also why the Firmware page,

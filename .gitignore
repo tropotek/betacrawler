@@ -3,6 +3,14 @@
 .pioenvs/
 .piolibdeps/
 
+# Firmware the app ships with: build output, not source. Produced by
+# `python3 app/tools/bundle_firmware.py <board>` at release time, and by
+# nothing else. The manifest is ignored along with the binaries on purpose --
+# committing one without the others gives you a manifest whose sha256 fields
+# describe files that aren't there, which is the exact drift that script
+# exists to prevent.
+app/firmware/
+
 # Python
 __pycache__/
 *.py[cod]

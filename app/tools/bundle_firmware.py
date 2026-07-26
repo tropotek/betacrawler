@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Copy a built firmware image into the app's shipped bundle.
+"""Build the firmware images the app ships with, into app/firmware/.
 
-Run at RELEASE time, not on every build -- deliberately. A PlatformIO
-post-build hook would rewrite a committed binary on every `pio run`, so every
-dev build would show up as a dirty file and the history would fill with noise
-that means nothing. This is an explicit act instead.
+Run at RELEASE time, by hand. `app/firmware/` is gitignored build output, not
+source: this script is the only thing that puts anything there, and it is what
+populates the folder before the app is packaged into an executable. A source
+checkout therefore has no firmware until someone runs this -- which is fine,
+because only a developer ever sees that state.
 
     python app/tools/bundle_firmware.py                    # blackpill_f411ce
-    python app/tools/bundle_firmware.py --env other_board
+    python app/tools/bundle_firmware.py board_a board_b    # the release set
+    python app/tools/bundle_firmware.py --add other_board  # merge, don't prune
     python app/tools/bundle_firmware.py --dry-run          # report, change nothing
     python app/tools/bundle_firmware.py --no-build         # bundle what's already built
 
@@ -15,6 +17,14 @@ What lands in the bundle is what the app is allowed to flash (app/backend/
 firmware.py serves it, and re-checks the sha256 before every write), so the
 whole value of this script is that the manifest cannot quietly describe a
 binary that isn't there. Everything below exists to enforce that.
+
+That invariant is why a multi-board run is ALL-OR-NOTHING. Every env is built
+and validated before anything is written, so a second board failing to compile
+cannot leave behind a manifest that looks like a complete release and isn't.
+
+By default the manifest describes EXACTLY the envs named in this run, and
+images from a previous run are pruned. One command is one release. `--add`
+merges into what is already there instead, for building boards one at a time.
 
 Stdlib only, on purpose: this runs from a bare checkout with no venv active.
 """
@@ -29,12 +39,21 @@ import sys
 from pathlib import Path
 
 # app/tools/bundle_firmware.py -> app/tools -> app -> <repo root>
+# Read through module attributes rather than captured at import inside the
+# functions below, so the tests can point the whole script at a fixture tree.
 ROOT = Path(__file__).resolve().parents[2]
 FIRMWARE = ROOT / "firmware"
 BUNDLE = ROOT / "app" / "firmware"
-MANIFEST = BUNDLE / "manifest.json"
 
 DEFAULT_ENV = "blackpill_f411ce"
+
+
+def manifest_path() -> Path:
+    return BUNDLE / "manifest.json"
+
+
+def bin_path_for(env: str) -> Path:
+    return FIRMWARE / ".pio" / "build" / env / "firmware.bin"
 
 # The firmware stamps __DATE__ " " __TIME__ into exactly one translation unit
 # (firmware/src/core/version.cpp) and reports it over the wire in `hello`.
@@ -217,31 +236,75 @@ def check_vector_table(blob: bytes) -> None:
 # --- manifest ------------------------------------------------------------------
 
 def load_manifest() -> dict:
-    if not MANIFEST.is_file():
-        return {"app_version": app_version(), "images": []}
+    path = manifest_path()
+    if not path.is_file():
+        return {"app_version": None, "images": []}
     try:
-        return json.loads(MANIFEST.read_text())
+        data = json.loads(path.read_text())
     except json.JSONDecodeError as exc:
-        raise BundleError(f"{MANIFEST} is not valid JSON: {exc}") from exc
+        raise BundleError(f"{path} is not valid JSON: {exc}") from exc
+    if not isinstance(data.get("images"), list):
+        raise BundleError(f"{path} has no `images` list")
+    return data
 
 
 def write_manifest(data: dict) -> None:
-    MANIFEST.parent.mkdir(parents=True, exist_ok=True)
-    MANIFEST.write_text(json.dumps(data, indent=2) + "\n")
+    path = manifest_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + "\n")
 
 
-def bundle(env: str, dry_run: bool = False, force: bool = False,
-           build: bool = True, pio: str | None = None) -> dict:
-    bin_path = FIRMWARE / ".pio" / "build" / env / "firmware.bin"
+def prune(old: dict, new: dict) -> list[Path]:
+    """Delete images the previous manifest listed and the new one doesn't.
+
+    Scoped to what a manifest named, never a wildcard sweep of the directory:
+    `rm -rf app/firmware/*` is shorter and would also throw away a binary
+    someone had dropped in there by hand. Since this is the one path in the
+    script that deletes anything, entries are also checked to actually live
+    under the bundle before being unlinked -- a `file` of "../../secrets"
+    should not be reachable even from a manifest we wrote ourselves.
+    """
+    keep = {img.get("file") for img in new.get("images", [])}
+    bundle = BUNDLE.resolve()
+    removed, parents = [], set()
+
+    for img in old.get("images", []):
+        rel = img.get("file")
+        if not rel or rel in keep:
+            continue
+        path = (BUNDLE / rel).resolve()
+        if not path.is_relative_to(bundle):
+            continue
+        parents.add(path.parent)
+        if path.is_file():
+            path.unlink()
+            removed.append(path)
+
+    # A board directory left empty by the above is noise; a board that still
+    # has images keeps its directory untouched.
+    for d in parents:
+        if d != bundle and d.is_dir() and not any(d.iterdir()):
+            d.rmdir()
+    return removed
+
+
+def plan_entry(env: str, force: bool = False, build: bool = True,
+               pio: str | None = None, builder=run_build) -> dict:
+    """Build and validate one env, and return its manifest entry.
+
+    Deliberately writes NOTHING under app/firmware/. Separating "work out what
+    this env would contribute" from "write it" is what lets a multi-board run
+    fail cleanly: every env goes through here first, so the release either
+    lands whole or not at all.
+
+    `builder` is injected the same way `SerialLink` takes `open_port` and
+    `DfuFlasher` takes `runner` -- it is the one call that needs a toolchain,
+    so the tests replace it and exercise everything else for real.
+    """
+    bin_path = bin_path_for(env)
 
     if build:
-        tool = pio or find_pio()
-        if tool is None:
-            raise BundleError(
-                "could not find the PlatformIO CLI (tried "
-                "~/.platformio/penv/bin/pio and PATH). Pass --pio <path>, or "
-                "--no-build to bundle an already-built binary.")
-        run_build(env, tool)
+        builder(env, pio)
 
     if not bin_path.is_file():
         raise BundleError(
@@ -290,56 +353,117 @@ def bundle(env: str, dry_run: bool = False, force: bool = False,
         "sha256": hashlib.sha256(blob).hexdigest(),
         "notes": ", ".join(enabled_features(header_text)) or "no optional modules",
     }
+    return entry
+
+
+def release(envs: list[str], dry_run: bool = False, force: bool = False,
+            build: bool = True, pio: str | None = None, add: bool = False,
+            builder=run_build) -> tuple[list[dict], list[Path]]:
+    """Build every env, then write the bundle. Returns (entries, pruned).
+
+    Nothing under app/firmware/ is touched until all of `envs` have built and
+    validated -- see the module docstring for why that ordering is the point
+    of this function rather than an implementation detail.
+    """
+    envs = list(envs) or [DEFAULT_ENV]
+    dupes = sorted({e for e in envs if envs.count(e) > 1})
+    if dupes:
+        raise BundleError(f"env named more than once: {', '.join(dupes)}")
+
+    tool = pio
+    if build and tool is None:
+        tool = find_pio()
+        if tool is None:
+            raise BundleError(
+                "could not find the PlatformIO CLI (tried "
+                "~/.platformio/penv/bin/pio and PATH). Pass --pio <path>, or "
+                "--no-build to bundle an already-built binary.")
+
+    # Read before building rather than just before writing: a corrupt manifest
+    # is a one-second failure, and finding it after a multi-board build has
+    # already run is a needlessly expensive way to be told.
+    old = load_manifest()
+
+    plans = [(env, plan_entry(env, force=force, build=build, pio=tool,
+                              builder=builder))
+             for env in envs]
+    entries = [entry for _, entry in plans]
+
+    # Two envs compiling the same board header would silently overwrite each
+    # other's image, and the manifest would report whichever won. Catch it
+    # here, while nothing has been written.
+    ids = [e["id"] for e in entries]
+    clash = sorted({i for i in ids if ids.count(i) > 1})
+    if clash:
+        raise BundleError(
+            f"these envs produce the same image id: {', '.join(clash)} -- "
+            f"they build the same board, name and version")
 
     if dry_run:
-        return entry
+        return entries, []
 
-    dest = BUNDLE / entry["file"]
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(bin_path, dest)
+    # Without --add the run IS the release, so anything the previous manifest
+    # listed and this one doesn't is gone. With it, prior entries survive and
+    # only same-id ones are replaced.
+    fresh = set(ids)
+    kept = [img for img in old["images"] if img.get("id") not in fresh] if add else []
+    # Stable order, so re-releasing produces a diff of only the fields that
+    # actually changed.
+    data = {"app_version": app_version(),
+            "images": sorted(kept + entries, key=lambda i: i["id"])}
 
-    data = load_manifest()
-    data["app_version"] = app_version()
-    images = [img for img in data.get("images", []) if img.get("id") != entry["id"]]
-    images.append(entry)
-    # Stable order, so re-bundling an existing image produces a diff of only
-    # the fields that actually changed.
-    data["images"] = sorted(images, key=lambda i: i["id"])
+    for env, entry in plans:
+        dest = BUNDLE / entry["file"]
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(bin_path_for(env), dest)
+
+    # After the copies, so an image this run rewrote in place is never a
+    # deletion candidate.
+    pruned = [] if add else prune(old, data)
     write_manifest(data)
-    return entry
+    return entries, pruned
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--env", default=DEFAULT_ENV,
-                    help=f"PlatformIO env to bundle (default: {DEFAULT_ENV})")
+    ap.add_argument("envs", nargs="*", metavar="ENV",
+                    help=f"PlatformIO envs to build and ship "
+                         f"(default: {DEFAULT_ENV})")
+    ap.add_argument("--add", action="store_true",
+                    help="merge into the existing manifest instead of "
+                         "replacing it with exactly these envs")
     ap.add_argument("--dry-run", action="store_true",
                     help="report what would be bundled, write nothing")
     ap.add_argument("--no-build", action="store_true",
-                    help="bundle the existing binary instead of rebuilding first")
+                    help="bundle the existing binaries instead of rebuilding first")
     ap.add_argument("--pio", help="path to the PlatformIO CLI")
     ap.add_argument("--force", action="store_true",
                     help="with --no-build, bundle even if sources look newer")
     args = ap.parse_args()
 
     try:
-        entry = bundle(args.env, dry_run=args.dry_run, force=args.force,
-                       build=not args.no_build, pio=args.pio)
+        entries, pruned = release(args.envs, dry_run=args.dry_run,
+                                  force=args.force, build=not args.no_build,
+                                  pio=args.pio, add=args.add)
     except BundleError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
     verb = "would bundle" if args.dry_run else "bundled"
-    print(f"{verb} {entry['id']}")
-    print(f"  board   {entry['board']}")
-    print(f"  built   {entry['built']}")
-    print(f"  proto   {entry['proto']}")
-    print(f"  modules {entry['notes']}")
-    print(f"  size    {entry['size']} bytes")
-    print(f"  sha256  {entry['sha256']}")
+    for entry in entries:
+        print(f"{verb} {entry['id']}")
+        print(f"  board   {entry['board']}")
+        print(f"  built   {entry['built']}")
+        print(f"  proto   {entry['proto']}")
+        print(f"  modules {entry['notes']}")
+        print(f"  size    {entry['size']} bytes")
+        print(f"  sha256  {entry['sha256']}")
+        if not args.dry_run:
+            print(f"  -> app/firmware/{entry['file']}")
+    for path in pruned:
+        print(f"removed  app/firmware/{path.relative_to(BUNDLE.resolve())}")
     if not args.dry_run:
-        print(f"  -> app/firmware/{entry['file']}")
-        print(f"  -> app/firmware/manifest.json")
+        print(f"{len(entries)} image(s) -> app/firmware/manifest.json")
     return 0
 
 

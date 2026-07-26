@@ -312,13 +312,19 @@
           </dl>
 
           <h2 class="h5">Available firmware</h2>
-          <p class="text-secondary small">
+          <p class="text-secondary small" x-show="$store.firmware.images.length">
             These images ship with this version of the app, so they are known to match it.
           </p>
 
+          <!-- Only a developer running from a source checkout reaches this: a
+               packaged app is built after the release script has populated
+               app/firmware/, so it always ships images. Hence the instruction
+               rather than an apology. -->
           <div x-show="!$store.firmware.images.length" class="alert alert-secondary">
-            This app was built without any bundled firmware. You can still flash a local
-            file using <strong>Advanced</strong> below.
+            No firmware has been built yet. Run
+            <code>python3 app/tools/bundle_firmware.py &lt;board&gt;</code> to build the images
+            this app ships with. You can also flash a local file using
+            <strong>Advanced</strong> below.
           </div>
 
           <div class="row g-3 mb-4">
