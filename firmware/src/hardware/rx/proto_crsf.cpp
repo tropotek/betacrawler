@@ -47,6 +47,11 @@ void unpackChannels(const uint8_t* payload, uint16_t* out) {
   }
 }
 
+uint16_t txPowerMw(uint8_t idx) {
+  static const uint16_t kMw[] = {0, 10, 25, 100, 500, 1000, 2000, 250, 50};
+  return (idx < sizeof(kMw) / sizeof(kMw[0])) ? kMw[idx] : 0;
+}
+
 void decodeLinkStats(const uint8_t* payload, LinkStats* out) {
   out->antenna = payload[4];
   // Both antennas are always reported; the receiver says which one it is

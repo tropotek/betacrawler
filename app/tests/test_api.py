@@ -41,7 +41,7 @@ def test_connect_then_schema_and_params(client):
         "disp.mode", "disp.page", "disp.rate",
         "servo.mode", "servo.angle", "servo.sweep_s",
         "servo.min_us", "servo.max_us",
-        "rx.source", "rx.timeout_ms"}
+        "rx.protocol", "rx.source", "crossfire.timeout_ms", "elrs.timeout_ms"}
     # Telemetry descriptor rides along in the same response, so the UI renders
     # its cards from the device rather than a hardcoded field list.
     assert {t["key"] for t in schema["tlm"]} == {
@@ -60,6 +60,18 @@ def test_valid_set_returns_200_and_updates(client):
     client.post("/api/connect", json={"port": "/dev/fake"})
     assert client.put("/api/params/led.blink_hz", json={"val": 15}).status_code == 200
     assert client.get("/api/params").json()["led.blink_hz"] == 15
+
+
+def test_a_show_if_hidden_param_is_still_settable(client):
+    """showIf is a display hint, not an access rule.
+
+    The board boots with rx.protocol=crossfire, so elrs.timeout_ms is not
+    drawn. It must still be settable -- an INI restore writes both timeouts
+    and a Terminal `set` knows nothing about what the browser is rendering.
+    """
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    assert client.put("/api/params/elrs.timeout_ms", json={"val": 150}).status_code == 200
+    assert client.get("/api/params").json()["elrs.timeout_ms"] == 150
 
 
 def test_out_of_range_set_returns_400_with_code(client):

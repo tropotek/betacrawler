@@ -1,6 +1,6 @@
 #include <unity.h>
 #include <string.h>
-#include "hardware/rx/proto_crsf.h"
+#include "hardware/rx/rx_params.h"
 
 using namespace rx;
 
@@ -324,7 +324,7 @@ void test_errors_accumulate_and_do_not_affect_link_state() {
 }
 
 void test_reset_returns_the_link_to_down_with_rate_zero_but_keeps_errors() {
-  // The failure this guards: switching crsf.source away from sim must not
+  // The failure this guards: switching rx.source away from sim must not
   // leave sim's last "up, rate ~143" standing in for a board with nothing
   // wired to uart. reset() has to zero everything up() and rate() derive
   // from -- but err_ is deliberately exempt, because a real rejection stays
@@ -370,6 +370,69 @@ void test_link_timeout_survives_the_millis_wraparound() {
   TEST_ASSERT_FALSE(s.up());
 }
 
+// --- protocol table ---------------------------------------------------------
+
+void test_the_table_is_indexed_by_the_protocol_enum() {
+  // The enum and the table order are the same fact; stating it twice is how
+  // they drift. This is the assertion that catches a row inserted above
+  // crossfire.
+  TEST_ASSERT_EQUAL_STRING("crossfire", kProtocols[PROTO_CROSSFIRE].name);
+  TEST_ASSERT_EQUAL_STRING("elrs", kProtocols[PROTO_ELRS].name);
+}
+
+void test_crossfire_publishes_twelve_channels_and_elrs_sixteen() {
+  TEST_ASSERT_EQUAL_UINT8(12, kProtocols[PROTO_CROSSFIRE].channels);
+  TEST_ASSERT_EQUAL_UINT8(16, kProtocols[PROTO_ELRS].channels);
+}
+
+void test_each_protocol_points_at_its_own_timeout_param() {
+  TEST_ASSERT_EQUAL_UINT8(P_CROSSFIRE_TIMEOUT, kProtocols[PROTO_CROSSFIRE].timeoutParam);
+  TEST_ASSERT_EQUAL_UINT8(P_ELRS_TIMEOUT, kProtocols[PROTO_ELRS].timeoutParam);
+}
+
+void test_crossfire_rf_rates_match_the_tbs_profiles() {
+  const Protocol& p = kProtocols[PROTO_CROSSFIRE];
+  TEST_ASSERT_EQUAL_UINT16(4, p.rfRateHz(0));
+  TEST_ASSERT_EQUAL_UINT16(50, p.rfRateHz(1));
+  TEST_ASSERT_EQUAL_UINT16(150, p.rfRateHz(2));
+}
+
+void test_elrs_rf_rates_match_the_elrs_air_rate_enum() {
+  const Protocol& p = kProtocols[PROTO_ELRS];
+  TEST_ASSERT_EQUAL_UINT16(500, p.rfRateHz(0));
+  TEST_ASSERT_EQUAL_UINT16(250, p.rfRateHz(1));
+  TEST_ASSERT_EQUAL_UINT16(150, p.rfRateHz(3));
+  TEST_ASSERT_EQUAL_UINT16(50, p.rfRateHz(5));
+  TEST_ASSERT_EQUAL_UINT16(4, p.rfRateHz(7));
+}
+
+void test_an_unknown_rf_mode_index_reports_zero_rather_than_guessing() {
+  // Receivers emit indices outside the published tables, and ELRS renumbers
+  // its enum between versions. A fabricated rate is worse than an obvious
+  // zero, which the browser renders as "0 Hz" beside a working link.
+  TEST_ASSERT_EQUAL_UINT16(0, kProtocols[PROTO_CROSSFIRE].rfRateHz(9));
+  TEST_ASSERT_EQUAL_UINT16(0, kProtocols[PROTO_CROSSFIRE].rfRateHz(255));
+  TEST_ASSERT_EQUAL_UINT16(0, kProtocols[PROTO_ELRS].rfRateHz(200));
+}
+
+void test_tx_power_follows_the_shared_crsf_index_table() {
+  // Shared by both protocols: this table is CRSF's, not TBS's or ELRS's.
+  TEST_ASSERT_EQUAL_UINT16(0, txPowerMw(0));
+  TEST_ASSERT_EQUAL_UINT16(10, txPowerMw(1));
+  TEST_ASSERT_EQUAL_UINT16(25, txPowerMw(2));
+  TEST_ASSERT_EQUAL_UINT16(100, txPowerMw(3));
+  TEST_ASSERT_EQUAL_UINT16(500, txPowerMw(4));
+  TEST_ASSERT_EQUAL_UINT16(1000, txPowerMw(5));
+  TEST_ASSERT_EQUAL_UINT16(2000, txPowerMw(6));
+  TEST_ASSERT_EQUAL_UINT16(250, txPowerMw(7));
+  TEST_ASSERT_EQUAL_UINT16(50, txPowerMw(8));
+}
+
+void test_an_unknown_tx_power_index_reports_zero() {
+  TEST_ASSERT_EQUAL_UINT16(0, txPowerMw(9));
+  TEST_ASSERT_EQUAL_UINT16(0, txPowerMw(255));
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_crc8_of_empty_is_zero);
@@ -403,5 +466,13 @@ int main(int, char**) {
   RUN_TEST(test_errors_accumulate_and_do_not_affect_link_state);
   RUN_TEST(test_reset_returns_the_link_to_down_with_rate_zero_but_keeps_errors);
   RUN_TEST(test_link_timeout_survives_the_millis_wraparound);
+  RUN_TEST(test_the_table_is_indexed_by_the_protocol_enum);
+  RUN_TEST(test_crossfire_publishes_twelve_channels_and_elrs_sixteen);
+  RUN_TEST(test_each_protocol_points_at_its_own_timeout_param);
+  RUN_TEST(test_crossfire_rf_rates_match_the_tbs_profiles);
+  RUN_TEST(test_elrs_rf_rates_match_the_elrs_air_rate_enum);
+  RUN_TEST(test_an_unknown_rf_mode_index_reports_zero_rather_than_guessing);
+  RUN_TEST(test_tx_power_follows_the_shared_crsf_index_table);
+  RUN_TEST(test_an_unknown_tx_power_index_reports_zero);
   return UNITY_END();
 }

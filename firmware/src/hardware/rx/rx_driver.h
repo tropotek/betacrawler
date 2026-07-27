@@ -35,12 +35,17 @@ class RxDriver : public core::Module {
   void runSim(uint32_t nowMs);
   void applyRcFrame(uint32_t nowMs);
 
+  const Protocol& proto() const { return kProtocols[protocol_]; }
+
   HardwareSerial* uart_ = nullptr;
   FrameParser     parser_;
   LinkState       link_;
   LinkStats       stats_ = {};
-  uint16_t        us_[kUsedChannels] = {};
+  uint16_t        us_[kWireChannels] = {};
+  int32_t         protocol_  = PROTO_CROSSFIRE;
   int32_t         source_    = SRC_UART;
+  // Mirrors the ACTIVE protocol's timeout param. Re-read whenever either the
+  // protocol or that protocol's own timeout changes.
   uint32_t        timeoutMs_ = 1000;
   uint32_t        simT0_     = 0;
   // Last simulated-frame timestamp, gating runSim()'s link_.onFrame() to a

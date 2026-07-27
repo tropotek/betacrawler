@@ -36,24 +36,52 @@ static HardwareSerial g_uart(RX_RX_PIN, RX_TX_PIN);
 void RxDriver::attach(const core::Registry& reg, const core::Params& p) {
   (void)reg;
   // Params reflects whatever main.cpp's store.load() already restored from
-  // flash, so this is real persisted state, not the SRC_UART member default
-  // -- source_ would otherwise stay SRC_UART inside begin() even when
-  // rx.source=sim was saved, because onParamChanged() only fires on a
-  // LATER change, never for the initial load.
+  // flash, so this is real persisted state. onParamChanged() only fires on a
+  // LATER change, never for the initial load -- without this, a saved
+  // rx.protocol=elrs would sit unread behind the member default until the
+  // user happened to touch the control.
+  protocol_  = p.num(globalParam(P_PROTOCOL));
   source_    = p.num(globalParam(P_SOURCE));
-  timeoutMs_ = (uint32_t)p.num(globalParam(P_TIMEOUT_MS));
+  timeoutMs_ = (uint32_t)p.num(globalParam(proto().timeoutParam));
 }
 
 void RxDriver::begin() {
   uart_ = &g_uart;
-  uart_->begin(RX_BAUD);
-  for (uint8_t i = 0; i < kUsedChannels; ++i) us_[i] = 0;
+  uart_->begin(proto().baud);
+  for (uint8_t i = 0; i < kWireChannels; ++i) us_[i] = 0;
   if (source_ == SRC_SIM)
     core::bootLog().add("RX source=sim (synthetic channels, no receiver)");
 }
 
 void RxDriver::onParamChanged(uint8_t local, const core::Params& p) {
   switch (local) {
+    case P_PROTOCOL: {
+      const int32_t v = p.num(globalParam(P_PROTOCOL));
+      if (v != protocol_) {
+        const uint32_t wasBaud = proto().baud;
+        protocol_ = v;
+        // Everything decoded under the previous protocol is now meaningless.
+        // Leaving it on screen is the same fabricated-data failure that
+        // rx.source defaulting to uart exists to prevent, reached by another
+        // route: channel values, link statistics and the link state itself
+        // all described a protocol that is no longer selected.
+        for (uint8_t i = 0; i < kWireChannels; ++i) us_[i] = 0;
+        stats_ = LinkStats{};
+        simT0_ = 0;
+        // err_ survives inside reset(): a real rejection stays countable
+        // across a protocol change, exactly as across a source change.
+        link_.reset();
+        // FrameParser has no reset() of its own; a fresh instance stands in.
+        parser_ = FrameParser{};
+        if (uart_ && proto().baud != wasBaud) {
+          uart_->end();
+          uart_->begin(proto().baud);
+        }
+      }
+      // Always re-read: the newly active protocol owns a different param.
+      timeoutMs_ = (uint32_t)p.num(globalParam(proto().timeoutParam));
+      break;
+    }
     case P_SOURCE: {
       const int32_t v = p.num(globalParam(P_SOURCE));
       if (v != source_) {
@@ -62,7 +90,7 @@ void RxDriver::onParamChanged(uint8_t local, const core::Params& p) {
         // from invented data even after the link genuinely times out, which
         // is the exact fabricated-data failure rx.source defaulting to
         // uart exists to prevent, just reached by a different route.
-        for (uint8_t i = 0; i < kUsedChannels; ++i) us_[i] = 0;
+        for (uint8_t i = 0; i < kWireChannels; ++i) us_[i] = 0;
         stats_ = LinkStats{};
         simT0_ = 0;
         // link_ carries sim's "up, rate ~143" across the switch unless reset
@@ -80,8 +108,12 @@ void RxDriver::onParamChanged(uint8_t local, const core::Params& p) {
       source_ = v;
       break;
     }
-    case P_TIMEOUT_MS:
-      timeoutMs_ = (uint32_t)p.num(globalParam(P_TIMEOUT_MS));
+    case P_CROSSFIRE_TIMEOUT:
+    case P_ELRS_TIMEOUT:
+      // Accepted and stored either way; only the active one takes effect.
+      // That is the direct consequence of showIf being display-only -- an INI
+      // restore sets both, and neither may be refused.
+      timeoutMs_ = (uint32_t)p.num(globalParam(proto().timeoutParam));
       break;
     default:
       break;
@@ -127,8 +159,9 @@ void RxDriver::drainUart(uint32_t nowMs) {
 void RxDriver::applyRcFrame(uint32_t nowMs) {
   uint16_t ticks[kWireChannels] = {};
   unpackChannels(parser_.payload(), ticks);
-  // Only the first twelve: Crossfire transmits 12 and the rest are padding.
-  for (uint8_t i = 0; i < kUsedChannels; ++i) us_[i] = ticksToUs(ticks[i]);
+  // Only as many as the active protocol publishes: the wire frame always
+  // carries 16, but Crossfire transmits 12 and the rest are padding.
+  for (uint8_t i = 0; i < proto().channels; ++i) us_[i] = ticksToUs(ticks[i]);
   link_.onFrame(nowMs);
 }
 
@@ -146,8 +179,9 @@ void RxDriver::runSim(uint32_t nowMs) {
   us_[0] = (uint16_t)(988 + (uint32_t)core::breathingDuty(t % 4000, 4000) * span / 100);
   us_[1] = (uint16_t)(988 + (uint32_t)core::breathingDuty(t % 8000, 8000) * span / 100);
   us_[2] = ((t / 2000) % 2) ? 2012 : 988;          // switch-like input
-  for (uint8_t i = 3; i < kUsedChannels; ++i)
-    us_[i] = (uint16_t)(988 + span * (i - 2) / (kUsedChannels - 2));
+  const uint8_t n = proto().channels;
+  for (uint8_t i = 3; i < n; ++i)
+    us_[i] = (uint16_t)(988 + span * (i - 2) / (n - 2));
 
   stats_.lq      = 100;
   stats_.rssiDbm = -42;

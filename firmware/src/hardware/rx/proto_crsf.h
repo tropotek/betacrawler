@@ -53,6 +53,12 @@ struct LinkStats {
 // 10 payload bytes of a 0x14 frame.
 void decodeLinkStats(const uint8_t* payload, LinkStats* out);
 
+// TX power index -> milliwatts, from the CRSF specification. Shared by every
+// protocol in this family: TBS and ExpressLRS both use CRSF's numbering here,
+// unlike the RF-mode index, which each of them numbers its own way.
+// Returns 0 for an index the table does not cover -- "unknown", not a guess.
+uint16_t txPowerMw(uint8_t idx);
+
 // Byte-at-a-time framing. Fed one byte per call so the driver never needs a
 // buffer of its own and a frame split across UART reads costs nothing.
 class FrameParser {

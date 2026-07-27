@@ -1,4 +1,5 @@
 #include "hardware/rx/rx_params.h"
+#include "config.h"
 
 namespace rx {
 
@@ -7,17 +8,44 @@ using core::ParamType;
 using core::TlmDef;
 using core::TlmType;
 
-static const char* const kSources[] = {"uart", "sim"};
+static const char* const kProtocolNames[] = {"crossfire", "elrs"};
+static const char* const kSources[]       = {"uart", "sim"};
+
+// TBS Crossfire profiles. Three rates, and the index IS the profile.
+static uint16_t crossfireRfRateHz(uint8_t idx) {
+  static const uint16_t kHz[] = {4, 50, 150};
+  return (idx < sizeof(kHz) / sizeof(kHz[0])) ? kHz[idx] : 0;
+}
+
+// ExpressLRS numbers its air rates with its own enum, descending from the
+// fastest. This is the classic 8-entry table; ELRS 3.x adds faster rates
+// above it and has renumbered before, which is precisely why an index off the
+// end returns 0 rather than the nearest neighbour. Check `rfrate` against
+// what the handset reports before trusting this against a new ELRS release.
+static uint16_t elrsRfRateHz(uint8_t idx) {
+  static const uint16_t kHz[] = {500, 250, 200, 150, 100, 50, 25, 4};
+  return (idx < sizeof(kHz) / sizeof(kHz[0])) ? kHz[idx] : 0;
+}
+
+const Protocol kProtocols[] = {
+  // name         baud     ch  timeoutParam         rfRateHz
+  {"crossfire",   RX_BAUD, 12, P_CROSSFIRE_TIMEOUT, crossfireRfRateHz},
+  {"elrs",        RX_BAUD, 16, P_ELRS_TIMEOUT,      elrsRfRateHz},
+};
 
 static const ParamDef kParams[] = {
-  // key                type             label     unit  min  max   opts      n  maxlen def         defStr group
+  // key                    type             label       unit  min   max   opts             n               maxlen def              defStr group        showIfKey      showIfVal
+  {"rx.protocol",           ParamType::Enum, "Protocol", nullptr, 0,    0,    kProtocolNames, kProtocolCount, 0, PROTO_CROSSFIRE, nullptr, nullptr,     nullptr,       nullptr},
   // Defaults to uart, not sim: a board with no receiver wired must report a
-  // link that is genuinely down rather than data that was invented. sim is
-  // opt-in, and begin() says so in the boot log when it is on.
-  {"rx.source",     ParamType::Enum, "Source",  nullptr, 0,   0,    kSources, 2, 0, SRC_UART, nullptr, nullptr},
-  // TBS's own guidance is to wait ~1s before acting on a lost link, because
-  // there is no "lost" signal -- only the absence of frames.
-  {"rx.timeout_ms", ParamType::U8,   "Timeout", "ms",    100, 2000, nullptr,  0, 0, 1000,     nullptr, nullptr},
+  // link that is genuinely down rather than data that was invented. Kept
+  // orthogonal to rx.protocol so sim exercises either protocol.
+  {"rx.source",             ParamType::Enum, "Source",   nullptr, 0,    0,    kSources,       2,              0, SRC_UART,        nullptr, nullptr,     nullptr,       nullptr},
+  // TBS's own guidance is to wait ~1s before acting on a lost link.
+  {"crossfire.timeout_ms",  ParamType::U8,   "Timeout",  "ms",    100,  2000, nullptr,        0,              0, 1000,            nullptr, "Crossfire", "rx.protocol", "crossfire"},
+  // Far shorter, because this module is a MONITOR: 200ms is 10 lost frames at
+  // ELRS's slowest 50Hz and 100 at 500Hz. The industry's 1000ms is a
+  // failsafe-ACTUATION figure and belongs to phase 2 on its own terms.
+  {"elrs.timeout_ms",       ParamType::U8,   "Timeout",  "ms",    50,   2000, nullptr,        0,              0, 200,             nullptr, "ELRS",      "rx.protocol", "elrs"},
 };
 
 // Twelve channels in one group, link health in another: seventeen fields in a
