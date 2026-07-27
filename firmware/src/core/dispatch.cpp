@@ -134,6 +134,16 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
         if (d.hi != d.lo) { e["lo"] = d.lo; e["hi"] = d.hi; }
         e["group"] = reg_.tlmGroup(i);
       }
+      // Same refusal as writeLog's, and for the same reason: the
+      // (void*, size_t) serializeJson() overload below truncates on
+      // overflow WITHOUT NUL-terminating, and main.cpp's
+      // Serial.println(g_out) would then read past the buffer. A registry
+      // filled to the tree's documented ceilings (FW_MAX_MODULES,
+      // FW_MAX_PARAMS, FW_MAX_TLM) can reach this today.
+      if (measureJson(doc) + 1 > cap) {
+        if (cap > 0) out[0] = '\0';
+        return 0;
+      }
       break;
     }
 

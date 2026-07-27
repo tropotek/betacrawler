@@ -11,10 +11,17 @@ constexpr size_t   kMaxLineIn   = 256;   // inbound line budget
 // carries the parameter table AND the telemetry descriptor. Measured at 1782
 // bytes for the board today, and ~3440 bytes once a module contributing 24
 // telemetry fields is registered, so 2048 no longer fits. Headroom at 4096 is
-// ~650 bytes, roughly seven more telemetry fields;
-// test_schema_lists_all_params_and_fits_buffer is what fails first if a fork
-// exceeds it. Costs 2KB of RAM in one buffer, g_out in main.cpp, on a 128KB
-// part.
+// ~650 bytes, roughly seven more telemetry fields.
+// test_schema_lists_all_params_and_fits_buffer guards THIS BOARD ONLY -- it
+// runs against realReg, the actual module set registerModules() builds here,
+// so it cannot fail for a fork with a different (larger) module set. A fork
+// that raises FW_MAX_MODULES/FW_MAX_PARAMS/FW_MAX_TLM enough to grow the
+// schema past this ceiling must re-check the schema size itself; nothing
+// here does it for them. Dispatcher::handle() refuses to emit a truncated
+// schema (see core/dispatch.cpp), so exceeding this ceiling drops the
+// response rather than corrupting it -- but the fork still loses schema
+// data it needs. Costs 2KB of RAM in one buffer, g_out in main.cpp, on a
+// 128KB part.
 constexpr size_t   kMaxLineOut  = 4096;
 constexpr uint16_t kProtoVersion = 1;
 
