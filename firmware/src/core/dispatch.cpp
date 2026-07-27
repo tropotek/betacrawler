@@ -176,10 +176,9 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
 
     case Op::Revert: {
       // The last stored point lives in flash, and the device owns it -- this
-      // is the only op that reads the Persistence seam back. FlashStore::load()
-      // is atomic (every magic/version/fingerprint/CRC check runs before its
-      // single memcpy), so a board with nothing valid stored reaches
-      // loadDefaults() with RAM untouched rather than half-applied.
+      // is the only op that reads the Persistence seam back. A board with
+      // nothing valid stored falls back to defaults rather than erroring:
+      // "discard my edits" has an answer either way.
       const bool stored = store_.load(&p_);
       if (!stored) p_.loadDefaults();
       for (uint8_t i = 0; i < reg_.paramCount(); ++i) reg_.notify(i, p_);

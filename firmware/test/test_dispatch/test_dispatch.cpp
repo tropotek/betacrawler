@@ -1,9 +1,13 @@
 // Two registries on purpose:
 //
-//   fakeReg  -- a synthetic module with a driver attached. Protocol behaviour
-//               (set/get/save/defaults) is identical for any module set, and a
-//               fake is the only way to assert "the hardware was called
-//               exactly once" natively, since real drivers are Arduino-only.
+//   fakeReg  -- TWO synthetic modules, each with a driver attached. Protocol
+//               behaviour (set/get/save/defaults) is identical for any module
+//               set, and a fake is the only way to assert "the hardware was
+//               called exactly once" natively, since real drivers are
+//               Arduino-only. Two rather than one because a single module's
+//               paramBase is 0, which makes global and module-local indices
+//               numerically identical and therefore makes the single invariant
+//               CLAUDE.md cares most about untestable.
 //
 //   realReg  -- built by registerModules(), i.e. the actual board config from
 //               include/boards/blackpill_f411ce.h. Used for the things that
@@ -33,16 +37,44 @@ static const TlmDef kFakeTlm[] = {
 };
 static const ModuleDesc kFakeDesc = {"fake", "Fake", kFakeParams, 2, kFakeTlm, 1};
 
+// A SECOND module, registered after the first, so its paramBase is 2 rather
+// than 0. That offset is the whole point of it: with only kFakeDesc present,
+// Registry::notify() could hand drivers the GLOBAL index instead of the
+// module-local one and every assertion in this file would still pass -- while
+// on the real five-module board a revert would drive the LED module with
+// index 3 and the display with index 0, misapplying every parameter.
+//
+// Deliberately no telemetry (tlm = nullptr, tlmCount = 0): the telemetry
+// assertions here are about kFakeDesc's single field, and a second module
+// contributing frame entries would only make them read as being about
+// something they are not.
+enum : uint8_t { P2_LEVEL = 0, P2_NAME = 1 };
+
+static const ParamDef kFake2Params[] = {
+  {"fake2.level", ParamType::U8,  "Level", nullptr, 0, 9, nullptr, 0, 0, 4, nullptr,  nullptr},
+  {"fake2.name",  ParamType::Str, "Name",  nullptr, 0, 0, nullptr, 0, 8, 0, "two",    nullptr},
+};
+static const ModuleDesc kFake2Desc = {"fake2", "Fake2", kFake2Params, 2, nullptr, 0};
+
 struct MockDriver : Module {
   int     calls = 0;
   uint8_t lastLocal = 0xFF;
   int32_t lastNum = -1;
+  // Every index this driver was handed, in order. `calls` alone proves a
+  // module was resynced; only these prove it was resynced with its OWN
+  // indices.
+  uint8_t locals[FW_MAX_PARAMS] = {};
+  uint8_t localCount = 0;
+
   void onParamChanged(uint8_t local, const Params& p) override {
     ++calls;
     lastLocal = local;
     lastNum = p.num(globalParam(local));
+    if (localCount < FW_MAX_PARAMS) locals[localCount++] = local;
   }
   void readTelemetry(TlmValue* out) override { out[0].u = 1204; }
+
+  void reset() { calls = 0; lastLocal = 0xFF; lastNum = -1; localCount = 0; }
 };
 
 struct MockStore : Persistence {
@@ -81,7 +113,8 @@ struct MockBootloader : Bootloader {
 
 static Registry fakeReg;
 static Registry realReg;
-static MockDriver driver;
+static MockDriver driver;    // owns globals 0..1
+static MockDriver driver2;   // owns globals 2..3, i.e. paramBase 2
 
 static char out[kMaxLineOut];
 
@@ -97,8 +130,25 @@ void test_set_applies_to_hardware_exactly_once() {
   TEST_ASSERT_EQUAL_INT(1, driver.calls);
   TEST_ASSERT_EQUAL_UINT8(P_RATE, driver.lastLocal);
   TEST_ASSERT_EQUAL_INT32(5, driver.lastNum);
+  TEST_ASSERT_EQUAL_INT(0, driver2.calls);   // and only the owning module
   TEST_ASSERT_NOT_NULL(strstr(out, "\"ok\":true"));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"id\":1"));
+}
+
+// The mirror of the above, on the module whose paramBase is NOT 0. Setting the
+// second of fake2's parameters is global index 3 and local index 1, and the
+// driver must see 1.
+void test_set_on_a_later_module_uses_that_modules_local_index() {
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);
+
+  Request q = parseRequest("{\"id\":30,\"op\":\"set\",\"key\":\"fake2.name\",\"val\":\"hi\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_EQUAL_INT(0, driver.calls);
+  TEST_ASSERT_EQUAL_INT(1, driver2.calls);
+  TEST_ASSERT_EQUAL_UINT8(P2_NAME, driver2.lastLocal);
+  TEST_ASSERT_EQUAL_STRING("hi", p.str(3));   // global 3 == fake2's local 1
 }
 
 void test_rejected_set_does_not_touch_hardware() {
@@ -169,13 +219,18 @@ void test_defaults_restores_and_notifies_every_param() {
   Params p(fakeReg); MockStore store;
   Dispatcher d(fakeReg, p, store);
   p.setNum(P_RATE, 15);
-  driver.calls = 0;
+  driver.reset(); driver2.reset();
 
   Request q = parseRequest("{\"id\":9,\"op\":\"defaults\"}");
   d.handle(q, out, sizeof(out));
 
   TEST_ASSERT_EQUAL_INT32(2, p.num(P_RATE));
-  TEST_ASSERT_EQUAL_INT(fakeReg.paramCount(), driver.calls);  // hardware resynced
+  // Every parameter resynced, each on its own module -- the two counts add up
+  // to fakeReg.paramCount(), which a single-module registry could not tell
+  // apart from "one driver got them all".
+  TEST_ASSERT_EQUAL_INT(kFakeDesc.paramCount,  driver.calls);
+  TEST_ASSERT_EQUAL_INT(kFake2Desc.paramCount, driver2.calls);
+  TEST_ASSERT_EQUAL_INT(fakeReg.paramCount(), driver.calls + driver2.calls);
 }
 
 void test_tlm_op_toggles_streaming() {
@@ -510,19 +565,44 @@ void test_revert_notifies_every_param_so_hardware_resyncs() {
   Request save = parseRequest("{\"id\":3,\"op\":\"save\"}");
   d.handle(save, out, sizeof(out));
   p.setNum(P_RATE, 15);
-  driver.calls = 0;
+  driver.reset(); driver2.reset();
 
   Request q = parseRequest("{\"id\":4,\"op\":\"revert\"}");
   d.handle(q, out, sizeof(out));
 
-  TEST_ASSERT_EQUAL_INT(fakeReg.paramCount(), driver.calls);
+  TEST_ASSERT_EQUAL_INT(kFakeDesc.paramCount,  driver.calls);
+  TEST_ASSERT_EQUAL_INT(kFake2Desc.paramCount, driver2.calls);
+  TEST_ASSERT_EQUAL_INT(fakeReg.paramCount(), driver.calls + driver2.calls);
+}
+
+// The other half of that invariant, and the half a one-module registry cannot
+// express: each driver is handed ITS OWN local indices, not global ones.
+// fake2's paramBase is 2, so a Registry::notify() that forwarded the global
+// index would hand driver2 {2, 3} here instead of {0, 1}.
+void test_revert_hands_each_module_its_own_local_indices() {
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);
+
+  Request save = parseRequest("{\"id\":9,\"op\":\"save\"}");
+  d.handle(save, out, sizeof(out));
+  driver.reset(); driver2.reset();
+
+  Request q = parseRequest("{\"id\":10,\"op\":\"revert\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_EQUAL_UINT8(kFakeDesc.paramCount,  driver.localCount);
+  TEST_ASSERT_EQUAL_UINT8(kFake2Desc.paramCount, driver2.localCount);
+  for (uint8_t i = 0; i < kFakeDesc.paramCount; ++i)
+    TEST_ASSERT_EQUAL_UINT8(i, driver.locals[i]);
+  for (uint8_t i = 0; i < kFake2Desc.paramCount; ++i)
+    TEST_ASSERT_EQUAL_UINT8(i, driver2.locals[i]);
 }
 
 void test_revert_with_nothing_stored_falls_back_to_defaults() {
   Params p(fakeReg); MockStore store;    // never saved
   Dispatcher d(fakeReg, p, store);
   p.setNum(P_RATE, 15);
-  driver.calls = 0;
+  driver.reset(); driver2.reset();
 
   Request q = parseRequest("{\"id\":5,\"op\":\"revert\"}");
   d.handle(q, out, sizeof(out));
@@ -530,7 +610,7 @@ void test_revert_with_nothing_stored_falls_back_to_defaults() {
   TEST_ASSERT_EQUAL_INT32(2, p.num(P_RATE));            // the ParamDef default
   TEST_ASSERT_NOT_NULL(strstr(out, "\"ok\":true"));     // never an error
   TEST_ASSERT_NOT_NULL(strstr(out, "\"src\":\"defaults\""));
-  TEST_ASSERT_EQUAL_INT(fakeReg.paramCount(), driver.calls);
+  TEST_ASSERT_EQUAL_INT(fakeReg.paramCount(), driver.calls + driver2.calls);
 }
 
 void test_revert_consults_the_store_exactly_once() {
@@ -552,15 +632,18 @@ void test_revert_is_parsed_as_its_own_op() {
   TEST_ASSERT_FALSE(bad.ok);
 }
 
-void setUp() { driver.calls = 0; }
+void setUp() { driver.reset(); driver2.reset(); }
 void tearDown() {}
 
 int main() {
+  // Order matters: kFake2Desc must be added SECOND so its paramBase is 2.
   fakeReg.add(kFakeDesc, &driver);
+  fakeReg.add(kFake2Desc, &driver2);
   registerModules(realReg);
 
   UNITY_BEGIN();
   RUN_TEST(test_set_applies_to_hardware_exactly_once);
+  RUN_TEST(test_set_on_a_later_module_uses_that_modules_local_index);
   RUN_TEST(test_rejected_set_does_not_touch_hardware);
   RUN_TEST(test_set_enum_by_name_forwards_index_to_hardware);
   RUN_TEST(test_set_unknown_key_returns_nokey);
@@ -590,6 +673,7 @@ int main() {
   RUN_TEST(test_dfu_is_parsed_as_its_own_op);
   RUN_TEST(test_revert_restores_the_values_last_saved);
   RUN_TEST(test_revert_notifies_every_param_so_hardware_resyncs);
+  RUN_TEST(test_revert_hands_each_module_its_own_local_indices);
   RUN_TEST(test_revert_with_nothing_stored_falls_back_to_defaults);
   RUN_TEST(test_revert_consults_the_store_exactly_once);
   RUN_TEST(test_revert_is_parsed_as_its_own_op);
