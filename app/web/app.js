@@ -300,9 +300,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     // Position of a reading within its declared lo..hi range, as a
-    // percentage. The range comes from the descriptor, never from here: this
-    // file must not know that an RC channel spans 988..2012, which is the
-    // whole reason lo/hi exist on TlmDef.
+    // percentage. The range comes from the descriptor, never from here:
+    // this file must not know the concrete bounds of any given field --
+    // that's the whole reason lo/hi exist on TlmDef.
     //
     // Clamped, because the firmware deliberately does not clamp -- a receiver
     // may legally send outside its nominal range and the number stays true
