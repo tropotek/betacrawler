@@ -37,10 +37,12 @@ static const ParamDef kParams[] = {
   // key                    type             label       unit  min   max   opts             n               maxlen def              defStr group        showIfKey      showIfVal
   {"rx.protocol",           ParamType::Enum, "Protocol", nullptr, 0,    0,    kProtocolNames, kProtocolCount, 0, PROTO_CROSSFIRE, nullptr, nullptr,     nullptr,       nullptr},
   // Defaults to uart, not sim: a board with no receiver wired must report a
-  // link that is genuinely down rather than data that was invented. Kept
+  // link that is genuinely down rather than data that was invented. sim is
+  // opt-in, and begin() says so in the boot log when it is on. Kept
   // orthogonal to rx.protocol so sim exercises either protocol.
   {"rx.source",             ParamType::Enum, "Source",   nullptr, 0,    0,    kSources,       2,              0, SRC_UART,        nullptr, nullptr,     nullptr,       nullptr},
-  // TBS's own guidance is to wait ~1s before acting on a lost link.
+  // TBS's own guidance is to wait ~1s before acting on a lost link, because
+  // there is no "lost" signal -- only the absence of frames.
   {"crossfire.timeout_ms",  ParamType::U8,   "Timeout",  "ms",    100,  2000, nullptr,        0,              0, 1000,            nullptr, "Crossfire", "rx.protocol", "crossfire"},
   // Far shorter, because this module is a MONITOR: 200ms is 10 lost frames at
   // ELRS's slowest 50Hz and 100 at 500Hz. The industry's 1000ms is a
