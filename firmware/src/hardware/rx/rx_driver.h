@@ -41,6 +41,13 @@ class RxDriver : public core::Module {
   FrameParser     parser_;
   LinkState       link_;
   LinkStats       stats_ = {};
+  // True once a 0x14 link-statistics frame has been decoded since the last
+  // reset (source/protocol change, or runSim's synthetic stats). link_.up()
+  // alone is not enough to trust stats_: it flips true on the first 0x16 RC
+  // frame, which can arrive before any 0x14 ever has, and rfMode==0 is a
+  // valid table index rather than an out-of-range sentinel -- so reading
+  // stats_ on link state alone can publish a rate the receiver never sent.
+  bool            statsSeen_ = false;
   uint16_t        us_[kWireChannels] = {};
   int32_t         protocol_  = PROTO_CROSSFIRE;
   int32_t         source_    = SRC_UART;

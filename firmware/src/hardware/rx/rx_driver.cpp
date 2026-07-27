@@ -67,6 +67,7 @@ void RxDriver::onParamChanged(uint8_t local, const core::Params& p) {
         // all described a protocol that is no longer selected.
         for (uint8_t i = 0; i < kWireChannels; ++i) us_[i] = 0;
         stats_ = LinkStats{};
+        statsSeen_ = false;
         simT0_ = 0;
         // err_ survives inside reset(): a real rejection stays countable
         // across a protocol change, exactly as across a source change.
@@ -86,12 +87,14 @@ void RxDriver::onParamChanged(uint8_t local, const core::Params& p) {
       const int32_t v = p.num(globalParam(P_SOURCE));
       if (v != source_) {
         // Switching away from sim must not leave the last synthetic frame
-        // on display forever -- ch1..12 would otherwise keep drawing bars
-        // from invented data even after the link genuinely times out, which
-        // is the exact fabricated-data failure rx.source defaulting to
-        // uart exists to prevent, just reached by a different route.
+        // on display forever -- the channel fields would otherwise keep
+        // drawing bars from invented data even after the link genuinely
+        // times out, which is the exact fabricated-data failure rx.source
+        // defaulting to uart exists to prevent, just reached by a different
+        // route.
         for (uint8_t i = 0; i < kWireChannels; ++i) us_[i] = 0;
         stats_ = LinkStats{};
+        statsSeen_ = false;
         simT0_ = 0;
         // link_ carries sim's "up, rate ~143" across the switch unless reset
         // too -- a board with nothing wired to uart would otherwise keep
@@ -100,9 +103,14 @@ void RxDriver::onParamChanged(uint8_t local, const core::Params& p) {
         // across a source change.
         link_.reset();
         // Any mid-frame state from the other source is now meaningless; a
-        // fresh parser avoids costing one extra rejection on the next
-        // uart -> sim -> uart round trip. FrameParser has no reset() of its
-        // own, so a fresh instance stands in for one.
+        // fresh parser avoids carrying the OLD parser's mid-frame state
+        // across the switch. It does not avoid a rejection on the next
+        // uart -> sim -> uart round trip in general: drainUart() is not
+        // called while source_ == SRC_SIM, so the hardware RX ring keeps
+        // filling in the background, and whatever stale mid-stream bytes
+        // are queued there get fed to this fresh parser the moment uart
+        // is selected again. FrameParser has no reset() of its own, so a
+        // fresh instance stands in for one.
         parser_ = FrameParser{};
       }
       source_ = v;
@@ -144,6 +152,7 @@ void RxDriver::drainUart(uint32_t nowMs) {
         } else if (parser_.type() == kTypeLinkStats &&
                    parser_.payloadLen() == kLinkPayloadLen) {
           decodeLinkStats(parser_.payload(), &stats_);
+          statsSeen_ = true;
         }
         // Any other type is a well-formed frame this module does not consume.
         break;
@@ -199,6 +208,7 @@ void RxDriver::runSim(uint32_t nowMs) {
   // receiver.
   stats_.rfMode  = 2;
   stats_.txPower = 3;   // 100mW in CRSF's shared table
+  statsSeen_ = true;
   // Report a healthy link at a plausible rate WITHOUT touching the error
   // count: a real rejection stays countable even here. Throttled to ~7ms
   // (~143Hz, a real Crossfire profile rate) rather than calling onFrame()
@@ -217,16 +227,36 @@ void RxDriver::readTelemetry(core::TlmValue* out) {
   for (uint8_t i = 0; i < kWireChannels; ++i) out[T_CH1 + i].u = us_[i];
   const bool up = link_.up();
   out[T_LINK].u = up ? 1u : 0u;
-  // Stale link statistics are worse than none: a frozen "LQ 100" beside
-  // "Link 0" reads as a working link. They zero with the link instead.
-  out[T_LQ].u   = up ? stats_.lq : 0u;
-  out[T_RSSI].i = up ? stats_.rssiDbm : 0;
   out[T_RATE].u = link_.rate();
   out[T_ERR].u  = link_.errors();
-  // Zeroed with the link, like lq and rssi: a frozen "500 Hz, 250 mW" beside
-  // "Link 0" reads as a working link, which is worse than no reading at all.
-  out[T_RFRATE].u = up ? proto().rfRateHz(stats_.rfMode) : 0u;
-  out[T_PWR].u    = up ? txPowerMw(stats_.txPower) : 0u;
+  // link and rate gate on `up` alone -- they derive from frame arrival
+  // (link_.onFrame()/link_.tick()), not from stats_, so link state is the
+  // whole story for them.
+  //
+  // lq, rssi, rfrate and pwr all come from stats_, which a 0x14 link-
+  // statistics frame fills in -- and `up` is NOT enough to trust it. up
+  // flips true on the first 0x16 RC frame, which can arrive before the
+  // first 0x14 ever does, or with none ever following on a receiver with
+  // telemetry off; until statsSeen_ is true, stats_ is still its zero-
+  // initialised state. That is a real-looking value for two of these four
+  // fields specifically: rfMode==0 is a VALID table index, not an
+  // out-of-range sentinel, so proto().rfRateHz(0) returns a genuine rate
+  // (4Hz Crossfire, 500Hz ELRS) the receiver never sent; and rssiDbm==0
+  // reads as an exceptionally strong signal rather than "unknown". (lq==0
+  // and txPower==0/0mW are honestly what "no reading yet" looks like for
+  // those two, but they get the same gate for one shared reason: stats_ is
+  // not re-zeroed on a link timeout, only on a source/protocol change --
+  // see onParamChanged -- so after a dropout-and-recovery every stats_
+  // field, not just the two that could read as fabricated, would otherwise
+  // show whatever the PREVIOUS 0x14 decoded, possibly under a different
+  // protocol.) Stale or fabricated link statistics are worse than none: a
+  // frozen "LQ 100, RSSI -42, 500Hz, 250mW" beside "Link 0" reads as a
+  // working link. They zero with the link, AND with statsSeen_, instead.
+  const bool s = up && statsSeen_;
+  out[T_LQ].u     = s ? stats_.lq : 0u;
+  out[T_RSSI].i   = s ? stats_.rssiDbm : 0;
+  out[T_RFRATE].u = s ? proto().rfRateHz(stats_.rfMode) : 0u;
+  out[T_PWR].u    = s ? txPowerMw(stats_.txPower) : 0u;
 }
 
 }  // namespace rx
