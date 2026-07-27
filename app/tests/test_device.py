@@ -29,7 +29,8 @@ VALUES = {"led.mode": "blink", "led.blink_hz": 2,
           "disp.mode": "on", "disp.page": "info", "disp.rate": 2}
 
 
-def device_responder(proto=1, caps=("dfu",), revert_src="flash"):
+def device_responder(proto=1, caps=("dfu",), revert_src="flash",
+                     knows_revert=True):
     def responder(req, emit):
         op = req["op"]
         rid = req["id"]
@@ -54,7 +55,9 @@ def device_responder(proto=1, caps=("dfu",), revert_src="flash"):
             emit({"id": rid, "ok": True})
         elif op in ("save", "defaults"):
             emit({"id": rid, "ok": True})
-        elif op == "revert":
+        elif op == "revert" and knows_revert:
+            # knows_revert=False falls through to the `badop` branch below,
+            # which is exactly what firmware predating the op answers.
             # Mirrors the firmware: never an error, but says which source it
             # used so the host can tell "back to saved" from "fell back".
             # revert_src=None simulates a firmware that omits `src` entirely
@@ -362,5 +365,37 @@ def test_revert_defaults_to_the_save_prompting_source_when_firmware_omits_src():
     dev.connect("/dev/fake")
     try:
         assert dev.revert() == "defaults"
+    finally:
+        dev.disconnect()
+
+
+def test_revert_on_firmware_too_old_to_know_the_op_says_so():
+    """`badop` means the board predates the op, not that a flash write failed.
+    A bare "revert failed" would send someone hunting a hardware fault when the
+    fix is to flash the image the app already ships."""
+    fake = FakeSerial(responder=device_responder(knows_revert=False))
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    dev.connect("/dev/fake")
+    try:
+        with pytest.raises(DeviceError) as exc:
+            dev.revert()
+        assert exc.value.code == "badop"
+        assert "too old" in str(exc.value)
+        assert "Firmware page" in str(exc.value)
+    finally:
+        dev.disconnect()
+
+
+def test_terminal_revert_on_old_firmware_gives_the_same_message():
+    """The Terminal and the button must not drift apart on the one failure a
+    user is likely to hit -- both go through _revert_error()."""
+    fake = FakeSerial(responder=device_responder(knows_revert=False))
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    dev.connect("/dev/fake")
+    try:
+        with pytest.raises(DeviceError) as exc:
+            dev.terminal_revert()
+        assert exc.value.code == "badop"
+        assert "too old" in str(exc.value)
     finally:
         dev.disconnect()

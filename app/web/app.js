@@ -470,7 +470,10 @@ el('defaults').addEventListener('click', async () => {
   try {
     await Api.defaults();
     await loadDevice();
-    setState('connected');
+    // deviceInfo, not nothing: setState() blanks the navbar identity and the
+    // Help page whenever `info` is falsy, and the device is still connected --
+    // reloading its parameters told us nothing new about who it is.
+    setState('connected', deviceInfo);
     // The firmware's `defaults` op reloads RAM and re-notifies the modules but
     // never touches flash (core/dispatch.cpp, Op::Defaults), so the device is
     // now exactly as unsaved as after editing a field by hand.
@@ -482,7 +485,7 @@ el('revert').addEventListener('click', async () => {
   try {
     const res = await Api.revert();
     await loadDevice();
-    setState('connected');
+    setState('connected', deviceInfo);   // see the defaults handler above
     // "flash" means RAM now matches what is stored, so there is nothing left
     // to save -- this is the ONLY action that leaves the device clean.
     // "defaults" means the board had nothing valid stored and the firmware

@@ -23,6 +23,25 @@ class DeviceError(Exception):
         self.code = code
 
 
+def _revert_error(resp: dict) -> tuple[str, str]:
+    """(code, message) for a refused `revert`.
+
+    Shared by revert() and terminal_revert() so the Terminal and the button
+    cannot drift apart on the one case a user is actually likely to hit.
+
+    `badop` here means the board predates the op entirely — the same shape
+    enter_dfu() already handles, and a state made likely by the fact that the
+    app ships the firmware that matches it. "revert failed" would send someone
+    hunting a flash fault; the real fix is one page away.
+    """
+    err = resp.get("err", "err")
+    if err == "badop":
+        return ("badop",
+                "this firmware is too old to know `revert`. Update the "
+                "firmware from the Firmware page.")
+    return (err, "revert failed")
+
+
 class DeviceModel:
     def __init__(self, link: SerialLink | None = None):
         self._link = link or SerialLink()
@@ -134,7 +153,7 @@ class DeviceModel:
         """
         resp = self._send("revert")
         if not resp.get("ok"):
-            raise DeviceError(resp.get("err", "err"), "revert failed")
+            raise DeviceError(*_revert_error(resp))
         self._values = self._send("getall")["vals"]
         # A missing `src` means firmware we don't recognise (protocol skew).
         # Default to "defaults", the direction that prompts a save, rather
@@ -235,7 +254,7 @@ class DeviceModel:
     def terminal_revert(self):
         sent, recv, resp = self._send_raw("revert")
         if not resp.get("ok"):
-            raise DeviceError(resp.get("err", "err"), "revert failed")
+            raise DeviceError(*_revert_error(resp))
         self._values = self._send("getall")["vals"]
         # See revert() above: an absent `src` defaults to "defaults" so a
         # save prompt is the fail-safe direction, not silently-hidden state.
