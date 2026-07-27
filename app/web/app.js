@@ -244,7 +244,19 @@ document.addEventListener('alpine:init', () => {
     invalid: {},
 
     get groups() {
-      return groupItems(this.schema, (p) => ({
+      // showIf is a display hint (see core/params.h): a param whose condition
+      // is unmet is not drawn, but it is still in the schema, still validated
+      // by the device, and still settable from the Terminal or an INI
+      // restore. Filtering BEFORE groupItems is what makes a group that has
+      // been emptied disappear rather than render as a bare heading.
+      //
+      // Reading this.values[...] inside the getter is what makes Alpine
+      // re-run it when the controlling selector changes. Hoisting that lookup
+      // out breaks the reactivity while leaving the logic looking correct --
+      // the group would simply stop updating.
+      const visible = this.schema.filter(
+        (p) => !p.showIf || this.values[p.showIf.key] === p.showIf.val);
+      return groupItems(visible, (p) => ({
         ...p,
         isSlider: p.type === 'u8' && SLIDER_FIELDS.has(p.key),
         help: p.type === 'u8' ? `${p.min}–${p.max}`
