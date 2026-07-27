@@ -236,6 +236,106 @@ void test_parser_passes_through_an_unknown_frame_type() {
                         (int)feedAll(p, kRcFrame, sizeof(kRcFrame)));
 }
 
+// --- LinkState ---------------------------------------------------------------
+
+void test_link_starts_down_with_nothing_counted() {
+  LinkState s;
+  TEST_ASSERT_FALSE(s.up());
+  TEST_ASSERT_EQUAL_UINT32(0, s.rate());
+  TEST_ASSERT_EQUAL_UINT32(0, s.errors());
+}
+
+void test_link_stays_down_while_no_frame_has_ever_arrived() {
+  // A board with nothing wired to the UART must read "down", not "timed out
+  // from an imaginary link". Silence before the first frame is not an error.
+  LinkState s;
+  for (uint32_t t = 0; t < 10000; t += 100) s.tick(t, 1000);
+  TEST_ASSERT_FALSE(s.up());
+  TEST_ASSERT_EQUAL_UINT32(0, s.errors());
+}
+
+void test_link_comes_up_on_the_first_frame() {
+  LinkState s;
+  s.onFrame(5000);
+  s.tick(5000, 1000);
+  TEST_ASSERT_TRUE(s.up());
+}
+
+void test_link_survives_exactly_the_timeout_and_drops_past_it() {
+  LinkState s;
+  s.onFrame(5000);
+  s.tick(6000, 1000);          // exactly at the timeout
+  TEST_ASSERT_TRUE(s.up());
+  s.tick(6001, 1000);          // one millisecond past
+  TEST_ASSERT_FALSE(s.up());
+}
+
+void test_link_loss_zeroes_the_rate_immediately() {
+  // Not at the end of the next window: "link 0, rate 150" would be a lie for
+  // up to a second, and the rate is the field a human reads to confirm loss.
+  LinkState s;
+  for (uint32_t t = 0; t < 100; ++t) s.onFrame(t * 10);
+  s.tick(1000, 1000);
+  TEST_ASSERT_TRUE(s.rate() > 0);
+  s.tick(3000, 1000);
+  TEST_ASSERT_FALSE(s.up());
+  TEST_ASSERT_EQUAL_UINT32(0, s.rate());
+}
+
+void test_link_recovers_when_frames_resume() {
+  LinkState s;
+  s.onFrame(1000);
+  s.tick(3000, 1000);
+  TEST_ASSERT_FALSE(s.up());
+  s.onFrame(3100);
+  s.tick(3100, 1000);
+  TEST_ASSERT_TRUE(s.up());
+}
+
+void test_rate_reports_frames_in_the_last_whole_second() {
+  LinkState s;
+  // 50 frames spread across the first second, starting at t=0.
+  for (uint32_t i = 0; i < 50; ++i) s.onFrame(i * 20);
+  TEST_ASSERT_EQUAL_UINT32(0, s.rate());   // window has not closed yet
+  s.tick(1000, 1000);
+  TEST_ASSERT_EQUAL_UINT32(50, s.rate());
+}
+
+void test_rate_resets_between_windows() {
+  LinkState s;
+  for (uint32_t i = 0; i < 50; ++i) s.onFrame(i * 20);
+  s.tick(1000, 1000);
+  TEST_ASSERT_EQUAL_UINT32(50, s.rate());
+  for (uint32_t i = 0; i < 10; ++i) s.onFrame(1000 + i * 20);
+  s.tick(2000, 1000);
+  TEST_ASSERT_EQUAL_UINT32(10, s.rate());   // not 60
+}
+
+void test_errors_accumulate_and_do_not_affect_link_state() {
+  // A rejected frame is normal on a torn stream. It must be countable without
+  // being mistaken for a lost link -- the timeout owns that decision alone.
+  LinkState s;
+  s.onFrame(1000);
+  s.onReject();
+  s.onReject();
+  s.tick(1000, 1000);
+  TEST_ASSERT_EQUAL_UINT32(2, s.errors());
+  TEST_ASSERT_TRUE(s.up());
+}
+
+void test_link_timeout_survives_the_millis_wraparound() {
+  // millis() wraps at ~49.7 days. Unsigned subtraction handles it; an
+  // "if (now < last)" guard would not, and this is the test that would catch
+  // someone adding one.
+  LinkState s;
+  const uint32_t nearMax = 0xFFFFFF00u;
+  s.onFrame(nearMax);
+  s.tick(nearMax + 500, 1000);     // wraps through zero
+  TEST_ASSERT_TRUE(s.up());
+  s.tick(nearMax + 1500, 1000);
+  TEST_ASSERT_FALSE(s.up());
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_crc8_of_empty_is_zero);
@@ -258,5 +358,15 @@ int main(int, char**) {
   RUN_TEST(test_parser_recovers_within_two_frames_of_a_tear);
   RUN_TEST(test_parser_is_not_desynchronised_by_a_sync_byte_inside_a_payload);
   RUN_TEST(test_parser_passes_through_an_unknown_frame_type);
+  RUN_TEST(test_link_starts_down_with_nothing_counted);
+  RUN_TEST(test_link_stays_down_while_no_frame_has_ever_arrived);
+  RUN_TEST(test_link_comes_up_on_the_first_frame);
+  RUN_TEST(test_link_survives_exactly_the_timeout_and_drops_past_it);
+  RUN_TEST(test_link_loss_zeroes_the_rate_immediately);
+  RUN_TEST(test_link_recovers_when_frames_resume);
+  RUN_TEST(test_rate_reports_frames_in_the_last_whole_second);
+  RUN_TEST(test_rate_resets_between_windows);
+  RUN_TEST(test_errors_accumulate_and_do_not_affect_link_state);
+  RUN_TEST(test_link_timeout_survives_the_millis_wraparound);
   return UNITY_END();
 }

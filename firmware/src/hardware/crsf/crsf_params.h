@@ -67,4 +67,34 @@ class FrameParser {
   uint8_t buf_[kMaxTypePayload] = {};
 };
 
+// Link health derived from the arrival of frames rather than from any field
+// in them. This is forced by the protocol: with failsafe type "cut" a
+// receiver simply STOPS sending when the link drops, so there is no bit on
+// the wire that says "lost" and a timeout is the only signal there is.
+//
+// Clock-injected on purpose -- every branch here is testable natively against
+// a fake nowMs, which is exactly the class of bug (timing, boot ordering) the
+// native suites are otherwise blind to.
+class LinkState {
+ public:
+  void onFrame(uint32_t nowMs);
+  void onReject() { ++err_; }
+  void tick(uint32_t nowMs, uint32_t timeoutMs);
+
+  bool     up() const     { return up_; }
+  uint32_t rate() const   { return rate_; }
+  uint32_t errors() const { return err_; }
+
+ private:
+  static const uint32_t kWindowMs = 1000;
+
+  uint32_t lastMs_   = 0;
+  uint32_t winStart_ = 0;
+  uint32_t winCount_ = 0;
+  uint32_t rate_     = 0;
+  uint32_t err_      = 0;
+  bool     seen_     = false;
+  bool     up_       = false;
+};
+
 }  // namespace crsf

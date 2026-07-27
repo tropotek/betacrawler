@@ -87,4 +87,41 @@ FrameParser::Result FrameParser::feed(uint8_t b) {
   return Result::None;
 }
 
+void LinkState::onFrame(uint32_t nowMs) {
+  if (!seen_) {
+    seen_ = true;
+    winStart_ = nowMs;
+  }
+  lastMs_ = nowMs;
+  up_ = true;
+  ++winCount_;
+}
+
+void LinkState::tick(uint32_t nowMs, uint32_t timeoutMs) {
+  // Nothing has ever arrived: stay down and count nothing. Silence on an
+  // unwired port is not a timeout.
+  if (!seen_) return;
+
+  // Unsigned subtraction, deliberately: it is correct across the millis()
+  // wraparound at ~49.7 days, where a "now < last" comparison would declare a
+  // permanent link loss.
+  if ((uint32_t)(nowMs - lastMs_) > timeoutMs) {
+    if (up_) {
+      up_ = false;
+      // Zero the rate with the link rather than at the end of the window --
+      // "link 0, rate 150" would be untrue for up to a second.
+      rate_ = 0;
+      winCount_ = 0;
+      winStart_ = nowMs;
+    }
+    return;
+  }
+
+  if ((uint32_t)(nowMs - winStart_) >= kWindowMs) {
+    rate_ = winCount_;
+    winCount_ = 0;
+    winStart_ = nowMs;
+  }
+}
+
 }  // namespace crsf
