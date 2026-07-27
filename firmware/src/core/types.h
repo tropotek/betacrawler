@@ -22,10 +22,11 @@ constexpr size_t   kMaxLineIn   = 256;   // inbound line budget
 // response rather than corrupting it -- but the fork still loses schema
 // data it needs. Costs 2KB of RAM in one buffer, g_out in main.cpp, on a
 // 128KB part.
-// Measured 3478 bytes with the 24-field board, and ~4310 once rx publishes 16
-// channels plus rfrate/pwr and two params carry a showIf -- so 4096 no longer
-// fits. Headroom at 6144 is ~1800 bytes. Costs 2KB of RAM in one buffer,
-// g_out in main.cpp, on a 128KB part measured at 17.4% used.
+// Measured 3739 bytes with the current 24-field board (which already includes
+// the protocol parameters and rfrate/pwr with showIf). Still to come: four
+// more channel fields (~368 B) and two more link fields (~130 B), projecting
+// to ~4240 bytes. So 4096 no longer fits. Headroom at 6144 is ~1900 bytes.
+// Costs 2KB of RAM in one buffer, g_out in main.cpp, on a 128KB part.
 constexpr size_t   kMaxLineOut  = 6144;
 constexpr uint16_t kProtoVersion = 1;
 
