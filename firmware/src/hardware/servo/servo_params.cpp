@@ -66,4 +66,14 @@ uint8_t sweepAngle(uint32_t phaseMs, uint32_t periodMs) {
   return (uint8_t)((uint32_t)core::breathingDuty(phaseMs, periodMs) * 180u / 100u);
 }
 
+uint32_t rephase(uint32_t elapsedMs, uint32_t oldPeriodMs, uint32_t newPeriodMs) {
+  if (oldPeriodMs == 0) return 0;
+  uint32_t phase = elapsedMs % oldPeriodMs;
+  // 64-bit intermediate: phase and newPeriodMs are both bounded by the
+  // servo.sweep_s range (30s), so 32 bits would in fact do -- but the bound
+  // lives in a ParamDef three files away, and this is not the place to depend
+  // on it.
+  return (uint32_t)((uint64_t)phase * newPeriodMs / oldPeriodMs);
+}
+
 }  // namespace servo

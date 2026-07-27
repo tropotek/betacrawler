@@ -33,4 +33,15 @@ uint16_t angleToUs(uint8_t angle, uint16_t minUs, uint16_t maxUs);
 // -- far below what any hobby servo resolves, and hold mode is unaffected.
 uint8_t sweepAngle(uint32_t phaseMs, uint32_t periodMs);
 
+// Re-anchors the sweep phase when the period changes mid-sweep. Returns the
+// elapsed value, measured against newPeriodMs, that sits the same FRACTION
+// through the cycle as elapsedMs did through oldPeriodMs.
+//
+// Without this the servo jumps: position is (elapsed % period), so changing
+// the modulus lands at an unrelated point in the travel. Measured on hardware
+// at 866us -- about 156 degrees -- going from sweep_s 4 to 10. Simply not
+// resetting the epoch avoids jumping to the START of the sweep, which is what
+// an earlier version of this claimed to be sufficient; it is not.
+uint32_t rephase(uint32_t elapsedMs, uint32_t oldPeriodMs, uint32_t newPeriodMs);
+
 }  // namespace servo

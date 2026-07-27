@@ -63,6 +63,52 @@ void test_sweep_degenerate_period_is_safe() {
   TEST_ASSERT_EQUAL_UINT8(0, sweepAngle(0, 1));
 }
 
+// --- rephase -----------------------------------------------------------------
+// Regression: found on hardware, not by the suite. Changing servo.sweep_s from
+// 4 to 10 mid-sweep moved the commanded pulse 1916 -> 1050us in a single step,
+// roughly 156 degrees of travel, because position is (elapsed % period) and
+// changing the modulus lands somewhere unrelated.
+
+void test_rephase_preserves_quarter_point() {
+  // 1000/4000 is a quarter through; a quarter of 10000 is 2500.
+  TEST_ASSERT_EQUAL_UINT32(2500, rephase(1000, 4000, 10000));
+}
+
+void test_rephase_preserves_half_point() {
+  TEST_ASSERT_EQUAL_UINT32(5000, rephase(2000, 4000, 10000));
+}
+
+void test_rephase_start_stays_at_start() {
+  TEST_ASSERT_EQUAL_UINT32(0, rephase(0, 4000, 10000));
+}
+
+void test_rephase_wraps_elapsed_past_one_cycle() {
+  // 5000 into a 4000 cycle is phase 1000, i.e. the same quarter point.
+  TEST_ASSERT_EQUAL_UINT32(rephase(1000, 4000, 10000), rephase(5000, 4000, 10000));
+}
+
+void test_rephase_shortening_the_period_also_works() {
+  // Three quarters through 10000 -> three quarters of 4000.
+  TEST_ASSERT_EQUAL_UINT32(3000, rephase(7500, 10000, 4000));
+}
+
+void test_rephase_same_period_is_identity_within_a_cycle() {
+  TEST_ASSERT_EQUAL_UINT32(1234, rephase(1234, 4000, 4000));
+}
+
+void test_rephase_degenerate_old_period_is_safe() {
+  // Must not divide by zero.
+  TEST_ASSERT_EQUAL_UINT32(0, rephase(1000, 0, 10000));
+}
+
+void test_rephase_keeps_the_commanded_angle_continuous() {
+  // The property that actually matters: the angle either side of a period
+  // change is the same, which is what stops the servo jumping.
+  const uint32_t elapsed = 1000, oldP = 4000, newP = 10000;
+  TEST_ASSERT_EQUAL_UINT8(sweepAngle(elapsed, oldP),
+                          sweepAngle(rephase(elapsed, oldP, newP), newP));
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -79,5 +125,13 @@ int main() {
   RUN_TEST(test_sweep_quarter_points_are_centre);
   RUN_TEST(test_sweep_phase_wraps_around_period);
   RUN_TEST(test_sweep_degenerate_period_is_safe);
+  RUN_TEST(test_rephase_preserves_quarter_point);
+  RUN_TEST(test_rephase_preserves_half_point);
+  RUN_TEST(test_rephase_start_stays_at_start);
+  RUN_TEST(test_rephase_wraps_elapsed_past_one_cycle);
+  RUN_TEST(test_rephase_shortening_the_period_also_works);
+  RUN_TEST(test_rephase_same_period_is_identity_within_a_cycle);
+  RUN_TEST(test_rephase_degenerate_old_period_is_safe);
+  RUN_TEST(test_rephase_keeps_the_commanded_angle_continuous);
   return UNITY_END();
 }

@@ -65,7 +65,8 @@ void ServoDriver::writeUs(uint16_t us) {
 }
 
 void ServoDriver::apply(const core::Params& p) {
-  const int32_t prevMode = mode_;
+  const int32_t  prevMode   = mode_;
+  const uint32_t prevPeriod = periodMs_;
   mode_     = p.num(globalParam(P_MODE));
   angle_    = (uint8_t)p.num(globalParam(P_ANGLE));
   minUs_    = (uint16_t)p.num(globalParam(P_MIN_US));
@@ -76,9 +77,16 @@ void ServoDriver::apply(const core::Params& p) {
   if (prevMode == MODE_OFF) attachOutput();
 
   if (mode_ == MODE_SWEEP) {
-    // Reset the phase only on ENTRY to sweep, so changing sweep_s mid-sweep
-    // adjusts the rate without jumping the servo.
-    if (prevMode != MODE_SWEEP) t0_ = millis();
+    const uint32_t now = millis();
+    if (prevMode != MODE_SWEEP) {
+      t0_ = now;                       // entering sweep: start from a known end
+    } else if (periodMs_ != prevPeriod) {
+      // Changing speed mid-sweep. Leaving t0_ alone is NOT enough: position is
+      // (elapsed % period), so a new modulus lands somewhere unrelated. Found
+      // on hardware -- sweep_s 4 -> 10 moved the pulse 1916 -> 1050us in one
+      // step. Re-anchor so the same fraction through the cycle is preserved.
+      t0_ = now - rephase(now - t0_, prevPeriod, periodMs_);
+    }
     return;   // tick() owns the compare register from here
   }
   writeUs(angleToUs(angle_, minUs_, maxUs_));   // MODE_HOLD
