@@ -8,10 +8,13 @@ namespace core {
 constexpr size_t   kMaxStrLen   = 31;    // longest Str param value, in chars
 constexpr size_t   kMaxLineIn   = 256;   // inbound line budget
 // Outbound line budget. The schema response is the largest thing sent: it
-// now carries the parameter table AND the telemetry descriptor, ~800 bytes
-// for this board. Headroom left for a board that enables several more
-// modules; test_schema_lists_all_params_and_fits_buffer fails on truncation.
-constexpr size_t   kMaxLineOut  = 2048;
+// carries the parameter table AND the telemetry descriptor. Measured at 1782
+// bytes for the board before the crsf module and ~3440 with it (24 telemetry
+// fields), so 2048 no longer fits. Headroom at 4096 is ~650 bytes, roughly
+// seven more telemetry fields; test_schema_lists_all_params_and_fits_buffer
+// is what fails first if a fork exceeds it. Costs 2KB of RAM in one buffer,
+// g_out in main.cpp, on a 128KB part.
+constexpr size_t   kMaxLineOut  = 4096;
 constexpr uint16_t kProtoVersion = 1;
 
 // An index into the registry's flattened parameter list. This used to be a

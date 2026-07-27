@@ -33,9 +33,12 @@ static const ParamDef kFakeParams[] = {
   {"fake.mode", ParamType::Enum, "Mode", nullptr, 0, 0,  kFakeModes, 4, 0, 2, nullptr, nullptr},
 };
 static const TlmDef kFakeTlm[] = {
-  {"f.up", "Uptime", "ms", TlmType::U32, 0, 0, nullptr, nullptr},
+  {"f.up",  "Uptime", "ms",    TlmType::U32, 0, 0, nullptr, nullptr, 0, 0},
+  // lo/hi declare a range for a renderer that draws a proportion. Nothing in
+  // core/ knows what is being proportioned -- it carries the numbers only.
+  {"f.pos", "Pos",    "\xC2\xB5s", TlmType::U32, 0, 0, "bar", nullptr, 988, 2012},
 };
-static const ModuleDesc kFakeDesc = {"fake", "Fake", kFakeParams, 2, kFakeTlm, 1};
+static const ModuleDesc kFakeDesc = {"fake", "Fake", kFakeParams, 2, kFakeTlm, 2};
 
 // A SECOND module, registered after the first, so its paramBase is 2 rather
 // than 0. That offset is the whole point of it: with only kFakeDesc present,
@@ -72,7 +75,7 @@ struct MockDriver : Module {
     lastNum = p.num(globalParam(local));
     if (localCount < FW_MAX_PARAMS) locals[localCount++] = local;
   }
-  void readTelemetry(TlmValue* out) override { out[0].u = 1204; }
+  void readTelemetry(TlmValue* out) override { out[0].u = 1204; out[1].u = 1500; }
 
   void reset() { calls = 0; lastLocal = 0xFF; lastNum = -1; localCount = 0; }
 };
@@ -394,6 +397,32 @@ void test_schema_uptime_carries_the_hms_format_hint() {
   TEST_ASSERT_NOT_NULL(strstr(out, "\"key\":\"up\",\"label\":\"Uptime\",\"fmt\":\"hms\""));
 }
 
+// A bar needs a range, and the range has to come from the descriptor. If it
+// came from app.js instead, that file would have to know what an RC channel
+// is -- exactly the feature knowledge the schema-driven design exists to keep
+// out of it.
+void test_schema_carries_a_declared_range_when_one_is_set() {
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);
+
+  Request q = parseRequest("{\"id\":21,\"op\":\"schema\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"fmt\":\"bar\",\"lo\":988,\"hi\":2012"));
+}
+
+// Omitted when unset, so adding the field costs no bytes on the eleven
+// existing descriptors and their golden JSON stays byte-identical.
+void test_schema_omits_the_range_when_lo_equals_hi() {
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);
+
+  Request q = parseRequest("{\"id\":22,\"op\":\"schema\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_NULL(strstr(out, "\"key\":\"f.up\",\"label\":\"Uptime\",\"unit\":\"ms\",\"lo\""));
+}
+
 // Free RAM is a heap figure in the tens of kilobytes; bytes is more precision
 // than a human reading a dashboard can use. Same wire value, declared for
 // display as kB with one decimal place.
@@ -690,6 +719,8 @@ int main() {
   RUN_TEST(test_schema_lists_all_params_and_fits_buffer);
   RUN_TEST(test_schema_carries_groups_and_the_telemetry_descriptor);
   RUN_TEST(test_schema_uptime_carries_the_hms_format_hint);
+  RUN_TEST(test_schema_carries_a_declared_range_when_one_is_set);
+  RUN_TEST(test_schema_omits_the_range_when_lo_equals_hi);
   RUN_TEST(test_schema_declares_free_ram_in_kilobytes);
   RUN_TEST(test_schema_golden_fixture_matches_firmware);
   RUN_TEST(test_dfu_op_arms_the_bootloader_exactly_once);

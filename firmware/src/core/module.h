@@ -29,6 +29,12 @@ struct TlmDef {
   uint8_t     dec;     // display decimal places
   const char* fmt;     // named renderer, nullptr for a plain number
   const char* group;   // nullptr -> inherit the owning module's label
+  // Declared range for renderers that draw a proportion rather than a number
+  // (`fmt` "bar"). Display-only, like div/dec: the wire still carries the
+  // device's own value, and a field that leaves these equal declares no range
+  // and is serialized without them. core/ attaches no meaning to the numbers.
+  int32_t     lo;
+  int32_t     hi;
 };
 
 union TlmValue {

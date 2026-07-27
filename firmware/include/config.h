@@ -27,7 +27,7 @@
 // rather than overflowing, and a native test covers that path.
 #define FW_MAX_MODULES  8
 #define FW_MAX_PARAMS   32
-#define FW_MAX_TLM      16
+#define FW_MAX_TLM      32
 
 // --- board ------------------------------------------------------------------
 // BOARD_HEADER is supplied by platformio.ini per environment, e.g.

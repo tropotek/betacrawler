@@ -131,6 +131,7 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
         if (d.div > 1) e["div"] = d.div;
         if (d.dec) e["dec"] = d.dec;
         if (d.fmt) e["fmt"] = d.fmt;
+        if (d.hi != d.lo) { e["lo"] = d.lo; e["hi"] = d.hi; }
         e["group"] = reg_.tlmGroup(i);
       }
       break;
