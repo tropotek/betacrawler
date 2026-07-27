@@ -3,6 +3,26 @@
 #include "core/led_curve.h"
 #include <Arduino.h>
 #include <HardwareSerial.h>
+#include "config.h"
+
+#ifndef CRSF_RX_PIN
+#error "FEATURE_CRSF is on but the board header defines no CRSF_RX_PIN"
+#endif
+#ifndef CRSF_TX_PIN
+#error "FEATURE_CRSF is on but the board header defines no CRSF_TX_PIN"
+#endif
+#ifndef CRSF_BAUD
+#error "FEATURE_CRSF is on but the board header defines no CRSF_BAUD"
+#endif
+
+// A CRSF frame lands every 6.6ms at 150fps; the Arduino default RX ring (64
+// bytes) holds ~2 frames, and a display refresh alone (measured 87ms) will
+// tear the stream long before that. 256 is the core's hard cap and the
+// requirement this module actually has -- see platformio.ini's build_flags
+// for why it lives there and not just in this comment.
+#if SERIAL_RX_BUFFER_SIZE < 256
+#error "FEATURE_CRSF needs -D SERIAL_RX_BUFFER_SIZE=256 on this env's build_flags"
+#endif
 
 namespace crsf {
 
@@ -45,6 +65,17 @@ void CrsfDriver::onParamChanged(uint8_t local, const core::Params& p) {
         for (uint8_t i = 0; i < kUsedChannels; ++i) us_[i] = 0;
         stats_ = LinkStats{};
         simT0_ = 0;
+        // link_ carries sim's "up, rate ~143" across the switch unless reset
+        // too -- a board with nothing wired to uart would otherwise keep
+        // publishing a fabricated link for up to timeoutMs after the switch.
+        // err_ survives inside reset(): a real rejection stays countable
+        // across a source change.
+        link_.reset();
+        // Any mid-frame state from the other source is now meaningless; a
+        // fresh parser avoids costing one extra rejection on the next
+        // uart -> sim -> uart round trip. FrameParser has no reset() of its
+        // own, so a fresh instance stands in for one.
+        parser_ = FrameParser{};
       }
       source_ = v;
       break;

@@ -15,6 +15,12 @@
 //            -Wswitch -Iinclude
 //            -D FW_TARGET_ARDUINO=1
 //            -D BOARD_HEADER='"boards/<your-board>.h"'
+//            ; Required if FEATURE_CRSF is 1 on this board: the Arduino
+//            ; default RX ring (64 bytes) tears on nearly every frame at
+//            ; CRSF's ~150fps. crsf_driver.cpp #errors at compile time if
+//            ; this is missing or too small -- see its SERIAL_RX_BUFFER_SIZE
+//            ; guard.
+//            -D SERIAL_RX_BUFFER_SIZE=256
 //        lib_deps     = bblanchon/ArduinoJson@^7.0.4
 //
 // Turning a feature on here is all that is needed to compile its module in:

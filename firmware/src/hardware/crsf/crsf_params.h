@@ -81,6 +81,14 @@ class LinkState {
   void onReject() { ++err_; }
   void tick(uint32_t nowMs, uint32_t timeoutMs);
 
+  // Returns the link to its just-booted state: down, rate 0, no frame ever
+  // seen. Deliberately does NOT touch err_ -- rejections stay countable
+  // across a source change, exactly as they do across a timeout. Used by
+  // crsf.source changing away from sim, so a board with nothing wired to
+  // uart cannot keep reporting sim's last "link up, rate ~143" after the
+  // switch.
+  void reset();
+
   bool     up() const     { return up_; }
   uint32_t rate() const   { return rate_; }
   uint32_t errors() const { return err_; }

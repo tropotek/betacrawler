@@ -1,4 +1,12 @@
 #pragma once
+// As of 2026-07-27: the UART receive path (drainUart/FrameParser fed from a
+// real HardwareSerial) has never received a byte from an actual CRSF
+// receiver -- no Crossfire receiver or 420000-baud adapter was on the bench
+// during development. The protocol layer (crc8, FrameParser, unpackChannels,
+// ticksToUs, decodeLinkStats, LinkState) is natively tested against known-good
+// frames and is not in question here. What HAS been exercised on a board is
+// the `sim` source -- synthetic channels, the telemetry frame, the schema,
+// and the bar rendering. Treat the uart path as built, not verified.
 #include "hardware/crsf/crsf_params.h"
 
 // Forward-declared rather than including <HardwareSerial.h>: this header is

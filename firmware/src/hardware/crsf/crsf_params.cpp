@@ -187,4 +187,14 @@ void LinkState::tick(uint32_t nowMs, uint32_t timeoutMs) {
   }
 }
 
+void LinkState::reset() {
+  seen_     = false;
+  up_       = false;
+  rate_     = 0;
+  winCount_ = 0;
+  lastMs_   = 0;
+  winStart_ = 0;
+  // err_ deliberately untouched.
+}
+
 }  // namespace crsf

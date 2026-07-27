@@ -323,6 +323,40 @@ void test_errors_accumulate_and_do_not_affect_link_state() {
   TEST_ASSERT_TRUE(s.up());
 }
 
+void test_reset_returns_the_link_to_down_with_rate_zero_but_keeps_errors() {
+  // The failure this guards: switching crsf.source away from sim must not
+  // leave sim's last "up, rate ~143" standing in for a board with nothing
+  // wired to uart. reset() has to zero everything up() and rate() derive
+  // from -- but err_ is deliberately exempt, because a real rejection stays
+  // countable across a source change, exactly as it does across a timeout.
+  LinkState s;
+  for (uint32_t i = 0; i < 50; ++i) s.onFrame(i * 20);
+  s.onReject();
+  s.onReject();
+  s.tick(1000, 1000);
+  TEST_ASSERT_TRUE(s.up());
+  TEST_ASSERT_TRUE(s.rate() > 0);
+  TEST_ASSERT_EQUAL_UINT32(2, s.errors());
+
+  s.reset();
+
+  TEST_ASSERT_FALSE(s.up());
+  TEST_ASSERT_EQUAL_UINT32(0, s.rate());
+  TEST_ASSERT_EQUAL_UINT32(2, s.errors());   // survives
+
+  // And the link is genuinely back to its just-booted state, not merely
+  // reporting down: silence after reset() must not be mistaken for a
+  // timeout (mirrors test_link_stays_down_while_no_frame_has_ever_arrived).
+  for (uint32_t t = 1000; t < 3000; t += 100) s.tick(t, 1000);
+  TEST_ASSERT_FALSE(s.up());
+  TEST_ASSERT_EQUAL_UINT32(2, s.errors());
+
+  // A frame after reset() still works exactly like a first-ever frame.
+  s.onFrame(3000);
+  s.tick(3000, 1000);
+  TEST_ASSERT_TRUE(s.up());
+}
+
 void test_link_timeout_survives_the_millis_wraparound() {
   // millis() wraps at ~49.7 days. Unsigned subtraction handles it; an
   // "if (now < last)" guard would not, and this is the test that would catch
@@ -367,6 +401,7 @@ int main(int, char**) {
   RUN_TEST(test_rate_reports_frames_in_the_last_whole_second);
   RUN_TEST(test_rate_resets_between_windows);
   RUN_TEST(test_errors_accumulate_and_do_not_affect_link_state);
+  RUN_TEST(test_reset_returns_the_link_to_down_with_rate_zero_but_keeps_errors);
   RUN_TEST(test_link_timeout_survives_the_millis_wraparound);
   return UNITY_END();
 }
