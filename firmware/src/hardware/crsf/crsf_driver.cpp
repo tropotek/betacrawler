@@ -13,6 +13,17 @@ namespace crsf {
 // stated in exactly one place -- the board header.
 static HardwareSerial g_uart(CRSF_RX_PIN, CRSF_TX_PIN);
 
+void CrsfDriver::attach(const core::Registry& reg, const core::Params& p) {
+  (void)reg;
+  // Params reflects whatever main.cpp's store.load() already restored from
+  // flash, so this is real persisted state, not the SRC_UART member default
+  // -- source_ would otherwise stay SRC_UART inside begin() even when
+  // crsf.source=sim was saved, because onParamChanged() only fires on a
+  // LATER change, never for the initial load.
+  source_    = p.num(globalParam(P_SOURCE));
+  timeoutMs_ = (uint32_t)p.num(globalParam(P_TIMEOUT_MS));
+}
+
 void CrsfDriver::begin() {
   uart_ = &g_uart;
   uart_->begin(CRSF_BAUD);
@@ -23,9 +34,21 @@ void CrsfDriver::begin() {
 
 void CrsfDriver::onParamChanged(uint8_t local, const core::Params& p) {
   switch (local) {
-    case P_SOURCE:
-      source_ = p.num(globalParam(P_SOURCE));
+    case P_SOURCE: {
+      const int32_t v = p.num(globalParam(P_SOURCE));
+      if (v != source_) {
+        // Switching away from sim must not leave the last synthetic frame
+        // on display forever -- ch1..12 would otherwise keep drawing bars
+        // from invented data even after the link genuinely times out, which
+        // is the exact fabricated-data failure crsf.source defaulting to
+        // uart exists to prevent, just reached by a different route.
+        for (uint8_t i = 0; i < kUsedChannels; ++i) us_[i] = 0;
+        stats_ = LinkStats{};
+        simT0_ = 0;
+      }
+      source_ = v;
       break;
+    }
     case P_TIMEOUT_MS:
       timeoutMs_ = (uint32_t)p.num(globalParam(P_TIMEOUT_MS));
       break;
@@ -100,8 +123,16 @@ void CrsfDriver::runSim(uint32_t nowMs) {
   stats_.snr     = 12;
   stats_.antenna = 0;
   // Report a healthy link at a plausible rate WITHOUT touching the error
-  // count: a real rejection stays countable even here.
-  link_.onFrame(nowMs);
+  // count: a real rejection stays countable even here. Throttled to ~7ms
+  // (~143Hz, a real Crossfire profile rate) rather than calling onFrame()
+  // once per tick(): tick() runs on every unthrottled loop() iteration --
+  // thousands of times a second on a 100MHz F411 -- so an unthrottled call
+  // would make LinkState::rate() report loop frequency, not a frame rate.
+  // Unsigned subtraction, matching LinkState's own wraparound convention.
+  if ((uint32_t)(nowMs - lastSimFrameMs_) >= 7) {
+    link_.onFrame(nowMs);
+    lastSimFrameMs_ = nowMs;
+  }
   link_.tick(nowMs, timeoutMs_);
 }
 

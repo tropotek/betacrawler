@@ -10,6 +10,13 @@ namespace crsf {
 // Requires CRSF_RX_PIN, CRSF_TX_PIN and CRSF_BAUD from the board header.
 class CrsfDriver : public core::Module {
  public:
+  // Seeds source_/timeoutMs_ from the loaded params. Runs on every module
+  // before any module's begin() (see core::Module::attach), which is what
+  // lets begin()'s "source == sim" check see a flash-persisted sim setting
+  // rather than only ever the SRC_UART member default: onParamChanged() is
+  // not called during the initial load, only on a later change. Access
+  // stays const -- this only mirrors state locally, it reconfigures nothing.
+  void attach(const core::Registry& reg, const core::Params& p) override;
   void begin() override;
   void tick(uint32_t nowMs) override;
   void onParamChanged(uint8_t local, const core::Params& p) override;
@@ -28,6 +35,11 @@ class CrsfDriver : public core::Module {
   int32_t         source_    = SRC_UART;
   uint32_t        timeoutMs_ = 1000;
   uint32_t        simT0_     = 0;
+  // Last simulated-frame timestamp, gating runSim()'s link_.onFrame() to a
+  // realistic ~150fps cadence (see runSim). Zero-initialized on purpose: a
+  // zero start makes the first sim frame fire immediately rather than
+  // waiting out the throttle window.
+  uint32_t        lastSimFrameMs_ = 0;
 };
 
 }  // namespace crsf
