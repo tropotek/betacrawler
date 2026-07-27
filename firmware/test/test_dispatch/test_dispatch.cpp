@@ -33,7 +33,7 @@ static const ParamDef kFakeParams[] = {
   {"fake.mode", ParamType::Enum, "Mode", nullptr, 0, 0,  kFakeModes, 4, 0, 2, nullptr, nullptr},
 };
 static const TlmDef kFakeTlm[] = {
-  {"f.up", "Uptime", "ms", TlmType::U32, 0, 0, nullptr},
+  {"f.up", "Uptime", "ms", TlmType::U32, 0, 0, nullptr, nullptr},
 };
 static const ModuleDesc kFakeDesc = {"fake", "Fake", kFakeParams, 2, kFakeTlm, 1};
 
@@ -381,6 +381,33 @@ void test_schema_carries_groups_and_the_telemetry_descriptor() {
   TEST_ASSERT_NOT_NULL(strstr(out, "\"dec\":2"));
 }
 
+// `fmt` is the third display hint, alongside div/dec: a named renderer the UI
+// looks up, for the values a divisor and a decimal count cannot express. The
+// wire still carries raw milliseconds -- only the rendering changes.
+void test_schema_uptime_carries_the_hms_format_hint() {
+  Params p(realReg); MockStore store;
+  Dispatcher d(realReg, p, store);
+
+  Request q = parseRequest("{\"id\":15,\"op\":\"schema\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"key\":\"up\",\"label\":\"Uptime\",\"fmt\":\"hms\""));
+}
+
+// Free RAM is a heap figure in the tens of kilobytes; bytes is more precision
+// than a human reading a dashboard can use. Same wire value, declared for
+// display as kB with one decimal place.
+void test_schema_declares_free_ram_in_kilobytes() {
+  Params p(realReg); MockStore store;
+  Dispatcher d(realReg, p, store);
+
+  Request q = parseRequest("{\"id\":16,\"op\":\"schema\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_NOT_NULL(
+      strstr(out, "\"key\":\"ram\",\"label\":\"Free RAM\",\"unit\":\"kB\",\"div\":1024,\"dec\":1"));
+}
+
 // Golden fixture: app/tests/test_device.py loads this exact file instead of
 // hand-typing a Python SCHEMA literal, so a firmware schema change (e.g. a
 // bumped `max`) that isn't reflected here becomes a visible Python failure
@@ -662,6 +689,8 @@ int main() {
   RUN_TEST(test_hello_lists_the_enabled_modules);
   RUN_TEST(test_schema_lists_all_params_and_fits_buffer);
   RUN_TEST(test_schema_carries_groups_and_the_telemetry_descriptor);
+  RUN_TEST(test_schema_uptime_carries_the_hms_format_hint);
+  RUN_TEST(test_schema_declares_free_ram_in_kilobytes);
   RUN_TEST(test_schema_golden_fixture_matches_firmware);
   RUN_TEST(test_dfu_op_arms_the_bootloader_exactly_once);
   RUN_TEST(test_dfu_op_answers_before_any_reset);

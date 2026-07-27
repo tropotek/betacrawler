@@ -10,8 +10,8 @@ using core::TlmType;
 // have no button, and FEATURE_BUTTON 0 should remove the field from the wire
 // and the UI, not report a stuck 0.
 static const TlmDef kTlm[T_COUNT] = {
-  // key    label     unit     type          div  dec  group
-  {"btn",  "Button",  nullptr, TlmType::U32,  0,   0,  nullptr},
+  // key    label     unit     type          div  dec  fmt      group
+  {"btn",  "Button",  nullptr, TlmType::U32,  0,   0,  nullptr, nullptr},
 };
 
 const core::ModuleDesc kDesc = {

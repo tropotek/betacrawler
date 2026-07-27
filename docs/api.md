@@ -61,15 +61,27 @@ controls and telemetry cards with **no change to the backend or the UI**.
   ],
   "tlm": [
     {"key": "temp", "label": "Temp", "unit": "°C", "dec": 1, "group": "System"},
-    {"key": "vdd", "label": "VDD", "unit": "V", "div": 1000, "dec": 2, "group": "System"}
+    {"key": "vdd", "label": "VDD", "unit": "V", "div": 1000, "dec": 2, "group": "System"},
+    {"key": "up", "label": "Uptime", "fmt": "hms", "group": "System"}
   ]
 }
 ```
 
 `group` is a UI heading; both pages render one section per group, in the order
-the groups first appear. On a telemetry field, `div` and `dec` are **display
-hints only** — the wire always carries the device's native units (`vdd` is
-integer millivolts) and only the browser divides and rounds.
+the groups first appear. On a telemetry field, `div`, `dec` and `fmt` are
+**display hints only** — the wire always carries the device's native units
+(`vdd` is integer millivolts, `up` is milliseconds) and only the browser
+divides, rounds and formats.
+
+`fmt` names a renderer for readings that a divisor and a decimal count cannot
+express. It is a **name, not a format string**: both renderers (the browser and
+the firmware's own panel) have to implement it, and a client that does not
+recognise the name falls back to the plain number. `div`/`dec` do not apply to
+a field that carries `fmt`.
+
+| `fmt` | Wire value          | Rendered   |
+|-------|---------------------|------------|
+| `hms` | milliseconds (u32)  | `01:01:01` — hours are not clamped to two digits |
 
 ### Discarding unsaved changes
 

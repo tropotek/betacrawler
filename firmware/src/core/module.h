@@ -10,10 +10,16 @@ class Registry;
 enum class TlmType { U32, I32, F32 };
 
 // Describes one telemetry field well enough that the UI can render it with no
-// per-field JavaScript. `div` and `dec` are display-only: the wire always
-// carries the device's native units (vdd in millivolts), and only the browser
-// divides and rounds. That keeps the value the firmware validates and the
-// value the wire carries identical.
+// per-field JavaScript. `div`, `dec` and `fmt` are display-only: the wire
+// always carries the device's native units (vdd in millivolts, uptime in
+// milliseconds), and only the browser divides, rounds and formats. That keeps
+// the value the firmware validates and the value the wire carries identical.
+//
+// `fmt` names a renderer for what a divisor and a decimal count cannot
+// express -- currently just "hms", uptime milliseconds as HH:MM:SS. It is a
+// name, not a format string: both renderers (this firmware's panel and the
+// browser) have to implement it, and a printf-style template would let the
+// firmware describe something the browser has no way to honour.
 struct TlmDef {
   const char* key;     // "vdd"
   const char* label;   // "VDD"
@@ -21,6 +27,7 @@ struct TlmDef {
   TlmType     type;
   uint16_t    div;     // display divisor; 0 or 1 means none
   uint8_t     dec;     // display decimal places
+  const char* fmt;     // named renderer, nullptr for a plain number
   const char* group;   // nullptr -> inherit the owning module's label
 };
 

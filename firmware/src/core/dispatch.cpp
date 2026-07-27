@@ -130,6 +130,7 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
         if (d.unit) e["unit"] = d.unit;
         if (d.div > 1) e["div"] = d.div;
         if (d.dec) e["dec"] = d.dec;
+        if (d.fmt) e["fmt"] = d.fmt;
         e["group"] = reg_.tlmGroup(i);
       }
       break;

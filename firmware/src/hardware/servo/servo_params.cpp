@@ -43,8 +43,8 @@ static const ParamDef kParams[] = {
 // Key is a bare word: dotted keys are the *parameter* convention, and vdd
 // sets the precedent that the unit lives in the TlmDef, not the key.
 static const TlmDef kTlm[T_COUNT] = {
-  // key    label    unit  type          div  dec  group
-  {"srv",  "Servo", "µs", TlmType::U32,  0,   0,  nullptr},
+  // key    label    unit  type          div  dec  fmt      group
+  {"srv",  "Servo", "µs", TlmType::U32,  0,   0,  nullptr, nullptr},
 };
 
 const core::ModuleDesc kDesc = {

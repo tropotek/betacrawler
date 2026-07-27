@@ -57,7 +57,7 @@ bool Registry::findParam(const char* key, ParamId* out) const {
 // returns a valid, inert descriptor rather than dereferencing a module that
 // may well have no telemetry at all, so a future out-of-range caller gets an
 // empty card instead of undefined behaviour.
-static const TlmDef kNoTlm = {"", "", nullptr, TlmType::U32, 0, 0, nullptr};
+static const TlmDef kNoTlm = {"", "", nullptr, TlmType::U32, 0, 0, nullptr, nullptr};
 
 const TlmDef& Registry::tlmDef(uint8_t global) const {
   for (uint8_t i = 0; i < modCount_; ++i) {

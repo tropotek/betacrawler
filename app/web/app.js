@@ -205,8 +205,28 @@ function groupItems(items, decorate = (x) => x) {
 // `div`/`dec` keep the wire honest: the device sends vdd as integer
 // millivolts (see docs/api.md) and only this display divides by 1000. What is
 // sent to, and validated by, the device is never touched.
+//
+// `fmt` is the same idea for readings a divisor and a decimal count cannot
+// express. The descriptor names a renderer rather than supplying a format
+// string, so the firmware can never ask for something this side has no way to
+// honour -- and an unknown name degrades to the plain number instead of
+// blanking the card. A formatter receives the RAW wire value; div/dec do not
+// apply to it, exactly as in the firmware's own formatUptime().
+const TLM_FORMATTERS = {
+  // Uptime milliseconds as HH:MM:SS. Hours are deliberately not clamped to two
+  // digits -- millis() wraps at ~49.7 days, and the real figure just before
+  // the wrap is more use than a truncated one. Mirrors core/tlm_format.cpp.
+  hms(ms) {
+    const s = Math.floor(ms / 1000);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+  },
+};
+
 function formatTelemetryValue(def, value) {
   if (typeof value !== 'number') return value;
+  const fmt = TLM_FORMATTERS[def.fmt];
+  if (fmt) return fmt(value);
   const scaled = def.div ? value / def.div : value;
   return scaled.toFixed(def.dec || 0);
 }

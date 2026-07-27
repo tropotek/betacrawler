@@ -18,7 +18,7 @@ static const ParamDef kAlphaParams[] = {
   {"alpha.hue",   ParamType::Enum, "Hue",    nullptr, 0, 0,   kColours, 2, 0, 1,  nullptr, "Colour"},
 };
 static const TlmDef kAlphaTlm[] = {
-  {"a.load", "Load", "%", TlmType::U32, 0, 0, nullptr},
+  {"a.load", "Load", "%", TlmType::U32, 0, 0, nullptr, nullptr},
 };
 static const ModuleDesc kAlphaDesc = {"alpha", "Alpha", kAlphaParams, 2, kAlphaTlm, 1};
 
@@ -26,8 +26,8 @@ static const ParamDef kBetaParams[] = {
   {"beta.name", ParamType::Str, "Name", nullptr, 0, 0, nullptr, 0, kMaxStrLen, 0, "bee", nullptr},
 };
 static const TlmDef kBetaTlm[] = {
-  {"b.temp", "Temp", "°C", TlmType::F32, 0, 1, nullptr},
-  {"b.mv",   "Volts", "V", TlmType::I32, 1000, 2, "Power"},
+  {"b.temp", "Temp", "°C", TlmType::F32, 0, 1, nullptr, nullptr},
+  {"b.mv",   "Volts", "V", TlmType::I32, 1000, 2, nullptr, "Power"},
 };
 static const ModuleDesc kBetaDesc = {"beta", "Beta", kBetaParams, 1, kBetaTlm, 2};
 

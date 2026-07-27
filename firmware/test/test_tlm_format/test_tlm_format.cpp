@@ -10,7 +10,7 @@ using namespace core;
 // same frame, which is exactly the drift this unit exists to prevent.
 
 static TlmDef def(const char* unit, TlmType t, uint16_t div, uint8_t dec) {
-  return TlmDef{"k", "L", unit, t, div, dec, nullptr};
+  return TlmDef{"k", "L", unit, t, div, dec, nullptr, nullptr};
 }
 
 // --- formatTlm --------------------------------------------------------------
@@ -29,6 +29,15 @@ void test_i32_divided_and_rounded_like_the_browser() {
   TlmValue v; v.i = 3298;
   formatTlm(def("V", TlmType::I32, 1000, 2), v, buf, sizeof(buf));
   TEST_ASSERT_EQUAL_STRING("3.30 V", buf);
+}
+
+// The panel renders `ram` through this path, so the kB descriptor has to come
+// out the same here as it does in the browser: 64896/1024 = 63.375 -> "63.4".
+void test_free_ram_renders_as_kilobytes_to_one_place() {
+  char buf[32];
+  TlmValue v; v.i = 64896;
+  formatTlm(def("kB", TlmType::I32, 1024, 1), v, buf, sizeof(buf));
+  TEST_ASSERT_EQUAL_STRING("63.4 kB", buf);
 }
 
 void test_f32_rounds_half_away_from_zero() {
@@ -139,6 +148,7 @@ int main() {
   UNITY_BEGIN();
   RUN_TEST(test_u32_plain_appends_unit);
   RUN_TEST(test_i32_divided_and_rounded_like_the_browser);
+  RUN_TEST(test_free_ram_renders_as_kilobytes_to_one_place);
   RUN_TEST(test_f32_rounds_half_away_from_zero);
   RUN_TEST(test_div_of_zero_means_no_division);
   RUN_TEST(test_div_of_one_matches_div_of_zero);
