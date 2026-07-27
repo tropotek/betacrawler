@@ -57,7 +57,12 @@ def device_responder(proto=1, caps=("dfu",), revert_src="flash"):
         elif op == "revert":
             # Mirrors the firmware: never an error, but says which source it
             # used so the host can tell "back to saved" from "fell back".
-            emit({"id": rid, "ok": True, "src": revert_src})
+            # revert_src=None simulates a firmware that omits `src` entirely
+            # (protocol skew), to exercise DeviceModel's fail-safe default.
+            resp = {"id": rid, "ok": True}
+            if revert_src is not None:
+                resp["src"] = revert_src
+            emit(resp)
         elif op == "dfu":
             # Mirrors the firmware: it answers BEFORE resetting, so an `ok`
             # here means "request accepted", not "already rebooted".
@@ -339,6 +344,20 @@ def test_revert_reports_the_source_and_refreshes_values():
 
 def test_revert_reports_the_defaults_fallback():
     fake = FakeSerial(responder=device_responder(revert_src="defaults"))
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    dev.connect("/dev/fake")
+    try:
+        assert dev.revert() == "defaults"
+    finally:
+        dev.disconnect()
+
+
+def test_revert_defaults_to_the_save_prompting_source_when_firmware_omits_src():
+    """Protocol skew: firmware that answers `ok:true` with no `src` at all
+    (older/future build we don't recognise) must not be read as "flash" --
+    that would silently hide unsaved state. "defaults" is the fail-safe
+    default: worst case a spurious save prompt, never lost data."""
+    fake = FakeSerial(responder=device_responder(revert_src=None))
     dev = DeviceModel(SerialLink(open_port=lambda p: fake))
     dev.connect("/dev/fake")
     try:

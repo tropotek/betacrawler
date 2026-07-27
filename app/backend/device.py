@@ -136,7 +136,10 @@ class DeviceModel:
         if not resp.get("ok"):
             raise DeviceError(resp.get("err", "err"), "revert failed")
         self._values = self._send("getall")["vals"]
-        return resp.get("src", "flash")
+        # A missing `src` means firmware we don't recognise (protocol skew).
+        # Default to "defaults", the direction that prompts a save, rather
+        # than "flash", which would silently hide unsaved state.
+        return resp.get("src", "defaults")
 
     def enter_dfu(self):
         """Ask the device to reboot into its ROM bootloader.
@@ -234,7 +237,9 @@ class DeviceModel:
         if not resp.get("ok"):
             raise DeviceError(resp.get("err", "err"), "revert failed")
         self._values = self._send("getall")["vals"]
-        return sent, recv, resp.get("src", "flash")
+        # See revert() above: an absent `src` defaults to "defaults" so a
+        # save prompt is the fail-safe direction, not silently-hidden state.
+        return sent, recv, resp.get("src", "defaults")
 
     # --- internals ----------------------------------------------------------
     @staticmethod
