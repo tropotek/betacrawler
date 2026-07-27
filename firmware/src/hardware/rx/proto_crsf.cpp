@@ -60,6 +60,8 @@ void decodeLinkStats(const uint8_t* payload, LinkStats* out) {
   out->rssiDbm = (int16_t)(-(int16_t)mag);
   out->lq      = payload[2];
   out->snr     = (int8_t)payload[3];
+  out->rfMode  = payload[5];
+  out->txPower = payload[6];
 }
 
 FrameParser::Result FrameParser::feed(uint8_t b) {

@@ -194,6 +194,11 @@ void RxDriver::runSim(uint32_t nowMs) {
   stats_.rssiDbm = -42;
   stats_.snr     = 12;
   stats_.antenna = 0;
+  // Index 2: 150Hz under Crossfire, 200Hz under ELRS -- the sim deliberately
+  // reads differently per protocol, so a broken selector is visible without a
+  // receiver.
+  stats_.rfMode  = 2;
+  stats_.txPower = 3;   // 100mW in CRSF's shared table
   // Report a healthy link at a plausible rate WITHOUT touching the error
   // count: a real rejection stays countable even here. Throttled to ~7ms
   // (~143Hz, a real Crossfire profile rate) rather than calling onFrame()
@@ -218,6 +223,10 @@ void RxDriver::readTelemetry(core::TlmValue* out) {
   out[T_RSSI].i = up ? stats_.rssiDbm : 0;
   out[T_RATE].u = link_.rate();
   out[T_ERR].u  = link_.errors();
+  // Zeroed with the link, like lq and rssi: a frozen "500 Hz, 250 mW" beside
+  // "Link 0" reads as a working link, which is worse than no reading at all.
+  out[T_RFRATE].u = up ? proto().rfRateHz(stats_.rfMode) : 0u;
+  out[T_PWR].u    = up ? txPowerMw(stats_.txPower) : 0u;
 }
 
 }  // namespace rx

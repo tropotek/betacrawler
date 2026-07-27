@@ -55,6 +55,11 @@ enum : uint8_t {
   T_RSSI,
   T_RATE,
   T_ERR,
+  // The rate the receiver ADVERTISES, beside `rate`, which is the rate this
+  // firmware MEASURES. A persistent gap between the two is frame loss, made
+  // visible with no new mechanism.
+  T_RFRATE,
+  T_PWR,
   T_COUNT,
 };
 

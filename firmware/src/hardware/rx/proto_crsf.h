@@ -48,6 +48,11 @@ struct LinkStats {
   int8_t  snr;       // uplink SNR, dB
   int16_t rssiDbm;   // uplink RSSI of the ACTIVE antenna, real (negative) dBm
   uint8_t antenna;   // which antenna the receiver reports as active
+  // Raw indices, decoded by the caller: the RF-mode numbering is the
+  // protocol's own, so this layer must not pretend to know which protocol
+  // sent the frame.
+  uint8_t rfMode;
+  uint8_t txPower;
 };
 
 // 10 payload bytes of a 0x14 frame.

@@ -91,6 +91,8 @@ static const TlmDef kTlm[T_COUNT] = {
   // UART buffer overflow becomes visible -- an overflow tears the stream
   // mid-frame, which fails the CRC, so it needs no separate detection.
   {"err",  "Errors", nullptr,   TlmType::U32, 0, 0, nullptr, kLinkGroup, 0, 0},
+  {"rfrate", "RF Rate",  "Hz", TlmType::U32, 0, 0, nullptr, kLinkGroup, 0, 0},
+  {"pwr",    "TX Power", "mW", TlmType::U32, 0, 0, nullptr, kLinkGroup, 0, 0},
 };
 
 const core::ModuleDesc kDesc = {

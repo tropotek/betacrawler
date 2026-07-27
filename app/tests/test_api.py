@@ -48,7 +48,7 @@ def test_connect_then_schema_and_params(client):
         "up", "clk", "ram", "temp", "vdd", "btn", "srv",
         "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8", "ch9",
         "ch10", "ch11", "ch12", "ch13", "ch14", "ch15", "ch16",
-        "link", "lq", "rssi", "rate", "err"}
+        "link", "lq", "rssi", "rate", "err", "rfrate", "pwr"}
     # Every item carries a group, so the form and the telemetry page can build
     # sections without inventing headings.
     assert all(p.get("group") for p in schema["params"])

@@ -451,6 +451,35 @@ void test_the_descriptor_declares_a_field_for_every_wire_channel() {
   TEST_ASSERT_EQUAL_INT32(2012, kDesc.tlm[T_CH1 + 15].hi);
 }
 
+// --- rfMode / txPower ---------------------------------------------------------
+
+void test_decode_link_stats_extracts_the_rf_mode_and_tx_power_indices() {
+  // kLinkFrame's comment records rf profile 2, power 3 -- bytes 5 and 6.
+  LinkStats s = {};
+  decodeLinkStats(kLinkFrame + 3, &s);
+  TEST_ASSERT_EQUAL_UINT8(2, s.rfMode);
+  TEST_ASSERT_EQUAL_UINT8(3, s.txPower);
+}
+
+void test_the_same_indices_decode_differently_per_protocol() {
+  // This is the assertion that justifies the selector doing real work: index
+  // 2 is 150Hz on Crossfire and 200Hz on ELRS, from one identical frame.
+  LinkStats s = {};
+  decodeLinkStats(kLinkFrame + 3, &s);
+  TEST_ASSERT_EQUAL_UINT16(150, kProtocols[PROTO_CROSSFIRE].rfRateHz(s.rfMode));
+  TEST_ASSERT_EQUAL_UINT16(200, kProtocols[PROTO_ELRS].rfRateHz(s.rfMode));
+  // TX power is CRSF's own table and does NOT vary by protocol.
+  TEST_ASSERT_EQUAL_UINT16(100, txPowerMw(s.txPower));
+}
+
+void test_the_two_new_link_fields_are_declared_last() {
+  TEST_ASSERT_EQUAL_UINT8(23, T_COUNT);
+  TEST_ASSERT_EQUAL_STRING("rfrate", kDesc.tlm[T_RFRATE].key);
+  TEST_ASSERT_EQUAL_STRING("Hz", kDesc.tlm[T_RFRATE].unit);
+  TEST_ASSERT_EQUAL_STRING("pwr", kDesc.tlm[T_PWR].key);
+  TEST_ASSERT_EQUAL_STRING("mW", kDesc.tlm[T_PWR].unit);
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_crc8_of_empty_is_zero);
@@ -494,5 +523,8 @@ int main(int, char**) {
   RUN_TEST(test_an_unknown_tx_power_index_reports_zero);
   RUN_TEST(test_sixteen_channel_fields_are_declared);
   RUN_TEST(test_the_descriptor_declares_a_field_for_every_wire_channel);
+  RUN_TEST(test_decode_link_stats_extracts_the_rf_mode_and_tx_power_indices);
+  RUN_TEST(test_the_same_indices_decode_differently_per_protocol);
+  RUN_TEST(test_the_two_new_link_fields_are_declared_last);
   return UNITY_END();
 }
