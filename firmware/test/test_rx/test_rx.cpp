@@ -372,12 +372,19 @@ void test_link_timeout_survives_the_millis_wraparound() {
 
 // --- protocol table ---------------------------------------------------------
 
-void test_the_table_is_indexed_by_the_protocol_enum() {
-  // The enum and the table order are the same fact; stating it twice is how
-  // they drift. This is the assertion that catches a row inserted above
-  // crossfire.
-  TEST_ASSERT_EQUAL_STRING("crossfire", kProtocols[PROTO_CROSSFIRE].name);
-  TEST_ASSERT_EQUAL_STRING("elrs", kProtocols[PROTO_ELRS].name);
+void test_the_table_row_and_the_enum_option_name_agree() {
+  // The enum, kProtocols and kProtocolNames are the same fact stated three
+  // times; stating it three times is how they drift. Comparing hand-written
+  // literals against kProtocols (the old form of this test) proves nothing
+  // about kProtocolNames -- the array the UI and the wire actually see. This
+  // version instead walks the real descriptor (kDesc.params[P_PROTOCOL],
+  // which is built from kProtocolNames) and checks every option name against
+  // kProtocols in enum order, so it is what actually pins all three
+  // statements -- and the descriptor the UI receives -- to each other.
+  const core::ParamDef& d = kDesc.params[P_PROTOCOL];
+  TEST_ASSERT_EQUAL_UINT8(kProtocolCount, d.optionCount);
+  for (uint8_t i = 0; i < kProtocolCount; ++i)
+    TEST_ASSERT_EQUAL_STRING(d.options[i], kProtocols[i].name);
 }
 
 void test_crossfire_publishes_twelve_channels_and_elrs_sixteen() {
@@ -513,7 +520,7 @@ int main(int, char**) {
   RUN_TEST(test_errors_accumulate_and_do_not_affect_link_state);
   RUN_TEST(test_reset_returns_the_link_to_down_with_rate_zero_but_keeps_errors);
   RUN_TEST(test_link_timeout_survives_the_millis_wraparound);
-  RUN_TEST(test_the_table_is_indexed_by_the_protocol_enum);
+  RUN_TEST(test_the_table_row_and_the_enum_option_name_agree);
   RUN_TEST(test_crossfire_publishes_twelve_channels_and_elrs_sixteen);
   RUN_TEST(test_each_protocol_points_at_its_own_timeout_param);
   RUN_TEST(test_crossfire_rf_rates_match_the_tbs_profiles);
