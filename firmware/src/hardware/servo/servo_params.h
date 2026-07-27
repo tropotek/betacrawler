@@ -1,0 +1,36 @@
+#pragma once
+#include "core/module.h"
+
+namespace servo {
+
+extern const core::ModuleDesc kDesc;
+
+// Parameter indices *within this module* -- what onParamChanged() receives.
+// Local, so nothing outside servo/ depends on where these landed in the
+// global table, and adding a module elsewhere can never shift them.
+enum : uint8_t { P_MODE = 0, P_ANGLE = 1, P_SWEEP_S = 2, P_MIN_US = 3, P_MAX_US = 4 };
+
+// Values of the servo.mode enum, in declaration order.
+enum : int32_t { MODE_OFF = 0, MODE_HOLD = 1, MODE_SWEEP = 2 };
+
+// Telemetry indices within this module's slice of the frame.
+enum : uint8_t { T_US = 0, T_COUNT = 1 };
+
+// --- pure math ---------------------------------------------------------------
+// Lives here, not in the driver, so `pio test -e native` covers it with no
+// board attached -- the same split that keeps core::breathingDuty testable
+// while the LED driver stays a thin shell.
+
+// Maps a 0-180 angle onto the calibrated pulse range. Multiplies before
+// dividing so integer truncation costs at most 1us, and divides by 180 -- a
+// constant -- never by (maxUs - minUs), so a degenerate min == max span is
+// safe rather than a division by zero. `angle` is clamped defensively even
+// though Params has already range-checked it.
+uint16_t angleToUs(uint8_t angle, uint16_t minUs, uint16_t maxUs);
+
+// Sweep position at `phaseMs` into a `periodMs` cycle. Returns 0-180.
+// Resolution is inherited from breathingDuty's 0-100 return, i.e. 1.8 degrees
+// -- far below what any hobby servo resolves, and hold mode is unaffected.
+uint8_t sweepAngle(uint32_t phaseMs, uint32_t periodMs);
+
+}  // namespace servo
