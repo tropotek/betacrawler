@@ -22,7 +22,11 @@ constexpr size_t   kMaxLineIn   = 256;   // inbound line budget
 // response rather than corrupting it -- but the fork still loses schema
 // data it needs. Costs 2KB of RAM in one buffer, g_out in main.cpp, on a
 // 128KB part.
-constexpr size_t   kMaxLineOut  = 4096;
+// Measured 3478 bytes with the 24-field board, and ~4310 once rx publishes 16
+// channels plus rfrate/pwr and two params carry a showIf -- so 4096 no longer
+// fits. Headroom at 6144 is ~1800 bytes. Costs 2KB of RAM in one buffer,
+// g_out in main.cpp, on a 128KB part measured at 17.4% used.
+constexpr size_t   kMaxLineOut  = 6144;
 constexpr uint16_t kProtoVersion = 1;
 
 // An index into the registry's flattened parameter list. This used to be a

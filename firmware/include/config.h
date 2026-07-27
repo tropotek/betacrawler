@@ -27,7 +27,10 @@
 // rather than overflowing, and a native test covers that path.
 #define FW_MAX_MODULES  8
 #define FW_MAX_PARAMS   32
-#define FW_MAX_TLM      32
+// 30 fields on this board once rx publishes 16 channels and 7 link readings.
+// 40 rather than a bare 32 leaves room for the ESC module next on the list;
+// TlmValue is 4 bytes, so the headroom costs ~40 bytes of RAM.
+#define FW_MAX_TLM      40
 
 // --- board ------------------------------------------------------------------
 // BOARD_HEADER is supplied by platformio.ini per environment, e.g.
