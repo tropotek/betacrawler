@@ -176,7 +176,12 @@ function clearStale() {
 
 // u8 fields rendered as a range slider instead of a plain number input. Purely
 // a presentation choice, so it is the one thing that stays keyed by name here.
-const SLIDER_FIELDS = new Set(['led.blink_hz']);
+// servo.angle earns it more than anything else here: a 0-180 sweep is a
+// physical position, and dragging to it beats typing a number. Note the
+// commit is on `change`, not `input`, so a drag sends one `set` on release
+// rather than a stream of them -- which is also why the firmware carries a
+// sweep mode instead of expecting the UI to scrub.
+const SLIDER_FIELDS = new Set(['led.blink_hz', 'servo.angle']);
 
 // Groups items that carry a `group` field into [{name, items}], preserving
 // the order each group first appears. Shared by the config form and the
