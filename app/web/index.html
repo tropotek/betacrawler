@@ -172,9 +172,19 @@
                a section here with no change to this file. -->
           <form id="form" x-data>
             <template x-for="group in $store.config.groups" :key="group.name">
-              <fieldset class="mb-4">
-                <legend class="h6 text-secondary border-bottom pb-1 mb-3" x-text="group.name"></legend>
-                <div class="row g-3">
+              <!-- A card per group: on the tertiary page background the card's
+                   own surface + border is what separates one module from the
+                   next. The heading is still the <legend>, so the fieldset
+                   keeps its accessible grouping -- and .card makes this a flex
+                   column, which is what lets a legend sit here as the header:
+                   flex items ignore the float/clear reboot puts on <legend>,
+                   so it simply stacks above .card-body.
+                   .card-body doubles as the .row -- its 1rem padding and the
+                   row's -0.5rem gutter margins land on an even 1rem inset once
+                   the columns' own padding is added back. -->
+              <fieldset class="card mb-3">
+                <legend class="card-header h6 text-secondary mb-0 py-2" x-text="group.name"></legend>
+                <div class="card-body row g-3">
                   <template x-for="field in group.items" :key="field.key">
                     <div class="col-md-6">
                       <label class="form-label" :for="'f-' + field.key"
