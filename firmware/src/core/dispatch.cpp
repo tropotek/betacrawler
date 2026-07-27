@@ -115,6 +115,14 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
         e["label"] = d.label;
         if (d.unit) e["unit"] = d.unit;
         e["group"] = reg_.paramGroup(i);
+        // Emitted only when declared -- see kMaxLineOut's comment in
+        // core/types.h; the schema response is the largest line this
+        // firmware sends and unconditional keys are not free.
+        if (d.showIfKey) {
+          JsonObject sif = e["showIf"].to<JsonObject>();
+          sif["key"] = d.showIfKey;
+          sif["val"] = d.showIfVal;
+        }
       }
 
       // Telemetry descriptor: the same "firmware is the source of truth" rule

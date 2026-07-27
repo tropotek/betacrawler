@@ -22,6 +22,18 @@ struct ParamDef {
   // under a heading other than its module's (e.g. tlm.rate lives in the
   // device module but reads better under "Telemetry").
   const char* group;
+  // Conditional visibility. A DISPLAY HINT ONLY, exactly like TlmDef's
+  // div/dec: showIfKey names another parameter and showIfVal the enum option
+  // name it must hold for this parameter to be drawn. The firmware and the
+  // backend still validate and accept a hidden parameter -- Terminal `set`
+  // and INI restore must keep working regardless of what the UI is drawing,
+  // so visibility must never become an access rule.
+  //
+  // The option NAME rather than its index, deliberately: the serializer then
+  // never has to resolve another parameter's option table, and app.js
+  // compares the string straight against its current form value.
+  const char* showIfKey;   // nullptr -> always visible
+  const char* showIfVal;
 };
 
 // Parameter values. Which parameters exist, and in what order, comes entirely

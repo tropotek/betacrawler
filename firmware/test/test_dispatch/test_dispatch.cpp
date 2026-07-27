@@ -54,8 +54,16 @@ static const ModuleDesc kFakeDesc = {"fake", "Fake", kFakeParams, 2, kFakeTlm, 2
 enum : uint8_t { P2_LEVEL = 0, P2_NAME = 1 };
 
 static const ParamDef kFake2Params[] = {
-  {"fake2.level", ParamType::U8,  "Level", nullptr, 0, 9, nullptr, 0, 0, 4, nullptr,  nullptr},
-  {"fake2.name",  ParamType::Str, "Name",  nullptr, 0, 0, nullptr, 0, 8, 0, "two",    nullptr},
+  // fake2.level carries a showIf so the serializer has something to emit.
+  // The condition names a param in the OTHER fake module on purpose: showIf
+  // is resolved by the browser against the whole form, not within a module.
+  // The condition is "fade" and fake.mode DEFAULTS to index 2, "blink" -- so
+  // fake2.level starts hidden. That is deliberate: the settable-while-hidden
+  // test below is only meaningful if the param is actually hidden.
+  {"fake2.level", ParamType::U8,  "Level", nullptr, 0, 9, nullptr, 0, 0, 4, nullptr, nullptr,
+   "fake.mode", "fade"},
+  {"fake2.name",  ParamType::Str, "Name",  nullptr, 0, 0, nullptr, 0, 8, 0, "two",   nullptr,
+   nullptr, nullptr},
 };
 static const ModuleDesc kFake2Desc = {"fake2", "Fake2", kFake2Params, 2, nullptr, 0};
 
@@ -437,6 +445,47 @@ void test_schema_declares_free_ram_in_kilobytes() {
       strstr(out, "\"key\":\"ram\",\"label\":\"Free RAM\",\"unit\":\"kB\",\"div\":1024,\"dec\":1"));
 }
 
+void test_schema_carries_show_if_when_a_param_declares_one() {
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);
+  Request q = parseRequest("{\"id\":1,\"op\":\"schema\"}");
+  size_t n = d.handle(q, out, sizeof(out));
+  TEST_ASSERT_TRUE(n > 0);
+  TEST_ASSERT_NOT_NULL(
+      strstr(out, "\"showIf\":{\"key\":\"fake.mode\",\"val\":\"fade\"}"));
+}
+
+void test_schema_omits_show_if_for_unconditional_params() {
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);
+  Request q = parseRequest("{\"id\":1,\"op\":\"schema\"}");
+  size_t n = d.handle(q, out, sizeof(out));
+  TEST_ASSERT_TRUE(n > 0);
+  // Exactly one param declares one, so exactly one object may appear. An
+  // unconditional param emitting "showIf":{"key":null,...} would cost bytes
+  // in the response that is already the largest thing this firmware sends.
+  const char* first = strstr(out, "\"showIf\"");
+  TEST_ASSERT_NOT_NULL(first);
+  TEST_ASSERT_NULL(strstr(first + 1, "\"showIf\""));
+}
+
+void test_a_show_if_hidden_param_is_still_settable() {
+  // showIf is a DISPLAY hint. fake.mode defaults to "blink" and the condition
+  // asks for "fade", so fake2.level is NOT currently drawn -- and must still
+  // be settable, because Terminal `set` and an INI restore both go through
+  // this path and neither knows what the browser is rendering. This test is
+  // the thing that stops showIf drifting into an access rule.
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);
+  Request q = parseRequest("{\"id\":2,\"op\":\"set\",\"key\":\"fake2.level\",\"val\":7}");
+  size_t n = d.handle(q, out, sizeof(out));
+  TEST_ASSERT_TRUE(n > 0);
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"ok\":true"));
+  ParamId level;
+  TEST_ASSERT_TRUE(fakeReg.findParam("fake2.level", &level));
+  TEST_ASSERT_EQUAL_INT32(7, p.num(level));
+}
+
 // Golden fixture: app/tests/test_device.py loads this exact file instead of
 // hand-typing a Python SCHEMA literal, so a firmware schema change (e.g. a
 // bumped `max`) that isn't reflected here becomes a visible Python failure
@@ -722,6 +771,9 @@ int main() {
   RUN_TEST(test_schema_carries_a_declared_range_when_one_is_set);
   RUN_TEST(test_schema_omits_the_range_when_lo_equals_hi);
   RUN_TEST(test_schema_declares_free_ram_in_kilobytes);
+  RUN_TEST(test_schema_carries_show_if_when_a_param_declares_one);
+  RUN_TEST(test_schema_omits_show_if_for_unconditional_params);
+  RUN_TEST(test_a_show_if_hidden_param_is_still_settable);
   RUN_TEST(test_schema_golden_fixture_matches_firmware);
   RUN_TEST(test_dfu_op_arms_the_bootloader_exactly_once);
   RUN_TEST(test_dfu_op_answers_before_any_reset);
