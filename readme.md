@@ -232,7 +232,9 @@ Each module is two files:
 
 That split is load-bearing rather than stylistic: it's why the native suite can assemble the real
 device's schema with no board attached. Name modules for the specific part (`st7789_240x240`, not
-`display`) — every variant gets its own.
+`display`) — every variant gets its own. A module that implements a wire *protocol* instead (like
+`crsf`) is named for the protocol, not any one part: it serves every device that speaks it, so
+naming it after one receiver would be misleading.
 
 Nothing else needs editing. The parameters a module declares flow automatically from firmware
 schema → backend → web form. **If adding a parameter requires touching `app.js`, something has
