@@ -638,6 +638,13 @@ async function termRun(text) {
       if (r.raw_sent) termAppend(`  >> ${r.raw_sent}`);
       if (r.raw_recv) termAppend(`  << ${r.raw_recv}`);
     }
+    if (r.ok) {
+      // Unlike restore/defaults/revert, this command line can be anything --
+      // `set rx.protocol elrs` changes which settings group and telemetry
+      // fields are live. Without this, the form stays on the old protocol's
+      // group and an edit there writes a parameter that has no effect.
+      await loadDevice();
+    }
   } catch (e) {
     termAppend(`ERROR: ${e.message}`);
   } finally {
