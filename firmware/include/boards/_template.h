@@ -90,3 +90,17 @@
 // the note in blackpill_f411ce.h.
 // #define SERVO_TIMER  TIM4
 // #define SERVO_PIN    PB6      // TIM4_CH1
+
+// Required when FEATURE_RX is 1: an RC receiver on its own hardware serial
+// port, decoded by the protocol-agnostic rx module.
+// #define FEATURE_RX      1
+// #define RX_RX_PIN       PA10       // receiver's serial TX -> this pin
+// #define RX_TX_PIN       PA9        // reserved for a telemetry uplink; unused
+// #define RX_BAUD         420000     // CRSF family: Crossfire and ExpressLRS both
+// Requires -D SERIAL_RX_BUFFER_SIZE=256 in this env's build_flags -- the
+// driver #errors without it. The Arduino default of 64 bytes holds ~2 frames
+// and a receiver would tear on nearly every one.
+//
+// Which protocol is parsed is a RUNTIME setting (rx.protocol), not a build
+// flag: one receiver is wired at a time, and swapping an ELRS receiver for a
+// Crossfire one should not need a reflash.

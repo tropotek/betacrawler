@@ -232,9 +232,15 @@ Each module is two files:
 
 That split is load-bearing rather than stylistic: it's why the native suite can assemble the real
 device's schema with no board attached. Name modules for the specific part (`st7789_240x240`, not
-`display`) — every variant gets its own. A module that implements a wire *protocol* instead (like
-`crsf`) is named for the protocol, not any one part: it serves every device that speaks it, so
-naming it after one receiver would be misleading.
+`display`) — every variant gets its own. A module that implements a wire *protocol* is different:
+it's named for its **role** (`rx`), not the protocol, with the protocol itself pushed down into a
+`proto_<name>.*` file inside the module (`proto_crsf.*`) — because more than one receiver can
+speak the same wire format (ExpressLRS speaks CRSF too), so one module drives either behind a
+runtime selector rather than a compile-time choice of driver. `rx` exposes 16 RC channels and two
+per-protocol settings groups (`Crossfire`, `ELRS`, each with its own link-timeout), and
+`rx.protocol` picks both which one parses the wire and which group the app shows — the display
+hint that hides the other group without `app.js` learning either protocol's name is documented in
+`CLAUDE.md`.
 
 Nothing else needs editing. The parameters a module declares flow automatically from firmware
 schema → backend → web form. **If adding a parameter requires touching `app.js`, something has

@@ -215,6 +215,11 @@ device's native units (`vdd` is integer millivolts) and only the browser divides
 test (`test_schema_golden_fixture_matches_firmware`) and loaded directly by the Python tests, so a
 firmware schema change that isn't reflected there fails a test instead of drifting silently.
 
+`showIf` on a parameter (`{"key":...,"val":...}`) is a **display hint only**, like `div`/`dec`:
+`app.js` hides a parameter whose condition is unmet, but the firmware and backend still validate
+and accept it, so Terminal `set` and INI restore keep working on a hidden parameter. It is what
+gives `rx.protocol` its per-protocol settings groups without `app.js` learning any protocol name.
+
 **Versioning**: firmware and app are separate projects with independent version numbers that are
 not meant to track each other. Firmware: `FW_VERSION` in `firmware/include/config.h`, reported
 over the wire by `hello` (`name`/`ver`/`built`/`mods`, alongside the unchanged `fw` display
