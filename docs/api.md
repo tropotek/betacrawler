@@ -78,6 +78,14 @@ divides, rounds and formats.
 (i.e. only when they differ). A UI that draws a bar for the reading uses them
 as the bar's ends; the wire value itself is never clamped to them.
 
+On a **parameter**, `showIf` (`{"key": "rx.protocol", "val": "crossfire"}`) is
+conditional visibility, emitted only when the parameter declares one. `key`
+names another parameter and `val` the enum **option name** (not its index)
+that parameter must currently hold for this one to be drawn. Like `div`/
+`dec`/`fmt`/`lo`/`hi` on a telemetry field, it is a **display hint only**: the
+device still validates and accepts a `set`/restore against a parameter that
+is currently hidden, so a client must never treat `showIf` as an access rule.
+
 `fmt` names a renderer, which may be textual (`hms`) or visual (`bar`). It is a
 **name, not a format string**: both renderers (the browser and the firmware's
 own panel) have to implement it, and a client that does not recognise the name
