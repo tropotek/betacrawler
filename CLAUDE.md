@@ -52,9 +52,29 @@ python3 app/tools/bundle_firmware.py --dry-run          # report only
 Also available as the **Build release firmware** task in `silkscreen.code-workspace`.
 
 **Web UI**: no build step. `app/web/{index.html,app.js}` are static files served directly by the
-FastAPI app above (`main.py` mounts `app/web/` at `/`). Manual verification only — no automated
-UI tests exist by design, and no browser/headless-render tooling is available in this environment
-(Firefox `--headless --screenshot` hangs on framebuffer mapping here).
+FastAPI app above (`main.py` mounts `app/web/` at `/`). No automated UI test suite exists, by
+design — but "therefore you cannot check the UI" does not follow, and believing it has cost real
+defects. **A working headless browser is installed at `~/.pwvenv`** (Playwright + Chromium):
+
+```
+~/.pwvenv/bin/python3 script.py    # sync_playwright(), p.chromium.launch(headless=True)
+```
+
+Use it to read rendered text, click through a page and collect console/`pageerror` events before
+claiming a UI change works. Two techniques worth knowing, both already used here:
+
+- Point it at the real server against the **real board** for the normal path.
+- For a state the hardware cannot be made to produce, build the app around a fake device instead
+  — `create_app(DeviceModel(SerialLink(open_port=lambda p: FakeSerial(responder=...))))` from
+  `app/tests/`, served with uvicorn on its own port. That is how the `revert` fallback branch was
+  verified: no real board reports it without a corrupt flash record.
+
+**Page convention:** every `<div id="page-*">` section ends with a `<p>&nbsp;</p>` spacer as its
+last child, so content doesn't sit flush against the bottom of the viewport. Add one when you add
+a page, and don't strip them as "empty markup" — all six pages have one deliberately.
+
+Do NOT try apt's `python3-playwright` (its client and the packaged Node driver speak incompatible
+protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer mapping here).
 
 **Environment facts already resolved — don't redo this work:**
 - udev/permissions are already correct system-wide (PlatformIO's own `0483` vendor rule covers
@@ -206,6 +226,12 @@ MCU ~1s. Values apply to RAM/hardware instantly on `set`; flash is written **onl
 `save`, guarded by a magic/version/**fingerprint**/CRC header that falls back to defaults on any
 mismatch.
 
+The fingerprint (`Registry::fingerprint()`) hashes every parameter's key, type and
+bounds, so changing the enabled module set — or a parameter's range — discards saved settings
+rather than reinterpreting stored bytes against a different table.
+`storage.cpp`'s `save()` does a read-back verification after the flush so a real flash failure has
+an actual way to report `{"err":"flash"}` instead of that path being dead code.
+
 **Three states, three buttons.** A device's parameters can be at factory defaults, at what is
 stored in flash, or at whatever RAM currently holds — and each Configuration button reaches
 exactly one:
@@ -218,15 +244,11 @@ exactly one:
 
 `revert` is the only op that reads the `Persistence::load()` seam back; before it, that seam was
 called solely by `main.cpp` at boot, so flash was write-only from the host's point of view. It
-falls back to defaults when nothing valid is stored and reports `src` so the host can say so —
-that field is also what decides the dirty flag, since the fallback case *does* leave something
-worth writing. Full detail: `_notes/spec-config-revert.md`.
-
-The fingerprint (`Registry::fingerprint()`) hashes every parameter's key, type and
-bounds, so changing the enabled module set — or a parameter's range — discards saved settings
-rather than reinterpreting stored bytes against a different table.
-`storage.cpp`'s `save()` does a read-back verification after the flush so a real flash failure has
-an actual way to report `{"err":"flash"}` instead of that path being dead code.
+falls back to defaults when nothing valid is stored (a fresh board, or a fingerprint mismatch as
+above) and reports `src` so the host can say which happened — that field also decides the dirty
+flag, since the fallback case *does* leave something worth writing. A revert notifies **every**
+module, so the same "exactly one call, module-local index" invariant applies across the whole
+table at once. Full detail: `_notes/spec-config-revert.md`.
 
 **In-app firmware updates (Project 2).** The app ships the firmware that matches it: built
 images live in `app/firmware/` with a `manifest.json`, produced by
