@@ -9,11 +9,12 @@ constexpr size_t   kMaxStrLen   = 31;    // longest Str param value, in chars
 constexpr size_t   kMaxLineIn   = 256;   // inbound line budget
 // Outbound line budget. The schema response is the largest thing sent: it
 // carries the parameter table AND the telemetry descriptor. Measured 4251
-// bytes with the final 30 telemetry fields, 23 of them RX (16 RC channels,
-// five link-health, rfrate/pwr), plus the protocol params with showIf. This
-// is the final measurement -- the RX module's field set is done growing, so
-// there is nothing further projected to arrive. So 4096 no longer fits.
-// Headroom at 6144 is ~1900 bytes.
+// bytes with the final 30 telemetry fields, 23 of them from the largest
+// single module (16 channels plus seven link readings), plus a pair of
+// mutually-exclusive settings groups selected with showIf. This is the final
+// measurement -- that module's field set is done growing, so there is
+// nothing further projected to arrive. So 4096 no longer fits. Headroom at
+// 6144 is ~1900 bytes.
 // test_schema_lists_all_params_and_fits_buffer guards THIS BOARD ONLY -- it
 // runs against realReg, the actual module set registerModules() builds here,
 // so it cannot fail for a fork with a different (larger) module set. A fork
@@ -22,8 +23,8 @@ constexpr size_t   kMaxLineIn   = 256;   // inbound line budget
 // here does it for them. Dispatcher::handle() refuses to emit a truncated
 // schema (see core/dispatch.cpp), so exceeding this ceiling drops the
 // response rather than corrupting it -- but the fork still loses schema
-// data it needs. Costs 2KB of RAM in one buffer, g_out in main.cpp, on a
-// 128KB part.
+// data it needs. Costs 6KB of RAM in one buffer, g_out in main.cpp
+// (char[kMaxLineOut] = 6144 bytes), on a 128KB part.
 constexpr size_t   kMaxLineOut  = 6144;
 constexpr uint16_t kProtoVersion = 1;
 
