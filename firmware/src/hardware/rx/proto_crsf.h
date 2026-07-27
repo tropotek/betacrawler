@@ -1,7 +1,15 @@
 #pragma once
-#include "core/module.h"
+// The CRSF wire protocol, split out of the module descriptor so a second
+// protocol's framing has somewhere to go that is not rx_params.cpp. Pure:
+// zero Arduino includes, because the native build compiles this.
+//
+// ExpressLRS speaks these same frames at this same baud -- an ELRS receiver
+// talks CRSF to the flight controller. This file is therefore shared by both
+// protocol table entries, not duplicated per protocol.
+#include <stdint.h>
+#include <stddef.h>
 
-namespace crsf {
+namespace rx {
 
 // --- wire constants ---------------------------------------------------------
 // From the TBS CRSF specification. A frame is
@@ -84,7 +92,7 @@ class LinkState {
   // Returns the link to its just-booted state: down, rate 0, no frame ever
   // seen. Deliberately does NOT touch err_ -- rejections stay countable
   // across a source change, exactly as they do across a timeout. Used by
-  // crsf.source changing away from sim, so a board with nothing wired to
+  // rx.source changing away from sim, so a board with nothing wired to
   // uart cannot keep reporting sim's last "link up, rate ~143" after the
   // switch.
   void reset();
@@ -105,26 +113,4 @@ class LinkState {
   bool     up_       = false;
 };
 
-// --- module descriptor ------------------------------------------------------
-
-extern const core::ModuleDesc kDesc;
-
-enum : uint8_t { P_SOURCE = 0, P_TIMEOUT_MS = 1 };
-
-// Order must match kSources in crsf_params.cpp -- the wire carries the name,
-// the driver receives the index.
-enum : int32_t { SRC_UART = 0, SRC_SIM = 1 };
-
-// Twelve channels then five link fields. T_CH1 + n indexes channel n+1, which
-// is what lets the driver fill the slice with one loop.
-enum : uint8_t {
-  T_CH1 = 0,
-  T_LINK = T_CH1 + kUsedChannels,
-  T_LQ,
-  T_RSSI,
-  T_RATE,
-  T_ERR,
-  T_COUNT,
-};
-
-}  // namespace crsf
+}  // namespace rx

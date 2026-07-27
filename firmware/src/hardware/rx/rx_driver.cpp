@@ -1,18 +1,18 @@
-#include "hardware/crsf/crsf_driver.h"
+#include "hardware/rx/rx_driver.h"
 #include "core/boot_log.h"
 #include "core/led_curve.h"
 #include <Arduino.h>
 #include <HardwareSerial.h>
 #include "config.h"
 
-#ifndef CRSF_RX_PIN
-#error "FEATURE_CRSF is on but the board header defines no CRSF_RX_PIN"
+#ifndef RX_RX_PIN
+#error "FEATURE_RX is on but the board header defines no RX_RX_PIN"
 #endif
-#ifndef CRSF_TX_PIN
-#error "FEATURE_CRSF is on but the board header defines no CRSF_TX_PIN"
+#ifndef RX_TX_PIN
+#error "FEATURE_RX is on but the board header defines no RX_TX_PIN"
 #endif
-#ifndef CRSF_BAUD
-#error "FEATURE_CRSF is on but the board header defines no CRSF_BAUD"
+#ifndef RX_BAUD
+#error "FEATURE_RX is on but the board header defines no RX_BAUD"
 #endif
 
 // A CRSF frame lands every 6.6ms at 150fps; the Arduino default RX ring (64
@@ -21,38 +21,38 @@
 // requirement this module actually has -- see platformio.ini's build_flags
 // for why it lives there and not just in this comment.
 #if SERIAL_RX_BUFFER_SIZE < 256
-#error "FEATURE_CRSF needs -D SERIAL_RX_BUFFER_SIZE=256 on this env's build_flags"
+#error "FEATURE_RX needs -D SERIAL_RX_BUFFER_SIZE=256 on this env's build_flags"
 #endif
 
-namespace crsf {
+namespace rx {
 
 // Constructed from the pins rather than using a global Serial1: the STM32
 // core only defines Serial1 when the VARIANT declares PIN_SERIAL1_RX/TX,
 // which is not something a board header controls. Constructing from pins lets
 // the core resolve the peripheral from its own pin map, and keeps the wiring
 // stated in exactly one place -- the board header.
-static HardwareSerial g_uart(CRSF_RX_PIN, CRSF_TX_PIN);
+static HardwareSerial g_uart(RX_RX_PIN, RX_TX_PIN);
 
-void CrsfDriver::attach(const core::Registry& reg, const core::Params& p) {
+void RxDriver::attach(const core::Registry& reg, const core::Params& p) {
   (void)reg;
   // Params reflects whatever main.cpp's store.load() already restored from
   // flash, so this is real persisted state, not the SRC_UART member default
   // -- source_ would otherwise stay SRC_UART inside begin() even when
-  // crsf.source=sim was saved, because onParamChanged() only fires on a
+  // rx.source=sim was saved, because onParamChanged() only fires on a
   // LATER change, never for the initial load.
   source_    = p.num(globalParam(P_SOURCE));
   timeoutMs_ = (uint32_t)p.num(globalParam(P_TIMEOUT_MS));
 }
 
-void CrsfDriver::begin() {
+void RxDriver::begin() {
   uart_ = &g_uart;
-  uart_->begin(CRSF_BAUD);
+  uart_->begin(RX_BAUD);
   for (uint8_t i = 0; i < kUsedChannels; ++i) us_[i] = 0;
   if (source_ == SRC_SIM)
-    core::bootLog().add("CRSF source=sim (synthetic channels, no receiver)");
+    core::bootLog().add("RX source=sim (synthetic channels, no receiver)");
 }
 
-void CrsfDriver::onParamChanged(uint8_t local, const core::Params& p) {
+void RxDriver::onParamChanged(uint8_t local, const core::Params& p) {
   switch (local) {
     case P_SOURCE: {
       const int32_t v = p.num(globalParam(P_SOURCE));
@@ -60,7 +60,7 @@ void CrsfDriver::onParamChanged(uint8_t local, const core::Params& p) {
         // Switching away from sim must not leave the last synthetic frame
         // on display forever -- ch1..12 would otherwise keep drawing bars
         // from invented data even after the link genuinely times out, which
-        // is the exact fabricated-data failure crsf.source defaulting to
+        // is the exact fabricated-data failure rx.source defaulting to
         // uart exists to prevent, just reached by a different route.
         for (uint8_t i = 0; i < kUsedChannels; ++i) us_[i] = 0;
         stats_ = LinkStats{};
@@ -88,7 +88,7 @@ void CrsfDriver::onParamChanged(uint8_t local, const core::Params& p) {
   }
 }
 
-void CrsfDriver::tick(uint32_t nowMs) {
+void RxDriver::tick(uint32_t nowMs) {
   if (source_ == SRC_SIM) {
     runSim(nowMs);
     return;
@@ -97,7 +97,7 @@ void CrsfDriver::tick(uint32_t nowMs) {
   link_.tick(nowMs, timeoutMs_);
 }
 
-void CrsfDriver::drainUart(uint32_t nowMs) {
+void RxDriver::drainUart(uint32_t nowMs) {
   if (!uart_) return;
   // EVERY available byte, not a fixed number per loop: at 150 frames/s the
   // 256-byte RX ring holds ~66ms of stream and a display refresh has been
@@ -124,7 +124,7 @@ void CrsfDriver::drainUart(uint32_t nowMs) {
   }
 }
 
-void CrsfDriver::applyRcFrame(uint32_t nowMs) {
+void RxDriver::applyRcFrame(uint32_t nowMs) {
   uint16_t ticks[kWireChannels] = {};
   unpackChannels(parser_.payload(), ticks);
   // Only the first twelve: Crossfire transmits 12 and the rest are padding.
@@ -132,11 +132,11 @@ void CrsfDriver::applyRcFrame(uint32_t nowMs) {
   link_.onFrame(nowMs);
 }
 
-void CrsfDriver::runSim(uint32_t nowMs) {
+void RxDriver::runSim(uint32_t nowMs) {
   // Synthetic channels so the telemetry frame, the schema, the grouping and
   // the bar rendering can all be exercised with nothing but a USB cable.
   // These values are FABRICATED and the module says so in the boot log; the
-  // standing safeguard is that crsf.source is itself a visible parameter.
+  // standing safeguard is that rx.source is itself a visible parameter.
   if (simT0_ == 0) simT0_ = nowMs;
   const uint32_t t = nowMs - simT0_;
 
@@ -167,7 +167,7 @@ void CrsfDriver::runSim(uint32_t nowMs) {
   link_.tick(nowMs, timeoutMs_);
 }
 
-void CrsfDriver::readTelemetry(core::TlmValue* out) {
+void RxDriver::readTelemetry(core::TlmValue* out) {
   for (uint8_t i = 0; i < kUsedChannels; ++i) out[T_CH1 + i].u = us_[i];
   const bool up = link_.up();
   out[T_LINK].u = up ? 1u : 0u;
@@ -179,4 +179,4 @@ void CrsfDriver::readTelemetry(core::TlmValue* out) {
   out[T_ERR].u  = link_.errors();
 }
 
-}  // namespace crsf
+}  // namespace rx

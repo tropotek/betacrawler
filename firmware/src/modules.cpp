@@ -63,14 +63,14 @@
 #  endif
 #endif
 
-#if FEATURE_CRSF
-#  include "hardware/crsf/crsf_params.h"
+#if FEATURE_RX
+#  include "hardware/rx/rx_params.h"
 #  if FW_TARGET_ARDUINO
-#    include "hardware/crsf/crsf_driver.h"
-     static crsf::CrsfDriver g_crsf;
-#    define CRSF_DRV (&g_crsf)
+#    include "hardware/rx/rx_driver.h"
+     static rx::RxDriver g_rx;
+#    define RX_DRV (&g_rx)
 #  else
-#    define CRSF_DRV nullptr
+#    define RX_DRV nullptr
 #  endif
 #endif
 
@@ -102,8 +102,8 @@ void registerModules(Registry& reg) {
 #if FEATURE_SERVO
   reg.add(servo::kDesc, SERVO_DRV);
 #endif
-#if FEATURE_CRSF
-  reg.add(crsf::kDesc, CRSF_DRV);
+#if FEATURE_RX
+  reg.add(rx::kDesc, RX_DRV);
 #endif
   // Last on purpose: the display observes the modules above it, and
   // Registry::begin() attaches every module before beginning any, so

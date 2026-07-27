@@ -41,7 +41,7 @@ def test_connect_then_schema_and_params(client):
         "disp.mode", "disp.page", "disp.rate",
         "servo.mode", "servo.angle", "servo.sweep_s",
         "servo.min_us", "servo.max_us",
-        "crsf.source", "crsf.timeout_ms"}
+        "rx.source", "rx.timeout_ms"}
     # Telemetry descriptor rides along in the same response, so the UI renders
     # its cards from the device rather than a hardcoded field list.
     assert {t["key"] for t in schema["tlm"]} == {

@@ -15,9 +15,9 @@
 //            -Wswitch -Iinclude
 //            -D FW_TARGET_ARDUINO=1
 //            -D BOARD_HEADER='"boards/<your-board>.h"'
-//            ; Required if FEATURE_CRSF is 1 on this board: the Arduino
+//            ; Required if FEATURE_RX is 1 on this board: the Arduino
 //            ; default RX ring (64 bytes) tears on nearly every frame at
-//            ; CRSF's ~150fps. crsf_driver.cpp #errors at compile time if
+//            ; CRSF's ~150fps. rx_driver.cpp #errors at compile time if
 //            ; this is missing or too small -- see its SERIAL_RX_BUFFER_SIZE
 //            ; guard.
 //            -D SERIAL_RX_BUFFER_SIZE=256

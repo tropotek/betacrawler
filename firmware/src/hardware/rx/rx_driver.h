@@ -7,16 +7,16 @@
 // frames and is not in question here. What HAS been exercised on a board is
 // the `sim` source -- synthetic channels, the telemetry frame, the schema,
 // and the bar rendering. Treat the uart path as built, not verified.
-#include "hardware/crsf/crsf_params.h"
+#include "hardware/rx/rx_params.h"
 
 // Forward-declared rather than including <HardwareSerial.h>: this header is
 // pulled in by modules.cpp, and the Arduino serial header is heavy.
 class HardwareSerial;
 
-namespace crsf {
+namespace rx {
 
-// Requires CRSF_RX_PIN, CRSF_TX_PIN and CRSF_BAUD from the board header.
-class CrsfDriver : public core::Module {
+// Requires RX_RX_PIN, RX_TX_PIN and RX_BAUD from the board header.
+class RxDriver : public core::Module {
  public:
   // Seeds source_/timeoutMs_ from the loaded params. Runs on every module
   // before any module's begin() (see core::Module::attach), which is what
@@ -50,4 +50,4 @@ class CrsfDriver : public core::Module {
   uint32_t        lastSimFrameMs_ = 0;
 };
 
-}  // namespace crsf
+}  // namespace rx

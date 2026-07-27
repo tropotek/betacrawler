@@ -1,8 +1,8 @@
 #include <unity.h>
 #include <string.h>
-#include "hardware/crsf/crsf_params.h"
+#include "hardware/rx/proto_crsf.h"
 
-using namespace crsf;
+using namespace rx;
 
 // A valid RC_CHANNELS_PACKED frame. len 0x18 = 24 = type + 22 payload + crc.
 // Channels: 172, 992, 1811, 1000, 500, 1500, 200, 1800, then four at 992 and
