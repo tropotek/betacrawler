@@ -64,3 +64,6 @@
 #ifndef FEATURE_DFU
 #define FEATURE_DFU 0
 #endif
+#ifndef FEATURE_CRSF
+#define FEATURE_CRSF 0
+#endif

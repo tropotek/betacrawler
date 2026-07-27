@@ -17,6 +17,7 @@
 #define FEATURE_BUTTON  1
 #define FEATURE_ST7789_240X240 1
 #define FEATURE_SERVO   1
+#define FEATURE_CRSF    1
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
 // bootloader in ROM, so this costs a magic word and a reset -- no bootloader
 // to flash, and nothing to erase it. Turning it off only removes the app's
@@ -80,3 +81,27 @@
 // configurator disconnect rather than as anything obviously electrical.
 #define SERVO_TIMER     TIM4
 #define SERVO_PIN       PB6
+
+// CRSF receiver on USART1. PA9/PA10 are the only unclaimed peripheral pins on
+// this board and nothing else here references them: the LED is PC13, the
+// button PA0, the panel PA5/PA7 + PB0/PB1, the servo PB6, USB PA11/PA12 and
+// SWD PA13/PA14. USART1's ALTERNATE mapping is PB6/PB7, which would collide
+// with the servo output -- so this mapping, not that one.
+//
+// The driver constructs its own HardwareSerial from these pins rather than
+// using a global Serial1, which the STM32 core only defines when the variant
+// declares PIN_SERIAL1_RX/TX.
+#define CRSF_RX_PIN     PA10
+// Reserved, unused in phase 1. Sending telemetry back to the handset (battery,
+// GPS, flight mode) is the natural next use of this peripheral, and claiming
+// the pin now is cheaper than discovering it taken later.
+#define CRSF_TX_PIN     PA9
+// The TBS specification gives 416666 for the dual-wire vehicle-side link;
+// Betaflight and everyone else use 420000. They are 0.8% apart, well inside
+// UART tolerance, and either talks to either. A board pairing with a 400k
+// half-duplex link changes this number here rather than in any source file.
+#define CRSF_BAUD       420000
+//
+// Wiring: receiver 5V and GND from the board's 5V pin, receiver CRSF TX ->
+// PA10. The Nano RX's pads default to PWM output -- one must be reassigned to
+// CRSF in the TBS menu before anything appears on the wire at all.

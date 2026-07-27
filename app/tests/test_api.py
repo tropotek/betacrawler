@@ -40,11 +40,14 @@ def test_connect_then_schema_and_params(client):
         "led.mode", "led.blink_hz", "device.name", "tlm.rate",
         "disp.mode", "disp.page", "disp.rate",
         "servo.mode", "servo.angle", "servo.sweep_s",
-        "servo.min_us", "servo.max_us"}
+        "servo.min_us", "servo.max_us",
+        "crsf.source", "crsf.timeout_ms"}
     # Telemetry descriptor rides along in the same response, so the UI renders
     # its cards from the device rather than a hardcoded field list.
     assert {t["key"] for t in schema["tlm"]} == {
-        "up", "clk", "ram", "temp", "vdd", "btn", "srv"}
+        "up", "clk", "ram", "temp", "vdd", "btn", "srv",
+        "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8", "ch9",
+        "ch10", "ch11", "ch12", "link", "lq", "rssi", "rate", "err"}
     # Every item carries a group, so the form and the telemetry page can build
     # sections without inventing headings.
     assert all(p.get("group") for p in schema["params"])

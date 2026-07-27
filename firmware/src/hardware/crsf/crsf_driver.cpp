@@ -1,0 +1,120 @@
+#include "hardware/crsf/crsf_driver.h"
+#include "core/boot_log.h"
+#include "core/led_curve.h"
+#include <Arduino.h>
+#include <HardwareSerial.h>
+
+namespace crsf {
+
+// Constructed from the pins rather than using a global Serial1: the STM32
+// core only defines Serial1 when the VARIANT declares PIN_SERIAL1_RX/TX,
+// which is not something a board header controls. Constructing from pins lets
+// the core resolve the peripheral from its own pin map, and keeps the wiring
+// stated in exactly one place -- the board header.
+static HardwareSerial g_uart(CRSF_RX_PIN, CRSF_TX_PIN);
+
+void CrsfDriver::begin() {
+  uart_ = &g_uart;
+  uart_->begin(CRSF_BAUD);
+  for (uint8_t i = 0; i < kUsedChannels; ++i) us_[i] = 0;
+  if (source_ == SRC_SIM)
+    core::bootLog().add("CRSF source=sim (synthetic channels, no receiver)");
+}
+
+void CrsfDriver::onParamChanged(uint8_t local, const core::Params& p) {
+  switch (local) {
+    case P_SOURCE:
+      source_ = p.num(globalParam(P_SOURCE));
+      break;
+    case P_TIMEOUT_MS:
+      timeoutMs_ = (uint32_t)p.num(globalParam(P_TIMEOUT_MS));
+      break;
+    default:
+      break;
+  }
+}
+
+void CrsfDriver::tick(uint32_t nowMs) {
+  if (source_ == SRC_SIM) {
+    runSim(nowMs);
+    return;
+  }
+  drainUart(nowMs);
+  link_.tick(nowMs, timeoutMs_);
+}
+
+void CrsfDriver::drainUart(uint32_t nowMs) {
+  if (!uart_) return;
+  // EVERY available byte, not a fixed number per loop: at 150 frames/s the
+  // 256-byte RX ring holds ~66ms of stream and a display refresh has been
+  // measured at 87ms. Draining a fixed quota would guarantee the buffer wins.
+  while (uart_->available() > 0) {
+    const uint8_t b = (uint8_t)uart_->read();
+    switch (parser_.feed(b)) {
+      case FrameParser::Result::Frame:
+        if (parser_.type() == kTypeRcChannels &&
+            parser_.payloadLen() == kRcPayloadLen) {
+          applyRcFrame(nowMs);
+        } else if (parser_.type() == kTypeLinkStats &&
+                   parser_.payloadLen() == kLinkPayloadLen) {
+          decodeLinkStats(parser_.payload(), &stats_);
+        }
+        // Any other type is a well-formed frame this module does not consume.
+        break;
+      case FrameParser::Result::Rejected:
+        link_.onReject();
+        break;
+      case FrameParser::Result::None:
+        break;
+    }
+  }
+}
+
+void CrsfDriver::applyRcFrame(uint32_t nowMs) {
+  uint16_t ticks[kWireChannels] = {};
+  unpackChannels(parser_.payload(), ticks);
+  // Only the first twelve: Crossfire transmits 12 and the rest are padding.
+  for (uint8_t i = 0; i < kUsedChannels; ++i) us_[i] = ticksToUs(ticks[i]);
+  link_.onFrame(nowMs);
+}
+
+void CrsfDriver::runSim(uint32_t nowMs) {
+  // Synthetic channels so the telemetry frame, the schema, the grouping and
+  // the bar rendering can all be exercised with nothing but a USB cable.
+  // These values are FABRICATED and the module says so in the boot log; the
+  // standing safeguard is that crsf.source is itself a visible parameter.
+  if (simT0_ == 0) simT0_ = nowMs;
+  const uint32_t t = nowMs - simT0_;
+
+  // breathingDuty is the same symmetric triangle the servo sweep uses: 0..100
+  // over the period. Reusing it keeps one curve in the firmware, tested once.
+  const uint16_t span = 2012 - 988;
+  us_[0] = (uint16_t)(988 + (uint32_t)core::breathingDuty(t % 4000, 4000) * span / 100);
+  us_[1] = (uint16_t)(988 + (uint32_t)core::breathingDuty(t % 8000, 8000) * span / 100);
+  us_[2] = ((t / 2000) % 2) ? 2012 : 988;          // switch-like input
+  for (uint8_t i = 3; i < kUsedChannels; ++i)
+    us_[i] = (uint16_t)(988 + span * (i - 2) / (kUsedChannels - 2));
+
+  stats_.lq      = 100;
+  stats_.rssiDbm = -42;
+  stats_.snr     = 12;
+  stats_.antenna = 0;
+  // Report a healthy link at a plausible rate WITHOUT touching the error
+  // count: a real rejection stays countable even here.
+  link_.onFrame(nowMs);
+  link_.tick(nowMs, timeoutMs_);
+}
+
+void CrsfDriver::readTelemetry(core::TlmValue* out) {
+  for (uint8_t i = 0; i < kUsedChannels; ++i) out[T_CH1 + i].u = us_[i];
+  const bool up = link_.up();
+  out[T_LINK].u = up ? 1u : 0u;
+  // Stale link statistics are worse than none: a frozen "LQ 100" beside
+  // "Link 0" reads as a working link. They zero with the link instead.
+  out[T_LQ].u   = up ? stats_.lq : 0u;
+  out[T_RSSI].i = up ? stats_.rssiDbm : 0;
+  out[T_RATE].u = link_.rate();
+  out[T_ERR].u  = link_.errors();
+}
+
+}  // namespace crsf
