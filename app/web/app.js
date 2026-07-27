@@ -276,21 +276,42 @@ document.addEventListener('alpine:init', () => {
   Alpine.store('telemetry', {
     schema: [],
     data: {},
+    // The formatted value in `data` is a STRING -- "1500", "01:23:45". A bar
+    // needs the number, so both are kept rather than reparsing text that a
+    // formatter may have made unparseable.
+    raw: {},
 
     get groups() { return groupItems(this.schema); },
 
     load(tlmSchema) {
       this.schema = tlmSchema;
       this.data = {};
+      this.raw = {};
     },
 
-    render(raw) {
+    render(rawFrame) {
       noteTelemetry();
       for (const def of this.schema) {
-        if (raw[def.key] !== undefined) {
-          this.data[def.key] = formatTelemetryValue(def, raw[def.key]);
+        if (rawFrame[def.key] !== undefined) {
+          this.raw[def.key] = rawFrame[def.key];
+          this.data[def.key] = formatTelemetryValue(def, rawFrame[def.key]);
         }
       }
+    },
+
+    // Position of a reading within its declared lo..hi range, as a
+    // percentage. The range comes from the descriptor, never from here: this
+    // file must not know that an RC channel spans 988..2012, which is the
+    // whole reason lo/hi exist on TlmDef.
+    //
+    // Clamped, because the firmware deliberately does not clamp -- a receiver
+    // may legally send outside its nominal range and the number stays true
+    // even when the bar has run out of room.
+    barPct(def) {
+      const v = this.raw[def.key];
+      if (typeof v !== 'number' || !(def.hi > def.lo)) return 0;
+      const pct = ((v - def.lo) / (def.hi - def.lo)) * 100;
+      return Math.max(0, Math.min(100, pct));
     },
   });
 

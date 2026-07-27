@@ -62,26 +62,33 @@ controls and telemetry cards with **no change to the backend or the UI**.
   "tlm": [
     {"key": "temp", "label": "Temp", "unit": "°C", "dec": 1, "group": "System"},
     {"key": "vdd", "label": "VDD", "unit": "V", "div": 1000, "dec": 2, "group": "System"},
-    {"key": "up", "label": "Uptime", "fmt": "hms", "group": "System"}
+    {"key": "up", "label": "Uptime", "fmt": "hms", "group": "System"},
+    {"key": "ch1", "label": "CH1", "unit": "µs", "fmt": "bar", "lo": 988, "hi": 2012, "group": "RC Channels"}
   ]
 }
 ```
 
 `group` is a UI heading; both pages render one section per group, in the order
-the groups first appear. On a telemetry field, `div`, `dec` and `fmt` are
-**display hints only** — the wire always carries the device's native units
-(`vdd` is integer millivolts, `up` is milliseconds) and only the browser
+the groups first appear. On a telemetry field, `div`, `dec`, `fmt`, `lo` and
+`hi` are **display hints only** — the wire always carries the device's native
+units (`vdd` is integer millivolts, `up` is milliseconds) and only the browser
 divides, rounds and formats.
 
-`fmt` names a renderer for readings that a divisor and a decimal count cannot
-express. It is a **name, not a format string**: both renderers (the browser and
-the firmware's own panel) have to implement it, and a client that does not
-recognise the name falls back to the plain number. `div`/`dec` do not apply to
-a field that carries `fmt`.
+`lo`/`hi` are an optional declared range, emitted only when the field has one
+(i.e. only when they differ). A UI that draws a bar for the reading uses them
+as the bar's ends; the wire value itself is never clamped to them.
+
+`fmt` names a renderer, which may be textual (`hms`) or visual (`bar`). It is a
+**name, not a format string**: both renderers (the browser and the firmware's
+own panel) have to implement it, and a client that does not recognise the name
+falls back to the plain number. `div`/`dec` do not apply to a field that
+carries a **text** `fmt`. `bar` is a visual renderer that does not replace the
+number, so a field may legitimately carry both a divisor and a bar.
 
 | `fmt` | Wire value          | Rendered   |
 |-------|---------------------|------------|
 | `hms` | milliseconds (u32)  | `01:01:01` — hours are not clamped to two digits |
+| `bar` | `1500` (with `lo`/`hi`) | `1500` plus a proportional bar |
 
 ### Discarding unsaved changes
 
