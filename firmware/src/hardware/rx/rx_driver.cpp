@@ -159,9 +159,12 @@ void RxDriver::drainUart(uint32_t nowMs) {
 void RxDriver::applyRcFrame(uint32_t nowMs) {
   uint16_t ticks[kWireChannels] = {};
   unpackChannels(parser_.payload(), ticks);
-  // Only as many as the active protocol publishes: the wire frame always
-  // carries 16, but Crossfire transmits 12 and the rest are padding.
-  for (uint8_t i = 0; i < proto().channels; ++i) us_[i] = ticksToUs(ticks[i]);
+  // Only what this protocol actually transmits. Crossfire pads slots 13-16,
+  // and publishing padding as though it were a stick position is exactly the
+  // fabricated data rx.source=uart exists to avoid.
+  const uint8_t n = proto().channels;
+  for (uint8_t i = 0; i < n; ++i) us_[i] = ticksToUs(ticks[i]);
+  for (uint8_t i = n; i < kWireChannels; ++i) us_[i] = 0;
   link_.onFrame(nowMs);
 }
 
@@ -182,6 +185,10 @@ void RxDriver::runSim(uint32_t nowMs) {
   const uint8_t n = proto().channels;
   for (uint8_t i = 3; i < n; ++i)
     us_[i] = (uint16_t)(988 + span * (i - 2) / (n - 2));
+  // sim must not be the one place a Crossfire link appears to carry 16
+  // channels -- it exists to exercise the real rendering path, not a
+  // friendlier one.
+  for (uint8_t i = n; i < kWireChannels; ++i) us_[i] = 0;
 
   stats_.lq      = 100;
   stats_.rssiDbm = -42;
@@ -202,7 +209,7 @@ void RxDriver::runSim(uint32_t nowMs) {
 }
 
 void RxDriver::readTelemetry(core::TlmValue* out) {
-  for (uint8_t i = 0; i < kUsedChannels; ++i) out[T_CH1 + i].u = us_[i];
+  for (uint8_t i = 0; i < kWireChannels; ++i) out[T_CH1 + i].u = us_[i];
   const bool up = link_.up();
   out[T_LINK].u = up ? 1u : 0u;
   // Stale link statistics are worse than none: a frozen "LQ 100" beside

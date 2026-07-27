@@ -433,6 +433,24 @@ void test_an_unknown_tx_power_index_reports_zero() {
   TEST_ASSERT_EQUAL_UINT16(0, txPowerMw(255));
 }
 
+// --- channel count / descriptor width ----------------------------------------
+
+void test_sixteen_channel_fields_are_declared() {
+  // T_LINK sits immediately after the last channel, so this pins both the
+  // channel count and the layout the driver's fill loop depends on.
+  TEST_ASSERT_EQUAL_UINT8(16, kWireChannels);
+  TEST_ASSERT_EQUAL_UINT8(16, T_LINK);
+}
+
+void test_the_descriptor_declares_a_field_for_every_wire_channel() {
+  // ch16 must exist in the descriptor, not merely in the enum -- a mismatch
+  // between the two is a frame the browser cannot key.
+  TEST_ASSERT_EQUAL_STRING("ch16", kDesc.tlm[T_CH1 + 15].key);
+  TEST_ASSERT_EQUAL_STRING("CH16", kDesc.tlm[T_CH1 + 15].label);
+  TEST_ASSERT_EQUAL_INT32(988, kDesc.tlm[T_CH1 + 15].lo);
+  TEST_ASSERT_EQUAL_INT32(2012, kDesc.tlm[T_CH1 + 15].hi);
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_crc8_of_empty_is_zero);
@@ -474,5 +492,7 @@ int main(int, char**) {
   RUN_TEST(test_an_unknown_rf_mode_index_reports_zero_rather_than_guessing);
   RUN_TEST(test_tx_power_follows_the_shared_crsf_index_table);
   RUN_TEST(test_an_unknown_tx_power_index_reports_zero);
+  RUN_TEST(test_sixteen_channel_fields_are_declared);
+  RUN_TEST(test_the_descriptor_declares_a_field_for_every_wire_channel);
   return UNITY_END();
 }

@@ -46,11 +46,11 @@ enum : uint8_t {
   P_ELRS_TIMEOUT      = 3,
 };
 
-// Twelve channels then five link fields. T_CH1 + n indexes channel n+1, which
-// is what lets the driver fill the slice with one loop.
+// Sixteen channels then five link fields. T_CH1 + n indexes channel n+1,
+// which is what lets the driver fill the slice with one loop.
 enum : uint8_t {
   T_CH1 = 0,
-  T_LINK = T_CH1 + kUsedChannels,
+  T_LINK = T_CH1 + kWireChannels,
   T_LQ,
   T_RSSI,
   T_RATE,

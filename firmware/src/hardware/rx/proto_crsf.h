@@ -25,11 +25,11 @@ constexpr uint8_t kMinLen         = 2;
 constexpr uint8_t kMaxLen         = 62;
 constexpr uint8_t kMaxTypePayload = kMaxLen - 1;   // what the CRC covers
 
-// The frame always carries 16 slots. Crossfire transmits 12 channels over the
-// air, so on a Nano RX the last four are padding and this module publishes
-// only kUsedChannels. An ExpressLRS fork raises this to kWireChannels.
+// The frame always carries 16 slots. How many of them are MEANINGFUL is a
+// property of the protocol, not of the frame: Crossfire transmits 12 and
+// pads the rest, ELRS transmits 16. That count lives in Protocol::channels;
+// this constant is the buffer size and the descriptor's field count.
 constexpr uint8_t kWireChannels = 16;
-constexpr uint8_t kUsedChannels = 12;
 
 // CRC-8, polynomial 0xD5 (DVB-S2), init 0, no reflection, no final xor.
 // Covers type + payload only -- not the sync byte and not the length byte.

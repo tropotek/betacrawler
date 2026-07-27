@@ -50,8 +50,8 @@ static const ParamDef kParams[] = {
   {"elrs.timeout_ms",       ParamType::U8,   "Timeout",  "ms",    50,   2000, nullptr,        0,              0, 200,             nullptr, "ELRS",      "rx.protocol", "elrs"},
 };
 
-// Twelve channels in one group, link health in another: seventeen fields in a
-// single card is unreadable, and TlmDef::group already exists for exactly
+// Sixteen channels in one group, link health in another: twenty-one fields in
+// a single card is unreadable, and TlmDef::group already exists for exactly
 // this. `bar` plus lo/hi asks the browser to draw the proportion; a renderer
 // that does not know the name falls back to the plain number, which is what
 // the on-device panel does -- deliberately, it keeps its curated layout.
@@ -76,6 +76,10 @@ static const TlmDef kTlm[T_COUNT] = {
   {"ch10", "CH10", "\xC2\xB5s", TlmType::U32, 0, 0, "bar", kChanGroup, 988, 2012},
   {"ch11", "CH11", "\xC2\xB5s", TlmType::U32, 0, 0, "bar", kChanGroup, 988, 2012},
   {"ch12", "CH12", "\xC2\xB5s", TlmType::U32, 0, 0, "bar", kChanGroup, 988, 2012},
+  {"ch13", "CH13", "\xC2\xB5s", TlmType::U32, 0, 0, "bar", kChanGroup, 988, 2012},
+  {"ch14", "CH14", "\xC2\xB5s", TlmType::U32, 0, 0, "bar", kChanGroup, 988, 2012},
+  {"ch15", "CH15", "\xC2\xB5s", TlmType::U32, 0, 0, "bar", kChanGroup, 988, 2012},
+  {"ch16", "CH16", "\xC2\xB5s", TlmType::U32, 0, 0, "bar", kChanGroup, 988, 2012},
   // 0/1, following btn's precedent that a boolean reading is just a number --
   // there is no string telemetry type and one field does not justify inventing
   // one.
