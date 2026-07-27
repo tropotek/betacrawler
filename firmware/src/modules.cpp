@@ -52,6 +52,17 @@
 #  endif
 #endif
 
+#if FEATURE_SERVO
+#  include "hardware/servo/servo_params.h"
+#  if FW_TARGET_ARDUINO
+#    include "hardware/servo/servo_driver.h"
+     static servo::ServoDriver g_servo;
+#    define SERVO_DRV (&g_servo)
+#  else
+#    define SERVO_DRV nullptr
+#  endif
+#endif
+
 #if FEATURE_ST7789_240X240
 #  include "hardware/st7789_240x240/st7789_240x240_params.h"
 #  if FW_TARGET_ARDUINO
@@ -76,6 +87,9 @@ void registerModules(Registry& reg) {
 #endif
 #if FEATURE_LED
   reg.add(led::kDesc, LED_DRV);
+#endif
+#if FEATURE_SERVO
+  reg.add(servo::kDesc, SERVO_DRV);
 #endif
   // Last on purpose: the display observes the modules above it, and
   // Registry::begin() attaches every module before beginning any, so

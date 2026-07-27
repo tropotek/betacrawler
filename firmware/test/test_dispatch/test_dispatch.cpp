@@ -335,7 +335,7 @@ void test_hello_lists_the_enabled_modules() {
   Request q = parseRequest("{\"id\":13,\"op\":\"hello\"}");
   d.handle(q, out, sizeof(out));
   TEST_ASSERT_NOT_NULL(
-      strstr(out, "\"mods\":[\"device\",\"system\",\"button\",\"led\",\"st7789_240x240\"]"));
+      strstr(out, "\"mods\":[\"device\",\"system\",\"button\",\"led\",\"servo\",\"st7789_240x240\"]"));
 }
 
 void test_schema_lists_all_params_and_fits_buffer() {

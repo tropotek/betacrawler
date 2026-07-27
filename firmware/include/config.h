@@ -58,6 +58,9 @@
 #ifndef FEATURE_ST7789_240X240
 #define FEATURE_ST7789_240X240 0
 #endif
+#ifndef FEATURE_SERVO
+#define FEATURE_SERVO 0
+#endif
 #ifndef FEATURE_DFU
 #define FEATURE_DFU 0
 #endif

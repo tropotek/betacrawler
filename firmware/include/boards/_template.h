@@ -33,6 +33,7 @@
 #define FEATURE_LED     1
 #define FEATURE_BUTTON  0
 #define FEATURE_ST7789_240X240 0
+#define FEATURE_SERVO   0
 // Reboot-to-bootloader, so the app can flash this board over USB without a
 // jumper. Requires DFU_SYSMEM_ADDR below. Only enable it on a part that has a
 // USB DFU bootloader in ROM -- every STM32F4 does; check the reference manual
@@ -70,3 +71,16 @@
 // it just shows nothing. See _notes/spec-display.md.
 // #define DISPLAY_DC   PB1
 // #define DISPLAY_RST  PB0
+
+// Required when FEATURE_SERVO is 1: a hobby servo on one timer channel. The
+// timer instance is named here rather than derived from the pin, so which
+// timer the module claims is explicit and greppable -- worth the extra macro
+// on a board that will grow more timer-driven modules. The channel IS derived
+// from the pin, so the two must agree; nothing checks that at compile time.
+// SERVO_FRAME_US is optional (20000, i.e. 50Hz, defaulted in the driver);
+// raise it only for a digital servo that documents a faster frame.
+//
+// Power the servo from 5V, never 3V3, with a bulk cap at the connector -- see
+// the note in blackpill_f411ce.h.
+// #define SERVO_TIMER  TIM4
+// #define SERVO_PIN    PB6      // TIM4_CH1

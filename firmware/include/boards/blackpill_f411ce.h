@@ -16,6 +16,7 @@
 #define FEATURE_LED     1
 #define FEATURE_BUTTON  1
 #define FEATURE_ST7789_240X240 1
+#define FEATURE_SERVO   1
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
 // bootloader in ROM, so this costs a magic word and a reset -- no bootloader
 // to flash, and nothing to erase it. Turning it off only removes the app's
@@ -62,3 +63,20 @@
 // staleness threshold at tlm.rate 10, i.e. a false "stale" badge every 5s.
 // Lower it here if a long or noisy ribbon shows artifacts.
 #define DISPLAY_SPI_HZ  24000000
+
+// Hobby servo on TIM4_CH1. TIM4 is chosen because all four of its channels
+// (PB6/PB7/PB8/PB9, AF2) are free on this board and contiguous on the header,
+// so a multi-channel fork is additive -- CH2-4 stay unclaimed. Nothing else
+// here touches them: the LED is PC13, the button PA0, the panel PA5/PA7 +
+// PB0/PB1, USB PA11/PA12 and SWD PA13/PA14. Note this part is LQFP48, so port
+// C is only PC13/14/15 and PB11 is not bonded out -- most of the timer maps a
+// generic F4 pinout table offers do not exist here.
+//
+// SERVO_FRAME_US (20000, i.e. 50Hz) is optional, defaulted in the driver.
+//
+// Power the servo from the 5V pin (USB VBUS), never 3V3, with a 470-1000uF
+// bulk cap at the connector. Current steps from a moving servo can droop VBUS
+// far enough to reset the MCU and drop the USB CDC link, which presents as a
+// configurator disconnect rather than as anything obviously electrical.
+#define SERVO_TIMER     TIM4
+#define SERVO_PIN       PB6
