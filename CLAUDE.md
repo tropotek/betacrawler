@@ -25,7 +25,7 @@ it stands today. Where the archive and the code disagree, the code is right.
 
 **Firmware** (from `firmware/`):
 ```
-~/.platformio/penv/bin/pio test -e native              # 88 tests, no board needed
+~/.platformio/penv/bin/pio test -e native              # 93 tests, no board needed
 ~/.platformio/penv/bin/pio test -e native -f test_dispatch   # one suite only
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce      # compile for the real board
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce -t upload  # flash it (ST-Link/SWD)
@@ -36,7 +36,7 @@ Two ST-Link/V2 units may be attached at once — if upload grabs the wrong one, 
 
 **Backend** (from `app/`, venv already at `app/.venv/`):
 ```
-.venv/bin/pytest -v                                     # 163 tests, no board needed
+.venv/bin/pytest -v                                     # 170 tests, no board needed
 .venv/bin/pytest tests/test_link.py -v                  # one file only
 .venv/bin/uvicorn backend.main:app --port 8080           # serves API + app/web/ together
 ```
