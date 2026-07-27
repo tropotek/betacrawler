@@ -302,3 +302,35 @@ def test_a_corrupt_existing_manifest_stops_the_release(tree):
 
     with pytest.raises(mod.BundleError, match="not valid JSON"):
         mod.release(["board_a"], builder=builder_for(mod))
+
+
+# --- the build stamp must be truthful in a RELEASED image ----------------------
+# __DATE__/__TIME__ are frozen into version.cpp's object file when it last
+# compiled, and SCons will not recompile a TU whose inputs are unchanged. Since
+# FW_VERSION stays 1.0.0 by project policy, the stamp is the app's ONLY way to
+# tell a running board apart from a bundled image -- so the release build has to
+# force that one object to rebuild.
+
+def test_force_version_rebuild_removes_the_stale_object(tree):
+    mod = tree
+    obj = mod.FIRMWARE / ".pio" / "build" / "board_a" / "src" / "core" / "version.cpp.o"
+    obj.parent.mkdir(parents=True)
+    obj.write_bytes(b"stale")
+    other = obj.parent / "dispatch.cpp.o"
+    other.write_bytes(b"keep")
+
+    removed = mod.force_version_rebuild("board_a")
+
+    assert removed == [obj]
+    assert not obj.exists()
+    assert other.exists()     # only version.cpp is re-stamped, not a full rebuild
+
+
+def test_force_version_rebuild_tolerates_a_tree_that_has_never_been_built(tree):
+    """A clean checkout has no .pio at all, and that is the normal first run."""
+    mod = tree
+    assert mod.force_version_rebuild("board_a") == []
+
+    # Build directory present but no object file yet -- same requirement.
+    (mod.FIRMWARE / ".pio" / "build" / "board_a").mkdir(parents=True)
+    assert mod.force_version_rebuild("board_a") == []

@@ -175,6 +175,46 @@ def find_pio() -> str | None:
     return shutil.which("pio")
 
 
+def force_version_rebuild(env: str) -> list[Path]:
+    """Delete version.cpp's object file so the build re-stamps __DATE__/__TIME__.
+
+    The build stamp is the app's ONLY way to tell a running board apart from a
+    bundled image (isRunning() in app.js compares `built` and `version`, and
+    FW_VERSION stays 1.0.0 by project policy). But __DATE__/__TIME__ are frozen
+    into version.cpp's object file at whatever moment it last compiled, and
+    SCons will not recompile a translation unit whose inputs are unchanged.
+
+    Editing anything SCons cannot see as an input to version.cpp -- which is
+    everything except include/**/*.h, whose hash config_hash.py folds into
+    -D FW_CONFIG_HASH -- therefore produces a new firmware.bin carrying a stale
+    stamp. That is not hypothetical: the `revert` op lives in src/core/, so the
+    image that first contained it still claimed the previous build's timestamp,
+    and the Firmware page marked it "currently running" on a board that had
+    never seen it.
+
+    Fixed here rather than by widening config_hash.py to src/**/*.h, because
+    the stamp only has to be truthful for images that SHIP. Hashing source
+    headers would make every header edit a full rebuild of every translation
+    unit during ordinary development, to fix a problem that only matters at
+    release time. One object file, rebuilt once per release, buys the same
+    guarantee.
+
+    Returns the paths actually removed. Missing files are not an error: a clean
+    checkout has no build directory at all, and that is the normal first run.
+    """
+    build_dir = FIRMWARE / ".pio" / "build" / env
+    removed = []
+    if not build_dir.is_dir():
+        return removed
+    # Globbed rather than hardcoded to src/core/version.cpp.o: the layout under
+    # .pio/build is PlatformIO's, not ours, and a miss here would fail silently
+    # by reintroducing exactly the stale stamp this exists to prevent.
+    for obj in sorted(build_dir.rglob("version.cpp.o")):
+        obj.unlink()
+        removed.append(obj)
+    return removed
+
+
 def run_build(env: str, pio: str) -> None:
     """Build the env, so the bundled artifact provably matches this tree.
 
@@ -186,6 +226,8 @@ def run_build(env: str, pio: str) -> None:
     nothing to rebuild. An mtime check in that state fires forever and trains
     you to pass --force, which is worse than having no check at all.
     """
+    for obj in force_version_rebuild(env):
+        print(f"  re-stamping {obj.relative_to(FIRMWARE)}")
     print(f"building {env} ...")
     proc = subprocess.run([pio, "run", "-e", env], cwd=FIRMWARE,
                           capture_output=True, text=True)

@@ -25,7 +25,7 @@ it stands today. Where the archive and the code disagree, the code is right.
 
 **Firmware** (from `firmware/`):
 ```
-~/.platformio/penv/bin/pio test -e native              # 93 tests, no board needed
+~/.platformio/penv/bin/pio test -e native              # 95 tests, no board needed
 ~/.platformio/penv/bin/pio test -e native -f test_dispatch   # one suite only
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce      # compile for the real board
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce -t upload  # flash it (ST-Link/SWD)
@@ -36,7 +36,7 @@ Two ST-Link/V2 units may be attached at once — if upload grabs the wrong one, 
 
 **Backend** (from `app/`, venv already at `app/.venv/`):
 ```
-.venv/bin/pytest -v                                     # 170 tests, no board needed
+.venv/bin/pytest -v                                     # 174 tests, no board needed
 .venv/bin/pytest tests/test_link.py -v                  # one file only
 .venv/bin/uvicorn backend.main:app --port 8080           # serves API + app/web/ together
 ```
@@ -162,6 +162,17 @@ not trigger rebuilds (verified: toggling `FEATURE_LED` produced a byte-identical
 reported success). `firmware/scripts/config_hash.py` folds a hash of `include/**/*.h` into a
 `-D FW_CONFIG_HASH` so any config edit forces a rebuild. Both envs reference it via
 `extra_scripts`; removing that line silently reintroduces stale-binary builds.
+
+That hash covers `include/**/*.h` only, and deliberately so — hashing `src/**/*.h` too would make
+every source-header edit a full rebuild during ordinary development. The cost is that
+`version.cpp`'s `__DATE__`/`__TIME__` do not re-stamp when only `src/` changed, and that stamp is
+the app's **only** way to tell a running board apart from a bundled image (`isRunning()` in
+`app.js` compares `built` and `version`, and `FW_VERSION` stays 1.0.0 by policy). So
+`bundle_firmware.py` deletes `version.cpp.o` before each release build
+(`force_version_rebuild()`): dev builds stay fast, and every image that actually **ships** carries
+a truthful stamp. This is not hypothetical — the image that first contained the `revert` op
+claimed the previous build's timestamp, and the Firmware page called it "currently running" on a
+board that had never seen it.
 
 **Wire protocol**: one JSON object per line, `\n`-terminated, over USB CDC serial (115200).
 Requests carry an `id`; responses echo it. Messages with no `id` are unsolicited (telemetry, log)
