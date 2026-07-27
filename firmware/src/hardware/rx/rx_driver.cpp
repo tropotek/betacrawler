@@ -229,9 +229,16 @@ void RxDriver::readTelemetry(core::TlmValue* out) {
   out[T_LINK].u = up ? 1u : 0u;
   out[T_RATE].u = link_.rate();
   out[T_ERR].u  = link_.errors();
-  // link and rate gate on `up` alone -- they derive from frame arrival
-  // (link_.onFrame()/link_.tick()), not from stats_, so link state is the
-  // whole story for them.
+  // T_LINK gates on `up` alone -- it is a direct mirror of link_.up().
+  // T_RATE and T_ERR are NOT gated here at all; they read link_.rate() and
+  // link_.errors() unconditionally. That is fine because each already
+  // carries its own correct behaviour on a drop rather than needing one
+  // imposed here: LinkState::tick() zeroes rate_ itself the instant up_
+  // goes false (see its own comment -- "link 0, rate 150" would be untrue
+  // for up to a second otherwise), and err_ is a monotonic rejection count
+  // that is deliberately never zeroed by a timeout, only by a protocol or
+  // source change (LinkState::reset()), so a real rejection stays countable
+  // across a drop exactly as it does across a recovery.
   //
   // lq, rssi, rfrate and pwr all come from stats_, which a 0x14 link-
   // statistics frame fills in -- and `up` is NOT enough to trust it. up
@@ -244,14 +251,32 @@ void RxDriver::readTelemetry(core::TlmValue* out) {
   // (4Hz Crossfire, 500Hz ELRS) the receiver never sent; and rssiDbm==0
   // reads as an exceptionally strong signal rather than "unknown". (lq==0
   // and txPower==0/0mW are honestly what "no reading yet" looks like for
-  // those two, but they get the same gate for one shared reason: stats_ is
-  // not re-zeroed on a link timeout, only on a source/protocol change --
-  // see onParamChanged -- so after a dropout-and-recovery every stats_
-  // field, not just the two that could read as fabricated, would otherwise
-  // show whatever the PREVIOUS 0x14 decoded, possibly under a different
-  // protocol.) Stale or fabricated link statistics are worse than none: a
-  // frozen "LQ 100, RSSI -42, 500Hz, 250mW" beside "Link 0" reads as a
-  // working link. They zero with the link, AND with statsSeen_, instead.
+  // those two, but they get the same gate anyway: all four fields come out
+  // of the same stats_ struct on the same statsSeen_ flag, and there is no
+  // reason to un-gate two of them and not the other two.) Stale or
+  // fabricated link statistics are worse than none: a frozen "LQ 100,
+  // RSSI -42, 500Hz, 250mW" beside "Link 0" reads as a working link --
+  // which is exactly what rfMode==0 / rssiDbm==0 would manufacture during
+  // the window below.
+  //
+  // That window is cold start ONLY: boot, or a protocol/source change,
+  // until the first 0x14 decodes. statsSeen_ is cleared in exactly two
+  // places, both in onParamChanged, both beside a `stats_ = LinkStats{}` --
+  // once on a protocol change, once on a source change -- and nowhere
+  // else. In particular LinkState::tick() dropping the link on a timeout
+  // does not touch statsSeen_ (or stats_): it only flips link_.up() and
+  // zeroes link_.rate(), as above. So a link timeout is NOT covered by this
+  // gate. After a dropout, once a fresh 0x16 arrives and up flips back to
+  // true with no new 0x14 having arrived yet, statsSeen_ is still true from
+  // before the drop, and lq/rssi/rfrate/pwr all republish verbatim whatever
+  // the PREVIOUS 0x14 decoded -- under the CURRENT protocol, since a
+  // protocol change would have cleared stats_ and statsSeen_ together, but
+  // stale by however long the drop lasted. That is a known gap, not
+  // something this gate closes; closing it would need statsSeen_ cleared
+  // on the up_ false transition too, which it is not.
+  //
+  // They zero with the link, AND with statsSeen_, for the cold-start window
+  // that gate actually covers.
   const bool s = up && statsSeen_;
   out[T_LQ].u     = s ? stats_.lq : 0u;
   out[T_RSSI].i   = s ? stats_.rssiDbm : 0;
