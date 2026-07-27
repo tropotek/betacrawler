@@ -16,6 +16,7 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 | PUT | `/api/params/{key}` | `{"val": V}` | `{ok, key, val}` |
 | POST | `/api/params/save` | — | `{ok}` |
 | POST | `/api/params/defaults` | — | `{ok, vals}` |
+| POST | `/api/params/revert` | — | `{ok, src, vals}` |
 | POST | `/api/params/restore` | `{"ini": "[led]\nmode = on\n"}` | `{ok, applied, skipped, vals}` |
 | POST | `/api/terminal` | `{"command": "get led.blink_hz"}` | `{ok, friendly, raw_sent, raw_recv}` |
 | GET | `/api/firmware/catalog` | — | `{app_version, images, board, recommended}` |
@@ -70,6 +71,17 @@ the groups first appear. On a telemetry field, `div` and `dec` are **display
 hints only** — the wire always carries the device's native units (`vdd` is
 integer millivolts) and only the browser divides and rounds.
 
+### Discarding unsaved changes
+
+`POST /api/params/revert` reloads the settings last written to flash — the "last stored point".
+It is not the same as `defaults`, which goes to the firmware's factory values.
+
+`src` says which source the firmware actually used. It is `"defaults"` when the board had
+nothing valid stored (a fresh board, or settings discarded because the enabled module set
+changed the fingerprint); the op falls back rather than failing, and reports it rather than
+landing the caller somewhere silently. Only `src == "flash"` leaves the device with nothing
+unsaved — after a `"defaults"` fallback there is something worth saving.
+
 ### Settings backup and restore
 
 `dump` (a Terminal command) renders the device's settings as INI text; section
@@ -96,7 +108,7 @@ that isn't valid INI is rejected whole, before anything reaches the device
 (400 `{"err": "badini"}`); a disconnected device is 409, as everywhere else.
 
 `/api/terminal` powers the debug Terminal page's shell-like command line
-(`get <key>`, `set <key> <value>`, `save`, `defaults`, `list`, `dump`,
+(`get <key>`, `set <key> <value>`, `save`, `defaults`, `revert`, `list`, `dump`,
 `help`). It is a
 deliberate exception to the error-status table below: it **always returns
 200**. Command-level failures (unknown command/key, bad value, disconnected,

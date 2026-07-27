@@ -499,6 +499,16 @@
                 something unsaved.</li>
           </ul>
 
+          <p><strong>Undoing changes you haven't saved</strong></p>
+          <ul>
+            <li><strong>Discard changes</strong> reloads the settings last written to flash, so
+                it undoes everything since your last Save. This is different from
+                <strong>Load defaults</strong>, which goes to the firmware's factory values —
+                somewhere you may never have saved.</li>
+            <li>On a board that has never been saved to, there is nothing stored to go back to,
+                so Discard changes loads the defaults instead and tells you it did.</li>
+          </ul>
+
           <p><strong>A saved setting didn't survive a restart</strong></p>
           <ul>
             <li>Confirm you clicked <strong>Save</strong> after changing the value, not just changed the field

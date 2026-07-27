@@ -193,7 +193,25 @@ in this template** — bumps happen in real forked projects, not here.
 **Persistence discipline**: the F411 has no real EEPROM (flash-emulated), and an erase stalls the
 MCU ~1s. Values apply to RAM/hardware instantly on `set`; flash is written **only** on explicit
 `save`, guarded by a magic/version/**fingerprint**/CRC header that falls back to defaults on any
-mismatch. The fingerprint (`Registry::fingerprint()`) hashes every parameter's key, type and
+mismatch.
+
+**Three states, three buttons.** A device's parameters can be at factory defaults, at what is
+stored in flash, or at whatever RAM currently holds — and each Configuration button reaches
+exactly one:
+
+| Button | Direction | Dirty after |
+|---|---|---|
+| Save to flash | RAM → flash | no |
+| Discard changes | flash → RAM (`revert` op) | no — RAM now equals flash |
+| Load defaults | factory → RAM | yes, deliberately |
+
+`revert` is the only op that reads the `Persistence::load()` seam back; before it, that seam was
+called solely by `main.cpp` at boot, so flash was write-only from the host's point of view. It
+falls back to defaults when nothing valid is stored and reports `src` so the host can say so —
+that field is also what decides the dirty flag, since the fallback case *does* leave something
+worth writing. Full detail: `_notes/spec-config-revert.md`.
+
+The fingerprint (`Registry::fingerprint()`) hashes every parameter's key, type and
 bounds, so changing the enabled module set — or a parameter's range — discards saved settings
 rather than reinterpreting stored bytes against a different table.
 `storage.cpp`'s `save()` does a read-back verification after the flush so a real flash failure has
