@@ -61,6 +61,7 @@ const Api = {
   setParam:  (key, val)  => Api.send('PUT', `/api/params/${encodeURIComponent(key)}`, { val }),
   save:      ()          => Api.send('POST', '/api/params/save'),
   defaults:  ()          => Api.send('POST', '/api/params/defaults'),
+  revert:    ()          => Api.send('POST', '/api/params/revert'),
   sendTerminalCommand: (command) => Api.send('POST', '/api/terminal', { command }),
   restoreIni: (ini)      => Api.send('POST', '/api/params/restore', { ini }),
   firmwareCatalog: ()    => Api.get('/api/firmware/catalog'),
@@ -447,6 +448,10 @@ el('connect').addEventListener('click', async () => {
 function setDirty(dirty) {
   el('dirty').classList.toggle('d-none', !dirty);
   el('term-save').disabled = !dirty;
+  // Any subsequent action supersedes the fallback note, so it is cleared here
+  // rather than tracked separately. The revert handler re-shows it after
+  // calling setDirty().
+  el('revert-note').classList.add('d-none');
 }
 
 async function saveToFlash() {
@@ -470,6 +475,20 @@ el('defaults').addEventListener('click', async () => {
     // never touches flash (core/dispatch.cpp, Op::Defaults), so the device is
     // now exactly as unsaved as after editing a field by hand.
     setDirty(true);
+  } catch (e) { showError(e.message); }
+});
+
+el('revert').addEventListener('click', async () => {
+  try {
+    const res = await Api.revert();
+    await loadDevice();
+    setState('connected');
+    // "flash" means RAM now matches what is stored, so there is nothing left
+    // to save -- this is the ONLY action that leaves the device clean.
+    // "defaults" means the board had nothing valid stored and the firmware
+    // fell back, which is both worth saving and worth saying out loud.
+    setDirty(res.src !== 'flash');
+    if (res.src !== 'flash') el('revert-note').classList.remove('d-none');
   } catch (e) { showError(e.message); }
 });
 
