@@ -6,18 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Betaflight-Configurator-style tool for an STM32 Black Pill (STM32F411CE): firmware exposes
 device config/telemetry over USB serial as JSON lines, a Python/FastAPI backend bridges that to
-HTTP+WebSocket, and a static Bootstrap web UI drives it. **Project 1 ("configurator core")** and
-**Project 2 (in-app DFU flashing)** are both done.
+HTTP+WebSocket, and a static Bootstrap web UI drives it.
 
-`_notes/todo.md` is the live document — what's next, and a Done list of what shipped. Read it
-first in any new session. `docs/api.md` is the HTTP/WS contract, and this file describes the
-architecture.
+| Where | What |
+|---|---|
+| `_notes/todo.md` | the live document — what's next. Read it first in any new session |
+| `CHANGELOG.md` | what has shipped, one summary per change |
+| `docs/architecture.md` | the reasoning behind every rule below — read the relevant section before changing that area |
+| `docs/api.md` | the HTTP/WS contract |
+| `_notes/_archive/` | history, not documentation (see below) |
 
-**`_notes/_archive/` is history, not documentation.** It holds superseded specs, implementation
-plans and the retired `progress.md` status doc. Read it when you need the *reasoning* behind a
-past decision — the specs there are approved designs, so don't relitigate them without a real
-reason — but **never update anything in it**, and don't treat it as a description of the code as
-it stands today. Where the archive and the code disagree, the code is right.
+**`_notes/_archive/` holds superseded specs, implementation plans and the retired `progress.md`.**
+Read it for the *reasoning* behind a past decision — those specs are approved designs, so don't
+relitigate them without a real reason — but **never update anything in it**, and don't read it as
+a description of the code today. Where it and the code disagree, the code is right.
 
 ## Commands
 
@@ -25,19 +27,19 @@ it stands today. Where the archive and the code disagree, the code is right.
 
 **Firmware** (from `firmware/`):
 ```
-~/.platformio/penv/bin/pio test -e native              # 114 tests, no board needed
-~/.platformio/penv/bin/pio test -e native -f test_dispatch   # one suite only
-~/.platformio/penv/bin/pio run -e blackpill_f411ce      # compile for the real board
+~/.platformio/penv/bin/pio test -e native                     # no board needed
+~/.platformio/penv/bin/pio test -e native -f test_dispatch    # one suite only
+~/.platformio/penv/bin/pio run -e blackpill_f411ce            # compile for the real board
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce -t upload  # flash it (ST-Link/SWD)
-~/.platformio/penv/bin/pio device monitor -b 115200     # raw serial console
+~/.platformio/penv/bin/pio device monitor -b 115200           # raw serial console
 ```
 Two ST-Link/V2 units may be attached at once — if upload grabs the wrong one, add
 `upload_port = <device>` to `[env:blackpill_f411ce]`.
 
 **Backend** (from `app/`, venv already at `app/.venv/`):
 ```
-.venv/bin/pytest -v                                     # 174 tests, no board needed
-.venv/bin/pytest tests/test_link.py -v                  # one file only
+.venv/bin/pytest -v                                      # no board needed
+.venv/bin/pytest tests/test_link.py -v                   # one file only
 .venv/bin/uvicorn backend.main:app --port 8080           # serves API + app/web/ together
 ```
 
@@ -49,7 +51,7 @@ python3 app/tools/bundle_firmware.py board_a board_b    # the whole release set,
 python3 app/tools/bundle_firmware.py --add other_board  # merge, don't prune the rest
 python3 app/tools/bundle_firmware.py --dry-run          # report only
 ```
-Also available as the **Build release firmware** task in `silkscreen.code-workspace`.
+Also the **Build release firmware** task in `silkscreen.code-workspace`.
 
 **Web UI**: no build step. `app/web/{index.html,app.js}` are static files served directly by the
 FastAPI app above (`main.py` mounts `app/web/` at `/`). No automated UI test suite exists, by
@@ -61,17 +63,13 @@ defects. **A working headless browser is installed at `~/.pwvenv`** (Playwright 
 ```
 
 Use it to read rendered text, click through a page and collect console/`pageerror` events before
-claiming a UI change works. Two techniques worth knowing, both already used here:
+claiming a UI change works. Two techniques, both already used here:
 
 - Point it at the real server against the **real board** for the normal path.
-- For a state the hardware cannot be made to produce, build the app around a fake device instead
-  — `create_app(DeviceModel(SerialLink(open_port=lambda p: FakeSerial(responder=...))))` from
+- For a state the hardware cannot be made to produce, build the app around a fake device —
+  `create_app(DeviceModel(SerialLink(open_port=lambda p: FakeSerial(responder=...))))` from
   `app/tests/`, served with uvicorn on its own port. That is how the `revert` fallback branch was
   verified: no real board reports it without a corrupt flash record.
-
-**Page convention:** every `<div id="page-*">` section ends with a `<p>&nbsp;</p>` spacer as its
-last child, so content doesn't sit flush against the bottom of the viewport. Add one when you add
-a page, and don't strip them as "empty markup" — all six pages have one deliberately.
 
 Do NOT try apt's `python3-playwright` (its client and the packaged Node driver speak incompatible
 protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer mapping here).
@@ -82,7 +80,7 @@ protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer ma
 - System Python is 3.14.4 and all backend deps install and import cleanly on it.
 - Git commits use `feat:`/`fix:`/`docs:`/`chore:` prefixes.
 
-## Architecture
+## Layout
 
 **Three tiers, deliberately isolated so most of the stack tests without hardware:**
 
@@ -93,10 +91,10 @@ firmware/include/      config.h (project name/version/baud/capacity limits) and
 firmware/src/core/     pure C++, zero Arduino — protocol, params, registry, dispatch,
                         led_curve, tlm_format, boot_log, version, device_params. Native-tested (Unity).
 firmware/src/features/ behaviours, one folder per module (led/)
-firmware/src/hardware/ device drivers, one folder per module (system/, button/, st7789_240x240/;
-                        WiFi and other peripherals go here)
+firmware/src/hardware/ device drivers, one folder per module (system/, button/, servo/, rx/,
+                        st7789_240x240/; WiFi and other peripherals go here)
 firmware/src/modules.cpp  THE wiring file — one #if block per module. Compiled by BOTH envs.
-firmware/src/          Arduino glue: main.cpp, storage.cpp (flash)
+firmware/src/          Arduino glue: main.cpp, storage.cpp (flash), dfu.cpp
 
 app/backend/           protocol.py (codec) -> link.py (threaded serial, id correlation) ->
                         device.py (schema cache + validation) -> main.py (FastAPI routes/WS).
@@ -106,199 +104,66 @@ app/backend/           protocol.py (codec) -> link.py (threaded serial, id corre
                         pytest-tested against a fake serial port (app/tests/fake_serial.py),
                         no board needed
 app/firmware/          the firmware images this app version ships with, plus manifest.json.
-                        GITIGNORED build output — produced by the script below, not committed.
+                        GITIGNORED build output — produced by the script above, not committed.
 app/tools/             bundle_firmware.py, run by hand at release time to produce the above
 
 app/web/                static HTML/JS only, talks to the backend exclusively through the
                         `Api` object in app.js — that object is the ENTIRE porting surface
-                        for a hypothetical future Electron rewrite. Never call fetch/WebSocket
-                        directly outside it.
+                        for a hypothetical future Electron rewrite.
 ```
 
-**The `Api` seam has rules, and they are cheap to keep and expensive to retrofit.** Beyond "no
-`fetch`/`WebSocket` outside it": no `Api` method may take or return a browser-only type (a `File`,
-a `Blob`, the `WebSocket` itself) — bytes, strings, plain objects and callbacks only; every path
-goes through `Api.base` so nothing assumes an origin; and the push channel stays
-`Api.subscribe(handler) -> unsubscribe`, owning its own reconnection, rather than handing a socket
-back to a caller that would touch `.onclose`. All three were audited and fixed on 2026-07-27 —
-`flashUpload` really did take a `File`, because `fetch` accepts one, which is exactly how this
-kind of coupling gets in. Full contract, a grep check for the mechanical part, and the port
-assessment: `_notes/review-electron-port-readiness.md`.
+## Rules that must not be undone
 
-**Modules are the core idea.** A board header's `FEATURE_*` flags decide what compiles in;
-`src/modules.cpp` registers those modules into a `core::Registry` at boot, which flattens their
-parameters into one table and their telemetry fields into one frame. `core/` never names a
-feature. Each module is split in two:
+Each of these has cost real defects or real rework. The reasoning is in `docs/architecture.md`
+under the named section — read it before changing that area, not after.
 
-- `<name>_params.cpp` — its `ModuleDesc` (id, label, `ParamDef[]`, `TlmDef[]`). **Zero Arduino
-  includes**, because the native build compiles it.
-- `<name>_driver.cpp` — the `core::Module` subclass that touches hardware. Board builds only.
+**Modules** — `core/` never names a feature. Each module is `<name>_params.cpp` (its `ModuleDesc`;
+**zero Arduino includes**, the native build compiles it) plus `<name>_driver.cpp` (the
+`core::Module` subclass that touches hardware). Never put a `ParamDef` in a driver file. Adding a
+module or a board: `_notes/_archive/spec-firmware-modules.md`.
 
-That split is load-bearing, not stylistic: it is why `pio test -e native` can assemble the *real*
-device's schema and keep `test/golden/schema.json` honest with no board attached. Don't put a
-`ParamDef` in a driver file. Full recipes for adding a module or a board:
-`_notes/_archive/spec-firmware-modules.md`.
+**Module-local indices** — modules always receive a module-local parameter index, never a global
+one; `Module::globalParam(local)` maps back. "Exactly one hardware call, on the owning module,
+with that module's own local index" is the invariant most worth preserving in `dispatch.cpp` and
+`registry.cpp`.
 
-**The hardware/persistence seam**: `core/` never touches a GPIO pin or a flash write directly.
-It talks through `core::Module` (one per module — `onParamChanged`/`tick`/`readTelemetry`, in
-`core/module.h`) and `Persistence::save()/load()` (`core/dispatch.h`), which `main.cpp` wires to
-real Arduino/EEPROM code. Native tests inject fake modules, so "setting a parameter produced
-exactly one hardware call, on the owning module, with that module's own local index" is provable
-with no board attached. This is the one invariant most worth preserving if you touch
-`dispatch.cpp` or `registry.cpp`. Modules always receive a **module-local** index, never a global
-one — `Module::globalParam(local)` maps back when a driver needs to read a value.
+**Observers are const** — `Module::attach()` hands out const access on purpose. A module must
+never reconfigure another behind `dispatch`'s back. Resolve keys once in `attach()`, never per tick.
 
-**Boot health**: `core/boot_log.h` holds a fixed buffer of lines recorded during `setup()` —
-firmware identity, whether saved settings survived the fingerprint check, module/param/telemetry
-counts, free RAM, plus whatever modules add (the display contributes its init timing). `main.cpp`
-emits it at the end of boot *and again after every `hello`*. The replay is the point: USB CDC
-enumerates well after `setup()` runs and the app connects later still, so a line merely printed at
-boot reaches nobody. `hello`'s response shape is deliberately unchanged — the record follows it as
-separate unsolicited `{"log":...}` lines, which `app.js` renders in the Terminal as `[device] …`.
+**The `Api` seam** — no `fetch`/`WebSocket` outside `Api`; no browser-only types (`File`, `Blob`,
+the socket itself) in or out; every path through `Api.base`; the push channel stays
+`Api.subscribe(handler) -> unsubscribe` and owns its own reconnection.
 
-**Observing modules** use `Module::attach(const Registry&, const Params&)`, called on every module
-before any module's `begin()`. It exists for modules that must *read* the rest of the device — the
-display is the only one so far. Access is const on purpose: an observer may look at the device, but
-must never reconfigure it behind `dispatch`'s back, which would skip validation and the change
-notification everything else depends on. Resolve keys there once (`findParam`/`findTlm`), never per
-tick — the registry is fixed after boot. Most modules override nothing and are unaffected.
+**Schema-driven UI** — descriptors are the single source of truth. Adding a firmware parameter or
+telemetry field must need zero changes in `app.js`; there is deliberately no field-label map and no
+field-order table (order is module registration order). `div`/`dec`/`showIf` are **display hints
+only** — the wire always carries native units, and firmware/backend still validate a hidden
+parameter so Terminal `set` and INI restore keep working.
 
-**The display is deliberately the exception to schema-driven rendering.** `app.js` builds itself
-entirely from the descriptor; the on-device dashboard (`hardware/st7789_240x240/`) uses a *curated* layout
-instead, because it must fit 240x240 exactly and a board may want to show things the registry knows
-nothing about. The coupling that buys is contained — every key is resolved once in `attach()` and a
-key the board doesn't publish drops its row — but it does mean `st7789_240x240_driver.cpp` is the one file
-outside a module's own folder that names other modules' keys. Values still render through
-`core::formatTlm()` from each field's own `TlmDef`, so the panel and the browser cannot disagree
-about what a telemetry frame says. **Nothing detects whether a panel is physically connected** —
-there is no MISO to read a controller ID back over, and `Arduino_HWSPI::begin()` returns true
-unconditionally, so never treat `gfx->begin()`'s bool as a presence check. The driver is write-only
-and therefore cannot block the loop when the panel is absent; it emits a truthful startup `log`
-line instead of a fabricated warning. Full detail: `_notes/_archive/spec-display.md`.
+**`config_hash.py` stays in `extra_scripts`** — board-header edits don't trigger rebuilds without
+it (`#include BOARD_HEADER` is invisible to SCons), and removing it silently reintroduces
+stale-binary builds. Its companion, `force_version_rebuild()` in `bundle_firmware.py`, is what
+makes a shipped image's `built` stamp truthful.
 
-**Build gotcha, already fixed — don't undo it:** `config.h` reaches the board header via
-`#include BOARD_HEADER`, a macro-expanded include SCons cannot resolve, so board-header edits did
-not trigger rebuilds (verified: toggling `FEATURE_LED` produced a byte-identical binary and
-reported success). `firmware/scripts/config_hash.py` folds a hash of `include/**/*.h` into a
-`-D FW_CONFIG_HASH` so any config edit forces a rebuild. Both envs reference it via
-`extra_scripts`; removing that line silently reintroduces stale-binary builds.
+**Flash is written only on explicit `save`** — an erase stalls the MCU ~1s. Set applies to
+RAM/hardware instantly. The stored record is guarded by magic/version/fingerprint/CRC and falls
+back to defaults on any mismatch.
 
-That hash covers `include/**/*.h` only, and deliberately so — hashing `src/**/*.h` too would make
-every source-header edit a full rebuild during ordinary development. The cost is that
-`version.cpp`'s `__DATE__`/`__TIME__` do not re-stamp when only `src/` changed, and that stamp is
-the app's **only** way to tell a running board apart from a bundled image (`isRunning()` in
-`app.js` compares `built` and `version`, and `FW_VERSION` stays 1.0.0 by policy). So
-`bundle_firmware.py` deletes `version.cpp.o` before each release build
-(`force_version_rebuild()`): dev builds stay fast, and every image that actually **ships** carries
-a truthful stamp. This is not hypothetical — the image that first contained the `revert` op
-claimed the previous build's timestamp, and the Firmware page called it "currently running" on a
-board that had never seen it.
+**Both DFU paths must keep working** — the `dfu` wire op *and* BOOT0+NRST by hand. The Firmware
+page stays out of `CONNECTION_REQUIRED_PAGES`; gating the recovery tool on a working device is
+backwards. `enterDfu()` only arms the reboot (so the response can flush first) and `initVariant()`
+clears the RTC magic before jumping (or a failed jump is an unrecoverable boot loop).
 
-**Wire protocol**: one JSON object per line, `\n`-terminated, over USB CDC serial (115200).
-Requests carry an `id`; responses echo it. Messages with no `id` are unsolicited (telemetry, log)
-— that's what lets push telemetry interleave safely with request/response on one connection.
-Firmware validates every input independently of the backend (never trusts the host). Full spec in
-`_notes/_archive/spec-configurator-core.md`; live contract in `docs/api.md`.
+**`app/firmware/` stays gitignored** — don't re-commit the binaries and don't "fix" the
+`.gitignore` entry. A checkout with no firmware until the script runs is the expected state.
 
-**Schema-driven UI**: the registered modules' descriptors are the single source of truth — for the
-config form *and* the telemetry page. The `schema` wire op serializes both (`{params, tlm}`);
-`DeviceModel` (backend) caches that response and validates `set()` calls against it before ever
-touching the wire; `app.js` builds the config controls and the telemetry cards from it at runtime,
-grouped by each item's `group` (defaulting to the owning module's label). Adding a firmware
-parameter or telemetry field should need zero changes in `app.js` — if it doesn't, something has
-drifted from that design. There is deliberately **no** field-label map or field-order table left
-in `app.js`; display order is the firmware's module registration order.
+**No panel presence detection exists** — `gfx->begin()`'s bool is not a presence check; there is no
+MISO to read a controller ID back over. Likewise, nothing can identify a board in DFU mode: every
+STM32F4 bootloader reports `0483:df11`.
 
-Telemetry `div`/`dec` in the descriptor are display hints only: the wire always carries the
-device's native units (`vdd` is integer millivolts) and only the browser divides and rounds.
-`firmware/test/golden/schema.json` is a checked-in fixture, regenerated and diffed by a native
-test (`test_schema_golden_fixture_matches_firmware`) and loaded directly by the Python tests, so a
-firmware schema change that isn't reflected there fails a test instead of drifting silently.
+**Both versions stay 1.0.0 in this template** — firmware (`FW_VERSION`) and app (`APP_VERSION`)
+version independently, and bumps happen in forked projects, not here.
 
-`showIf` on a parameter (`{"key":...,"val":...}`) is a **display hint only**, like `div`/`dec`:
-`app.js` hides a parameter whose condition is unmet, but the firmware and backend still validate
-and accept it, so Terminal `set` and INI restore keep working on a hidden parameter. It is what
-gives `rx.protocol` its per-protocol settings groups without `app.js` learning any protocol name.
-
-**Versioning**: firmware and app are separate projects with independent version numbers that are
-not meant to track each other. Firmware: `FW_VERSION` in `firmware/include/config.h`, reported
-over the wire by `hello` (`name`/`ver`/`built`/`mods`, alongside the unchanged `fw` display
-string). App (backend + web UI): `APP_VERSION` at the top of `app/web/app.js`. **Both stay 1.0.0
-in this template** — bumps happen in real forked projects, not here.
-
-**Persistence discipline**: the F411 has no real EEPROM (flash-emulated), and an erase stalls the
-MCU ~1s. Values apply to RAM/hardware instantly on `set`; flash is written **only** on explicit
-`save`, guarded by a magic/version/**fingerprint**/CRC header that falls back to defaults on any
-mismatch.
-
-The fingerprint (`Registry::fingerprint()`) hashes every parameter's key, type and
-bounds, so changing the enabled module set — or a parameter's range — discards saved settings
-rather than reinterpreting stored bytes against a different table.
-`storage.cpp`'s `save()` does a read-back verification after the flush so a real flash failure has
-an actual way to report `{"err":"flash"}` instead of that path being dead code.
-
-**Three states, three buttons.** A device's parameters can be at factory defaults, at what is
-stored in flash, or at whatever RAM currently holds — and each Configuration button reaches
-exactly one:
-
-| Button | Direction | Dirty after |
-|---|---|---|
-| Save to flash | RAM → flash | no |
-| Discard changes | flash → RAM (`revert` op) | no — RAM now equals flash |
-| Load defaults | factory → RAM | yes, deliberately |
-
-`revert` is the only op that reads the `Persistence::load()` seam back; before it, that seam was
-called solely by `main.cpp` at boot, so flash was write-only from the host's point of view. It
-falls back to defaults when nothing valid is stored (a fresh board, or a fingerprint mismatch as
-above) and reports `src` so the host can say which happened — that field also decides the dirty
-flag, since the fallback case *does* leave something worth writing. A revert notifies **every**
-module, so the same "exactly one call, module-local index" invariant applies across the whole
-table at once. Full detail: `_notes/spec-config-revert.md`.
-
-**In-app firmware updates (Project 2).** The app ships the firmware that matches it: built
-images live in `app/firmware/` with a `manifest.json`, produced by
-`app/tools/bundle_firmware.py` at release time (it builds first, then derives every manifest
-field from the sources and the binary — nothing is typed in). A file picker survives only as a
-collapsed *Advanced* path, where a vector-table check is all that stands between picking
-`firmware.elf` out of `.pio/build` and a board that no longer enumerates.
-
-**`app/firmware/` is gitignored build output, not source — that is the current, deliberate
-decision, reversed on 2026-07-27 from the opposite one.** The binaries used to be committed so
-that app/firmware pairing was a checked-in fact; they now aren't, because the folder is what a
-release *produces* on the way to a packaged executable, and committing a binary per firmware
-change per board does not scale past one board. The pairing guarantee did not go away, it moved:
-the script is the only thing that writes there, and it derives every field from the tree it just
-built. The manifest is ignored alongside the binaries on purpose — a committed manifest whose
-`sha256` fields describe absent files is precisely the drift the script exists to prevent.
-**So: don't re-commit them, and don't "fix" the `.gitignore` entry.** A source checkout having
-no firmware until someone runs the script is the expected state, and only a developer ever sees
-it; a packaged app is built after the script has run.
-
-A multi-board run is **all-or-nothing**: `plan_entry()` builds and validates every env before
-`release()` writes anything, so a second board failing to compile cannot leave a manifest that
-looks like a complete release and isn't. By default the manifest describes exactly the envs named
-in that one command and images from a previous run are pruned; `--add` merges instead. Pruning
-only ever deletes files a *previous manifest listed* — never a wildcard sweep of the directory,
-which would take a binary someone had put there by hand. `app/tests/test_bundle_firmware.py`
-covers those invariants against a fixture tree with the `pio run` call injected out.
-
-Getting into DFU has two paths, and **both must keep working**: the `dfu` wire op (one click) and
-BOOT0+NRST by hand (for a board whose firmware is broken). That is also why the Firmware page,
-like the Terminal, is *not* in `CONNECTION_REQUIRED_PAGES` — gating the recovery tool on a working
-device is exactly backwards. Two orderings in the firmware are load-bearing and easy to
-"simplify" into bugs: `Bootloader::enterDfu()` only **arms** the reboot so `main.cpp` can flush
-the response first (otherwise the host cannot tell a reboot from a dead board), and `initVariant()`
-**clears the RTC magic before jumping** (otherwise a failed jump is an unrecoverable boot loop).
-`src/dfu.cpp` is Arduino glue beside `storage.cpp`, not a module — it has no params and no
-telemetry, so the registry would buy it nothing. Full detail: `_notes/spec-dfu-upload.md`.
-
-**Nothing can identify a board in DFU mode** — every STM32F4 bootloader reports `0483:df11` and
-nothing else. The app carries the `board` string forward from the last `hello` and says so plainly
-when it has none, rather than guessing. Any future "auto-detect the right firmware" idea runs into
-this wall first.
-
-**Disconnect detection has two independent layers**: the backend's `SerialLink` detects OS-level
-port loss (unplug) immediately. The frontend watchdog additionally declares a distinct "stale"
-badge state if telemetry hasn't arrived in 3x the configured interval while the port is still
-OS-connected — catches a wedged-but-still-enumerated board. The 3x threshold is deliberate slack:
-a `save`'s ~1s flash stall must never look like a disconnect.
+**Page convention** — every `<div id="page-*">` section ends with a `<p>&nbsp;</p>` spacer as its
+last child so content doesn't sit flush against the viewport bottom. Add one when you add a page;
+don't strip them as "empty markup". All six pages have one deliberately.
