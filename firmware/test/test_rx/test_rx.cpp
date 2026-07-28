@@ -301,6 +301,45 @@ void test_rate_reports_frames_in_the_last_whole_second() {
   TEST_ASSERT_EQUAL_UINT32(50, s.rate());
 }
 
+void test_rate_stays_zero_until_a_whole_window_follows_a_recovery() {
+  // Measured against real Crossfire hardware on 2026-07-28: after a 10s
+  // dropout the first tick back published "rate 1" beside "rfrate 150", for
+  // about a second. The window the drop froze is by then arbitrarily old, so
+  // it closes on the very first tick after frames resume and reports a count
+  // spanning only the milliseconds since the link returned -- a plausible
+  // number nothing measured. Nothing HAS been measured yet, so the honest
+  // reading is the 0 the drop already set.
+  LinkState s;
+  for (uint32_t i = 0; i < 100; ++i) s.onFrame(i * 10);   // 100Hz for a second
+  s.tick(1000, 1000);
+  TEST_ASSERT_EQUAL_UINT32(100, s.rate());
+
+  s.tick(3000, 1000);                       // silence past the timeout
+  TEST_ASSERT_FALSE(s.up());
+  TEST_ASSERT_EQUAL_UINT32(0, s.rate());
+
+  s.onFrame(13000);                         // frames resume ten seconds later
+  s.tick(13000, 1000);
+  TEST_ASSERT_TRUE(s.up());
+  TEST_ASSERT_EQUAL_UINT32(0, s.rate());
+}
+
+void test_rate_counts_every_frame_in_the_first_window_after_a_recovery() {
+  // The companion to the above: restarting the window must not cost the frame
+  // that carried the link back up. Closing the stale window consumed it, so
+  // the first honest reading came out one short of the truth.
+  LinkState s;
+  s.onFrame(1000);
+  s.tick(3000, 1000);
+  TEST_ASSERT_FALSE(s.up());
+
+  s.onFrame(13000);                                     // the recovery frame
+  s.tick(13000, 1000);
+  for (uint32_t i = 1; i < 100; ++i) s.onFrame(13000 + i * 10);
+  s.tick(14000, 1000);
+  TEST_ASSERT_EQUAL_UINT32(100, s.rate());              // not 99
+}
+
 void test_rate_resets_between_windows() {
   LinkState s;
   for (uint32_t i = 0; i < 50; ++i) s.onFrame(i * 20);
@@ -516,6 +555,8 @@ int main(int, char**) {
   RUN_TEST(test_link_loss_zeroes_the_rate_immediately);
   RUN_TEST(test_link_recovers_when_frames_resume);
   RUN_TEST(test_rate_reports_frames_in_the_last_whole_second);
+  RUN_TEST(test_rate_stays_zero_until_a_whole_window_follows_a_recovery);
+  RUN_TEST(test_rate_counts_every_frame_in_the_first_window_after_a_recovery);
   RUN_TEST(test_rate_resets_between_windows);
   RUN_TEST(test_errors_accumulate_and_do_not_affect_link_state);
   RUN_TEST(test_reset_returns_the_link_to_down_with_rate_zero_but_keeps_errors);

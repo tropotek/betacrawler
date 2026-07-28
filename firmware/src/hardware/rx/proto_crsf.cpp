@@ -98,6 +98,20 @@ void LinkState::onFrame(uint32_t nowMs) {
   if (!seen_) {
     seen_ = true;
     winStart_ = nowMs;
+  } else if (!up_) {
+    // Coming back from a timeout. The window still open is the one the drop
+    // froze, and it is as old as the outage was long -- so the next tick()
+    // would find it overdue, close it immediately, and publish a count
+    // spanning only the moment since frames resumed. Measured on real
+    // hardware after a 10s dropout: "rate 1" beside "rfrate 150", for about
+    // a second. Start a fresh window instead and leave rate_ at the 0 the
+    // drop set, which is what "not measured yet" honestly looks like -- the
+    // same reasoning that zeroes the rate with the link rather than at the
+    // end of the window below. Counting from 0 here rather than discarding
+    // this frame keeps THIS one, the frame that carried the link back up,
+    // inside the window it starts.
+    winStart_ = nowMs;
+    winCount_ = 0;
   }
   lastMs_ = nowMs;
   up_ = true;
