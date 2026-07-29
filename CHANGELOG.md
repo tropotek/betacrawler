@@ -3,7 +3,19 @@
 Summaries of completed work. Detail, reasoning and hardware-verification records live in
 `_notes/` (specs and plans) and in the git history.
 
-## Version 1.0.0 (2026-07-28)
+## Version 1.0.0 (2026-07-29)
+
+- **Board support: STM32F401CE (WeAct Black Pill V3.0).** New `[env:blackpill_f401ce]` and
+  `boards/blackpill_f401ce.h` — same pinout as the F411 board (WeAct kept the layout identical
+  across revisions), just the F401's 96KB RAM and 84MHz clock instead of 128KB/100MHz. Traced back
+  to two "defected" spare boards that silkscreen as F411CE but read back a `DEV_ID` of `0x433` and
+  only 96KB of readable SRAM over SWD: a real STM32F401CEU6 under an F411 label, confirmed against
+  the physical chip marking. The F411 env's linker script puts the initial stack pointer past a
+  real 96KB part's actual RAM, HardFaulting before USB ever comes up — every symptom a "dead
+  bootloader" would produce, with no bootloader involved. Both boards now run the new env cleanly
+  (verified: boots without a HardFault, enumerates as a USB VCP, telemetry and LED confirmed live)
+  and `app/firmware/manifest.json` carries both board images side by side with no backend or
+  `app.js` changes — the schema-driven design meant a second board was purely additive.
 
 - **RX: `rate` no longer under-reports for a second after the link recovers.**
   `LinkState::onFrame()` starts a fresh counting window on the down→up edge. Previously the
