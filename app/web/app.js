@@ -554,7 +554,7 @@ el('revert').addEventListener('click', async () => {
 });
 
 // --- side-menu navigation ---------------------------------------------------
-const PAGES = ['home', 'config', 'telemetry', 'terminal', 'firmware', 'help'];
+const PAGES = ['home', 'config', 'telemetry', 'terminal', 'firmware', 'examples', 'help'];
 // Terminal is deliberately NOT here. It is readable while disconnected so you
 // can sit on it and watch the device's boot record arrive when you connect --
 // the firmware replays that after `hello`, and being forced to connect first
