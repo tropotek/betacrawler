@@ -41,6 +41,7 @@
       --wd-display: #2f6da3;
       --wd-servo: #1f8778;
       --wd-receiver: #7358b8;
+      --wd-esc: #4c8c3c;
       --wd-power: #c23f34;
       --wd-ink: #161b22;
       --wd-muted: #5b6673;
@@ -66,6 +67,7 @@
     .wiring-diagram .fill-display { fill: var(--wd-display); }
     .wiring-diagram .fill-servo { fill: var(--wd-servo); }
     .wiring-diagram .fill-receiver { fill: var(--wd-receiver); }
+    .wiring-diagram .fill-esc { fill: var(--wd-esc); }
     .wiring-diagram .fill-power { fill: var(--wd-power); }
     .wiring-diagram .fill-surface { fill: var(--wd-surface); }
     .wiring-diagram .fill-surface2 { fill: var(--wd-surface-2); }
@@ -73,6 +75,7 @@
     .wiring-diagram .wire-display { stroke: var(--wd-display); stroke-width: 1.75; fill: none; }
     .wiring-diagram .wire-servo { stroke: var(--wd-servo); stroke-width: 1.75; fill: none; }
     .wiring-diagram .wire-receiver { stroke: var(--wd-receiver); stroke-width: 1.75; fill: none; }
+    .wiring-diagram .wire-esc { stroke: var(--wd-esc); stroke-width: 1.75; fill: none; }
     .wiring-diagram .wire-copper { stroke: var(--wd-copper); stroke-width: 1.75; fill: none; }
     .wiring-diagram .wire-reserved { stroke-dasharray: 3 3; opacity: 0.55; }
   </style>
@@ -528,8 +531,8 @@
 
           <h2 class="h5 mt-4">Wiring a Black Pill</h2>
           <p class="text-secondary">
-            WeAct STM32F411CE Black Pill wired for the display / servo / receiver stack this
-            firmware already knows how to drive. Pin names come straight from
+            WeAct STM32F411CE Black Pill wired for the display / servo / ESC / receiver stack
+            this firmware already knows how to drive. Pin names come straight from
             <code>boards/blackpill_f411ce.h</code> &mdash; this is a schematic wiring map, not the
             board's physical silkscreen layout, so match connections by label, not by position.
           </p>
@@ -537,7 +540,7 @@
           <div class="wiring-diagram">
             <div class="diagram-card">
               <svg viewBox="0 0 1200 960" xmlns="http://www.w3.org/2000/svg" role="img"
-                   aria-label="Wiring diagram connecting a Black Pill STM32F411CE board to an ST7789 display, a hobby servo, a CRSF receiver, and a USB host">
+                   aria-label="Wiring diagram connecting a Black Pill STM32F411CE board to an ST7789 display, a hobby servo, a brushless ESC, a CRSF receiver, and a USB host">
 
                 <!-- ===== Board ===== -->
                 <rect x="490" y="90" width="220" height="660" rx="20" class="fill-surface2 stroke-border" stroke-width="1.5" />
@@ -612,6 +615,19 @@
                   <text x="703" y="293">GND</text>
                 </g>
 
+                <!-- ===== Right stubs: ESC group ===== -->
+                <g class="wire-esc">
+                  <line x1="710" y1="482" x2="850" y2="482" />
+                  <line x1="710" y1="506" x2="850" y2="506" />
+                </g>
+                <g class="fill-esc">
+                  <circle cx="710" cy="482" r="3" /><circle cx="710" cy="506" r="3" />
+                </g>
+                <g class="lbl-mono fill-esc" font-size="10.5" font-weight="600" text-anchor="end">
+                  <text x="703" y="481">PA6</text>
+                  <text x="703" y="505">GND</text>
+                </g>
+
                 <!-- ===== Display card ===== -->
                 <rect x="90" y="140" width="260" height="278" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
                 <rect x="105" y="154" width="12" height="12" rx="2" class="fill-display" />
@@ -675,6 +691,25 @@
                 <g class="fill-receiver">
                   <circle cx="850" cy="222" r="3" /><circle cx="850" cy="246" r="3" opacity="0.55" />
                   <circle cx="850" cy="270" r="3" /><circle cx="850" cy="294" r="3" />
+                </g>
+
+                <!-- ===== ESC card ===== -->
+                <rect x="850" y="400" width="260" height="198" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="865" y="414" width="12" height="12" rx="2" class="fill-esc" />
+                <text x="885" y="424" class="lbl-heading fill-ink" font-size="13">Brushless ESC</text>
+                <text x="865" y="442" class="lbl-mono fill-muted" font-size="9.5">TIM3 CH1 · PWM out · module pins</text>
+                <line x1="865" y1="456" x2="1095" y2="456" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="865" y="482">SIGNAL</text>
+                  <text x="865" y="506">GND</text>
+                </g>
+                <line x1="865" y1="526" x2="1095" y2="526" class="stroke-border" stroke-width="1" />
+                <text x="865" y="548" class="lbl-mono fill-power" font-size="10">Own supply only — never board 5V.</text>
+                <text x="865" y="564" class="lbl-mono fill-power" font-size="10">Common ground with the board is</text>
+                <text x="865" y="580" class="lbl-mono fill-power" font-size="10">still required, even so.</text>
+                <g class="fill-esc">
+                  <circle cx="850" cy="482" r="3" /><circle cx="850" cy="506" r="3" />
                 </g>
 
                 <!-- ===== USB card ===== -->
