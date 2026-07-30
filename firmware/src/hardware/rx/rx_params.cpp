@@ -70,9 +70,11 @@ static const ParamDef kParams[] = {
 // that does not know the name falls back to the plain number, which is what
 // the on-device panel does -- deliberately, it keeps its curated layout.
 //
-// The wire carries microseconds. That is a display choice, not a control one:
-// phase 2's mapping reads the parser's raw ticks directly, so nothing here
-// constrains control resolution.
+// The wire carries microseconds, and phase 2's mapping (servo.src etc., see
+// _notes/spec-rx-mapping.md) reuses this exact converted value rather than
+// the parser's raw ticks -- ticksToUs's ~1.6x quantization is well beyond
+// any hobby servo's real resolution, and reusing it means the bus and this
+// telemetry can never disagree about the same frame.
 static const char* const kChanGroup = "RC Channels";
 static const char* const kLinkGroup = "RC Link";
 

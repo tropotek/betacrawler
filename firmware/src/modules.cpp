@@ -75,7 +75,7 @@ static core::Inputs g_inputs;
 #  include "hardware/rx/rx_params.h"
 #  if FW_TARGET_ARDUINO
 #    include "hardware/rx/rx_driver.h"
-     static rx::RxDriver g_rx;
+     static rx::RxDriver g_rx(g_inputs);
 #    define RX_DRV (&g_rx)
 #  else
 #    define RX_DRV nullptr

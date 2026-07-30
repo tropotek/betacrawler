@@ -131,10 +131,12 @@ void RxDriver::onParamChanged(uint8_t local, const core::Params& p) {
 void RxDriver::tick(uint32_t nowMs) {
   if (source_ == SRC_SIM) {
     runSim(nowMs);
+    syncInputs();
     return;
   }
   drainUart(nowMs);
   link_.tick(nowMs, timeoutMs_);
+  syncInputs();
 }
 
 void RxDriver::drainUart(uint32_t nowMs) {
@@ -175,6 +177,15 @@ void RxDriver::applyRcFrame(uint32_t nowMs) {
   for (uint8_t i = 0; i < n; ++i) us_[i] = ticksToUs(ticks[i]);
   for (uint8_t i = n; i < kWireChannels; ++i) us_[i] = 0;
   link_.onFrame(nowMs);
+}
+
+// Mirrors us_ onto the shared bus every tick, matching its own semantics
+// exactly: holds through a dropout (us_ isn't touched while link_ is down,
+// see applyRcFrame/drainUart), and zeroes on a protocol/source switch
+// (onParamChanged already zeroes us_ there). No separate failsafe behaviour
+// is invented for the bus -- see _notes/spec-rx-mapping.md.
+void RxDriver::syncInputs() {
+  for (uint8_t i = 0; i < kWireChannels; ++i) inputs_.set(i, (int16_t)us_[i]);
 }
 
 void RxDriver::runSim(uint32_t nowMs) {

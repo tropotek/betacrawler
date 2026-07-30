@@ -8,6 +8,7 @@
 // the `sim` source -- synthetic channels, the telemetry frame, the schema,
 // and the bar rendering. Treat the uart path as built, not verified.
 #include "hardware/rx/rx_params.h"
+#include "core/inputs.h"
 
 // Forward-declared rather than including <HardwareSerial.h>: this header is
 // pulled in by modules.cpp, and the Arduino serial header is heavy.
@@ -18,6 +19,13 @@ namespace rx {
 // Requires RX_RX_PIN, RX_TX_PIN and RX_BAUD from the board header.
 class RxDriver : public core::Module {
  public:
+  // `inputs` is the shared bus this driver publishes decoded channels to --
+  // wired in modules.cpp, not resolved through attach()'s const Registry,
+  // because attach() deliberately never hands out a writable reference to
+  // anything (core::Module's "observers are const" rule, core/module.h).
+  // See _notes/spec-rx-mapping.md.
+  explicit RxDriver(core::Inputs& inputs) : inputs_(inputs) {}
+
   // Seeds source_/timeoutMs_ from the loaded params. Runs on every module
   // before any module's begin() (see core::Module::attach), which is what
   // lets begin()'s "source == sim" check see a flash-persisted sim setting
@@ -34,9 +42,11 @@ class RxDriver : public core::Module {
   void drainUart(uint32_t nowMs);
   void runSim(uint32_t nowMs);
   void applyRcFrame(uint32_t nowMs);
+  void syncInputs();
 
   const Protocol& proto() const { return kProtocols[protocol_]; }
 
+  core::Inputs&   inputs_;
   HardwareSerial* uart_ = nullptr;
   FrameParser     parser_;
   LinkState       link_;
