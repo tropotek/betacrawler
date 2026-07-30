@@ -268,6 +268,36 @@ void test_commanded_low_bidirectional_full_forward_is_not_low() {
   TEST_ASSERT_FALSE(isCommandedLow(MODE_ARMED, 2000, 0, true, 1500, 50, true));
 }
 
+void test_commanded_low_bidirectional_input_mode_at_center_is_low() {
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_INPUT, 0, 1500, true, 1500, 50, true));
+}
+
+void test_commanded_low_bidirectional_input_mode_full_reverse_is_not_low() {
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 1000, true, 1500, 50, true));
+}
+
+void test_commanded_low_bidirectional_input_mode_stale_centered_value_is_not_low() {
+  // A dead-centre reading is meaningless if the link isn't confirmed fresh --
+  // freshness is checked before the band, same guard as the unidirectional path.
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 1500, false, 1500, 50, true));
+}
+
+void test_commanded_low_bidirectional_input_mode_no_data_is_not_low() {
+  // 0 is numerically 1500us below neutral, so the band alone would already
+  // reject it -- but this pins that the inputUs<=0 sentinel guard is what's
+  // doing the rejecting, a deliberate check, not an accident of arithmetic.
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 0, true, 1500, 50, true));
+}
+
+void test_commanded_low_unidirectional_far_below_raised_min_is_still_low() {
+  // The scenario the header doc comment names: min_us raised well above
+  // throttle_us's own 1000us range floor. A symmetric distance check would
+  // wrongly reject this (|1000-1400|=400 > 50); the one-sided check
+  // correctly accepts it, since clampUs makes "further below min_us" just
+  // as safe as being at it.
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1000, 0, true, 1400, 50, false));
+}
+
 // --- nextPulseUs: neutral, not min, is the arm-hold/failsafe pulse --------
 
 void test_pulse_not_armed_returns_neutral_when_bidirectional() {
@@ -333,6 +363,11 @@ int main() {
   RUN_TEST(test_commanded_low_bidirectional_near_center_from_above);
   RUN_TEST(test_commanded_low_bidirectional_full_reverse_is_not_low);
   RUN_TEST(test_commanded_low_bidirectional_full_forward_is_not_low);
+  RUN_TEST(test_commanded_low_bidirectional_input_mode_at_center_is_low);
+  RUN_TEST(test_commanded_low_bidirectional_input_mode_full_reverse_is_not_low);
+  RUN_TEST(test_commanded_low_bidirectional_input_mode_stale_centered_value_is_not_low);
+  RUN_TEST(test_commanded_low_bidirectional_input_mode_no_data_is_not_low);
+  RUN_TEST(test_commanded_low_unidirectional_far_below_raised_min_is_still_low);
   RUN_TEST(test_pulse_not_armed_returns_neutral_when_bidirectional);
   RUN_TEST(test_pulse_stale_input_forces_neutral_when_bidirectional);
   return UNITY_END();

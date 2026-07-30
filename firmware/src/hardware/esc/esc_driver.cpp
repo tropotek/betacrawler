@@ -38,8 +38,10 @@
 #endif
 
 // No core::Inputs::markFresh() call (i.e. no frame decoded by rx) for this
-// long -> treated as a dead link and failed toward min_us, overriding
-// whatever the last decoded value was. Measured at the bus, not per-channel:
+// long -> treated as a dead link and failed toward neutral (neutralUs()'s
+// result -- min_us when unidirectional, center when bidirectional),
+// overriding whatever the last decoded value was. Measured at the bus, not
+// per-channel:
 // rx stamps core::Inputs::lastFreshMs() once per accepted frame, and esc
 // compares nowMs against it via isLinkFresh(). This deliberately replaced an
 // earlier per-channel "value unchanged for this long" heuristic, which
@@ -49,9 +51,13 @@
 #define ESC_INPUT_STALE_MS 500
 #endif
 
-// "Low enough to arm" band above min_us -- the precondition nextArmState
-// checks before promoting ARMING to ARMED. Small enough to still require a
-// genuinely low throttle, large enough to tolerate stick/calibration slop.
+// "Low enough to arm" band around neutralUs()'s result -- the precondition
+// nextArmState checks before promoting ARMING to ARMED. One-sided above
+// neutral when unidirectional (neutral is the low end, so only "too high"
+// is a hazard); two-sided around neutral when bidirectional (drifting
+// either way off center is a hazard there). Small enough to still require a
+// genuinely low/centered throttle, large enough to tolerate stick/
+// calibration slop.
 #ifndef ESC_ARM_LOW_MARGIN_US
 #define ESC_ARM_LOW_MARGIN_US 50
 #endif
@@ -88,9 +94,11 @@ void EscDriver::detach() {
   // the counter, running or not, keeps whatever value was active until an
   // update event loads the shadow into the real CCR. Left alone, that stale
   // value survives a pauseChannel()/resumeChannel() cycle untouched. Without
-  // this, re-arming (attachOutput() -> writeUs(minUs_) in apply()) could
-  // still emit one stale, pre-detach pulse -- possibly a high throttle --
-  // before the new min_us value's own update event lands, up to one
+  // this, re-arming (attachOutput() -> writeUs(neutral) in apply(), where
+  // neutral is neutralUs()'s result -- min_us when unidirectional, center
+  // when bidirectional) could still emit one stale, pre-detach pulse --
+  // possibly a high throttle -- before the new neutral value's own update
+  // event lands, up to one
   // ESC_FRAME_US frame later. That is exactly the hazard the arm-hold gate
   // exists to prevent. Zeroing here is safe regardless of timing: the pin is
   // already held LOW by pinMode/digitalWrite below while detached, so it does

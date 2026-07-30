@@ -88,6 +88,20 @@ static const char* const kDirections[] = {"unidirectional", "bidirectional"};
 
 static const ParamDef kParams[] = {
   // key              type             label       unit  min   max   opts     n  maxlen def       defStr group
+  // Declared FIRST, ahead of esc.mode -- not just cosmetic. EscDriver::apply()
+  // re-reads every one of this module's params from the shared Params store
+  // on ANY of them changing, so declaration order is also the order values
+  // become known during a one-at-a-time apply sequence (INI restore, or a
+  // human typing Terminal `set` commands). Putting esc.direction first
+  // guarantees it is always already known -- never still at its stale prior
+  // value -- by the time esc.mode or esc.throttle_us can cause a pulse to be
+  // computed and armed against. Defaults to unidirectional: every board
+  // already shipped assumes the low end is stop, so nothing already deployed
+  // changes behaviour unless explicitly switched over. Always shown, like
+  // min_us/max_us -- it changes what "safe" and "low enough to arm" mean in
+  // every mode, so hiding it behind a showIf would hide something
+  // load-bearing. See _notes/spec-esc.md's "Amendment 2".
+  {"esc.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, DIR_UNIDIRECTIONAL, nullptr, nullptr},
   // Defaults to off: the board resets on every DFU flash, and nothing should
   // be commanded to an ESC until asked, same reasoning as servo.mode's
   // default. Saved settings ARE re-applied at boot by main.cpp's notify
@@ -104,13 +118,6 @@ static const ParamDef kParams[] = {
   // isolation. Same trick servo.min_us/max_us already uses.
   {"esc.min_us",       ParamType::U8,   "Min",      "µs",    500,  1500, nullptr, 0, 0, 1000,     nullptr, nullptr},
   {"esc.max_us",       ParamType::U8,   "Max",      "µs",    1500, 2500, nullptr, 0, 0, 2000,     nullptr, nullptr},
-  // Defaults to unidirectional: every board already shipped assumes the low
-  // end is stop, so nothing already deployed changes behaviour unless
-  // explicitly switched over. Always shown, like min_us/max_us -- it changes
-  // what "safe" and "low enough to arm" mean in every mode, so hiding it
-  // behind a showIf would hide something load-bearing. See
-  // _notes/spec-esc.md's "Amendment 2".
-  {"esc.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, DIR_UNIDIRECTIONAL, nullptr, nullptr},
   // Meaningful only when esc.mode == input -- mode does the enabling, this
   // only selects which of core::Inputs' 12 published channels to follow.
   // showIf hides it from the UI otherwise; Terminal `set` and INI restore
@@ -123,7 +130,7 @@ static const ParamDef kParams[] = {
   {"esc.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 12, 0, 2, nullptr, nullptr, "esc.mode", "input"},
 };
 
-// The commanded pulse width, or 0 when off -- including minUs during the
+// The commanded pulse width, or 0 when off -- including neutralUs during the
 // arm-hold window, same "commanded, not measured" honesty servo's srv field
 // has. There is no RPM/current feedback on this wiring.
 //

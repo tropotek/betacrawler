@@ -8,7 +8,7 @@ extern const core::ModuleDesc kDesc;
 // Parameter indices *within this module* -- what onParamChanged() receives.
 // Local, so nothing outside esc/ depends on where these landed in the
 // global table, and adding a module elsewhere can never shift them.
-enum : uint8_t { P_MODE = 0, P_THROTTLE_US = 1, P_MIN_US = 2, P_MAX_US = 3, P_DIRECTION = 4, P_SRC = 5 };
+enum : uint8_t { P_DIRECTION = 0, P_MODE = 1, P_THROTTLE_US = 2, P_MIN_US = 3, P_MAX_US = 4, P_SRC = 5 };
 
 // Values of the esc.mode enum, in declaration order.
 enum : int32_t { MODE_OFF = 0, MODE_ARMED = 1, MODE_INPUT = 2 };
