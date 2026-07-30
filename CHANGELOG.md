@@ -84,8 +84,14 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   — both close the same underlying gap: re-pointing the output at a different or newly-live signal
   source must never be honoured without first re-proving it low. This adds a module, so
   **`Registry::fingerprint()` changes**: any board with settings saved before this change falls
-  back to defaults on its next boot. **Not yet verified on hardware** — no ESC has been on the
-  bench; see `_notes/todo.md`.
+  back to defaults on its next boot.
+
+  **Verified on hardware 2026-07-30**, on a pair of E-flite 18A brushless ESCs: `off`/`armed`
+  modes, the arm-hold gate (holds at the safe pulse for the full window, only then honours the
+  commanded value), and proportional throttle response all confirmed working end to end. Ground
+  the ESC's signal return to the board — a missing common ground presents as the ESC beeping
+  "no signal" indefinitely and never responding to any commanded value, which is easy to mistake
+  for a firmware fault.
 
   **Amendment: bidirectional ESC support.** New `esc.direction` param (`unidirectional`/
   `bidirectional`, defaulting to `unidirectional` so no already-shipped board's behaviour changes
@@ -93,12 +99,23 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   below is reverse — "safe" is no longer `min_us`: a new `neutralUs()` helper resolves it to either
   `min_us` (unidirectional) or the midpoint of `min_us`/`max_us` (bidirectional), and the arm-hold
   precondition, the link-loss/`esc.src`-change failsafe and the low-throttle check documented above
-  all reference that resolved center instead of the bare low end. Also corrects `esc.src`'s default
-  from an earlier unconfirmed `ch1` guess to `ch3` (pitch), paired with `servo.src`'s own `ch2`
-  (roll) default — both confirmed on real receiver hardware, both self-centering, which is what
-  makes a bidirectional ESC's throttle safe to release and puts throttle and steering on one stick
-  for single-stick car/crawler control. This adds a param, so **`Registry::fingerprint()` changes**
-  again.
+  all reference that resolved center instead of the bare low end. `esc.direction` is declared
+  *first* in the param table, ahead of `esc.mode` — `apply()` re-reads every param on each change,
+  so an INI restore (which applies params in schema order) could otherwise apply a saved `esc.mode`
+  before the saved `esc.direction`, arming against the wrong reference point. This adds a param, so
+  **`Registry::fingerprint()` changes** again. **The bidirectional path itself is not yet verified
+  on hardware** — the ESCs on the bench turned out to be unidirectional, which is what the hardware
+  verification above actually confirms; a real bidirectional ESC is still needed to check that path.
+
+  `esc.src` defaults to `ch1` (the conventional Mode-2 throttle channel, matching
+  `esc.direction`'s own unidirectional default) and is now shown only while `esc.mode == off` — the
+  opposite of every other `showIf` in this codebase, deliberately: it's a pre-arm configuration
+  choice made once while safely off, not a live control, so hiding it once armed avoids an
+  accidental change sitting in view (already guarded by `srcChangeDemotesArmed`, but still
+  disruptive). A bidirectional ESC needs a self-centering channel instead (this bench uses `ch3`,
+  pitch, confirmed on real receiver hardware, paired with `servo.src`'s own `ch2`/roll default —
+  both self-centering, which puts throttle and steering on one stick for single-stick car/crawler
+  control) and is expected to be set explicitly per deployment, not assumed by the default.
 
 - **Discard unsaved changes ("revert").** New `Op::Revert` reads flash back into RAM, so the
   three parameter states (factory / saved / RAM) each have their own button. Falls back to

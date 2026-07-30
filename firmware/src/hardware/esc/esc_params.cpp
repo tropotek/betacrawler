@@ -118,16 +118,23 @@ static const ParamDef kParams[] = {
   // isolation. Same trick servo.min_us/max_us already uses.
   {"esc.min_us",       ParamType::U8,   "Min",      "µs",    500,  1500, nullptr, 0, 0, 1000,     nullptr, nullptr},
   {"esc.max_us",       ParamType::U8,   "Max",      "µs",    1500, 2500, nullptr, 0, 0, 2000,     nullptr, nullptr},
-  // Meaningful only when esc.mode == input -- mode does the enabling, this
-  // only selects which of core::Inputs' 12 published channels to follow.
-  // showIf hides it from the UI otherwise; Terminal `set` and INI restore
-  // still accept it regardless (showIf is display-only, never an access
-  // rule). Defaults to ch3 (pitch -- right stick vertical), confirmed on the
-  // bench, not ch1: self-centers, which is what makes bidirectional
-  // throttle safe to release, unlike the (non-centering) throttle stick.
-  // Paired deliberately with servo.src's own ch2 (roll) default -- see
-  // _notes/spec-esc.md's "Amendment 2".
-  {"esc.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 12, 0, 2, nullptr, nullptr, "esc.mode", "input"},
+  // Only used when esc.mode == input, but shown only when esc.mode == off --
+  // the opposite of every other showIf in this codebase, deliberately: this
+  // is a pre-arm configuration choice, not a live control, so it is picked
+  // while safely off and hidden once armed/input is live rather than left
+  // sitting in view where an accidental change (already guarded by
+  // srcChangeDemotesArmed, but still disruptive) is easy to make. Terminal
+  // `set` and INI restore still accept it regardless of mode (showIf is
+  // display-only, never an access rule).
+  //
+  // Defaults to ch1 -- the conventional throttle channel under Mode 2 and
+  // most standard channel orders -- matching esc.direction's own
+  // unidirectional default: this is the sensible generic starting point for
+  // a standard (non-reversing) ESC. A bidirectional ESC needs a
+  // self-centering channel instead (this bench uses ch3/pitch, confirmed on
+  // real hardware -- see _notes/spec-esc.md's "Amendment 2") and is expected
+  // to be set explicitly per deployment, not assumed by the default.
+  {"esc.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 12, 0, 0, nullptr, nullptr, "esc.mode", "off"},
 };
 
 // The commanded pulse width, or 0 when off -- including neutralUs during the
