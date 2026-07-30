@@ -41,7 +41,7 @@ def test_connect_then_schema_and_params(client):
         "disp.mode", "disp.page", "disp.rate",
         "servo.mode", "servo.angle", "servo.sweep_s",
         "servo.min_us", "servo.max_us", "servo.src",
-        "esc.mode", "esc.throttle_us", "esc.min_us", "esc.max_us", "esc.src",
+        "esc.mode", "esc.throttle_us", "esc.min_us", "esc.max_us", "esc.direction", "esc.src",
         "rx.protocol", "rx.source", "crossfire.timeout_ms", "elrs.timeout_ms"}
     # Telemetry descriptor rides along in the same response, so the UI renders
     # its cards from the device rather than a hardcoded field list.
