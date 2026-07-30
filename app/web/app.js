@@ -644,6 +644,16 @@ async function termRun(text) {
       // fields are live. Without this, the form stays on the old protocol's
       // group and an edit there writes a parameter that has no effect.
       await loadDevice();
+      // r.dirty is null for read-only commands (get/list/dump/help) -- only
+      // set/save/defaults/revert carry a verdict. Without this, a `set` typed
+      // here never enables the Save button, so the change looks applied but
+      // is RAM-only and silently gone on the next reboot.
+      if (r.dirty !== null) {
+        setDirty(r.dirty);
+        if (r.dirty && text.trim().split(/\s+/)[0].toLowerCase() === 'revert') {
+          el('revert-note').classList.remove('d-none');
+        }
+      }
     }
   } catch (e) {
     termAppend(`ERROR: ${e.message}`);

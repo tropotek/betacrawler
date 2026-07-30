@@ -5,6 +5,13 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Version 1.0.0 (2026-07-29)
 
+- **fix(terminal): Save button now enables after a typed `set`.** `terminal.run()`'s result gained
+  a `dirty` field (`None` for read-only commands, `True`/`False` for `set`/`save`/`defaults`/
+  `revert`) carried through `/api/terminal` and read by `termRun()` in `app.js`. Previously the
+  Terminal page's free-text commands never touched the shared dirty flag at all, so a `set` typed
+  there looked applied but left the Save button disabled — the change was RAM-only and silently
+  lost on the next reboot, since nothing prompted the user to actually write it to flash.
+
 - **RX mapping (phase 2): `servo` can now be driven from a receiver channel.** New
   `core::Inputs`, a small fixed bus of µs values that `rx` publishes decoded channels onto after
   every accepted frame, and that other modules read without either module naming the other.

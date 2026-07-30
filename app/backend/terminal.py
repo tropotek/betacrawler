@@ -32,6 +32,12 @@ class TerminalResult:
     friendly: str
     raw_sent: str = ""
     raw_recv: str = ""
+    # None means "this command doesn't change whether there's something to
+    # save" (get/list/dump/help, or any failed command). True/False means
+    # the Terminal's Save button state must follow -- app.js's termRun() has
+    # no other way to know, since it drives the same setDirty() the config
+    # form and the Save/Defaults/Revert buttons use.
+    dirty: bool | None = None
 
 
 def _valid_values(spec: dict) -> str:
@@ -124,19 +130,19 @@ def run(device: DeviceModel, command: str) -> TerminalResult:
                 return TerminalResult(False, "ERROR: usage: set <key> <value>")
             key, raw_val = args
             sent, recv, val = device.terminal_set(key, raw_val)
-            return TerminalResult(True, f"OK: {key} = {val}", sent, recv)
+            return TerminalResult(True, f"OK: {key} = {val}", sent, recv, dirty=True)
 
         if cmd == "save":
             if args:
                 return TerminalResult(False, "ERROR: usage: save")
             sent, recv = device.terminal_save()
-            return TerminalResult(True, "OK: saved to flash", sent, recv)
+            return TerminalResult(True, "OK: saved to flash", sent, recv, dirty=False)
 
         if cmd == "defaults":
             if args:
                 return TerminalResult(False, "ERROR: usage: defaults")
             sent, recv = device.terminal_defaults()
-            return TerminalResult(True, "OK: reset to defaults", sent, recv)
+            return TerminalResult(True, "OK: reset to defaults", sent, recv, dirty=True)
 
         if cmd == "revert":
             if args:
@@ -145,7 +151,7 @@ def run(device: DeviceModel, command: str) -> TerminalResult:
             msg = ("OK: reloaded settings from flash" if src == "flash"
                    else "OK: no saved settings on this board "
                         "— loaded defaults instead")
-            return TerminalResult(True, msg, sent, recv)
+            return TerminalResult(True, msg, sent, recv, dirty=(src != "flash"))
 
         if cmd == "list":
             if args:

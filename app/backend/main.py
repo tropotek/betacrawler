@@ -344,6 +344,7 @@ def create_app(device: DeviceModel | None = None,
             "friendly": result.friendly,
             "raw_sent": result.raw_sent,
             "raw_recv": result.raw_recv,
+            "dirty": result.dirty,
         }
 
     @app.websocket("/ws")

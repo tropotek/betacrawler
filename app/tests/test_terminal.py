@@ -48,6 +48,7 @@ def test_get_returns_current_value_with_raw_wire_lines(connected_device):
     assert result.raw_sent != ""
     assert "led.blink_hz" in result.raw_sent
     assert result.raw_recv != ""
+    assert result.dirty is None
 
 
 def test_get_unknown_key_returns_error(connected_device):
@@ -77,6 +78,16 @@ def test_set_updates_value_and_returns_ok_with_raw_wire_lines(connected_device):
     assert result.raw_sent != ""
     assert result.raw_recv != ""
     assert dev.values()["led.blink_hz"] == 15
+
+
+def test_set_reports_dirty_so_the_terminal_save_button_enables(connected_device):
+    # This is what app.js's termRun() reads to drive setDirty() -- without it
+    # the Terminal's Save button never enables after a `set`, so the RAM-only
+    # change is silently lost on the next reboot (nothing prompts the user to
+    # actually save it to flash).
+    dev, _ = connected_device
+    result = terminal.run(dev, "set led.blink_hz 15")
+    assert result.dirty is True
 
 
 def test_set_out_of_range_returns_validation_error(connected_device):
@@ -120,6 +131,12 @@ def test_set_wrong_arg_count_returns_usage_error(connected_device):
     assert len(fake.written) == before
 
 
+def test_failed_set_does_not_report_dirty(connected_device):
+    dev, _ = connected_device
+    result = terminal.run(dev, "set led.blink_hz 99")
+    assert result.dirty is None
+
+
 # --- save / defaults ---------------------------------------------------------
 
 def test_save_calls_device_and_returns_ok(connected_device):
@@ -129,6 +146,7 @@ def test_save_calls_device_and_returns_ok(connected_device):
     assert result.ok
     assert result.friendly == "OK: saved to flash"
     assert len(fake.written) == before + 1
+    assert result.dirty is False
 
 
 def test_defaults_resets_and_returns_ok(connected_device):
@@ -138,6 +156,9 @@ def test_defaults_resets_and_returns_ok(connected_device):
     assert result.ok
     assert result.friendly == "OK: reset to defaults"
     assert dev.values() == VALUES
+    # defaults reloads RAM but never touches flash (core/dispatch.cpp,
+    # Op::Defaults) -- same "unsaved" state as editing a field by hand.
+    assert result.dirty is True
 
 
 def test_save_and_defaults_reject_extra_args(connected_device):
@@ -153,6 +174,8 @@ def test_revert_reloads_from_flash(connected_device):
     assert result.ok
     assert result.friendly == "OK: reloaded settings from flash"
     assert dev.values() == VALUES
+    # RAM now matches what is stored -- nothing left to save.
+    assert result.dirty is False
 
 
 def test_revert_says_so_when_it_fell_back_to_defaults():
@@ -164,6 +187,9 @@ def test_revert_says_so_when_it_fell_back_to_defaults():
         assert result.ok
         assert result.friendly == (
             "OK: no saved settings on this board — loaded defaults instead")
+        # The board had nothing valid stored, so this is both worth saving
+        # and worth flagging via the same dirty flag a fallback from `set` uses.
+        assert result.dirty is True
     finally:
         dev.disconnect()
 
@@ -285,6 +311,8 @@ def test_terminal_endpoint_set_then_get_round_trip(client):
     assert body["friendly"] == "OK: led.blink_hz = 7"
     assert body["raw_sent"] != ""
     assert body["raw_recv"] != ""
+    # app.js's termRun() reads this to drive the Terminal page's Save button.
+    assert body["dirty"] is True
 
     r = client.post("/api/terminal", json={"command": "get led.blink_hz"})
     body = r.json()
