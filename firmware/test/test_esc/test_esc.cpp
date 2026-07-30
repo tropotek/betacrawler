@@ -165,6 +165,13 @@ void test_link_fresh_never_marked_is_stale_from_the_start() {
   TEST_ASSERT_FALSE(isLinkFresh(0, 1000, 500));
 }
 
+void test_link_fresh_zero_is_stale_even_within_the_window() {
+  // Without the dedicated zero-check, (100 - 0) = 100 < 500 would wrongly
+  // read as fresh -- this is the case the existing boundary test cannot
+  // distinguish from ordinary elapsed-time math.
+  TEST_ASSERT_FALSE(isLinkFresh(0, 100, 500));
+}
+
 // --- inputLossDemotesArmed ---------------------------------------------------
 
 void test_stale_link_demotes_an_armed_input_session() {
@@ -185,6 +192,25 @@ void test_stale_link_does_not_affect_an_already_arming_session() {
   // Demotion only applies to an ALREADY-ARMED session -- ARMING has its own
   // elapsed/commandedIsLow gate already and does not need a second path in.
   TEST_ASSERT_FALSE(inputLossDemotesArmed(ARM_ARMING, MODE_INPUT, false));
+}
+
+// --- srcChangeDemotesArmed ----------------------------------------------------
+
+void test_src_change_demotes_an_armed_input_session() {
+  TEST_ASSERT_TRUE(srcChangeDemotesArmed(ARM_ARMED, MODE_INPUT, true));
+}
+
+void test_unchanged_src_does_not_demote() {
+  TEST_ASSERT_FALSE(srcChangeDemotesArmed(ARM_ARMED, MODE_INPUT, false));
+}
+
+void test_src_change_does_not_demote_armed_mode() {
+  // MODE_ARMED never reads srcIdx_ -- a src change there is meaningless.
+  TEST_ASSERT_FALSE(srcChangeDemotesArmed(ARM_ARMED, MODE_ARMED, true));
+}
+
+void test_src_change_does_not_affect_an_arming_session() {
+  TEST_ASSERT_FALSE(srcChangeDemotesArmed(ARM_ARMING, MODE_INPUT, true));
 }
 
 // --- nextPulseUs: stale input forces min_us -------------------------------
@@ -235,10 +261,15 @@ int main() {
   RUN_TEST(test_link_stale_at_boundary);
   RUN_TEST(test_link_stale_well_past_window);
   RUN_TEST(test_link_fresh_never_marked_is_stale_from_the_start);
+  RUN_TEST(test_link_fresh_zero_is_stale_even_within_the_window);
   RUN_TEST(test_stale_link_demotes_an_armed_input_session);
   RUN_TEST(test_fresh_link_does_not_demote_an_armed_input_session);
   RUN_TEST(test_stale_link_does_not_demote_armed_mode);
   RUN_TEST(test_stale_link_does_not_affect_an_already_arming_session);
+  RUN_TEST(test_src_change_demotes_an_armed_input_session);
+  RUN_TEST(test_unchanged_src_does_not_demote);
+  RUN_TEST(test_src_change_does_not_demote_armed_mode);
+  RUN_TEST(test_src_change_does_not_affect_an_arming_session);
   RUN_TEST(test_pulse_stale_input_forces_min_even_with_a_plausible_value);
   RUN_TEST(test_pulse_stale_check_precedes_no_data_check);
   return UNITY_END();

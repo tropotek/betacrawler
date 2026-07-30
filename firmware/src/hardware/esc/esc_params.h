@@ -84,6 +84,15 @@ bool isLinkFresh(uint32_t lastFreshMs, uint32_t nowMs, uint32_t staleMs);
 // its driver call site, nothing else depends on its answer.
 bool inputLossDemotesArmed(uint32_t armState, int32_t mode, bool inputFresh);
 
+// True when a channel-selection change (esc.src) while an input-mode
+// session is already ARMED must force a fresh arm-hold cycle, the same way
+// a stale link does (inputLossDemotesArmed). Without this, switching
+// esc.src re-points the output at a different, unvetted channel with no
+// gate at all -- the exact invariant isCommandedLow/inputLossDemotesArmed
+// exist to hold. Only meaningful for MODE_INPUT; MODE_ARMED never reads
+// srcIdx_ at all.
+bool srcChangeDemotesArmed(uint32_t armState, int32_t mode, bool srcChanged);
+
 // The pulse width to write this tick, or 0 to mean "no update, hold the last
 // pulse" -- the same 0 sentinel rx/servo already use for "no data yet" on
 // core::Inputs. Anything other than ARM_ARMED always answers minUs: that is

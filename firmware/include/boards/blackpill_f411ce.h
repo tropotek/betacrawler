@@ -91,8 +91,9 @@
 // nothing else here claims it. TIM3_CH2 (PB5) stays free for a second ESC --
 // see _notes/spec-esc.md, "Future fork".
 //
-// ESC_FRAME_US (20000, i.e. 50Hz) and ESC_ARM_HOLD_MS (2000) are optional,
-// both defaulted in esc_driver.cpp.
+// ESC_FRAME_US (20000, i.e. 50Hz), ESC_ARM_HOLD_MS (2000), ESC_INPUT_STALE_MS
+// (500) and ESC_ARM_LOW_MARGIN_US (50) are all optional, defaulted in
+// esc_driver.cpp.
 //
 // Power the motor/ESC from its own supply, never the board's 5V/VBUS pin --
 // an ESC under load draws far more than the servo's own VBUS warning already

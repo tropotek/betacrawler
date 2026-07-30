@@ -28,11 +28,16 @@ bool isCommandedLow(int32_t mode, uint16_t throttleUs, int16_t inputUs, bool inp
 }
 
 bool isLinkFresh(uint32_t lastFreshMs, uint32_t nowMs, uint32_t staleMs) {
+  if (lastFreshMs == 0) return false;   // core::Inputs' own "never marked" default, not a real timestamp
   return (nowMs - lastFreshMs) < staleMs;
 }
 
 bool inputLossDemotesArmed(uint32_t armState, int32_t mode, bool inputFresh) {
   return armState == ARM_ARMED && mode == MODE_INPUT && !inputFresh;
+}
+
+bool srcChangeDemotesArmed(uint32_t armState, int32_t mode, bool srcChanged) {
+  return armState == ARM_ARMED && mode == MODE_INPUT && srcChanged;
 }
 
 uint16_t nextPulseUs(uint32_t armState, int32_t mode, uint16_t minUs, uint16_t maxUs,

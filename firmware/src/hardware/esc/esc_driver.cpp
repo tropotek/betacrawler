@@ -37,15 +37,14 @@
 #define ESC_ARM_HOLD_MS 2000
 #endif
 
-// core::Inputs slot unchanged for this long -> treated as a dead/frozen
-// link and failed toward min_us, overriding whatever the frozen value is.
-// 500ms is comfortably longer than any real CRSF/ELRS frame interval, so a
-// live link's own signal noise keeps the value moving; only a genuinely
-// stalled bus slot sits bit-for-bit motionless that long. Known limitation:
-// a human holding a physical stick perfectly still for the whole window is
-// not distinguishable from a stalled link by this heuristic -- failing
-// toward min_us is the safe-side error either way, but this is a real
-// false-positive path, not a proof. See _notes/spec-esc.md's Amendment.
+// No core::Inputs::markFresh() call (i.e. no frame decoded by rx) for this
+// long -> treated as a dead link and failed toward min_us, overriding
+// whatever the last decoded value was. Measured at the bus, not per-channel:
+// rx stamps core::Inputs::lastFreshMs() once per accepted frame, and esc
+// compares nowMs against it via isLinkFresh(). This deliberately replaced an
+// earlier per-channel "value unchanged for this long" heuristic, which
+// falsely read a throttle held at a mechanical endpoint (zero stick dither)
+// as a dead link -- see _notes/spec-esc.md's Revision section.
 #ifndef ESC_INPUT_STALE_MS
 #define ESC_INPUT_STALE_MS 500
 #endif
@@ -115,6 +114,7 @@ void EscDriver::attach(const core::Registry& reg, const core::Params& p) {
 
 void EscDriver::apply(const core::Params& p) {
   const int32_t prevMode = mode_;
+  const uint8_t prevSrcIdx = srcIdx_;
   mode_       = p.num(globalParam(P_MODE));
   throttleUs_ = (uint16_t)p.num(globalParam(P_THROTTLE_US));
   minUs_      = (uint16_t)p.num(globalParam(P_MIN_US));
@@ -122,6 +122,7 @@ void EscDriver::apply(const core::Params& p) {
   srcIdx_     = (uint8_t)p.num(globalParam(P_SRC));
 
   const bool enteringFromOff = (prevMode == MODE_OFF && mode_ != MODE_OFF);
+  const bool srcChanged = (srcIdx_ != prevSrcIdx);
   const uint32_t now = millis();
 
   const int16_t inputUs = (mode_ == MODE_INPUT) ? inputs_->get(srcIdx_) : (int16_t)0;
@@ -129,7 +130,8 @@ void EscDriver::apply(const core::Params& p) {
                            isLinkFresh(inputs_->lastFreshMs(), now, ESC_INPUT_STALE_MS);
   const bool inputStale = (mode_ == MODE_INPUT) && !inputFresh;
 
-  if (inputLossDemotesArmed(armState_, mode_, inputFresh)) {
+  if (inputLossDemotesArmed(armState_, mode_, inputFresh) ||
+      srcChangeDemotesArmed(armState_, mode_, srcChanged)) {
     armState_ = ARM_ARMING;
     armT0_    = now;
   }

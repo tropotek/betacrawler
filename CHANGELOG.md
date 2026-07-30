@@ -67,15 +67,25 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   (`TIM3_CH1`/`PA6`), the second timed-output actuator after `servo`. `esc.mode` is
   `off`/`armed`/`input`; `esc.throttle_us` is a direct 1000–2000µs command (no angle-style mapping
   needed, since the param and the wire are already the same unit) clamped through
-  `esc.min_us`/`esc.max_us`. Entering `armed` or `input` from `off` always starts at `min_us` and
-  holds it for `ESC_ARM_HOLD_MS` (2s default) before honouring any commanded value — prevents a
-  saved-to-flash high throttle, or a stale input channel, from spinning a motor the instant arming
-  is requested. Drives any BLHeli/BLHeli_S/BLHeli32 ESC via its standard PWM input (not
-  DShot/Oneshot/Multishot). Own timer (`TIM3`), independent of `servo`'s `TIM4`, so the two
-  modules' `HardwareTimer` instances never contend for one peripheral's shared overflow register.
-  This adds a module, so **`Registry::fingerprint()` changes**: any board with settings saved
-  before this change falls back to defaults on its next boot. **Not yet verified on hardware** —
-  no ESC has been on the bench; see `_notes/todo.md`.
+  `esc.min_us`/`esc.max_us`. Drives any BLHeli/BLHeli_S/BLHeli32 ESC via its standard PWM input
+  (not DShot/Oneshot/Multishot), on its own timer (`TIM3`), independent of `servo`'s `TIM4`, so the
+  two modules' `HardwareTimer` instances never contend for one peripheral's shared overflow
+  register. Entering `armed` or `input` from `off` always starts at `min_us` and holds it for
+  `ESC_ARM_HOLD_MS` (2s default) — but promotion to fully armed requires BOTH that hold to elapse
+  AND the commanded value to be confirmed low (`esc.throttle_us` in `armed` mode, the selected
+  `esc.src` channel in `input` mode) for the whole window, restarting the hold if it isn't; a saved-
+  to-flash high throttle or a mis-mapped input channel now simply never arms, rather than arming
+  late. `core::Inputs` (the RX-to-actuator channel bus `servo.mode=input` already reads) gained a
+  bus-wide `markFresh()`/`lastFreshMs()` signal that `rx` stamps once per decoded frame; `esc.mode=
+  input` reads it to detect a dead link and force `min_us`, closing a runaway-motor gap `servo`
+  never had (a servo correctly holds position through a dropout — a motor holding its last
+  throttle forever is a hazard). An already-armed `input`-mode session demotes back to `ARMING`,
+  forcing a fresh full re-arm hold, if the link goes stale **or** `esc.src` is changed while armed
+  — both close the same underlying gap: re-pointing the output at a different or newly-live signal
+  source must never be honoured without first re-proving it low. This adds a module, so
+  **`Registry::fingerprint()` changes**: any board with settings saved before this change falls
+  back to defaults on its next boot. **Not yet verified on hardware** — no ESC has been on the
+  bench; see `_notes/todo.md`.
 
 - **Discard unsaved changes ("revert").** New `Op::Revert` reads flash back into RAM, so the
   three parameter states (factory / saved / RAM) each have their own button. Falls back to

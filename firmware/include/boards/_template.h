@@ -95,8 +95,9 @@
 // separate from FEATURE_SERVO's timer -- see the note in blackpill_f411ce.h
 // for why sharing one is unsafe. The channel IS derived from the pin, so the
 // two must agree; nothing checks that at compile time.
-// ESC_FRAME_US (optional, 20000/50Hz) and ESC_ARM_HOLD_MS (optional, 2000)
-// are both defaulted in esc_driver.cpp.
+// ESC_FRAME_US (optional, 20000/50Hz), ESC_ARM_HOLD_MS (optional, 2000),
+// ESC_INPUT_STALE_MS (optional, 500) and ESC_ARM_LOW_MARGIN_US (optional, 50)
+// are all defaulted in esc_driver.cpp.
 //
 // Power the motor/ESC from its own supply, never this board's 5V/VBUS pin.
 // #define ESC_TIMER  TIM3
