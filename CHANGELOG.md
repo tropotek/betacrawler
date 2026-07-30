@@ -63,6 +63,20 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   off/hold/sweep with calibration endpoints and a UI slider; boots in `off` so nothing moves
   until asked. TIM4 CH2-4 left free for a multi-channel fork.
 
+- **ESC module: single-channel hardware PWM with an arm-hold gate.** New `esc` module
+  (`TIM3_CH1`/`PA6`), the second timed-output actuator after `servo`. `esc.mode` is
+  `off`/`armed`/`input`; `esc.throttle_us` is a direct 1000–2000µs command (no angle-style mapping
+  needed, since the param and the wire are already the same unit) clamped through
+  `esc.min_us`/`esc.max_us`. Entering `armed` or `input` from `off` always starts at `min_us` and
+  holds it for `ESC_ARM_HOLD_MS` (2s default) before honouring any commanded value — prevents a
+  saved-to-flash high throttle, or a stale input channel, from spinning a motor the instant arming
+  is requested. Drives any BLHeli/BLHeli_S/BLHeli32 ESC via its standard PWM input (not
+  DShot/Oneshot/Multishot). Own timer (`TIM3`), independent of `servo`'s `TIM4`, so the two
+  modules' `HardwareTimer` instances never contend for one peripheral's shared overflow register.
+  This adds a module, so **`Registry::fingerprint()` changes**: any board with settings saved
+  before this change falls back to defaults on its next boot. **Not yet verified on hardware** —
+  no ESC has been on the bench; see `_notes/todo.md`.
+
 - **Discard unsaved changes ("revert").** New `Op::Revert` reads flash back into RAM, so the
   three parameter states (factory / saved / RAM) each have their own button. Falls back to
   defaults when nothing valid is stored, reporting which happened.
