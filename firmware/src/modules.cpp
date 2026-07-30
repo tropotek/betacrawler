@@ -19,8 +19,16 @@
 
 #include "config.h"
 #include "core/registry.h"
+#include "core/inputs.h"
 #include "core/device_params.h"
 #include "hardware/system/system_params.h"
+
+// The shared control-signal bus (core/inputs.h). Constructed unconditionally
+// -- even a board with FEATURE_SERVO but not FEATURE_RX gets a valid,
+// all-zero bus this way, and the one module allowed to write it (rx, wired
+// below) can be constructed against a real instance regardless of what
+// other modules are enabled.
+static core::Inputs g_inputs;
 
 #if FW_TARGET_ARDUINO
 #  include "hardware/system/system_driver.h"
@@ -91,6 +99,7 @@ namespace core {
 // the flash layout. Changing it changes Registry::fingerprint(), which
 // invalidates saved settings -- by design, not by accident.
 void registerModules(Registry& reg) {
+  reg.setInputs(g_inputs);
   reg.add(device::kDesc);            // always: device.name, tlm.rate
   reg.add(sys::kDesc, SYSTEM_DRV);   // always: uptime/clock/ram/temp/vdd
 #if FEATURE_BUTTON

@@ -92,6 +92,11 @@ bool Registry::findTlm(const char* key, uint8_t* out) const {
   return false;
 }
 
+const Inputs& Registry::inputs() const {
+  static const Inputs kEmptyInputs;
+  return inputs_ ? *inputs_ : kEmptyInputs;
+}
+
 void Registry::begin(const Params& p) {
   // Two passes on purpose: every module is attached before any module begins,
   // so a driver's begin() can act on state another module published.

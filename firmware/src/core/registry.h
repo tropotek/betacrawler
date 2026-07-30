@@ -1,5 +1,6 @@
 #pragma once
 #include "core/module.h"
+#include "core/inputs.h"
 
 namespace core {
 
@@ -36,6 +37,17 @@ class Registry {
   // enabled module set changes.
   bool          findTlm(const char* key, uint8_t* out) const;
 
+  // --- inputs -----------------------------------------------------------
+  // The shared control-signal bus. modules.cpp's registerModules() sets
+  // this once, pointing at the single core::Inputs instance it also wires
+  // into rx's driver as a mutable reference -- Registry only ever hands out
+  // the const side here, exactly like paramDef()/tlmDef() hand out
+  // read-only views of state something else owns. A Registry nobody called
+  // setInputs() on (every test in this file except the two above) falls
+  // back to a static empty bus rather than a null dereference.
+  void          setInputs(const Inputs& in) { inputs_ = &in; }
+  const Inputs& inputs() const;
+
   // --- lifecycle ------------------------------------------------------------
   // Attaches every driver, then begins every driver -- two passes, so a
   // begin() can rely on all modules having been attached. Params is passed
@@ -66,6 +78,7 @@ class Registry {
   uint8_t modCount_   = 0;
   uint8_t paramCount_ = 0;
   uint8_t tlmCount_   = 0;
+  const Inputs* inputs_ = nullptr;
 };
 
 // Defined in src/modules.cpp -- the single wiring point where board #defines
