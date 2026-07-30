@@ -12,11 +12,13 @@ using core::TlmType;
 // the name, the driver receives the index.
 static const char* const kModes[] = {"off", "hold", "sweep", "input"};
 
-// Order must match core::Inputs' slot indices directly -- "in1" is slot 0,
-// so servo.src's enum index IS the bus index, no offset math anywhere.
+// Order must match core::Inputs' slot indices directly -- "ch1" is slot 0,
+// so servo.src's enum index IS the bus index, no offset math anywhere. Named
+// to match the RX module's own ch1..ch16 telemetry fields, which are the
+// same values before this module ever sees them.
 static const char* const kSrcNames[] = {
-  "in1", "in2", "in3", "in4", "in5", "in6",
-  "in7", "in8", "in9", "in10", "in11", "in12",
+  "ch1", "ch2", "ch3", "ch4", "ch5", "ch6",
+  "ch7", "ch8", "ch9", "ch10", "ch11", "ch12",
 };
 
 static const ParamDef kParams[] = {

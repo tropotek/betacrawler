@@ -8,18 +8,19 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 - **RX mapping (phase 2): `servo` can now be driven from a receiver channel.** New
   `core::Inputs`, a small fixed bus of µs values that `rx` publishes decoded channels onto after
   every accepted frame, and that other modules read without either module naming the other.
-  `servo.mode` gains a fourth value, `input`, plus a new `servo.src` param (`in1`..`in12`) selecting
-  which channel to track; the driver clamps the read value through the existing `min_us`/`max_us`
-  before commanding a pulse, same as `hold`/`sweep` already do. A never-written or invalidated
-  slot reads as `0`, which is not a reachable channel value, so `servo` holds its last commanded
-  pulse rather than actuating — matching how a link dropout already holds telemetry in phase 1,
-  and keeping "hold last value" the only failsafe behaviour this phase introduces (a configurable
-  one is still phase 3). This adds a param and an enum value, so **`Registry::fingerprint()`
-  changes**: any board with settings saved before this change falls back to defaults on its next
-  boot, by design — the guarded flash record's fingerprint mismatch is exactly the safety net for
-  a layout change like this one. Native-tested; **not yet verified on hardware** — a servo tracking
-  a real stick, failsafe-hold behaviour, and live mode-transition smoothness all remain to be
-  checked on the bench.
+  `servo.mode` gains a fourth value, `input`, plus a new `servo.src` param (`ch1`..`ch12`, matching
+  the RX module's own `ch1`..`ch16` telemetry naming) selecting which channel to track; the driver
+  clamps the read value through the existing `min_us`/`max_us` before commanding a pulse, same as
+  `hold`/`sweep` already do. A never-written or invalidated slot reads as `0`, which is not a
+  reachable channel value, so `servo` holds its last commanded pulse rather than actuating —
+  matching how a link dropout already holds telemetry in phase 1, and keeping "hold last value"
+  the only failsafe behaviour this phase introduces (a configurable one is still phase 3). This
+  adds a param and an enum value, so **`Registry::fingerprint()` changes**: any board with settings
+  saved before this change falls back to defaults on its next boot, by design — the guarded flash
+  record's fingerprint mismatch is exactly the safety net for a layout change like this one.
+  **Verified on hardware 2026-07-30**: a real stick tracked across its full range, failsafe hold
+  and clean recovery on a link drop, and live `hold`/`input`/`sweep` mode transitions with no
+  glitches — see the Test Notes in `_notes/todo.md`.
 
 - **Board support: STM32F401CE (WeAct Black Pill V3.0).** New `[env:blackpill_f401ce]` and
   `boards/blackpill_f401ce.h` — same pinout as the F411 board (WeAct kept the layout identical
