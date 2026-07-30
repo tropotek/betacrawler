@@ -84,6 +84,8 @@ static const char* const kSrcNames[] = {
   "ch7", "ch8", "ch9", "ch10", "ch11", "ch12",
 };
 
+static const char* const kDirections[] = {"unidirectional", "bidirectional"};
+
 static const ParamDef kParams[] = {
   // key              type             label       unit  min   max   opts     n  maxlen def       defStr group
   // Defaults to off: the board resets on every DFU flash, and nothing should
@@ -102,12 +104,23 @@ static const ParamDef kParams[] = {
   // isolation. Same trick servo.min_us/max_us already uses.
   {"esc.min_us",       ParamType::U8,   "Min",      "µs",    500,  1500, nullptr, 0, 0, 1000,     nullptr, nullptr},
   {"esc.max_us",       ParamType::U8,   "Max",      "µs",    1500, 2500, nullptr, 0, 0, 2000,     nullptr, nullptr},
+  // Defaults to unidirectional: every board already shipped assumes the low
+  // end is stop, so nothing already deployed changes behaviour unless
+  // explicitly switched over. Always shown, like min_us/max_us -- it changes
+  // what "safe" and "low enough to arm" mean in every mode, so hiding it
+  // behind a showIf would hide something load-bearing. See
+  // _notes/spec-esc.md's "Amendment 2".
+  {"esc.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, DIR_UNIDIRECTIONAL, nullptr, nullptr},
   // Meaningful only when esc.mode == input -- mode does the enabling, this
   // only selects which of core::Inputs' 12 published channels to follow.
   // showIf hides it from the UI otherwise; Terminal `set` and INI restore
   // still accept it regardless (showIf is display-only, never an access
-  // rule).
-  {"esc.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 12, 0, 0, nullptr, nullptr, "esc.mode", "input"},
+  // rule). Defaults to ch3 (pitch -- right stick vertical), confirmed on the
+  // bench, not ch1: self-centers, which is what makes bidirectional
+  // throttle safe to release, unlike the (non-centering) throttle stick.
+  // Paired deliberately with servo.src's own ch2 (roll) default -- see
+  // _notes/spec-esc.md's "Amendment 2".
+  {"esc.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 12, 0, 2, nullptr, nullptr, "esc.mode", "input"},
 };
 
 // The commanded pulse width, or 0 when off -- including minUs during the

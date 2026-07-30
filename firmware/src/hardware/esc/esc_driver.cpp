@@ -119,11 +119,14 @@ void EscDriver::apply(const core::Params& p) {
   throttleUs_ = (uint16_t)p.num(globalParam(P_THROTTLE_US));
   minUs_      = (uint16_t)p.num(globalParam(P_MIN_US));
   maxUs_      = (uint16_t)p.num(globalParam(P_MAX_US));
+  direction_  = p.num(globalParam(P_DIRECTION));
   srcIdx_     = (uint8_t)p.num(globalParam(P_SRC));
 
   const bool enteringFromOff = (prevMode == MODE_OFF && mode_ != MODE_OFF);
   const bool srcChanged = (srcIdx_ != prevSrcIdx);
   const uint32_t now = millis();
+  const bool bidirectional = (direction_ == DIR_BIDIRECTIONAL);
+  const uint16_t neutral   = neutralUs(minUs_, maxUs_, bidirectional);
 
   const int16_t inputUs = (mode_ == MODE_INPUT) ? inputs_->get(srcIdx_) : (int16_t)0;
   const bool inputFresh = (mode_ == MODE_INPUT) &&
@@ -137,8 +140,8 @@ void EscDriver::apply(const core::Params& p) {
   }
 
   if (enteringFromOff) armT0_ = now;
-  const bool commandedLow = isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, minUs_,
-                                            ESC_ARM_LOW_MARGIN_US);
+  const bool commandedLow = isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, neutral,
+                                            ESC_ARM_LOW_MARGIN_US, bidirectional);
   if (armState_ == ARM_ARMING && !commandedLow) armT0_ = now;
   armState_ = nextArmState(armState_, mode_ == MODE_OFF, enteringFromOff, now, armT0_,
                             ESC_ARM_HOLD_MS, commandedLow);
@@ -147,7 +150,7 @@ void EscDriver::apply(const core::Params& p) {
   if (enteringFromOff) attachOutput();
 
   const uint16_t us = nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs,
-                                   inputStale);
+                                   inputStale, neutral);
   if (us > 0) writeUs(us);
 }
 
@@ -159,6 +162,9 @@ void EscDriver::onParamChanged(uint8_t local, const core::Params& p) {
 void EscDriver::tick(uint32_t nowMs) {
   if (mode_ == MODE_OFF) return;
 
+  const bool bidirectional = (direction_ == DIR_BIDIRECTIONAL);
+  const uint16_t neutral   = neutralUs(minUs_, maxUs_, bidirectional);
+
   const int16_t inputUs = (mode_ == MODE_INPUT) ? inputs_->get(srcIdx_) : (int16_t)0;
   const bool inputFresh = (mode_ == MODE_INPUT) &&
                            isLinkFresh(inputs_->lastFreshMs(), nowMs, ESC_INPUT_STALE_MS);
@@ -169,13 +175,13 @@ void EscDriver::tick(uint32_t nowMs) {
     armT0_    = nowMs;
   }
 
-  const bool commandedLow = isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, minUs_,
-                                            ESC_ARM_LOW_MARGIN_US);
+  const bool commandedLow = isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, neutral,
+                                            ESC_ARM_LOW_MARGIN_US, bidirectional);
   if (armState_ == ARM_ARMING && !commandedLow) armT0_ = nowMs;
   armState_ = nextArmState(armState_, false, false, nowMs, armT0_, ESC_ARM_HOLD_MS, commandedLow);
 
   const uint16_t us = nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs,
-                                   inputStale);
+                                   inputStale, neutral);
   if (us > 0) writeUs(us);
 }
 

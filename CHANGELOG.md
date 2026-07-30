@@ -87,6 +87,19 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   back to defaults on its next boot. **Not yet verified on hardware** — no ESC has been on the
   bench; see `_notes/todo.md`.
 
+  **Amendment: bidirectional ESC support.** New `esc.direction` param (`unidirectional`/
+  `bidirectional`, defaulting to `unidirectional` so no already-shipped board's behaviour changes
+  unless explicitly switched over). For a bidirectional ESC — center is stop, above is forward,
+  below is reverse — "safe" is no longer `min_us`: a new `neutralUs()` helper resolves it to either
+  `min_us` (unidirectional) or the midpoint of `min_us`/`max_us` (bidirectional), and the arm-hold
+  precondition, the link-loss/`esc.src`-change failsafe and the low-throttle check documented above
+  all reference that resolved center instead of the bare low end. Also corrects `esc.src`'s default
+  from an earlier unconfirmed `ch1` guess to `ch3` (pitch), paired with `servo.src`'s own `ch2`
+  (roll) default — both confirmed on real receiver hardware, both self-centering, which is what
+  makes a bidirectional ESC's throttle safe to release and puts throttle and steering on one stick
+  for single-stick car/crawler control. This adds a param, so **`Registry::fingerprint()` changes**
+  again.
+
 - **Discard unsaved changes ("revert").** New `Op::Revert` reads flash back into RAM, so the
   three parameter states (factory / saved / RAM) each have their own button. Falls back to
   defaults when nothing valid is stored, reporting which happened.
