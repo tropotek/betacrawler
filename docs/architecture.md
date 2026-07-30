@@ -85,6 +85,14 @@ including why the other two were rejected — lives in `_notes/spec-rx-mapping.m
 gitignored and local-only, so it won't follow a fresh clone, but it's there for anyone working in
 this checkout who wants the history behind the choice.
 
+The bus also carries one piece of state beyond the channel values themselves: `markFresh()`/
+`lastFreshMs()`, a bus-wide "a frame was just decoded" timestamp `rx` stamps once per accepted
+frame (real or simulated). It exists for the same reason the channel values do — a consumer that
+needs to know whether the link is actually alive cannot infer that from a channel value holding
+steady, since a real stick at its mechanical endpoint is indistinguishable from a dead link by
+value alone. `esc`'s `mode=input` failsafe is the first consumer of this signal; `servo` does not
+need it (position-hold-on-dropout is its own correct, deliberate design, not a gap).
+
 ## Boot health
 
 `core/boot_log.h` holds a fixed buffer of lines recorded during `setup()` — identity, whether

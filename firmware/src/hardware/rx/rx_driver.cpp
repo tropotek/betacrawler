@@ -177,6 +177,7 @@ void RxDriver::applyRcFrame(uint32_t nowMs) {
   for (uint8_t i = 0; i < n; ++i) us_[i] = ticksToUs(ticks[i]);
   for (uint8_t i = n; i < kWireChannels; ++i) us_[i] = 0;
   link_.onFrame(nowMs);
+  inputs_.markFresh(nowMs);
 }
 
 // Mirrors us_ onto the shared bus every tick, matching its own semantics
@@ -229,6 +230,7 @@ void RxDriver::runSim(uint32_t nowMs) {
   // Unsigned subtraction, matching LinkState's own wraparound convention.
   if ((uint32_t)(nowMs - lastSimFrameMs_) >= 7) {
     link_.onFrame(nowMs);
+    inputs_.markFresh(nowMs);
     lastSimFrameMs_ = nowMs;
   }
   link_.tick(nowMs, timeoutMs_);
