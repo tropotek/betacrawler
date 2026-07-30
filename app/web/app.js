@@ -259,8 +259,13 @@ document.addEventListener('alpine:init', () => {
       return groupItems(visible, (p) => ({
         ...p,
         isSlider: p.type === 'u8' && SLIDER_FIELDS.has(p.key),
-        help: p.type === 'u8' ? `${p.min}–${p.max}`
-            : p.type === 'str' ? `max ${p.maxlen} chars` : '',
+        // FIELD_HELP (field_help.js) fully replaces the auto-generated bound
+        // when a field has an entry -- copy is written to fold the bound back
+        // in where it matters. An unmapped key (a new firmware param nobody
+        // has written copy for yet) falls back to the bound alone, so this
+        // never needs to change when a param is added.
+        help: FIELD_HELP[p.key] ?? (p.type === 'u8' ? `${p.min}–${p.max}`
+            : p.type === 'str' ? `max ${p.maxlen} chars` : ''),
       }));
     },
 

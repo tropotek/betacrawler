@@ -12,6 +12,13 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   there looked applied but left the Save button disabled — the change was RAM-only and silently
   lost on the next reboot, since nothing prompted the user to actually write it to flash.
 
+- **feat(app): Configuration page fields show real descriptive help text.** New
+  `app/web/field_help.js` maps each param's dotted schema key to authored copy,
+  replacing the old auto-generated bound-only hint (`1–20`, `max 16 chars`).
+  An unmapped key falls back to that bound automatically, so adding a firmware
+  parameter still needs zero `app.js` changes. Config page only — Telemetry
+  keeps its existing unit-only caption.
+
 - **RX mapping (phase 2): `servo` can now be driven from a receiver channel.** New
   `core::Inputs`, a small fixed bus of µs values that `rx` publishes decoded channels onto after
   every accepted frame, and that other modules read without either module naming the other.
