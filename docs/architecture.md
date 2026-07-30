@@ -160,6 +160,9 @@ item's `group` (defaulting to the owning module's label).
 Adding a firmware parameter or telemetry field should need zero changes in `app.js` — if it
 doesn't, something has drifted from that design. There is deliberately **no** field-label map or
 field-order table left in `app.js`; display order is the firmware's module registration order.
+`app/web/field_help.js` is the one deliberate exception — optional supplementary prose keyed by
+schema key, with a graceful fallback when a key is absent; it must never become a source of labels
+or display order.
 
 Display hints never change what goes over the wire:
 

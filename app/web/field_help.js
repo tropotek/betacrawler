@@ -5,6 +5,8 @@
 // what currently exists). A param with no entry here still renders fine --
 // see docs/architecture.md's schema-driven-UI rule -- it just shows the
 // plain bound until someone adds a line here.
+// Numeric bounds quoted in this copy are hand-copied from each param's ParamDef in firmware --
+// if a bound ever changes there, update the matching line here too.
 const FIELD_HELP = {
   'device.name': 'A short name for this board, shown in the navbar and app title — cosmetic only, up to 31 characters.',
   'tlm.rate': 'How often telemetry pushes to the app over the WebSocket, 1–50 Hz. Higher rates cost more USB bandwidth; the Configuration form itself does not need this to be fast.',
@@ -22,7 +24,7 @@ const FIELD_HELP = {
   'esc.direction': '"unidirectional" treats the low end of the throttle range as stop — the safe default for most ESCs. "bidirectional" treats the middle of the range as stop, with either side driving forward or reverse. Get this wrong and arming will not behave the way you expect.',
   'esc.mode': '"off" commands nothing; "armed" drives Throttle directly; "input" follows a receiver channel (see Source). Arming always starts at the safe/neutral position and holds there briefly before honouring a commanded value.',
   'esc.throttle_us': 'Commanded pulse width in armed mode, 1000–2000 microseconds.',
-  'esc.min_us': "Pulse width commanded at the low (or, in bidirectional mode, centre-adjacent) end of the throttle range, 500–1500 microseconds. Calibrate this to the ESC's real endpoint.",
+  'esc.min_us': "Lowest pulse the ESC will ever be commanded, 500–1500 microseconds — stop on a unidirectional ESC, full reverse on a bidirectional one. Calibrate this to the ESC's real endpoint.",
   'esc.max_us': "Pulse width commanded at the high end of the throttle range, 1500–2500 microseconds. Calibrate this to the ESC's real endpoint.",
   'esc.src': "Which receiver channel drives the ESC in input mode (ch1–ch12, matching the RX module's own channel numbering). Only shown while off — change it before arming, not while live.",
 

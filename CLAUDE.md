@@ -138,7 +138,9 @@ the socket itself) in or out; every path through `Api.base`; the push channel st
 telemetry field must need zero changes in `app.js`; there is deliberately no field-label map and no
 field-order table (order is module registration order). `div`/`dec`/`showIf` are **display hints
 only** — the wire always carries native units, and firmware/backend still validate a hidden
-parameter so Terminal `set` and INI restore keep working.
+parameter so Terminal `set` and INI restore keep working. `app/web/field_help.js` is the one
+sanctioned exception: optional, supplementary prose only, with a graceful fallback when a key is
+missing — never a source of labels or order.
 
 **`config_hash.py` stays in `extra_scripts`** — board-header edits don't trigger rebuilds without
 it (`#include BOARD_HEADER` is invisible to SCons), and removing it silently reintroduces

@@ -183,6 +183,17 @@ function clearStale() {
 // sweep mode instead of expecting the UI to scrub.
 const SLIDER_FIELDS = new Set(['led.blink_hz', 'servo.angle']);
 
+// field_help.js defines the FIELD_HELP global; guarded so a fork that copies
+// app.js without its sibling data file degrades to no help text instead of a
+// dead Configuration page (Alpine's x-for would throw ReferenceError on every
+// render otherwise). NOTE: `typeof` is required here, not `window.FIELD_HELP`
+// or `globalThis.FIELD_HELP` -- a top-level `const` in a classic (non-module)
+// script lives in the global *lexical* scope, not on `window`/`globalThis`,
+// so those would silently disable all help text even when field_help.js
+// loaded fine. Verified in Chromium: typeof FIELD_HELP -> "object",
+// typeof globalThis.FIELD_HELP -> "undefined".
+const FIELD_HELP_MAP = (typeof FIELD_HELP !== 'undefined') ? FIELD_HELP : {};
+
 // Groups items that carry a `group` field into [{name, items}], preserving
 // the order each group first appears. Shared by the config form and the
 // telemetry page, which group identically.
@@ -264,7 +275,7 @@ document.addEventListener('alpine:init', () => {
         // in where it matters. An unmapped key (a new firmware param nobody
         // has written copy for yet) falls back to the bound alone, so this
         // never needs to change when a param is added.
-        help: FIELD_HELP[p.key] ?? (p.type === 'u8' ? `${p.min}–${p.max}`
+        help: FIELD_HELP_MAP[p.key] ?? (p.type === 'u8' ? `${p.min}–${p.max}`
             : p.type === 'str' ? `max ${p.maxlen} chars` : ''),
       }));
     },
