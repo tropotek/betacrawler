@@ -126,7 +126,12 @@ void ServoDriver::tick(uint32_t nowMs) {
     // cannot drift the sweep rate.
     writeUs(angleToUs(sweepAngle(nowMs - t0_, periodMs_), minUs_, maxUs_));
   } else if (mode_ == MODE_INPUT) {
-    writeUs(clampUs(inputs_->get(srcIdx_), minUs_, maxUs_));
+    const int16_t v = inputs_->get(srcIdx_);
+    // 0 is rx's established "this slot carries no data" sentinel -- never
+    // written, a channel this protocol does not transmit, or invalidated by a
+    // protocol/source switch -- and is not a reachable ticksToUs() output
+    // (880..2159). Hold the last pulse rather than actuating to min_us.
+    if (v > 0) writeUs(clampUs(v, minUs_, maxUs_));
   }
 }
 
