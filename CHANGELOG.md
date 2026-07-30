@@ -25,8 +25,10 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   `servo.mode` gains a fourth value, `input`, plus a new `servo.src` param (`ch1`..`ch12`, matching
   the RX module's own `ch1`..`ch16` telemetry naming) selecting which channel to track, **defaulting
   to `ch2`** (roll, confirmed on bench hardware — see commit `f32420a`) — paired deliberately with
-  the ESC module's own `esc.src` default of `ch3` (pitch, see commit `39d8958`), both self-centering
-  channels, so `servo` and `esc` do not both default to tracking the same stick out of the box; the
+  the ESC module's own `esc.src` default, `ch3` (pitch, see commit `39d8958`) at the time, both
+  self-centering channels, so `servo` and `esc` did not both default to tracking the same stick out
+  of the box. `esc.src`'s default later changed to `ch1` (throttle) once the ESC module settled on
+  `unidirectional` as its own default — see the Amendment further down. The
   driver clamps the read value through the existing `min_us`/`max_us` before
   commanding a pulse, same as `hold`/`sweep` already do. A never-written or invalidated slot reads
   as `0`, which is not a reachable channel value, so `servo` holds its last commanded pulse rather
