@@ -8,10 +8,13 @@ extern const core::ModuleDesc kDesc;
 // Parameter indices *within this module* -- what onParamChanged() receives.
 // Local, so nothing outside esc/ depends on where these landed in the
 // global table, and adding a module elsewhere can never shift them.
-enum : uint8_t { P_MODE = 0, P_THROTTLE_US = 1, P_MIN_US = 2, P_MAX_US = 3, P_SRC = 4 };
+enum : uint8_t { P_MODE = 0, P_THROTTLE_US = 1, P_MIN_US = 2, P_MAX_US = 3, P_DIRECTION = 4, P_SRC = 5 };
 
 // Values of the esc.mode enum, in declaration order.
 enum : int32_t { MODE_OFF = 0, MODE_ARMED = 1, MODE_INPUT = 2 };
+
+// Values of the esc.direction enum, in declaration order.
+enum : int32_t { DIR_UNIDIRECTIONAL = 0, DIR_BIDIRECTIONAL = 1 };
 
 // Telemetry indices within this module's slice of the frame.
 enum : uint8_t { T_US = 0, T_ARM = 1, T_COUNT = 2 };
@@ -48,17 +51,37 @@ uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool enteringFromOff,
                        uint32_t nowMs, uint32_t armT0Ms, uint32_t armHoldMs,
                        bool commandedIsLow);
 
+// The safe/idle pulse width for this ESC's configured direction: min_us for
+// a unidirectional ESC (the low end is stop; everything above it is
+// forward-only), or the midpoint of min_us/max_us for a bidirectional one
+// (center is stop; below is reverse, above is forward). Single source of
+// truth for "where is safe" -- every place that used to hardcode min_us as
+// the arm-hold/failsafe value now takes this instead.
+uint16_t neutralUs(uint16_t minUs, uint16_t maxUs, bool bidirectional);
+
 // True when the value that would be honoured on promotion to ARMED is at or
-// near min_us -- the arm-completion precondition. MODE_ARMED checks the
-// bench throttle_us param directly; MODE_INPUT additionally requires
-// inputFresh (see core::Inputs::lastFreshMs() / isLinkFresh() below) on top
-// of a CONFIRMED low reading (inputUs > 0) -- arming must never complete
-// against a link the module's own freshness check has already flagged as
-// dead, even if the frozen value it left behind happens to look low. Any
-// other mode (only MODE_OFF in practice, handled elsewhere by the caller)
-// is defensively "not low".
+// near neutralUs (see neutralUs() above) -- the arm-completion precondition.
+// MODE_ARMED checks the bench throttle_us param directly; MODE_INPUT
+// additionally requires inputFresh on top of a CONFIRMED reading
+// (inputUs > 0) -- arming must never complete against a link the module's
+// own freshness check has already flagged as dead. Any other mode (only
+// MODE_OFF in practice, handled elsewhere by the caller) is defensively
+// "not low".
+//
+// `bidirectional` changes the SHAPE of the check, not just the reference
+// point: unidirectional keeps a one-sided check (anything at or below
+// neutralUs + lowMarginUs counts, since clampUs makes "further below" just
+// as safe). Bidirectional needs a two-sided band around neutralUs, since
+// drifting either direction away from center is a real hazard there (fast
+// reverse or fast forward), not a clamped, harmless extreme. A single
+// unified symmetric check was considered and rejected: it silently
+// misclassifies a legal unidirectional configuration where min_us has been
+// raised well above esc.throttle_us's own 1000us range floor -- a low
+// throttle_us far below the raised min_us is still perfectly safe (clamped
+// up to min_us regardless), but a symmetric distance check would wrongly
+// reject it as "too far from neutral".
 bool isCommandedLow(int32_t mode, uint16_t throttleUs, int16_t inputUs, bool inputFresh,
-                     uint16_t minUs, uint16_t lowMarginUs);
+                     uint16_t neutralUs, uint16_t lowMarginUs, bool bidirectional);
 
 // True when the bus proved itself alive within staleMs of nowMs -- see
 // core::Inputs::markFresh()'s doc comment for why this is measured at the
@@ -95,15 +118,15 @@ bool srcChangeDemotesArmed(uint32_t armState, int32_t mode, bool srcChanged);
 
 // The pulse width to write this tick, or 0 to mean "no update, hold the last
 // pulse" -- the same 0 sentinel rx/servo already use for "no data yet" on
-// core::Inputs. Anything other than ARM_ARMED always answers minUs: that is
-// the arm-hold pulse, and it is also the correct fallback if mode is
-// somehow neither armed nor input. In MODE_INPUT, inputStale forces minUs
-// first (checked before the sentinel case below: a frozen non-zero reading
-// must not fall through to "hold last pulse" -- it must actively force
-// minUs). Otherwise inputUs <= 0 means the bus slot has never been written
-// (or was invalidated) and the last real pulse holds, same as servo's input
-// mode on the same bus.
+// core::Inputs. Anything other than ARM_ARMED always answers neutralUs: that
+// is the arm-hold pulse, and it is also the correct fallback if mode is
+// somehow neither armed nor input. In MODE_INPUT, inputStale forces
+// neutralUs first (checked before the sentinel case below: a frozen
+// non-zero reading must not fall through to "hold last pulse" -- it must
+// actively force neutralUs). Otherwise inputUs <= 0 means the bus slot has
+// never been written (or was invalidated) and the last real pulse holds,
+// same as servo's input mode on the same bus.
 uint16_t nextPulseUs(uint32_t armState, int32_t mode, uint16_t minUs, uint16_t maxUs,
-                      uint16_t throttleUs, int16_t inputUs, bool inputStale);
+                      uint16_t throttleUs, int16_t inputUs, bool inputStale, uint16_t neutralUs);
 
 }  // namespace esc

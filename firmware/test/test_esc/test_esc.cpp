@@ -65,32 +65,32 @@ void test_arm_switching_mode_while_armed_does_not_rearm() {
 // --- nextPulseUs --------------------------------------------------------------
 
 void test_pulse_during_arming_is_always_min_regardless_of_mode() {
-  TEST_ASSERT_EQUAL_UINT16(1000, nextPulseUs(ARM_ARMING, MODE_ARMED, 1000, 2000, 1800, 0, false));
-  TEST_ASSERT_EQUAL_UINT16(1000, nextPulseUs(ARM_ARMING, MODE_INPUT, 1000, 2000, 1000, 1800, false));
+  TEST_ASSERT_EQUAL_UINT16(1000, nextPulseUs(ARM_ARMING, MODE_ARMED, 1000, 2000, 1800, 0, false, 1000));
+  TEST_ASSERT_EQUAL_UINT16(1000, nextPulseUs(ARM_ARMING, MODE_INPUT, 1000, 2000, 1000, 1800, false, 1000));
 }
 
 void test_pulse_off_arm_state_defaults_to_min() {
   // Defensive: tick()/apply() never call this with ARM_OFF in practice (they
   // return early on MODE_OFF first), but the function's own contract must
   // still hold -- anything other than ARM_ARMED is the safe min pulse.
-  TEST_ASSERT_EQUAL_UINT16(1000, nextPulseUs(ARM_OFF, MODE_ARMED, 1000, 2000, 1800, 0, false));
+  TEST_ASSERT_EQUAL_UINT16(1000, nextPulseUs(ARM_OFF, MODE_ARMED, 1000, 2000, 1800, 0, false, 1000));
 }
 
 void test_pulse_armed_mode_clamps_throttle() {
-  TEST_ASSERT_EQUAL_UINT16(1500, nextPulseUs(ARM_ARMED, MODE_ARMED, 1000, 2000, 1500, 0, false));
-  TEST_ASSERT_EQUAL_UINT16(2000, nextPulseUs(ARM_ARMED, MODE_ARMED, 1000, 2000, 2500, 0, false));
+  TEST_ASSERT_EQUAL_UINT16(1500, nextPulseUs(ARM_ARMED, MODE_ARMED, 1000, 2000, 1500, 0, false, 1000));
+  TEST_ASSERT_EQUAL_UINT16(2000, nextPulseUs(ARM_ARMED, MODE_ARMED, 1000, 2000, 2500, 0, false, 1000));
 }
 
 void test_pulse_input_mode_clamps_bus_value() {
-  TEST_ASSERT_EQUAL_UINT16(1800, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, 1800, false));
+  TEST_ASSERT_EQUAL_UINT16(1800, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, 1800, false, 1000));
 }
 
 void test_pulse_input_mode_holds_last_on_no_data() {
-  TEST_ASSERT_EQUAL_UINT16(0, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, 0, false));
+  TEST_ASSERT_EQUAL_UINT16(0, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, 0, false, 1000));
 }
 
 void test_pulse_input_mode_holds_last_on_negative() {
-  TEST_ASSERT_EQUAL_UINT16(0, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, -5, false));
+  TEST_ASSERT_EQUAL_UINT16(0, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, -5, false, 1000));
 }
 
 // --- nextArmState: the low-throttle arm precondition ---------------------
@@ -116,18 +116,18 @@ void test_arm_already_armed_ignores_commanded_low() {
 // --- isCommandedLow ------------------------------------------------------
 
 void test_commanded_low_armed_mode_checks_throttle_against_margin() {
-  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1000, 0, true, 1000, 50));   // exactly min_us
-  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1040, 0, true, 1000, 50));   // within margin
-  TEST_ASSERT_FALSE(isCommandedLow(MODE_ARMED, 1060, 0, true, 1000, 50));  // outside margin
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1000, 0, true, 1000, 50, false));   // exactly min_us
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1040, 0, true, 1000, 50, false));   // within margin
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_ARMED, 1060, 0, true, 1000, 50, false));  // outside margin
 }
 
 void test_commanded_low_input_mode_requires_confirmed_reading() {
-  TEST_ASSERT_TRUE(isCommandedLow(MODE_INPUT, 0, 1020, true, 1000, 50));
-  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 1800, true, 1000, 50));
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_INPUT, 0, 1020, true, 1000, 50, false));
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 1800, true, 1000, 50, false));
   // inputUs <= 0 is "no data", never "confirmed low" -- must not read as
   // low enough to arm just because it is numerically small.
-  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 0, true, 1000, 50));
-  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, -5, true, 1000, 50));
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 0, true, 1000, 50, false));
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, -5, true, 1000, 50, false));
 }
 
 // --- isCommandedLow: freshness gating (MODE_INPUT only) ---------------------
@@ -135,12 +135,12 @@ void test_commanded_low_input_mode_requires_confirmed_reading() {
 void test_commanded_low_input_mode_requires_freshness_too() {
   // A confirmed-low reading (200 <= 1050) that is NOT fresh must still fail
   // -- arming must never complete against a link already known dead.
-  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 1020, false, 1000, 50));
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 1020, false, 1000, 50, false));
 }
 
 void test_commanded_low_armed_mode_ignores_freshness() {
   // MODE_ARMED has no bus input at all -- inputFresh must have no effect.
-  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1000, 0, false, 1000, 50));
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1000, 0, false, 1000, 50, false));
 }
 
 // --- isLinkFresh -------------------------------------------------------------
@@ -219,13 +219,66 @@ void test_pulse_stale_input_forces_min_even_with_a_plausible_value() {
   // 1800 looks like a perfectly valid throttle reading -- inputStale is the
   // only thing distinguishing "live signal, happens to read 1800" from "the
   // link died with 1800 as the last frame". Must force minUs regardless.
-  TEST_ASSERT_EQUAL_UINT16(1000, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, 1800, true));
+  TEST_ASSERT_EQUAL_UINT16(1000, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, 1800, true, 1000));
 }
 
 void test_pulse_stale_check_precedes_no_data_check() {
   // inputUs<=0 alone means "hold last pulse" (returns 0), but inputStale
   // must take priority and force an active minUs write instead.
-  TEST_ASSERT_EQUAL_UINT16(1000, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, 0, true));
+  TEST_ASSERT_EQUAL_UINT16(1000, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, 0, true, 1000));
+}
+
+// --- neutralUs -----------------------------------------------------------
+
+void test_neutral_unidirectional_is_min() {
+  TEST_ASSERT_EQUAL_UINT16(1000, neutralUs(1000, 2000, false));
+}
+
+void test_neutral_bidirectional_is_center() {
+  TEST_ASSERT_EQUAL_UINT16(1500, neutralUs(1000, 2000, true));
+}
+
+void test_neutral_bidirectional_odd_span_rounds_down() {
+  // (1000 + 2001) / 2 = 1500.5 -> integer division floors to 1500.
+  TEST_ASSERT_EQUAL_UINT16(1500, neutralUs(1000, 2001, true));
+}
+
+void test_neutral_bidirectional_degenerate_span() {
+  TEST_ASSERT_EQUAL_UINT16(1500, neutralUs(1500, 1500, true));
+}
+
+// --- isCommandedLow: bidirectional shape ----------------------------------
+
+void test_commanded_low_bidirectional_near_center_from_below() {
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1470, 0, true, 1500, 50, true));
+}
+
+void test_commanded_low_bidirectional_near_center_from_above() {
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1530, 0, true, 1500, 50, true));
+}
+
+void test_commanded_low_bidirectional_full_reverse_is_not_low() {
+  // 1000 (near min_us) would have satisfied the OLD unidirectional check --
+  // this is the exact case that must now fail for a bidirectional ESC: full
+  // reverse is not a safe arming position.
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_ARMED, 1000, 0, true, 1500, 50, true));
+}
+
+void test_commanded_low_bidirectional_full_forward_is_not_low() {
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_ARMED, 2000, 0, true, 1500, 50, true));
+}
+
+// --- nextPulseUs: neutral, not min, is the arm-hold/failsafe pulse --------
+
+void test_pulse_not_armed_returns_neutral_when_bidirectional() {
+  // The regression this whole amendment exists to fix: previously this
+  // returned minUs (1000) unconditionally. Must now return the passed
+  // neutralUs (1500, center) when bidirectional.
+  TEST_ASSERT_EQUAL_UINT16(1500, nextPulseUs(ARM_ARMING, MODE_ARMED, 1000, 2000, 1800, 0, false, 1500));
+}
+
+void test_pulse_stale_input_forces_neutral_when_bidirectional() {
+  TEST_ASSERT_EQUAL_UINT16(1500, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, 1800, true, 1500));
 }
 
 void setUp() {}
@@ -272,5 +325,15 @@ int main() {
   RUN_TEST(test_src_change_does_not_affect_an_arming_session);
   RUN_TEST(test_pulse_stale_input_forces_min_even_with_a_plausible_value);
   RUN_TEST(test_pulse_stale_check_precedes_no_data_check);
+  RUN_TEST(test_neutral_unidirectional_is_min);
+  RUN_TEST(test_neutral_bidirectional_is_center);
+  RUN_TEST(test_neutral_bidirectional_odd_span_rounds_down);
+  RUN_TEST(test_neutral_bidirectional_degenerate_span);
+  RUN_TEST(test_commanded_low_bidirectional_near_center_from_below);
+  RUN_TEST(test_commanded_low_bidirectional_near_center_from_above);
+  RUN_TEST(test_commanded_low_bidirectional_full_reverse_is_not_low);
+  RUN_TEST(test_commanded_low_bidirectional_full_forward_is_not_low);
+  RUN_TEST(test_pulse_not_armed_returns_neutral_when_bidirectional);
+  RUN_TEST(test_pulse_stale_input_forces_neutral_when_bidirectional);
   return UNITY_END();
 }

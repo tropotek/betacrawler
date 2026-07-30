@@ -8,6 +8,10 @@ uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs) {
   return (uint16_t)us;
 }
 
+uint16_t neutralUs(uint16_t minUs, uint16_t maxUs, bool bidirectional) {
+  return bidirectional ? (uint16_t)(((uint32_t)minUs + maxUs) / 2) : minUs;
+}
+
 uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool enteringFromOff,
                        uint32_t nowMs, uint32_t armT0Ms, uint32_t armHoldMs,
                        bool commandedIsLow) {
@@ -20,11 +24,22 @@ uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool enteringFromOff,
 }
 
 bool isCommandedLow(int32_t mode, uint16_t throttleUs, int16_t inputUs, bool inputFresh,
-                     uint16_t minUs, uint16_t lowMarginUs) {
-  const int32_t bound = (int32_t)minUs + (int32_t)lowMarginUs;
-  if (mode == MODE_ARMED) return (int32_t)throttleUs <= bound;
-  if (mode == MODE_INPUT) return inputFresh && inputUs > 0 && (int32_t)inputUs <= bound;
-  return false;
+                     uint16_t neutralUs, uint16_t lowMarginUs, bool bidirectional) {
+  int32_t v;
+  if (mode == MODE_ARMED) {
+    v = throttleUs;
+  } else if (mode == MODE_INPUT) {
+    if (!inputFresh || inputUs <= 0) return false;
+    v = inputUs;
+  } else {
+    return false;
+  }
+  if (bidirectional) {
+    int32_t d = v - (int32_t)neutralUs;
+    if (d < 0) d = -d;
+    return d <= (int32_t)lowMarginUs;
+  }
+  return v <= (int32_t)neutralUs + (int32_t)lowMarginUs;
 }
 
 bool isLinkFresh(uint32_t lastFreshMs, uint32_t nowMs, uint32_t staleMs) {
@@ -41,11 +56,11 @@ bool srcChangeDemotesArmed(uint32_t armState, int32_t mode, bool srcChanged) {
 }
 
 uint16_t nextPulseUs(uint32_t armState, int32_t mode, uint16_t minUs, uint16_t maxUs,
-                      uint16_t throttleUs, int16_t inputUs, bool inputStale) {
-  if (armState != ARM_ARMED) return minUs;
+                      uint16_t throttleUs, int16_t inputUs, bool inputStale, uint16_t neutralUs) {
+  if (armState != ARM_ARMED) return neutralUs;
   if (mode == MODE_ARMED) return clampUs(throttleUs, minUs, maxUs);
   if (mode == MODE_INPUT) {
-    if (inputStale) return minUs;
+    if (inputStale) return neutralUs;
     if (inputUs <= 0) return 0;
     return clampUs(inputUs, minUs, maxUs);
   }
