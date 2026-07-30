@@ -46,7 +46,12 @@ static const ParamDef kParams[] = {
   // follow. showIf hides it from the UI otherwise; Terminal `set` and INI
   // restore still accept it regardless (showIf is display-only, never an
   // access rule).
-  {"servo.src",     ParamType::Enum, "Source", nullptr, 0, 0, kSrcNames, 12, 0, 0, nullptr, nullptr, "servo.mode", "input"},
+  //
+  // Defaults to ch4, not ch1: ch1 is reserved as the throttle channel (the
+  // ESC module, _notes/spec-esc.md, defaults esc.src to it) -- defaulting
+  // servo away from it means enabling both modules with no config changes
+  // does not have them both tracking the throttle stick out of the box.
+  {"servo.src",     ParamType::Enum, "Source", nullptr, 0, 0, kSrcNames, 12, 0, 3, nullptr, nullptr, "servo.mode", "input"},
 };
 
 // The commanded pulse width, or 0 when off. There is no position feedback --

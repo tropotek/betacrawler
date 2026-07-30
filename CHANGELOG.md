@@ -9,10 +9,14 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   `core::Inputs`, a small fixed bus of µs values that `rx` publishes decoded channels onto after
   every accepted frame, and that other modules read without either module naming the other.
   `servo.mode` gains a fourth value, `input`, plus a new `servo.src` param (`ch1`..`ch12`, matching
-  the RX module's own `ch1`..`ch16` telemetry naming) selecting which channel to track; the driver
-  clamps the read value through the existing `min_us`/`max_us` before commanding a pulse, same as
-  `hold`/`sweep` already do. A never-written or invalidated slot reads as `0`, which is not a
-  reachable channel value, so `servo` holds its last commanded pulse rather than actuating —
+  the RX module's own `ch1`..`ch16` telemetry naming) selecting which channel to track, **defaulting
+  to `ch4`** (changed 2026-07-30 from an initial `ch1` default) — `ch1` is reserved as the throttle
+  channel (the ESC module, `_notes/spec-esc.md`, defaults `esc.src` to it), so `servo` defaults
+  elsewhere to avoid both modules tracking the throttle stick out of the box with no config
+  changes; the driver clamps the read value through the existing `min_us`/`max_us` before
+  commanding a pulse, same as `hold`/`sweep` already do. A never-written or invalidated slot reads
+  as `0`, which is not a reachable channel value, so `servo` holds its last commanded pulse rather
+  than actuating —
   matching how a link dropout already holds telemetry in phase 1, and keeping "hold last value"
   the only failsafe behaviour this phase introduces (a configurable one is still phase 3). This
   adds a param and an enum value, so **`Registry::fingerprint()` changes**: any board with settings
