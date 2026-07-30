@@ -37,6 +37,26 @@
 #define ESC_ARM_HOLD_MS 2000
 #endif
 
+// core::Inputs slot unchanged for this long -> treated as a dead/frozen
+// link and failed toward min_us, overriding whatever the frozen value is.
+// 500ms is comfortably longer than any real CRSF/ELRS frame interval, so a
+// live link's own signal noise keeps the value moving; only a genuinely
+// stalled bus slot sits bit-for-bit motionless that long. Known limitation:
+// a human holding a physical stick perfectly still for the whole window is
+// not distinguishable from a stalled link by this heuristic -- failing
+// toward min_us is the safe-side error either way, but this is a real
+// false-positive path, not a proof. See _notes/spec-esc.md's Amendment.
+#ifndef ESC_INPUT_STALE_MS
+#define ESC_INPUT_STALE_MS 500
+#endif
+
+// "Low enough to arm" band above min_us -- the precondition nextArmState
+// checks before promoting ARMING to ARMED. Small enough to still require a
+// genuinely low throttle, large enough to tolerate stick/calibration slop.
+#ifndef ESC_ARM_LOW_MARGIN_US
+#define ESC_ARM_LOW_MARGIN_US 50
+#endif
+
 namespace esc {
 
 // Storage for the one HardwareTimer, placement-new'd in begin().
@@ -103,15 +123,36 @@ void EscDriver::apply(const core::Params& p) {
 
   const bool enteringFromOff = (prevMode == MODE_OFF && mode_ != MODE_OFF);
   const uint32_t now = millis();
-  if (enteringFromOff) armT0_ = now;
+  if (enteringFromOff) {
+    armT0_ = now;
+    // Fresh watch, not carried over from a previous arm cycle -- avoids a
+    // false "unchanged" reading against a stale sample from before this
+    // transition, and avoids a false-stale reading before any real sample
+    // has been compared (nextInputWatch's first call always counts as a
+    // change, so seeding lastChangeMs=now here is enough).
+    inputWatch_ = InputWatch{0, now};
+  }
+
+  const int16_t inputUs = (mode_ == MODE_INPUT) ? inputs_->get(srcIdx_) : (int16_t)0;
+  if (mode_ == MODE_INPUT) inputWatch_ = nextInputWatch(inputWatch_, inputUs, now);
+  const bool inputStale = (mode_ == MODE_INPUT) &&
+                           (now - inputWatch_.lastChangeMs) >= ESC_INPUT_STALE_MS;
+
+  const bool commandedLow = isCommandedLow(mode_, throttleUs_, inputUs, minUs_,
+                                            ESC_ARM_LOW_MARGIN_US);
+  // Restart the hold whenever the operator has not brought the commanded
+  // value down -- mirrors how enteringFromOff already resets armT0_.
+  // nextArmState has no memory of previous calls beyond prevState, so this
+  // restart must happen here, before calling it.
+  if (armState_ == ARM_ARMING && !commandedLow) armT0_ = now;
   armState_ = nextArmState(armState_, mode_ == MODE_OFF, enteringFromOff, now, armT0_,
-                            ESC_ARM_HOLD_MS);
+                            ESC_ARM_HOLD_MS, commandedLow);
 
   if (mode_ == MODE_OFF) { detach(); return; }
   if (enteringFromOff) attachOutput();
 
-  const int16_t inputUs = (mode_ == MODE_INPUT) ? inputs_->get(srcIdx_) : (int16_t)0;
-  const uint16_t us = nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs);
+  const uint16_t us = nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs,
+                                   inputStale);
   if (us > 0) writeUs(us);
 }
 
@@ -123,10 +164,18 @@ void EscDriver::onParamChanged(uint8_t local, const core::Params& p) {
 void EscDriver::tick(uint32_t nowMs) {
   if (mode_ == MODE_OFF) return;
 
-  armState_ = nextArmState(armState_, false, false, nowMs, armT0_, ESC_ARM_HOLD_MS);
-
   const int16_t inputUs = (mode_ == MODE_INPUT) ? inputs_->get(srcIdx_) : (int16_t)0;
-  const uint16_t us = nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs);
+  if (mode_ == MODE_INPUT) inputWatch_ = nextInputWatch(inputWatch_, inputUs, nowMs);
+  const bool inputStale = (mode_ == MODE_INPUT) &&
+                           (nowMs - inputWatch_.lastChangeMs) >= ESC_INPUT_STALE_MS;
+
+  const bool commandedLow = isCommandedLow(mode_, throttleUs_, inputUs, minUs_,
+                                            ESC_ARM_LOW_MARGIN_US);
+  if (armState_ == ARM_ARMING && !commandedLow) armT0_ = nowMs;
+  armState_ = nextArmState(armState_, false, false, nowMs, armT0_, ESC_ARM_HOLD_MS, commandedLow);
+
+  const uint16_t us = nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs,
+                                   inputStale);
   if (us > 0) writeUs(us);
 }
 

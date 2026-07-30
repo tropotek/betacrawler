@@ -33,6 +33,7 @@ class EscDriver : public core::Module {
   uint16_t maxUs_      = 2000;
   uint32_t armState_   = ARM_OFF;
   uint32_t armT0_      = 0;
+  InputWatch inputWatch_ = {0, 0};
   uint16_t lastUs_     = 0;
 };
 
