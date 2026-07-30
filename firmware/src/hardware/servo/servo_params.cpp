@@ -47,11 +47,15 @@ static const ParamDef kParams[] = {
   // restore still accept it regardless (showIf is display-only, never an
   // access rule).
   //
-  // Defaults to ch4, not ch1: ch1 is reserved as the throttle channel (the
-  // ESC module, _notes/spec-esc.md, defaults esc.src to it) -- defaulting
-  // servo away from it means enabling both modules with no config changes
-  // does not have them both tracking the throttle stick out of the box.
-  {"servo.src",     ParamType::Enum, "Source", nullptr, 0, 0, kSrcNames, 12, 0, 3, nullptr, nullptr, "servo.mode", "input"},
+  // Defaults to ch2 (roll -- right stick horizontal under this bench's Mode
+  // 2 TX), confirmed on real hardware, not inferred: an earlier ch4 default
+  // assumed a TAER channel order that turned out to be wrong. Paired
+  // deliberately with the ESC module's ch3 (pitch) default -- both self-
+  // center, unlike the throttle stick, which is what makes bidirectional
+  // ESC throttle safe to release, and puts steering+throttle on one stick
+  // for single-stick car/crawler control. See _notes/spec-esc.md's
+  // "Amendment 2" for the full reasoning.
+  {"servo.src",     ParamType::Enum, "Source", nullptr, 0, 0, kSrcNames, 12, 0, 1, nullptr, nullptr, "servo.mode", "input"},
 };
 
 // The commanded pulse width, or 0 when off. There is no position feedback --
