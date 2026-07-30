@@ -91,6 +91,17 @@
 // #define SERVO_TIMER  TIM4
 // #define SERVO_PIN    PB6      // TIM4_CH1
 
+// Required when FEATURE_ESC is 1: a brushless ESC on its own timer channel,
+// separate from FEATURE_SERVO's timer -- see the note in blackpill_f411ce.h
+// for why sharing one is unsafe. The channel IS derived from the pin, so the
+// two must agree; nothing checks that at compile time.
+// ESC_FRAME_US (optional, 20000/50Hz) and ESC_ARM_HOLD_MS (optional, 2000)
+// are both defaulted in esc_driver.cpp.
+//
+// Power the motor/ESC from its own supply, never this board's 5V/VBUS pin.
+// #define ESC_TIMER  TIM3
+// #define ESC_PIN    PA6      // TIM3_CH1
+
 // Required when FEATURE_RX is 1: an RC receiver on its own hardware serial
 // port, decoded by the protocol-agnostic rx module.
 // #define FEATURE_RX      1

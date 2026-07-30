@@ -18,6 +18,7 @@
 #define FEATURE_ST7789_240X240 1
 #define FEATURE_SERVO   1
 #define FEATURE_RX      1
+#define FEATURE_ESC     1
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
 // bootloader in ROM, so this costs a magic word and a reset -- no bootloader
 // to flash, and nothing to erase it. Turning it off only removes the app's
@@ -81,6 +82,23 @@
 // configurator disconnect rather than as anything obviously electrical.
 #define SERVO_TIMER     TIM4
 #define SERVO_PIN       PB6
+
+// Brushless ESC on TIM3_CH1. A separate timer from servo's TIM4, on purpose
+// -- two independently-constructed HardwareTimer objects sharing one
+// physical peripheral would each fight over its shared overflow/period
+// register. PA6 is confirmed free against this part's own PeripheralPins.c
+// (framework-arduinoststm32/variants/STM32F4xx/F411C(C-E)(U-Y)/PeripheralPins.c):
+// nothing else here claims it. TIM3_CH2 (PB5) stays free for a second ESC --
+// see _notes/spec-esc.md, "Future fork".
+//
+// ESC_FRAME_US (20000, i.e. 50Hz) and ESC_ARM_HOLD_MS (2000) are optional,
+// both defaulted in esc_driver.cpp.
+//
+// Power the motor/ESC from its own supply, never the board's 5V/VBUS pin --
+// an ESC under load draws far more than the servo's own VBUS warning already
+// covers.
+#define ESC_TIMER       TIM3
+#define ESC_PIN         PA6
 
 // CRSF receiver on USART1. PA9/PA10 are the only unclaimed peripheral pins on
 // this board and nothing else here references them: the LED is PC13, the

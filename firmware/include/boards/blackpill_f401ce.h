@@ -26,6 +26,7 @@
 #define FEATURE_ST7789_240X240 1
 #define FEATURE_SERVO   1
 #define FEATURE_RX      1
+#define FEATURE_ESC     1
 // The F401 has the same USB DFU bootloader in ROM as the F411 -- same system
 // memory base, same AN2606 entry. See blackpill_f411ce.h for the rationale.
 #define FEATURE_DFU     1
@@ -71,6 +72,10 @@
 // bulk cap at the connector -- see the note in blackpill_f411ce.h.
 #define SERVO_TIMER     TIM4
 #define SERVO_PIN       PB6
+
+// Brushless ESC on TIM3_CH1. Same pins and reasoning as blackpill_f411ce.h.
+#define ESC_TIMER       TIM3
+#define ESC_PIN         PA6
 
 // CRSF receiver on USART1. Same pins as blackpill_f411ce.h; see that header
 // for why PA9/PA10 and not the ALTERNATE PB6/PB7 mapping.
