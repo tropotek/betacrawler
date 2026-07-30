@@ -5,6 +5,22 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Version 1.0.0 (2026-07-29)
 
+- **RX mapping (phase 2): `servo` can now be driven from a receiver channel.** New
+  `core::Inputs`, a small fixed bus of µs values that `rx` publishes decoded channels onto after
+  every accepted frame, and that other modules read without either module naming the other.
+  `servo.mode` gains a fourth value, `input`, plus a new `servo.src` param (`in1`..`in12`) selecting
+  which channel to track; the driver clamps the read value through the existing `min_us`/`max_us`
+  before commanding a pulse, same as `hold`/`sweep` already do. A never-written or invalidated
+  slot reads as `0`, which is not a reachable channel value, so `servo` holds its last commanded
+  pulse rather than actuating — matching how a link dropout already holds telemetry in phase 1,
+  and keeping "hold last value" the only failsafe behaviour this phase introduces (a configurable
+  one is still phase 3). This adds a param and an enum value, so **`Registry::fingerprint()`
+  changes**: any board with settings saved before this change falls back to defaults on its next
+  boot, by design — the guarded flash record's fingerprint mismatch is exactly the safety net for
+  a layout change like this one. Native-tested; **not yet verified on hardware** — a servo tracking
+  a real stick, failsafe-hold behaviour, and live mode-transition smoothness all remain to be
+  checked on the bench.
+
 - **Board support: STM32F401CE (WeAct Black Pill V3.0).** New `[env:blackpill_f401ce]` and
   `boards/blackpill_f401ce.h` — same pinout as the F411 board (WeAct kept the layout identical
   across revisions), just the F401's 96KB RAM and 84MHz clock instead of 128KB/100MHz. Traced back

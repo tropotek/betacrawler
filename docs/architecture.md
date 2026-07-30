@@ -58,6 +58,33 @@ it behind `dispatch`'s back, which would skip validation and the change notifica
 else depends on. Resolve keys there once (`findParam`/`findTlm`), never per tick — the registry is
 fixed after boot.
 
+## The `core::Inputs` bus — the one asymmetry in "observers are const"
+
+`core::Inputs` (`core/inputs.h`) is a small shared control-signal bus: a fixed array of µs
+values that lets `rx` publish decoded channels for other modules to read, without `rx` or its
+readers naming each other. `servo`'s `mode=input` is the first consumer; more are expected.
+
+It exists because "observers are const" has no path for one module driving another at all —
+correctly, since `attach()`'s `const Registry&`/`const Params&` exists precisely so a module can
+never reconfigure another behind `dispatch`'s back. Rather than relax that, `rx` gets a
+single, narrow exception: `modules.cpp` (the wiring file that already hands concrete hardware
+handles to driver constructors) constructs the one `core::Inputs` instance and passes `RxDriver`
+a mutable `core::Inputs&` directly through its constructor, never through `attach()`. Every other
+module, `servo` included, only ever sees `Registry::inputs()`'s `const Inputs&`, reached the
+normal way through `attach()`.
+
+This is a one-producer/many-const-observers asymmetry, not a general loosening of the rule — no
+module other than `rx` may ever receive a mutable handle to anything through `attach()`, and `rx`
+itself gets one only because `modules.cpp` chose to wire it that way, not because `attach()`
+grants it. It doesn't violate the spirit of "observers are const" because that rule protects
+*param* state — validated, dispatch-owned, and meaningless to mutate outside a `set`. `core::Inputs`
+is not param state; it's a purpose-built, one-way signal bus with exactly one writer decided by
+construction, not by convention a second module could quietly bend. Three shapes for carrying
+`rx`'s channels to `servo` were weighed before settling on this bus, and the full reasoning —
+including why the other two were rejected — lives in `_notes/spec-rx-mapping.md`. That file is
+gitignored and local-only, so it won't follow a fresh clone, but it's there for anyone working in
+this checkout who wants the history behind the choice.
+
 ## Boot health
 
 `core/boot_log.h` holds a fixed buffer of lines recorded during `setup()` — identity, whether
