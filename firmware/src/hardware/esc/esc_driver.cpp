@@ -123,27 +123,20 @@ void EscDriver::apply(const core::Params& p) {
 
   const bool enteringFromOff = (prevMode == MODE_OFF && mode_ != MODE_OFF);
   const uint32_t now = millis();
-  if (enteringFromOff) {
-    armT0_ = now;
-    // Fresh watch, not carried over from a previous arm cycle -- avoids a
-    // false "unchanged" reading against a stale sample from before this
-    // transition, and avoids a false-stale reading before any real sample
-    // has been compared (nextInputWatch's first call always counts as a
-    // change, so seeding lastChangeMs=now here is enough).
-    inputWatch_ = InputWatch{0, now};
-  }
 
   const int16_t inputUs = (mode_ == MODE_INPUT) ? inputs_->get(srcIdx_) : (int16_t)0;
-  if (mode_ == MODE_INPUT) inputWatch_ = nextInputWatch(inputWatch_, inputUs, now);
-  const bool inputStale = (mode_ == MODE_INPUT) &&
-                           (now - inputWatch_.lastChangeMs) >= ESC_INPUT_STALE_MS;
+  const bool inputFresh = (mode_ == MODE_INPUT) &&
+                           isLinkFresh(inputs_->lastFreshMs(), now, ESC_INPUT_STALE_MS);
+  const bool inputStale = (mode_ == MODE_INPUT) && !inputFresh;
 
-  const bool commandedLow = isCommandedLow(mode_, throttleUs_, inputUs, minUs_,
+  if (inputLossDemotesArmed(armState_, mode_, inputFresh)) {
+    armState_ = ARM_ARMING;
+    armT0_    = now;
+  }
+
+  if (enteringFromOff) armT0_ = now;
+  const bool commandedLow = isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, minUs_,
                                             ESC_ARM_LOW_MARGIN_US);
-  // Restart the hold whenever the operator has not brought the commanded
-  // value down -- mirrors how enteringFromOff already resets armT0_.
-  // nextArmState has no memory of previous calls beyond prevState, so this
-  // restart must happen here, before calling it.
   if (armState_ == ARM_ARMING && !commandedLow) armT0_ = now;
   armState_ = nextArmState(armState_, mode_ == MODE_OFF, enteringFromOff, now, armT0_,
                             ESC_ARM_HOLD_MS, commandedLow);
@@ -165,11 +158,16 @@ void EscDriver::tick(uint32_t nowMs) {
   if (mode_ == MODE_OFF) return;
 
   const int16_t inputUs = (mode_ == MODE_INPUT) ? inputs_->get(srcIdx_) : (int16_t)0;
-  if (mode_ == MODE_INPUT) inputWatch_ = nextInputWatch(inputWatch_, inputUs, nowMs);
-  const bool inputStale = (mode_ == MODE_INPUT) &&
-                           (nowMs - inputWatch_.lastChangeMs) >= ESC_INPUT_STALE_MS;
+  const bool inputFresh = (mode_ == MODE_INPUT) &&
+                           isLinkFresh(inputs_->lastFreshMs(), nowMs, ESC_INPUT_STALE_MS);
+  const bool inputStale = (mode_ == MODE_INPUT) && !inputFresh;
 
-  const bool commandedLow = isCommandedLow(mode_, throttleUs_, inputUs, minUs_,
+  if (inputLossDemotesArmed(armState_, mode_, inputFresh)) {
+    armState_ = ARM_ARMING;
+    armT0_    = nowMs;
+  }
+
+  const bool commandedLow = isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, minUs_,
                                             ESC_ARM_LOW_MARGIN_US);
   if (armState_ == ARM_ARMING && !commandedLow) armT0_ = nowMs;
   armState_ = nextArmState(armState_, false, false, nowMs, armT0_, ESC_ARM_HOLD_MS, commandedLow);

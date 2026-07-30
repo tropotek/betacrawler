@@ -116,37 +116,75 @@ void test_arm_already_armed_ignores_commanded_low() {
 // --- isCommandedLow ------------------------------------------------------
 
 void test_commanded_low_armed_mode_checks_throttle_against_margin() {
-  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1000, 0, 1000, 50));   // exactly min_us
-  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1040, 0, 1000, 50));   // within margin
-  TEST_ASSERT_FALSE(isCommandedLow(MODE_ARMED, 1060, 0, 1000, 50));  // outside margin
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1000, 0, true, 1000, 50));   // exactly min_us
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1040, 0, true, 1000, 50));   // within margin
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_ARMED, 1060, 0, true, 1000, 50));  // outside margin
 }
 
 void test_commanded_low_input_mode_requires_confirmed_reading() {
-  TEST_ASSERT_TRUE(isCommandedLow(MODE_INPUT, 0, 1020, 1000, 50));
-  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 1800, 1000, 50));
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_INPUT, 0, 1020, true, 1000, 50));
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 1800, true, 1000, 50));
   // inputUs <= 0 is "no data", never "confirmed low" -- must not read as
   // low enough to arm just because it is numerically small.
-  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 0, 1000, 50));
-  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, -5, 1000, 50));
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 0, true, 1000, 50));
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, -5, true, 1000, 50));
 }
 
-// --- nextInputWatch --------------------------------------------------------
+// --- isCommandedLow: freshness gating (MODE_INPUT only) ---------------------
 
-void test_input_watch_first_sample_is_a_change() {
-  InputWatch w = nextInputWatch(InputWatch{0, 0}, 1500, 1000);
-  TEST_ASSERT_EQUAL_INT16(1500, w.lastUs);
-  TEST_ASSERT_EQUAL_UINT32(1000, w.lastChangeMs);
+void test_commanded_low_input_mode_requires_freshness_too() {
+  // A confirmed-low reading (200 <= 1050) that is NOT fresh must still fail
+  // -- arming must never complete against a link already known dead.
+  TEST_ASSERT_FALSE(isCommandedLow(MODE_INPUT, 0, 1020, false, 1000, 50));
 }
 
-void test_input_watch_unchanged_value_keeps_old_timestamp() {
-  InputWatch w = nextInputWatch(InputWatch{1500, 1000}, 1500, 5000);
-  TEST_ASSERT_EQUAL_UINT32(1000, w.lastChangeMs);
+void test_commanded_low_armed_mode_ignores_freshness() {
+  // MODE_ARMED has no bus input at all -- inputFresh must have no effect.
+  TEST_ASSERT_TRUE(isCommandedLow(MODE_ARMED, 1000, 0, false, 1000, 50));
 }
 
-void test_input_watch_changed_value_resets_timestamp() {
-  InputWatch w = nextInputWatch(InputWatch{1500, 1000}, 1510, 5000);
-  TEST_ASSERT_EQUAL_INT16(1510, w.lastUs);
-  TEST_ASSERT_EQUAL_UINT32(5000, w.lastChangeMs);
+// --- isLinkFresh -------------------------------------------------------------
+
+void test_link_fresh_within_window() {
+  TEST_ASSERT_TRUE(isLinkFresh(1000, 1400, 500));
+}
+
+void test_link_stale_at_boundary() {
+  // Exactly at the window edge counts as stale -- matches nextArmState's
+  // own >= convention for its elapsed-time check.
+  TEST_ASSERT_FALSE(isLinkFresh(1000, 1500, 500));
+}
+
+void test_link_stale_well_past_window() {
+  TEST_ASSERT_FALSE(isLinkFresh(1000, 999999, 500));
+}
+
+void test_link_fresh_never_marked_is_stale_from_the_start() {
+  // lastFreshMs=0 (core::Inputs' own default, never written) at any real
+  // nowMs must read as stale -- "never proven alive" is not "fresh".
+  TEST_ASSERT_FALSE(isLinkFresh(0, 1000, 500));
+}
+
+// --- inputLossDemotesArmed ---------------------------------------------------
+
+void test_stale_link_demotes_an_armed_input_session() {
+  TEST_ASSERT_TRUE(inputLossDemotesArmed(ARM_ARMED, MODE_INPUT, false));
+}
+
+void test_fresh_link_does_not_demote_an_armed_input_session() {
+  TEST_ASSERT_FALSE(inputLossDemotesArmed(ARM_ARMED, MODE_INPUT, true));
+}
+
+void test_stale_link_does_not_demote_armed_mode() {
+  // MODE_ARMED has no bus input -- staleness (however computed by a caller
+  // that shouldn't even be checking it here) must never demote it.
+  TEST_ASSERT_FALSE(inputLossDemotesArmed(ARM_ARMED, MODE_ARMED, false));
+}
+
+void test_stale_link_does_not_affect_an_already_arming_session() {
+  // Demotion only applies to an ALREADY-ARMED session -- ARMING has its own
+  // elapsed/commandedIsLow gate already and does not need a second path in.
+  TEST_ASSERT_FALSE(inputLossDemotesArmed(ARM_ARMING, MODE_INPUT, false));
 }
 
 // --- nextPulseUs: stale input forces min_us -------------------------------
@@ -191,9 +229,16 @@ int main() {
   RUN_TEST(test_arm_already_armed_ignores_commanded_low);
   RUN_TEST(test_commanded_low_armed_mode_checks_throttle_against_margin);
   RUN_TEST(test_commanded_low_input_mode_requires_confirmed_reading);
-  RUN_TEST(test_input_watch_first_sample_is_a_change);
-  RUN_TEST(test_input_watch_unchanged_value_keeps_old_timestamp);
-  RUN_TEST(test_input_watch_changed_value_resets_timestamp);
+  RUN_TEST(test_commanded_low_input_mode_requires_freshness_too);
+  RUN_TEST(test_commanded_low_armed_mode_ignores_freshness);
+  RUN_TEST(test_link_fresh_within_window);
+  RUN_TEST(test_link_stale_at_boundary);
+  RUN_TEST(test_link_stale_well_past_window);
+  RUN_TEST(test_link_fresh_never_marked_is_stale_from_the_start);
+  RUN_TEST(test_stale_link_demotes_an_armed_input_session);
+  RUN_TEST(test_fresh_link_does_not_demote_an_armed_input_session);
+  RUN_TEST(test_stale_link_does_not_demote_armed_mode);
+  RUN_TEST(test_stale_link_does_not_affect_an_already_arming_session);
   RUN_TEST(test_pulse_stale_input_forces_min_even_with_a_plausible_value);
   RUN_TEST(test_pulse_stale_check_precedes_no_data_check);
   return UNITY_END();

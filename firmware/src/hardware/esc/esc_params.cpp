@@ -19,12 +19,20 @@ uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool enteringFromOff,
   return prevState;
 }
 
-bool isCommandedLow(int32_t mode, uint16_t throttleUs, int16_t inputUs,
+bool isCommandedLow(int32_t mode, uint16_t throttleUs, int16_t inputUs, bool inputFresh,
                      uint16_t minUs, uint16_t lowMarginUs) {
   const int32_t bound = (int32_t)minUs + (int32_t)lowMarginUs;
   if (mode == MODE_ARMED) return (int32_t)throttleUs <= bound;
-  if (mode == MODE_INPUT) return inputUs > 0 && (int32_t)inputUs <= bound;
+  if (mode == MODE_INPUT) return inputFresh && inputUs > 0 && (int32_t)inputUs <= bound;
   return false;
+}
+
+bool isLinkFresh(uint32_t lastFreshMs, uint32_t nowMs, uint32_t staleMs) {
+  return (nowMs - lastFreshMs) < staleMs;
+}
+
+bool inputLossDemotesArmed(uint32_t armState, int32_t mode, bool inputFresh) {
+  return armState == ARM_ARMED && mode == MODE_INPUT && !inputFresh;
 }
 
 uint16_t nextPulseUs(uint32_t armState, int32_t mode, uint16_t minUs, uint16_t maxUs,
@@ -37,11 +45,6 @@ uint16_t nextPulseUs(uint32_t armState, int32_t mode, uint16_t minUs, uint16_t m
     return clampUs(inputUs, minUs, maxUs);
   }
   return 0;
-}
-
-InputWatch nextInputWatch(InputWatch prev, int16_t currentUs, uint32_t nowMs) {
-  if (currentUs != prev.lastUs) return InputWatch{currentUs, nowMs};
-  return prev;
 }
 
 using core::ParamDef;

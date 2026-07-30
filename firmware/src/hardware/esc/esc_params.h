@@ -50,14 +50,39 @@ uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool enteringFromOff,
 
 // True when the value that would be honoured on promotion to ARMED is at or
 // near min_us -- the arm-completion precondition. MODE_ARMED checks the
-// bench throttle_us param directly; MODE_INPUT requires a CONFIRMED low
-// reading (inputUs > 0, not just <= the margin) -- a never-written or
-// invalidated bus slot (inputUs <= 0) must never read as "low enough to
-// arm", since that is an absence of information, not a confirmed safe
-// value. Any other mode (only MODE_OFF in practice, handled elsewhere by
-// the caller) is defensively "not low".
-bool isCommandedLow(int32_t mode, uint16_t throttleUs, int16_t inputUs,
+// bench throttle_us param directly; MODE_INPUT additionally requires
+// inputFresh (see core::Inputs::lastFreshMs() / isLinkFresh() below) on top
+// of a CONFIRMED low reading (inputUs > 0) -- arming must never complete
+// against a link the module's own freshness check has already flagged as
+// dead, even if the frozen value it left behind happens to look low. Any
+// other mode (only MODE_OFF in practice, handled elsewhere by the caller)
+// is defensively "not low".
+bool isCommandedLow(int32_t mode, uint16_t throttleUs, int16_t inputUs, bool inputFresh,
                      uint16_t minUs, uint16_t lowMarginUs);
+
+// True when the bus proved itself alive within staleMs of nowMs -- see
+// core::Inputs::markFresh()'s doc comment for why this is measured at the
+// bus (by rx, the sole producer) rather than approximated in esc from
+// whether the channel VALUE has changed. A throttle held at its mechanical
+// endpoint has zero dither and would falsely read "stale forever" under a
+// value-change heuristic; this does not have that failure mode.
+bool isLinkFresh(uint32_t lastFreshMs, uint32_t nowMs, uint32_t staleMs);
+
+// True when an already-ARMED input-mode session must drop back to ARMING
+// because the link went stale. Without this, recovery from any failsafe
+// would restore full commanded throttle instantly with no re-hold at all --
+// this closes that gap by forcing a fresh, full arm-hold cycle once the
+// link returns. Only meaningful for MODE_INPUT; MODE_ARMED has no bus input
+// that can go stale. Deliberately NOT folded into nextArmState itself:
+// nextArmState stays simple and mode-agnostic (Task 4's shipped signature
+// is unchanged), and this is applied as a driver-level policy decision
+// before nextArmState is called, the same pattern already used for the
+// armT0_ restart-while-ARMING check. A fork built for a vehicle where a
+// mandatory post-recovery hold is worse than instant restoration (an
+// aircraft, say, unlike this template's own ground-vehicle lineage) should
+// revisit this specific decision -- it is isolated to this one function and
+// its driver call site, nothing else depends on its answer.
+bool inputLossDemotesArmed(uint32_t armState, int32_t mode, bool inputFresh);
 
 // The pulse width to write this tick, or 0 to mean "no update, hold the last
 // pulse" -- the same 0 sentinel rx/servo already use for "no data yet" on
@@ -71,15 +96,5 @@ bool isCommandedLow(int32_t mode, uint16_t throttleUs, int16_t inputUs,
 // mode on the same bus.
 uint16_t nextPulseUs(uint32_t armState, int32_t mode, uint16_t minUs, uint16_t maxUs,
                       uint16_t throttleUs, int16_t inputUs, bool inputStale);
-
-// One step of a "has the bus value gone stale" watch: if currentUs differs
-// from prev.lastUs, records the change (resets the clock the caller
-// measures staleness against); otherwise leaves lastChangeMs untouched, so
-// staleness accumulates. The caller decides "stale" by comparing
-// (nowMs - result.lastChangeMs) against ESC_INPUT_STALE_MS separately --
-// this function only tracks the last-change timestamp, mirroring how
-// nextArmState takes armT0Ms as an input rather than owning the clock.
-struct InputWatch { int16_t lastUs; uint32_t lastChangeMs; };
-InputWatch nextInputWatch(InputWatch prev, int16_t currentUs, uint32_t nowMs);
 
 }  // namespace esc
