@@ -1,5 +1,6 @@
 #pragma once
 #include "hardware/servo/servo_params.h"
+#include "core/inputs.h"
 
 // Forward-declared rather than including <HardwareTimer.h>: this header is
 // pulled in by modules.cpp, and the Arduino timer header is heavy.
@@ -10,6 +11,7 @@ namespace servo {
 // Requires SERVO_TIMER and SERVO_PIN from the board header.
 class ServoDriver : public core::Module {
  public:
+  void attach(const core::Registry& reg, const core::Params& p) override;
   void begin() override;
   void tick(uint32_t nowMs) override;
   void onParamChanged(uint8_t local, const core::Params& p) override;
@@ -21,10 +23,12 @@ class ServoDriver : public core::Module {
   void detach();
   void writeUs(uint16_t us);
 
+  const core::Inputs* inputs_ = nullptr;
   HardwareTimer* timer_ = nullptr;
   uint32_t ch_       = 0;
   int32_t  mode_     = MODE_OFF;
   uint8_t  angle_    = 90;
+  uint8_t  srcIdx_   = 0;
   uint16_t minUs_    = 1000;
   uint16_t maxUs_    = 2000;
   uint32_t periodMs_ = 4000;

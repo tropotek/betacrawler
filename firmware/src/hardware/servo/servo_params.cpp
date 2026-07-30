@@ -10,7 +10,14 @@ using core::TlmType;
 
 // Order must match the MODE_* constants in servo_params.h -- the wire carries
 // the name, the driver receives the index.
-static const char* const kModes[] = {"off", "hold", "sweep"};
+static const char* const kModes[] = {"off", "hold", "sweep", "input"};
+
+// Order must match core::Inputs' slot indices directly -- "in1" is slot 0,
+// so servo.src's enum index IS the bus index, no offset math anywhere.
+static const char* const kSrcNames[] = {
+  "in1", "in2", "in3", "in4", "in5", "in6",
+  "in7", "in8", "in9", "in10", "in11", "in12",
+};
 
 static const ParamDef kParams[] = {
   // key            type             label    unit  min   max   opts    n  maxlen def       defStr group
@@ -19,7 +26,7 @@ static const ParamDef kParams[] = {
   // commanded until asked. Saved settings ARE re-applied at boot by main.cpp's
   // notify pass -- that is the point of saving, and begin() detaches first, so
   // the servo settles once rather than twitching on the way.
-  {"servo.mode",    ParamType::Enum, "Servo", nullptr, 0,    0,    kModes, 3, 0, MODE_OFF, nullptr, nullptr},
+  {"servo.mode",    ParamType::Enum, "Servo", nullptr, 0,    0,    kModes, 4, 0, MODE_OFF, nullptr, nullptr},
   {"servo.angle",   ParamType::U8,   "Angle", "°",     0,    180,  nullptr, 0, 0, 90,      nullptr, nullptr},
   // Seconds per FULL cycle, not Hz: a 1Hz sweep is 0->180->0 in one second,
   // which an SG90 cannot physically track, so an Hz range would have been
@@ -32,6 +39,12 @@ static const ParamDef kParams[] = {
   // merely discouraged. They can still MEET, which angleToUs handles.
   {"servo.min_us",  ParamType::U8,   "Min",   "µs",    500,  1500, nullptr, 0, 0, 1000,    nullptr, nullptr},
   {"servo.max_us",  ParamType::U8,   "Max",   "µs",    1500, 2500, nullptr, 0, 0, 2000,    nullptr, nullptr},
+  // Meaningful only when servo.mode == input -- mode does the enabling,
+  // this only selects which of core::Inputs' 12 published channels to
+  // follow. showIf hides it from the UI otherwise; Terminal `set` and INI
+  // restore still accept it regardless (showIf is display-only, never an
+  // access rule).
+  {"servo.src",     ParamType::Enum, "Source", nullptr, 0, 0, kSrcNames, 12, 0, 0, nullptr, nullptr, "servo.mode", "input"},
 };
 
 // The commanded pulse width, or 0 when off. There is no position feedback --
@@ -74,6 +87,12 @@ uint32_t rephase(uint32_t elapsedMs, uint32_t oldPeriodMs, uint32_t newPeriodMs)
   // lives in a ParamDef three files away, and this is not the place to depend
   // on it.
   return (uint32_t)((uint64_t)phase * newPeriodMs / oldPeriodMs);
+}
+
+uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs) {
+  if (us < (int32_t)minUs) return minUs;
+  if (us > (int32_t)maxUs) return maxUs;
+  return (uint16_t)us;
 }
 
 }  // namespace servo

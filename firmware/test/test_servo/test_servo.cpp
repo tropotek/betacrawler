@@ -39,6 +39,34 @@ void test_degenerate_span_holds_one_pulse() {
   TEST_ASSERT_EQUAL_UINT16(1500, angleToUs(180, 1500, 1500));
 }
 
+// --- clampUs -----------------------------------------------------------------
+// Unlike angleToUs's `angle`, this input is NOT already known to be in
+// range -- it comes from another module over core::Inputs, so a stale,
+// zeroed or out-of-calibration channel must not command the servo past
+// min_us/max_us.
+
+void test_clamp_within_range_passes_through() {
+  TEST_ASSERT_EQUAL_UINT16(1500, clampUs(1500, 1000, 2000));
+}
+
+void test_clamp_below_min_clamps_to_min() {
+  // 0 is what an unset/never-written core::Inputs slot reads as -- well
+  // below any real CRSF value (988-2012us).
+  TEST_ASSERT_EQUAL_UINT16(1000, clampUs(0, 1000, 2000));
+  TEST_ASSERT_EQUAL_UINT16(1000, clampUs(50, 1000, 2000));
+}
+
+void test_clamp_above_max_clamps_to_max() {
+  TEST_ASSERT_EQUAL_UINT16(2000, clampUs(3000, 1000, 2000));
+}
+
+void test_clamp_degenerate_span_holds_one_pulse() {
+  // min_us/max_us can meet (see servo.min_us/max_us's own comment on why they
+  // cannot cross); this must not divide by zero or misbehave when they do.
+  TEST_ASSERT_EQUAL_UINT16(1500, clampUs(0, 1500, 1500));
+  TEST_ASSERT_EQUAL_UINT16(1500, clampUs(3000, 1500, 1500));
+}
+
 // --- sweepAngle --------------------------------------------------------------
 
 void test_sweep_starts_at_zero() {
@@ -120,6 +148,10 @@ int main() {
   RUN_TEST(test_angle_above_range_is_clamped);
   RUN_TEST(test_asymmetric_calibration_maps_proportionally);
   RUN_TEST(test_degenerate_span_holds_one_pulse);
+  RUN_TEST(test_clamp_within_range_passes_through);
+  RUN_TEST(test_clamp_below_min_clamps_to_min);
+  RUN_TEST(test_clamp_above_max_clamps_to_max);
+  RUN_TEST(test_clamp_degenerate_span_holds_one_pulse);
   RUN_TEST(test_sweep_starts_at_zero);
   RUN_TEST(test_sweep_turns_around_at_half_period);
   RUN_TEST(test_sweep_quarter_points_are_centre);

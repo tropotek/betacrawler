@@ -2,7 +2,17 @@
 #include <HardwareTimer.h>
 #include <new>
 
+// stm32f4xx_hal_gpio.h (pulled in above via Arduino.h) #defines MODE_INPUT as
+// a raw GPIO_MODER bit pattern; that's a plain preprocessor token, so it
+// collides textually with servo's own MODE_INPUT enumerator declared in
+// servo_params.h below -- namespacing the enum doesn't protect it from a
+// macro. This file never calls the HAL macro directly (attachOutput/detach
+// go through Arduino's pinMode/timer_->setMode), so undefining it here is
+// safe and confined to this one translation unit.
+#undef MODE_INPUT
+
 #include "hardware/servo/servo_driver.h"
+#include "core/registry.h"
 #include "config.h"
 
 #ifndef SERVO_PIN
@@ -64,6 +74,11 @@ void ServoDriver::writeUs(uint16_t us) {
   lastUs_ = us;
 }
 
+void ServoDriver::attach(const core::Registry& reg, const core::Params& p) {
+  (void)p;
+  inputs_ = &reg.inputs();
+}
+
 void ServoDriver::apply(const core::Params& p) {
   const int32_t  prevMode   = mode_;
   const uint32_t prevPeriod = periodMs_;
@@ -72,6 +87,7 @@ void ServoDriver::apply(const core::Params& p) {
   minUs_    = (uint16_t)p.num(globalParam(P_MIN_US));
   maxUs_    = (uint16_t)p.num(globalParam(P_MAX_US));
   periodMs_ = (uint32_t)p.num(globalParam(P_SWEEP_S)) * 1000u;
+  srcIdx_   = (uint8_t)p.num(globalParam(P_SRC));
 
   if (mode_ == MODE_OFF) { detach(); return; }
   if (prevMode == MODE_OFF) attachOutput();
@@ -89,6 +105,9 @@ void ServoDriver::apply(const core::Params& p) {
     }
     return;   // tick() owns the compare register from here
   }
+  if (mode_ == MODE_INPUT) {
+    return;   // tick() owns the compare register from here, same as sweep
+  }
   writeUs(angleToUs(angle_, minUs_, maxUs_));   // MODE_HOLD
 }
 
@@ -102,10 +121,13 @@ void ServoDriver::onParamChanged(uint8_t local, const core::Params& p) {
 }
 
 void ServoDriver::tick(uint32_t nowMs) {
-  if (mode_ != MODE_SWEEP) return;
-  // Phase from elapsed time, never accumulated per tick, so loop jitter
-  // cannot drift the sweep rate.
-  writeUs(angleToUs(sweepAngle(nowMs - t0_, periodMs_), minUs_, maxUs_));
+  if (mode_ == MODE_SWEEP) {
+    // Phase from elapsed time, never accumulated per tick, so loop jitter
+    // cannot drift the sweep rate.
+    writeUs(angleToUs(sweepAngle(nowMs - t0_, periodMs_), minUs_, maxUs_));
+  } else if (mode_ == MODE_INPUT) {
+    writeUs(clampUs(inputs_->get(srcIdx_), minUs_, maxUs_));
+  }
 }
 
 void ServoDriver::readTelemetry(core::TlmValue* out) {
