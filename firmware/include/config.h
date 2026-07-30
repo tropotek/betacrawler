@@ -25,10 +25,15 @@
 // (FW_MAX_PARAMS * sizeof(core::Value) is the big one, 36 bytes per slot),
 // which is cheap on a 128KB part. Registry::add() refuses to exceed them
 // rather than overflowing, and a native test covers that path.
+// blackpill_f411ce is at its cap: device, system, button, led, servo, esc, rx
+// and st7789_240x240 is exactly 8 modules. Raising this is required before a
+// 9th module (e.g. a second esc/servo instance, see esc's own spec) can be
+// registered on a board that also has all of this board's other features on.
 #define FW_MAX_MODULES  8
 #define FW_MAX_PARAMS   32
-// 30 fields on this board once rx publishes 16 channels and 7 link readings.
-// 40 rather than a bare 32 leaves room for the ESC module next on the list;
+// 32 fields on this board: rx publishes 16 channels and 7 link readings, esc
+// adds 2 more (esc, arm), the rest split across the other modules. 40 rather
+// than a bare 32 leaves a little headroom for the next module or field;
 // TlmValue is 4 bytes, so the headroom costs 32 bytes of RAM in one place --
 // but there are two FW_MAX_TLM-sized arrays, not one: main.cpp's
 // `static TlmValue g_tlm[FW_MAX_TLM]` (+32 bytes static) and

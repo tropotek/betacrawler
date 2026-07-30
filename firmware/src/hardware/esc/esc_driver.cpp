@@ -63,6 +63,21 @@ void EscDriver::attachOutput() {
 void EscDriver::detach() {
   // A real detach, not a zero-width pulse: no pulse train at all while off.
   timer_->pauseChannel(ch_);
+  // Also zero the compare register itself, not just pause the channel. STM32
+  // PWM channels have the OCxPE preload bit set, so setCaptureCompare() below
+  // (and writeUs()'s identical call) only ever writes a *shadow* register --
+  // the counter, running or not, keeps whatever value was active until an
+  // update event loads the shadow into the real CCR. Left alone, that stale
+  // value survives a pauseChannel()/resumeChannel() cycle untouched. Without
+  // this, re-arming (attachOutput() -> writeUs(minUs_) in apply()) could
+  // still emit one stale, pre-detach pulse -- possibly a high throttle --
+  // before the new min_us value's own update event lands, up to one
+  // ESC_FRAME_US frame later. That is exactly the hazard the arm-hold gate
+  // exists to prevent. Zeroing here is safe regardless of timing: the pin is
+  // already held LOW by pinMode/digitalWrite below while detached, so it does
+  // not matter that this new value also only reaches the shadow register on
+  // the next update event.
+  timer_->setCaptureCompare(ch_, 0, MICROSEC_COMPARE_FORMAT);
   pinMode(ESC_PIN, OUTPUT);
   digitalWrite(ESC_PIN, LOW);
   lastUs_ = 0;
