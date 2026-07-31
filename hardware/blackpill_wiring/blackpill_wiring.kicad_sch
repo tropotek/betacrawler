@@ -1,16 +1,20 @@
 (kicad_sch
-	(version 20260101)
+	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid 151ef797-f557-4a17-a336-4f1be620a083)
+	(uuid "151ef797-f557-4a17-a336-4f1be620a083")
 	(paper "A4")
 	(lib_symbols
 		(symbol "blackpill_wiring:BLACKPILL_F411CE"
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
 			(property "Reference" "U"
 				(at 2.54 0 0)
+				(show_name no)
+				(do_not_autoplace no)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -19,6 +23,8 @@
 			)
 			(property "Value" "BLACKPILL_F411CE"
 				(at 0 -2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -27,30 +33,36 @@
 			)
 			(property "Footprint" "~"
 				(at 0 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
-				(hide yes)
 			)
 			(property "Datasheet" "~"
 				(at 0 -7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
-				(hide yes)
 			)
 			(property "Description" "WeAct STM32F411CE Black Pill -- pins used by silkscreen firmware (boards/blackpill_f411ce.h). Left side: display+servo+USB. Right side: receiver+ESC+WiFi. Not the bare MCU die; see design spec."
 				(at 0 -10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
-				(hide yes)
 			)
 			(symbol "BLACKPILL_F411CE_0_1"
 				(rectangle
@@ -445,21 +457,28 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
-		(symbol "blackpill_wiring:ST7789_DISPLAY"
+		(symbol "blackpill_wiring:BRUSHLESS_ESC"
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
 			(property "Reference" "J"
 				(at 2.54 0 0)
+				(show_name no)
+				(do_not_autoplace no)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
 			)
-			(property "Value" "ST7789_DISPLAY"
+			(property "Value" "BRUSHLESS_ESC"
 				(at 0 -2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -468,30 +487,574 @@
 			)
 			(property "Footprint" "~"
 				(at 0 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
-				(hide yes)
 			)
 			(property "Datasheet" "~"
 				(at 0 -7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
+			)
+			(property "Description" "Brushless ESC, TIM3 CH1 PWM out -- module pins. Own supply only, never board 5V. Pins face left toward the Black Pill."
+				(at 0 -10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
 				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "BRUSHLESS_ESC_0_1"
+				(rectangle
+					(start 0 -8.89)
+					(end 15.24 -13.97)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "BRUSHLESS_ESC_1_1"
+				(pin passive line
+					(at -2.54 -10.16 0)
+					(length 2.54)
+					(name "SIGNAL"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -2.54 -12.7 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "blackpill_wiring:CRSF_RECEIVER"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "J"
+				(at 2.54 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "CRSF_RECEIVER"
+				(at 0 -2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "~"
+				(at 0 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 -7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "TBS/ELRS CRSF receiver -- module pins. RX switched to CRSF mode first. Pins face left toward the Black Pill."
+				(at 0 -10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "CRSF_RECEIVER_0_1"
+				(rectangle
+					(start 0 1.27)
+					(end 15.24 -8.89)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "CRSF_RECEIVER_1_1"
+				(pin passive line
+					(at -2.54 0 0)
+					(length 2.54)
+					(name "TX"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -2.54 -2.54 0)
+					(length 2.54)
+					(name "RX"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -2.54 -5.08 0)
+					(length 2.54)
+					(name "PLUS"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -2.54 -7.62 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "blackpill_wiring:ESP01_WIFI"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "J"
+				(at 2.54 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "ESP01_WIFI"
+				(at 0 -2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "~"
+				(at 0 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 -7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "ESP-01 (ESP8266, stock AT firmware) -- module pins. CH_PD/GPIO0/GPIO2/RST pulled high locally. Pins face left toward the Black Pill."
+				(at 0 -10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "ESP01_WIFI_0_1"
+				(rectangle
+					(start 0 -13.97)
+					(end 15.24 -24.13)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "ESP01_WIFI_1_1"
+				(pin passive line
+					(at -2.54 -15.24 0)
+					(length 2.54)
+					(name "TXD"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -2.54 -17.78 0)
+					(length 2.54)
+					(name "RXD"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -2.54 -20.32 0)
+					(length 2.54)
+					(name "VCC"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -2.54 -22.86 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "blackpill_wiring:HOBBY_SERVO"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "J"
+				(at 2.54 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "HOBBY_SERVO"
+				(at 0 -2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "~"
+				(at 0 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 -7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Hobby servo, TIM4 CH1, 50 Hz -- module pins. Pins face right toward the Black Pill."
+				(at 0 -10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "HOBBY_SERVO_0_1"
+				(rectangle
+					(start 0 -13.97)
+					(end 15.24 -21.59)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "HOBBY_SERVO_1_1"
+				(pin passive line
+					(at 17.94 -15.24 180)
+					(length 2.54)
+					(name "SIGNAL"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 17.94 -17.78 180)
+					(length 2.54)
+					(name "PLUS"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 17.94 -20.32 180)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "blackpill_wiring:ST7789_DISPLAY"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "J"
+				(at 2.54 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "ST7789_DISPLAY"
+				(at 0 -2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "~"
+				(at 0 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 -7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
 			)
 			(property "Description" "ST7789 240x240 IPS display module (GMT130) -- module pins only, no MISO/CS. Pins face right toward the Black Pill."
 				(at 0 -10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
-				(hide yes)
 			)
 			(symbol "ST7789_DISPLAY_0_1"
 				(rectangle
@@ -616,130 +1179,18 @@
 					)
 				)
 			)
-		)
-		(symbol "blackpill_wiring:HOBBY_SERVO"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "J"
-				(at 2.54 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "HOBBY_SERVO"
-				(at 0 -2.54 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "~"
-				(at 0 -5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(property "Datasheet" "~"
-				(at 0 -7.62 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(property "Description" "Hobby servo, TIM4 CH1, 50 Hz -- module pins. Pins face right toward the Black Pill."
-				(at 0 -10.16 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(symbol "HOBBY_SERVO_0_1"
-				(rectangle
-					(start 0 -13.97)
-					(end 15.24 -21.59)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-			)
-			(symbol "HOBBY_SERVO_1_1"
-				(pin passive line
-					(at 17.94 -15.24 180)
-					(length 2.54)
-					(name "SIGNAL"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 17.94 -17.78 180)
-					(length 2.54)
-					(name "PLUS"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 17.94 -20.32 180)
-					(length 2.54)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
+			(embedded_fonts no)
 		)
 		(symbol "blackpill_wiring:USB_HOST"
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
 			(property "Reference" "J"
 				(at 2.54 0 0)
+				(show_name no)
+				(do_not_autoplace no)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -748,6 +1199,8 @@
 			)
 			(property "Value" "USB_HOST"
 				(at 0 -2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -756,30 +1209,36 @@
 			)
 			(property "Footprint" "~"
 				(at 0 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
-				(hide yes)
 			)
 			(property "Datasheet" "~"
 				(at 0 -7.62 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
-				(hide yes)
 			)
 			(property "Description" "USB-C to host PC -- Configurator link, serial console, one-click DFU (PA11/PA12, built in). Pins face right toward the Black Pill."
 				(at 0 -10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
-				(hide yes)
 			)
 			(symbol "USB_HOST_0_1"
 				(rectangle
@@ -832,376 +1291,756 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
-		(symbol "blackpill_wiring:CRSF_RECEIVER"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "J"
-				(at 2.54 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
+	)
+	(text "CH_PD, GPIO0, GPIO2, RST: pulled high locally on the module (10k to 3V3) -- no STM32 pin needed for any of them."
+		(exclude_from_sim no)
+		(at 40 160 0)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
-			(property "Value" "CRSF_RECEIVER"
-				(at 0 -2.54 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "~"
-				(at 0 -5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(property "Datasheet" "~"
-				(at 0 -7.62 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(property "Description" "TBS/ELRS CRSF receiver -- module pins. RX switched to CRSF mode first. Pins face left toward the Black Pill."
-				(at 0 -10.16 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(symbol "CRSF_RECEIVER_0_1"
-				(rectangle
-					(start 0 1.27)
-					(end 15.24 -8.89)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-			)
-			(symbol "CRSF_RECEIVER_1_1"
-				(pin passive line
-					(at -2.54 0 0)
-					(length 2.54)
-					(name "TX"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -2.54 -2.54 0)
-					(length 2.54)
-					(name "RX"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -2.54 -5.08 0)
-					(length 2.54)
-					(name "PLUS"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -2.54 -7.62 0)
-					(length 2.54)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
+			(justify left bottom)
 		)
-		(symbol "blackpill_wiring:BRUSHLESS_ESC"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "J"
-				(at 2.54 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
+		(uuid "0267312a-f4d0-481f-a3c4-b57abc4c3a4b")
+	)
+	(text "PA9 (receiver RX): reserved for CRSF telemetry back-channel -- wired but not required by firmware today."
+		(exclude_from_sim no)
+		(at 39.878 152.908 0)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
-			(property "Value" "BRUSHLESS_ESC"
-				(at 0 -2.54 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "~"
-				(at 0 -5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(property "Datasheet" "~"
-				(at 0 -7.62 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(property "Description" "Brushless ESC, TIM3 CH1 PWM out -- module pins. Own supply only, never board 5V. Pins face left toward the Black Pill."
-				(at 0 -10.16 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(symbol "BRUSHLESS_ESC_0_1"
-				(rectangle
-					(start 0 -8.89)
-					(end 15.24 -13.97)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-			)
-			(symbol "BRUSHLESS_ESC_1_1"
-				(pin passive line
-					(at -2.54 -10.16 0)
-					(length 2.54)
-					(name "SIGNAL"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -2.54 -12.7 0)
-					(length 2.54)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
+			(justify left bottom)
 		)
-		(symbol "blackpill_wiring:ESP01_WIFI"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "J"
-				(at 2.54 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
+		(uuid "3bd86153-5bea-4c92-8e9e-d88b302879f6")
+	)
+	(text "No CS, no MISO -- driver is write-only; panel presence can't be detected."
+		(exclude_from_sim no)
+		(at 40.132 144.018 0)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
-			(property "Value" "ESP01_WIFI"
-				(at 0 -2.54 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "~"
-				(at 0 -5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(property "Datasheet" "~"
-				(at 0 -7.62 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(property "Description" "ESP-01 (ESP8266, stock AT firmware) -- module pins. CH_PD/GPIO0/GPIO2/RST pulled high locally. Pins face left toward the Black Pill."
-				(at 0 -10.16 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-				(hide yes)
-			)
-			(symbol "ESP01_WIFI_0_1"
-				(rectangle
-					(start 0 -13.97)
-					(end 15.24 -24.13)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-			)
-			(symbol "ESP01_WIFI_1_1"
-				(pin passive line
-					(at -2.54 -15.24 0)
-					(length 2.54)
-					(name "TXD"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -2.54 -17.78 0)
-					(length 2.54)
-					(name "RXD"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -2.54 -20.32 0)
-					(length 2.54)
-					(name "VCC"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -2.54 -22.86 0)
-					(length 2.54)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
+			(justify left bottom)
 		)
+		(uuid "560ef87b-dceb-48a5-863a-cc04d9cbe957")
+	)
+	(text "Own supply only -- never board 5V. Common ground with the board is still required, even so."
+		(exclude_from_sim no)
+		(at 40.386 156.718 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "758e8ddc-64c3-4c68-ad44-d19f39a51425")
+	)
+	(text "PC13: LED (LOW=on, onboard)"
+		(exclude_from_sim no)
+		(at 140 60 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "79ded0d8-5a8d-411f-a118-3adfdfde48df")
+	)
+	(text "PA13/PA14: SWD (alt. flash)"
+		(exclude_from_sim no)
+		(at 140 72 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "9643b336-ca34-45b8-86f4-444e3db11a31")
+	)
+	(text "Never 3V3. Add a 470-1000 uF bulk cap at the connector -- a moving servo can droop VBUS enough to reset the MCU."
+		(exclude_from_sim no)
+		(at 39.878 149.098 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "bec1edb6-204c-4982-a184-0fe96cb6802b")
+	)
+	(text "PA0: KEY button (onboard)"
+		(exclude_from_sim no)
+		(at 140 66 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "d8b28074-95e0-4a47-b09b-8d60ea5c95dd")
+	)
+	(junction
+		(at 64.77 64.77)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "4dc2286b-da06-46df-a5e8-f0dce2403f8a")
+	)
+	(junction
+		(at 64.77 54.61)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "4e915d2c-d128-4b7d-946c-7b4c2645f059")
+	)
+	(junction
+		(at 64.77 57.15)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "518bc4d4-ecee-4b88-b17d-70a026692c7f")
+	)
+	(junction
+		(at 64.77 62.23)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "71178720-5512-4afb-b3d2-c46496312325")
+	)
+	(junction
+		(at 64.77 59.69)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "845a1118-02fe-4529-94b0-f028757fd293")
+	)
+	(wire
+		(pts
+			(xy 167.64 92.71) (xy 237.49 92.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "00e923a6-6067-4a1c-8e0f-7503d40f1788")
+	)
+	(wire
+		(pts
+			(xy 224.79 127) (xy 237.49 127)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "07091881-c085-45c8-88ad-65a4cba88448")
+	)
+	(wire
+		(pts
+			(xy 227.33 97.79) (xy 167.64 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0b4a073e-a761-4396-abf2-a4dbf20770e4")
+	)
+	(wire
+		(pts
+			(xy 72.39 119.38) (xy 72.39 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1c3f28a6-e398-4d42-bbfc-45ef6a2b4c91")
+	)
+	(wire
+		(pts
+			(xy 227.33 80.01) (xy 167.64 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1f2efa2a-2994-440a-a125-39e264375666")
+	)
+	(wire
+		(pts
+			(xy 57.15 114.3) (xy 57.15 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1fe0dc23-c38b-4b28-97a0-4d02a346b7f2")
+	)
+	(wire
+		(pts
+			(xy 64.77 59.69) (xy 64.77 62.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "204433d1-6431-4e16-863a-facf3f70cee7")
+	)
+	(wire
+		(pts
+			(xy 62.23 57.15) (xy 62.23 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "20490b3b-a5ff-4461-ba72-13287379066b")
+	)
+	(wire
+		(pts
+			(xy 57.15 97.79) (xy 137.16 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "249c3dae-f774-4703-91fd-15992a272e89")
+	)
+	(wire
+		(pts
+			(xy 58.42 116.84) (xy 41.91 116.84)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "25f49f05-3217-4bf5-aca0-8385d881627c")
+	)
+	(wire
+		(pts
+			(xy 60.96 59.69) (xy 60.96 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "26af0c90-6f9e-4c8f-9b23-e2f3209e397d")
+	)
+	(wire
+		(pts
+			(xy 227.33 66.04) (xy 227.33 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2a87e875-7250-4c19-9dd9-756442a9bdfc")
+	)
+	(wire
+		(pts
+			(xy 58.42 100.33) (xy 137.16 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2f063f34-b01b-40bd-8dad-942afc44078f")
+	)
+	(wire
+		(pts
+			(xy 73.66 105.41) (xy 137.16 105.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "310fafd6-8927-406a-b013-370724ccb171")
+	)
+	(wire
+		(pts
+			(xy 64.77 54.61) (xy 64.77 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3482b294-1e9d-4932-b1a8-644bf8050a1a")
+	)
+	(wire
+		(pts
+			(xy 55.88 95.25) (xy 137.16 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3da006a0-bad2-4d65-a80d-5088616fa440")
+	)
+	(wire
+		(pts
+			(xy 73.66 121.92) (xy 73.66 105.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "43a18fc5-a91e-4c10-9ac8-ac9efeb61e33")
+	)
+	(wire
+		(pts
+			(xy 59.69 90.17) (xy 137.16 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4c0b5c6d-29d3-42b5-b8cc-10063531f6e4")
+	)
+	(wire
+		(pts
+			(xy 63.5 54.61) (xy 63.5 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4d85843f-6b2e-47d4-bae6-cb4d43e5fb16")
+	)
+	(wire
+		(pts
+			(xy 59.69 62.23) (xy 64.77 62.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "56711329-ac7d-4382-9b48-38eb29f44271")
+	)
+	(wire
+		(pts
+			(xy 231.14 87.63) (xy 167.64 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5726ef87-b67a-4818-b945-4308ed68f114")
+	)
+	(wire
+		(pts
+			(xy 229.87 71.12) (xy 246.38 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "580e46d9-c692-4182-8744-d9c02931f8c0")
+	)
+	(wire
+		(pts
+			(xy 59.69 62.23) (xy 59.69 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "58caa643-ed07-4850-9783-c9106cebb7fa")
+	)
+	(wire
+		(pts
+			(xy 63.5 54.61) (xy 64.77 54.61)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5a8447e7-2637-42b6-bc43-a922f9259dfc")
+	)
+	(wire
+		(pts
+			(xy 57.15 114.3) (xy 41.91 114.3)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5d044abe-0f49-4753-990a-c509371601d7")
+	)
+	(wire
+		(pts
+			(xy 60.96 87.63) (xy 137.16 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5d45d7b4-7499-49ac-8737-593414702fad")
+	)
+	(wire
+		(pts
+			(xy 64.77 52.07) (xy 64.77 54.61)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "643cab1c-b2b2-4533-90d3-72b8d1561580")
+	)
+	(wire
+		(pts
+			(xy 58.42 116.84) (xy 58.42 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6d02fb44-26e8-42a3-b47f-6ed08b485fc8")
+	)
+	(wire
+		(pts
+			(xy 229.87 71.12) (xy 229.87 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6eca46eb-4a03-418f-95d6-258d5ea027d0")
+	)
+	(wire
+		(pts
+			(xy 73.66 121.92) (xy 157.48 121.92)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "701b08f1-274f-4e58-aa06-4619c81fcdc6")
+	)
+	(wire
+		(pts
+			(xy 72.39 102.87) (xy 137.16 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7da2d737-bf1e-46be-bc10-0f549c2162aa")
+	)
+	(wire
+		(pts
+			(xy 224.79 127) (xy 224.79 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8208d2bf-2b91-4303-acb5-16f9a14c0868")
+	)
+	(wire
+		(pts
+			(xy 231.14 73.66) (xy 246.38 73.66)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8da3f555-b9c9-4169-b37c-550262d5adf4")
+	)
+	(wire
+		(pts
+			(xy 167.64 90.17) (xy 237.49 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9022dec4-49c1-4617-adc8-952ef079cf61")
+	)
+	(wire
+		(pts
+			(xy 227.33 121.92) (xy 237.49 121.92)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9199e64b-93ef-46c1-82fd-d1ab3a2f484f")
+	)
+	(wire
+		(pts
+			(xy 58.42 64.77) (xy 64.77 64.77)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "926c57a8-8543-41ea-ab64-829695a27365")
+	)
+	(wire
+		(pts
+			(xy 58.42 64.77) (xy 58.42 92.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "92a7e57b-058f-4aa2-bf91-8de23220fefa")
+	)
+	(wire
+		(pts
+			(xy 64.77 62.23) (xy 64.77 64.77)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "948a91ca-ec0d-41e3-aeb5-3abeb4181aea")
+	)
+	(wire
+		(pts
+			(xy 229.87 85.09) (xy 167.64 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "94c1aba5-fe37-4097-9c87-f36e1d5dae8e")
+	)
+	(wire
+		(pts
+			(xy 226.06 124.46) (xy 226.06 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9c746bbf-4062-48e2-bfb0-1f3ddfb29894")
+	)
+	(wire
+		(pts
+			(xy 227.33 121.92) (xy 227.33 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9c846767-4538-4042-a2ac-98e4608ea132")
+	)
+	(wire
+		(pts
+			(xy 64.77 64.77) (xy 64.77 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a5585429-057c-4886-b458-2d532866901c")
+	)
+	(wire
+		(pts
+			(xy 228.6 95.25) (xy 167.64 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a8fa1f1e-f8e5-4659-833c-0e008d0ab7a5")
+	)
+	(wire
+		(pts
+			(xy 228.6 119.38) (xy 228.6 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ac0a2e50-c0b0-4a93-8fa8-63e35838e234")
+	)
+	(wire
+		(pts
+			(xy 231.14 73.66) (xy 231.14 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "af3f8b32-9626-462b-a62e-dd8fedbc6a06")
+	)
+	(wire
+		(pts
+			(xy 55.88 111.76) (xy 55.88 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b8f7c9d9-63ef-48b4-b189-8a1b9ac9a3d5")
+	)
+	(wire
+		(pts
+			(xy 58.42 92.71) (xy 137.16 92.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bcb6b0a3-0cce-4b33-8236-31719c635a0b")
+	)
+	(wire
+		(pts
+			(xy 228.6 68.58) (xy 228.6 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bd2397aa-b609-4f51-ae96-9617dcaf4822")
+	)
+	(wire
+		(pts
+			(xy 228.6 82.55) (xy 167.64 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bee0e9fc-4c71-47ca-95d2-a595dcf8b87a")
+	)
+	(wire
+		(pts
+			(xy 227.33 66.04) (xy 246.38 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c0ec3229-d730-4375-a590-1907653ff6ca")
+	)
+	(wire
+		(pts
+			(xy 72.39 119.38) (xy 157.48 119.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c6b4478d-47d0-4848-bef2-05a7181d516e")
+	)
+	(wire
+		(pts
+			(xy 228.6 68.58) (xy 246.38 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c85df119-6c78-4cd7-a9c1-abe70fdf0ed5")
+	)
+	(wire
+		(pts
+			(xy 64.77 80.01) (xy 137.16 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c876f5e2-c0a1-4c78-936b-55f1be40df72")
+	)
+	(wire
+		(pts
+			(xy 64.77 57.15) (xy 64.77 59.69)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c89d9418-1c16-4ac4-bbfa-c06a650794d7")
+	)
+	(wire
+		(pts
+			(xy 62.23 57.15) (xy 64.77 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cb457a70-9a91-4e40-b6e8-94d6a420e216")
+	)
+	(wire
+		(pts
+			(xy 226.06 100.33) (xy 167.64 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ce95f9e1-0c6f-48ef-9b0e-d6743d76c901")
+	)
+	(wire
+		(pts
+			(xy 55.88 111.76) (xy 41.91 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d669603e-25b4-42d0-8a83-efe89382da80")
+	)
+	(wire
+		(pts
+			(xy 224.79 102.87) (xy 167.64 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d9f76497-a8d0-4b95-be11-77c4f13b0e6b")
+	)
+	(wire
+		(pts
+			(xy 63.5 82.55) (xy 137.16 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dc173de6-9991-4fd7-b162-0e0cd9ca86b0")
+	)
+	(wire
+		(pts
+			(xy 228.6 119.38) (xy 237.49 119.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e98916a4-a62d-47d6-bac1-692ff315fad4")
+	)
+	(wire
+		(pts
+			(xy 60.96 59.69) (xy 64.77 59.69)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f03e0e1e-1ce3-4440-9b76-07fd292a3876")
+	)
+	(wire
+		(pts
+			(xy 62.23 85.09) (xy 137.16 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f1aa75d1-ca48-4013-8275-c1be1df3ad4f")
+	)
+	(wire
+		(pts
+			(xy 226.06 124.46) (xy 237.49 124.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f2b0733b-ec5b-4354-8953-280f67bcafe3")
 	)
 	(symbol
 		(lib_id "blackpill_wiring:BLACKPILL_F411CE")
@@ -1341,7 +2180,7 @@
 	)
 	(symbol
 		(lib_id "blackpill_wiring:ST7789_DISPLAY")
-		(at 39.37 80.01 0)
+		(at 46.83 52.07 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -1351,7 +2190,7 @@
 		(dnp no)
 		(uuid "1c31541e-5630-4a29-b928-b22daba20c94")
 		(property "Reference" "J1"
-			(at 39.37 77.47 0)
+			(at 46.83 49.53 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1361,7 +2200,7 @@
 			)
 		)
 		(property "Value" "ST7789_DISPLAY"
-			(at 39.37 82.55 0)
+			(at 46.83 54.61 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1371,7 +2210,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 39.37 74.93 0)
+			(at 46.83 46.99 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1382,7 +2221,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 39.37 72.39 0)
+			(at 46.83 44.45 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1393,7 +2232,7 @@
 			)
 		)
 		(property "Description" "ST7789 240x240 IPS display module (GMT130) -- module pins only, no MISO/CS. Pins face right toward the Black Pill."
-			(at 39.37 69.85 0)
+			(at 46.83 41.91 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1432,7 +2271,7 @@
 	)
 	(symbol
 		(lib_id "blackpill_wiring:HOBBY_SERVO")
-		(at 39.37 80.01 0)
+		(at 23.97 96.52 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -1442,7 +2281,7 @@
 		(dnp no)
 		(uuid "2450655f-f6d2-4112-bc96-03ebf82f599b")
 		(property "Reference" "J2"
-			(at 39.37 77.47 0)
+			(at 23.97 93.98 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1452,7 +2291,7 @@
 			)
 		)
 		(property "Value" "HOBBY_SERVO"
-			(at 39.37 82.55 0)
+			(at 23.97 99.06 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1462,7 +2301,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 39.37 74.93 0)
+			(at 23.97 91.44 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1473,7 +2312,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 39.37 72.39 0)
+			(at 23.97 88.9 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1484,7 +2323,7 @@
 			)
 		)
 		(property "Description" "Hobby servo, TIM4 CH1, 50 Hz -- module pins. Pins face right toward the Black Pill."
-			(at 39.37 69.85 0)
+			(at 23.97 86.36 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1514,7 +2353,7 @@
 	)
 	(symbol
 		(lib_id "blackpill_wiring:USB_HOST")
-		(at 39.37 80.01 0)
+		(at 139.54 96.52 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -1524,7 +2363,7 @@
 		(dnp no)
 		(uuid "6826b6e5-65b8-4313-bb35-2a3bcc562609")
 		(property "Reference" "J6"
-			(at 39.37 77.47 0)
+			(at 139.54 93.98 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1534,7 +2373,7 @@
 			)
 		)
 		(property "Value" "USB_HOST"
-			(at 39.37 82.55 0)
+			(at 139.54 99.06 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1544,7 +2383,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 39.37 74.93 0)
+			(at 139.54 91.44 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1555,7 +2394,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 39.37 72.39 0)
+			(at 139.54 88.9 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1566,7 +2405,7 @@
 			)
 		)
 		(property "Description" "USB-C to host PC -- Configurator link, serial console, one-click DFU (PA11/PA12, built in). Pins face right toward the Black Pill."
-			(at 39.37 69.85 0)
+			(at 139.54 86.36 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1592,8 +2431,8 @@
 		)
 	)
 	(symbol
-		(lib_id "blackpill_wiring:CRSF_RECEIVER")
-		(at 240.03 80.01 0)
+		(lib_id "blackpill_wiring:ESP01_WIFI")
+		(at 240.03 104.14 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -1601,9 +2440,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "7952fa9e-df57-454e-850c-f8c6bf97a42f")
-		(property "Reference" "J3"
-			(at 240.03 77.47 0)
+		(uuid "6b3dafe2-8fc0-4ca9-ab8a-5627e7be3ab7")
+		(property "Reference" "J5"
+			(at 240.03 101.6 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1612,8 +2451,8 @@
 				)
 			)
 		)
-		(property "Value" "CRSF_RECEIVER"
-			(at 240.03 82.55 0)
+		(property "Value" "ESP01_WIFI"
+			(at 240.03 106.68 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1623,7 +2462,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 240.03 74.93 0)
+			(at 240.03 99.06 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1634,7 +2473,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 240.03 72.39 0)
+			(at 240.03 96.52 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1644,8 +2483,8 @@
 				)
 			)
 		)
-		(property "Description" "TBS/ELRS CRSF receiver -- module pins. RX switched to CRSF mode first. Pins face left toward the Black Pill."
-			(at 240.03 69.85 0)
+		(property "Description" "ESP-01 (ESP8266, stock AT firmware) -- module pins. CH_PD/GPIO0/GPIO2/RST pulled high locally. Pins face left toward the Black Pill."
+			(at 240.03 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1656,21 +2495,21 @@
 			)
 		)
 		(pin "1"
-			(uuid "60ff07fb-2360-4453-98f2-580d5ed63b01")
+			(uuid "7208d0b9-3bf7-40ac-ba7f-0e1b624c757f")
 		)
 		(pin "2"
-			(uuid "90165083-313f-4e23-8832-55142d9d96d5")
+			(uuid "6536862a-83df-40ee-87d2-4180a41a34d6")
 		)
 		(pin "3"
-			(uuid "78a2de83-93e8-4b30-bea6-d7320adc9bcc")
+			(uuid "46b12a6b-7f38-45a3-a884-fd6b0c9e4ba6")
 		)
 		(pin "4"
-			(uuid "c2138d1f-aa69-4326-a318-ea35bb1e466a")
+			(uuid "d90b9ea1-32dd-40bc-ac0f-bf72922ee317")
 		)
 		(instances
 			(project "blackpill_wiring"
 				(path "/151ef797-f557-4a17-a336-4f1be620a083"
-					(reference "J3")
+					(reference "J5")
 					(unit 1)
 				)
 			)
@@ -1756,8 +2595,8 @@
 		)
 	)
 	(symbol
-		(lib_id "blackpill_wiring:ESP01_WIFI")
-		(at 240.03 80.01 0)
+		(lib_id "blackpill_wiring:CRSF_RECEIVER")
+		(at 248.92 66.04 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -1765,9 +2604,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "6b3dafe2-8fc0-4ca9-ab8a-5627e7be3ab7")
-		(property "Reference" "J5"
-			(at 240.03 77.47 0)
+		(uuid "7952fa9e-df57-454e-850c-f8c6bf97a42f")
+		(property "Reference" "J3"
+			(at 248.92 63.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1776,8 +2615,8 @@
 				)
 			)
 		)
-		(property "Value" "ESP01_WIFI"
-			(at 240.03 82.55 0)
+		(property "Value" "CRSF_RECEIVER"
+			(at 248.92 68.58 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1787,7 +2626,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 240.03 74.93 0)
+			(at 248.92 60.96 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1798,7 +2637,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 240.03 72.39 0)
+			(at 248.92 58.42 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1808,8 +2647,8 @@
 				)
 			)
 		)
-		(property "Description" "ESP-01 (ESP8266, stock AT firmware) -- module pins. CH_PD/GPIO0/GPIO2/RST pulled high locally. Pins face left toward the Black Pill."
-			(at 240.03 69.85 0)
+		(property "Description" "TBS/ELRS CRSF receiver -- module pins. RX switched to CRSF mode first. Pins face left toward the Black Pill."
+			(at 248.92 55.88 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1820,327 +2659,30 @@
 			)
 		)
 		(pin "1"
-			(uuid "7208d0b9-3bf7-40ac-ba7f-0e1b624c757f")
+			(uuid "60ff07fb-2360-4453-98f2-580d5ed63b01")
 		)
 		(pin "2"
-			(uuid "6536862a-83df-40ee-87d2-4180a41a34d6")
+			(uuid "90165083-313f-4e23-8832-55142d9d96d5")
 		)
 		(pin "3"
-			(uuid "46b12a6b-7f38-45a3-a884-fd6b0c9e4ba6")
+			(uuid "78a2de83-93e8-4b30-bea6-d7320adc9bcc")
 		)
 		(pin "4"
-			(uuid "d90b9ea1-32dd-40bc-ac0f-bf72922ee317")
+			(uuid "c2138d1f-aa69-4326-a318-ea35bb1e466a")
 		)
 		(instances
 			(project "blackpill_wiring"
 				(path "/151ef797-f557-4a17-a336-4f1be620a083"
-					(reference "J5")
+					(reference "J3")
 					(unit 1)
 				)
 			)
 		)
-	)
-	(wire
-		(pts
-			(xy 137.16 80.01) (xy 57.31 80.01)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "060b5cca-2983-4a86-bdce-fcbcbdc08c64")
-	)
-	(wire
-		(pts
-			(xy 137.16 82.55000000000001) (xy 57.31 82.55000000000001)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5a8447e7-2637-42b6-bc43-a922f9259dfc")
-	)
-	(wire
-		(pts
-			(xy 137.16 85.09) (xy 57.31 85.09)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "cb457a70-9a91-4e40-b6e8-94d6a420e216")
-	)
-	(wire
-		(pts
-			(xy 137.16 87.63000000000001) (xy 57.31 87.63000000000001)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f03e0e1e-1ce3-4440-9b76-07fd292a3876")
-	)
-	(wire
-		(pts
-			(xy 137.16 90.17) (xy 57.31 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "56711329-ac7d-4382-9b48-38eb29f44271")
-	)
-	(wire
-		(pts
-			(xy 137.16 92.71000000000001) (xy 57.31 92.71000000000001)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "926c57a8-8543-41ea-ab64-829695a27365")
-	)
-	(wire
-		(pts
-			(xy 137.16 95.25) (xy 57.31 95.25)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d669603e-25b4-42d0-8a83-efe89382da80")
-	)
-	(wire
-		(pts
-			(xy 137.16 97.79) (xy 57.31 97.79)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5d044abe-0f49-4753-990a-c509371601d7")
-	)
-	(wire
-		(pts
-			(xy 137.16 100.33000000000001) (xy 57.31 100.33000000000001)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "25f49f05-3217-4bf5-aca0-8385d881627c")
-	)
-	(wire
-		(pts
-			(xy 137.16 102.87) (xy 57.31 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c6b4478d-47d0-4848-bef2-05a7181d516e")
-	)
-	(wire
-		(pts
-			(xy 137.16 105.41) (xy 57.31 105.41)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "701b08f1-274f-4e58-aa06-4619c81fcdc6")
-	)
-	(wire
-		(pts
-			(xy 167.64 80.01) (xy 237.49 80.01)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c0ec3229-d730-4375-a590-1907653ff6ca")
-	)
-	(wire
-		(pts
-			(xy 167.64 82.55000000000001) (xy 237.49 82.55000000000001)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c85df119-6c78-4cd7-a9c1-abe70fdf0ed5")
-	)
-	(wire
-		(pts
-			(xy 167.64 85.09) (xy 237.49 85.09)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "580e46d9-c692-4182-8744-d9c02931f8c0")
-	)
-	(wire
-		(pts
-			(xy 167.64 87.63000000000001) (xy 237.49 87.63000000000001)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8da3f555-b9c9-4169-b37c-550262d5adf4")
-	)
-	(wire
-		(pts
-			(xy 167.64 90.17) (xy 237.49 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9022dec4-49c1-4617-adc8-952ef079cf61")
-	)
-	(wire
-		(pts
-			(xy 167.64 92.71000000000001) (xy 237.49 92.71000000000001)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "00e923a6-6067-4a1c-8e0f-7503d40f1788")
-	)
-	(wire
-		(pts
-			(xy 167.64 95.25) (xy 237.49 95.25)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e98916a4-a62d-47d6-bac1-692ff315fad4")
-	)
-	(wire
-		(pts
-			(xy 167.64 97.79) (xy 237.49 97.79)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9199e64b-93ef-46c1-82fd-d1ab3a2f484f")
-	)
-	(wire
-		(pts
-			(xy 167.64 100.33000000000001) (xy 237.49 100.33000000000001)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f2b0733b-ec5b-4354-8953-280f67bcafe3")
-	)
-	(wire
-		(pts
-			(xy 167.64 102.87) (xy 237.49 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "07091881-c085-45c8-88ad-65a4cba88448")
-	)
-	(text "PC13: LED (LOW=on, onboard)"
-		(exclude_from_sim no)
-		(at 140 60 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "79ded0d8-5a8d-411f-a118-3adfdfde48df")
-	)
-	(text "PA0: KEY button (onboard)"
-		(exclude_from_sim no)
-		(at 140 66 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "d8b28074-95e0-4a47-b09b-8d60ea5c95dd")
-	)
-	(text "PA13/PA14: SWD (alt. flash)"
-		(exclude_from_sim no)
-		(at 140 72 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "9643b336-ca34-45b8-86f4-444e3db11a31")
-	)
-	(text "No CS, no MISO -- driver is write-only; panel presence can't be detected."
-		(exclude_from_sim no)
-		(at 40 120 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "560ef87b-dceb-48a5-863a-cc04d9cbe957")
-	)
-	(text "Never 3V3. Add a 470-1000 uF bulk cap at the connector -- a moving servo can droop VBUS enough to reset the MCU."
-		(exclude_from_sim no)
-		(at 40 130 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "bec1edb6-204c-4982-a184-0fe96cb6802b")
-	)
-	(text "PA9 (receiver RX): reserved for CRSF telemetry back-channel -- wired but not required by firmware today."
-		(exclude_from_sim no)
-		(at 40 140 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "3bd86153-5bea-4c92-8e9e-d88b302879f6")
-	)
-	(text "Own supply only -- never board 5V. Common ground with the board is still required, even so."
-		(exclude_from_sim no)
-		(at 40 150 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "758e8ddc-64c3-4c68-ad44-d19f39a51425")
-	)
-	(text "CH_PD, GPIO0, GPIO2, RST: pulled high locally on the module (10k to 3V3) -- no STM32 pin needed for any of them."
-		(exclude_from_sim no)
-		(at 40 160 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "0267312a-f4d0-481f-a3c4-b57abc4c3a4b")
 	)
 	(sheet_instances
 		(path "/"
 			(page "1")
 		)
 	)
+	(embedded_fonts no)
 )
