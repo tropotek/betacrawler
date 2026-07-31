@@ -29,3 +29,8 @@ venv/
 
 # local working notes, not shared via the repo
 _notes/
+
+# Claude Code: local-only, not shared via the repo. .claude/skills/ (project
+# skills) is intentionally NOT ignored -- those are checked in.
+.claude/worktrees/
+.claude/settings.local.json
