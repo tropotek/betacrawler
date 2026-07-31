@@ -163,6 +163,27 @@ void test_formatTlm_dispatches_to_ip_renderer() {
   TEST_ASSERT_TRUE(strstr(buf, "192.168.0.1") != nullptr);
 }
 
+void test_format_ip_null_buffer_is_refused() {
+  TlmValue v; v.u = 0xC0A80001u;
+  TEST_ASSERT_EQUAL(0, formatIp(0xC0A80001u, nullptr, 32));
+}
+
+void test_format_ip_zero_length_buffer_is_refused() {
+  char buf[4] = {'k', 0, 0, 0};
+  TEST_ASSERT_EQUAL(0, formatIp(0xC0A80001u, buf, 0));
+  TEST_ASSERT_EQUAL('k', buf[0]);   // untouched
+}
+
+void test_format_ip_truncation_never_overflows_and_stays_terminated() {
+  // "255.255.255.255" is 15 chars; test with various small buffers
+  char buf[8];
+  memset(buf, 'X', sizeof(buf));
+  size_t n = formatIp(0xFFFFFFFFu, buf, sizeof(buf));
+  TEST_ASSERT_EQUAL('\0', buf[sizeof(buf) - 1]);
+  TEST_ASSERT_TRUE(n < sizeof(buf));
+  TEST_ASSERT_EQUAL(strlen(buf), n);
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -187,5 +208,8 @@ int main() {
   RUN_TEST(test_format_ip_renders_dotted_decimal);
   RUN_TEST(test_format_ip_zero_renders_all_zeroes);
   RUN_TEST(test_formatTlm_dispatches_to_ip_renderer);
+  RUN_TEST(test_format_ip_null_buffer_is_refused);
+  RUN_TEST(test_format_ip_zero_length_buffer_is_refused);
+  RUN_TEST(test_format_ip_truncation_never_overflows_and_stays_terminated);
   return UNITY_END();
 }
