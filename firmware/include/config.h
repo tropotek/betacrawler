@@ -83,3 +83,6 @@
 #ifndef FEATURE_ESC
 #define FEATURE_ESC 0
 #endif
+#ifndef FEATURE_WIFI
+#define FEATURE_WIFI 0
+#endif

@@ -41,16 +41,12 @@ def test_connect_then_schema_and_params(client):
         "disp.mode", "disp.page", "disp.rate",
         "servo.mode", "servo.angle", "servo.sweep_s",
         "servo.min_us", "servo.max_us", "servo.src",
-        "esc.mode", "esc.throttle_us", "esc.min_us", "esc.max_us", "esc.direction", "esc.src",
-        "rx.protocol", "rx.source", "crossfire.timeout_ms", "elrs.timeout_ms"}
+        "wifi.ssid", "wifi.password"}
     # Telemetry descriptor rides along in the same response, so the UI renders
     # its cards from the device rather than a hardcoded field list.
     assert {t["key"] for t in schema["tlm"]} == {
         "up", "clk", "ram", "temp", "vdd", "btn", "srv",
-        "esc", "arm",
-        "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8", "ch9",
-        "ch10", "ch11", "ch12", "ch13", "ch14", "ch15", "ch16",
-        "link", "lq", "rssi", "rate", "err", "rfrate", "pwr"}
+        "wifi.status", "wifi.rssi", "wifi.ip"}
     # Every item carries a group, so the form and the telemetry page can build
     # sections without inventing headings.
     assert all(p.get("group") for p in schema["params"])
@@ -68,13 +64,14 @@ def test_valid_set_returns_200_and_updates(client):
 def test_a_show_if_hidden_param_is_still_settable(client):
     """showIf is a display hint, not an access rule.
 
-    The board boots with rx.protocol=crossfire, so elrs.timeout_ms is not
-    drawn. It must still be settable -- an INI restore writes both timeouts
-    and a Terminal `set` knows nothing about what the browser is rendering.
+    The board boots with servo.mode=off, so servo.src (showIf servo.mode ==
+    input) is not drawn. It must still be settable -- an INI restore writes
+    it regardless and a Terminal `set` knows nothing about what the browser
+    is rendering.
     """
     client.post("/api/connect", json={"port": "/dev/fake"})
-    assert client.put("/api/params/elrs.timeout_ms", json={"val": 150}).status_code == 200
-    assert client.get("/api/params").json()["elrs.timeout_ms"] == 150
+    assert client.put("/api/params/servo.src", json={"val": "ch4"}).status_code == 200
+    assert client.get("/api/params").json()["servo.src"] == "ch4"
 
 
 def test_out_of_range_set_returns_400_with_code(client):
@@ -168,11 +165,11 @@ def test_restore_skips_unknown_keys_but_applies_the_rest(client):
     """Restoring a dump from a board with more modules enabled is normal --
     the extra keys are reported, not fatal."""
     client.post("/api/connect", json={"port": "/dev/fake"})
-    ini = "[wifi]\nssid = home\n\n[led]\nblink_hz = 9\n"
+    ini = "[esc]\nmode = armed\n\n[led]\nblink_hz = 9\n"
     body = client.post("/api/params/restore", json={"ini": ini}).json()
     assert body["ok"] is False
     assert body["applied"] == ["led.blink_hz"]
-    assert [s["key"] for s in body["skipped"]] == ["wifi.ssid"]
+    assert [s["key"] for s in body["skipped"]] == ["esc.mode"]
     assert "unknown parameter" in body["skipped"][0]["reason"]
 
 

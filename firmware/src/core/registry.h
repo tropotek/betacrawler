@@ -4,6 +4,8 @@
 
 namespace core {
 
+struct WifiScanner;   // full declaration in core/dispatch.h (Task 3)
+
 // Flattens the enabled modules into the global views the protocol layer needs
 // (one parameter table, one telemetry field list) while routing callbacks back
 // to the owning module with a module-local index.
@@ -92,5 +94,9 @@ class Registry {
 // decide which modules exist. Declared here rather than in that file so both
 // main.cpp and the native tests can call it.
 void registerModules(Registry& reg);
+
+// Defined in src/modules.cpp alongside registerModules() -- see its own
+// doc comment there for why this indirection exists.
+WifiScanner* wifiScanner();
 
 }  // namespace core

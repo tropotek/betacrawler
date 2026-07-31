@@ -93,6 +93,17 @@ static core::Inputs g_inputs;
 #  endif
 #endif
 
+#if FEATURE_WIFI
+#  include "hardware/wifi/wifi_params.h"
+#  if FW_TARGET_ARDUINO
+#    include "hardware/wifi/wifi_driver.h"
+     static wifi::WifiDriver g_wifi;
+#    define WIFI_DRV (&g_wifi)
+#  else
+#    define WIFI_DRV nullptr
+#  endif
+#endif
+
 #if FEATURE_ST7789_240X240
 #  include "hardware/st7789_240x240/st7789_240x240_params.h"
 #  if FW_TARGET_ARDUINO
@@ -128,12 +139,29 @@ void registerModules(Registry& reg) {
 #if FEATURE_RX
   reg.add(rx::kDesc, RX_DRV);
 #endif
+#if FEATURE_WIFI
+  reg.add(wifi::kDesc, WIFI_DRV);
+#endif
   // Last on purpose: the display observes the modules above it, and
   // Registry::begin() attaches every module before beginning any, so
   // registration order does not affect what it can read -- but reading the
   // list in the order things appear on screen is easier to follow.
 #if FEATURE_ST7789_240X240
   reg.add(st7789::kDesc, DISPLAY_DRV);
+#endif
+}
+
+// Exposes the one wifi driver instance's WifiScanner interface to main.cpp,
+// which cannot otherwise reach a static living in this translation unit.
+// nullptr on any build without FEATURE_WIFI (or without FW_TARGET_ARDUINO,
+// i.e. the native test build) -- Dispatcher::setWifiScanner() already
+// treats a null seam as "this firmware cannot scan," exactly like an absent
+// Bootloader already does for `dfu`.
+WifiScanner* wifiScanner() {
+#if FEATURE_WIFI && FW_TARGET_ARDUINO
+  return &g_wifi;
+#else
+  return nullptr;
 #endif
 }
 

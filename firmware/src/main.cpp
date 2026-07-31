@@ -55,6 +55,7 @@ static void emitBootLog() {
 void setup() {
   Serial.begin(FW_SERIAL_BAUD);
   registerModules(g_reg);
+  g_dispatch.setWifiScanner(wifiScanner());
 
   // g_params was constructed during static init, before registerModules()
   // ran, so it defaulted an empty table. Now that the registry is populated,

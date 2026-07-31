@@ -17,8 +17,9 @@
 #define FEATURE_BUTTON  1
 #define FEATURE_ST7789_240X240 1
 #define FEATURE_SERVO   1
-#define FEATURE_RX      1
-#define FEATURE_ESC     1
+#define FEATURE_RX      0
+#define FEATURE_ESC     0
+#define FEATURE_WIFI    1
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
 // bootloader in ROM, so this costs a magic word and a reset -- no bootloader
 // to flash, and nothing to erase it. Turning it off only removes the app's
@@ -124,3 +125,13 @@
 // Wiring: receiver 5V and GND from the board's 5V pin, receiver CRSF TX ->
 // PA10. The Nano RX's pads default to PWM output -- one must be reassigned to
 // CRSF in the TBS menu before anything appears on the wire at all.
+
+// ESP-01 (ESP8266) WiFi module, stock AT firmware, on USART2. PA2/PA3 are
+// free on this board regardless of FEATURE_RX/FEATURE_ESC -- deliberately
+// not reusing RX's USART1 pins, so a future board can enable both at once.
+// CH_PD, GPIO0, GPIO2 and RST are pulled high locally on the module side
+// (10k to 3V3) and do not connect to any STM32 pin -- see the wiring
+// diagram referenced from _notes/spec-wifi.md.
+#define WIFI_RX_PIN  PA3
+#define WIFI_TX_PIN  PA2
+#define WIFI_BAUD    115200
