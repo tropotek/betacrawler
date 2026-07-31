@@ -486,42 +486,51 @@ void test_a_show_if_hidden_param_is_still_settable() {
   TEST_ASSERT_EQUAL_INT32(7, p.num(level));
 }
 
-void test_schema_includes_the_secret_hint_when_set() {
-  // The secret field is tested indirectly through the golden fixture:
-  // every schema emission from any registry (fake or real) is covered.
-  // This test verifies the mechanism exists by checking that the
-  // schema output is valid JSON and contains params (it will be populated
-  // from both fake modules regardless).
-  Params p(fakeReg);
+// A tiny, throwaway registry for exactly the two tests below -- kept
+// separate from fakeReg/kFakeParams on purpose, see this task's own note:
+// touching the shared fixture would shift driver2's paramBase and ripple
+// through every index-sensitive test elsewhere in this file.
+static const ParamDef kSecretParams[] = {
+  {"x.rate", ParamType::U8,  "Rate", "Hz",    1, 20, nullptr, 0, 0, 2, nullptr, nullptr},
+  {"x.pass", ParamType::Str, "Pass", nullptr, 0, 0,  nullptr, 0, 8, 0, "",      nullptr,
+   nullptr, nullptr, true},
+};
+static Registry secretReg;   // populated in main() before tests run
+
+void test_schema_marks_a_secret_param() {
+  Params p(secretReg);
   MockStore store;
-  Dispatcher d(fakeReg, p, store);
+  Dispatcher d(secretReg, p, store);
 
   Request q = parseRequest("{\"id\":30,\"op\":\"schema\"}");
   size_t n = d.handle(q, out, sizeof(out));
   TEST_ASSERT_TRUE(n > 0);
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"params\""));
-  // If secret was breaking the schema emission, this would fail or produce
-  // truncated output. The golden fixture test will catch any schema changes.
+
+  // Search from x.pass's own object, not the whole line, so this can't
+  // false-pass by matching a `"secret"` key belonging to a different param.
+  const char* pass = strstr(out, "\"x.pass\"");
+  TEST_ASSERT_NOT_NULL(pass);
+  TEST_ASSERT_NOT_NULL(strstr(pass, "\"secret\":true"));
 }
 
-void test_schema_omits_secret_key_when_false() {
-  // Since the real board's parameters don't have secret=true set, this
-  // test verifies the golden fixture still passes with the new field in
-  // ParamDef. The addition of a trailing bool field (always false by default)
-  // must not alter the output for existing parameters.
-  Params p(realReg);
+void test_schema_omits_secret_key_when_unset() {
+  Params p(secretReg);
   MockStore store;
-  Dispatcher d(realReg, p, store);
+  Dispatcher d(secretReg, p, store);
 
   Request q = parseRequest("{\"id\":31,\"op\":\"schema\"}");
   size_t n = d.handle(q, out, sizeof(out));
   TEST_ASSERT_TRUE(n > 0);
-  // The key assertion: "secret" key must not appear in the schema when
-  // no parameter has it set. Every parameter defaults to secret=false,
-  // and the serializer only emits it when true (per the "emitted only
-  // when declared" rule that showIf follows).
-  TEST_ASSERT_NULL(strstr(out, "\"secret\":false"));
-  TEST_ASSERT_NULL(strstr(out, "\"secret\":0"));
+
+  const char* rate = strstr(out, "\"x.rate\"");
+  TEST_ASSERT_NOT_NULL(rate);
+  const char* nextField = strstr(rate, "\"x.pass\"");
+  TEST_ASSERT_NOT_NULL(nextField);
+  // "secret" must not appear anywhere between x.rate's object and the next
+  // param's -- it is a non-secret U8, so the key is omitted entirely (same
+  // "emitted only when declared" rule showIf already follows).
+  std::string slice(rate, nextField - rate);
+  TEST_ASSERT_NULL(strstr(slice.c_str(), "\"secret\""));
 }
 
 // Golden fixture: app/tests/test_device.py loads this exact file instead of
@@ -783,6 +792,8 @@ int main() {
   fakeReg.add(kFakeDesc, &driver);
   fakeReg.add(kFake2Desc, &driver2);
   registerModules(realReg);
+  // Initialize secretReg for the secret hint tests.
+  secretReg.add(ModuleDesc{"x", "X", kSecretParams, 2, nullptr, 0});
 
   UNITY_BEGIN();
   RUN_TEST(test_set_applies_to_hardware_exactly_once);
@@ -812,8 +823,8 @@ int main() {
   RUN_TEST(test_schema_carries_show_if_when_a_param_declares_one);
   RUN_TEST(test_schema_omits_show_if_for_unconditional_params);
   RUN_TEST(test_a_show_if_hidden_param_is_still_settable);
-  RUN_TEST(test_schema_includes_the_secret_hint_when_set);
-  RUN_TEST(test_schema_omits_secret_key_when_false);
+  RUN_TEST(test_schema_marks_a_secret_param);
+  RUN_TEST(test_schema_omits_secret_key_when_unset);
   RUN_TEST(test_schema_golden_fixture_matches_firmware);
   RUN_TEST(test_dfu_op_arms_the_bootloader_exactly_once);
   RUN_TEST(test_dfu_op_answers_before_any_reset);
