@@ -24,6 +24,7 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 | POST | `/api/firmware/enter-dfu` | — | `{ok, ...status}` |
 | POST | `/api/firmware/flash` | `{"id": "<catalog id>"}` | `{ok, id}` |
 | POST | `/api/firmware/flash-upload` | raw `.bin` bytes | `{ok, filename, size}` |
+| POST | `/api/wifi/scan` | — | `{ok}` |
 
 ### Status fields
 
@@ -199,6 +200,19 @@ form: one fewer backend dependency, and the caller only has to produce bytes.
 
 Only one flash runs at a time; a second request is `409 {"err": "busy"}`.
 
+### WiFi network scan
+
+`POST /api/wifi/scan` arms an SSID scan (`AT+CWLAP` on the ESP-01) and returns as soon as the
+firmware has started it — scanning itself takes a few seconds, so results are **not** in this
+response. They arrive later over `/ws` as a `scan` frame:
+
+```json
+{"type": "scan", "data": [{"ssid": "Home", "rssi": -52}, {"ssid": "Neighbour", "rssi": -81}]}
+```
+
+Present only when the connected firmware's `caps` includes `"wifiscan"` (`FEATURE_WIFI` compiled
+in). `409 disconnected` otherwise-normal; a device that has never joined a network can still scan.
+
 ### Error responses
 
 | Status | Meaning | Body |
@@ -208,6 +222,7 @@ Only one flash runs at a time; a second request is `409 {"err": "busy"}`.
 | 400 | Save failed (flash write/read-back mismatch) | `{"err": "flash", "detail": "..."}` |
 | 400 | Bad image, bad catalog entry, failed flash | `{"err": "firmware", "detail": "..."}` |
 | 400 | Firmware cannot reboot to DFU | `{"err": "nodfu", "detail": "..."}` |
+| 400 | Firmware cannot scan for networks | `{"err": "nowifi", "detail": "..."}` |
 | 409 | Not connected | `{"err": "disconnected", ...}` |
 | 409 | A flash is already running | `{"err": "busy", "detail": "..."}` |
 | 502 | Connect failed / protocol mismatch | `{"detail": "..."}` |
@@ -216,7 +231,7 @@ Only one flash runs at a time; a second request is `409 {"err": "busy"}`.
 ## WebSocket `/ws`
 
 Server pushes only; clients send nothing. Every frame is
-`{"type": "tlm"|"state"|"log"|"flash"|"raw", "data": ...}`.
+`{"type": "tlm"|"state"|"log"|"flash"|"scan"|"raw", "data": ...}`.
 
 - `tlm` — one key per entry in the schema's `tlm` array. For the stock
   blackpill build that is `{up, clk, ram, temp, vdd, btn}`, but the field set
@@ -242,6 +257,10 @@ Server pushes only; clients send nothing. Every frame is
   Deliberately **not** sent as `log`. Log frames are the *device* talking and
   the UI renders them as `[device] …`; flashing output comes from dfu-util
   running on the host, and filing it under `log` would misattribute it.
+
+- `scan` — the result of `POST /api/wifi/scan`: `[{ssid, rssi}, ...]`. Arrives
+  once, some seconds after the request that armed it; see "WiFi network scan"
+  above.
 
 A `save` stalls the board ~1s and telemetry will gap. **That is not a
 disconnect** — do not treat it as one.

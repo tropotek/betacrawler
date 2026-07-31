@@ -189,6 +189,20 @@ class DeviceModel:
             raise DeviceError(err, "could not enter DFU mode")
         self._link.disconnect()
 
+    def start_wifi_scan(self):
+        """Arm an SSID scan. Results arrive later as a `scan` WS push --
+        see main.py's Broadcaster -- not in this response, which only
+        confirms the firmware started scanning.
+        """
+        resp = self._send("wifiscan", timeout=2.0)
+        if not resp.get("ok"):
+            err = resp.get("err", "err")
+            if err in ("nowifi", "badop"):
+                raise DeviceError(
+                    "nowifi",
+                    "this firmware does not support scanning for networks.")
+            raise DeviceError(err, "could not start a WiFi scan")
+
     # --- terminal (debug page) -----------------------------------------------
     # Mirrors set/save/load_defaults above but also returns the exact wire
     # lines exchanged, for the Terminal page's "show raw JSON" toggle. Kept as

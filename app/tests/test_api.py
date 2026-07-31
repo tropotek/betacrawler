@@ -14,7 +14,7 @@ from tests.test_device import device_responder
 
 @pytest.fixture
 def client():
-    fake = FakeSerial(responder=device_responder())
+    fake = FakeSerial(responder=device_responder(caps=("dfu", "wifiscan")))
     device = DeviceModel(SerialLink(open_port=lambda p: fake))
     app = create_app(device)
     app.state.fake = fake  # exposed so tests can drive unsolicited messages
@@ -324,3 +324,24 @@ def test_device_log_line_reaches_the_websocket_as_a_log_frame(client):
             "type": "log",
             "data": "boot: silkscreen 1.0.0 (blackpill_f411ce)",
         }
+
+
+# --- WiFi scan -----------------------------------------------------------------
+
+def test_wifi_scan_requires_a_connection(client):
+    r = client.post("/api/wifi/scan")
+    assert r.status_code == 409
+    assert r.json()["err"] == "disconnected"
+
+
+def test_wifi_scan_arms_a_scan(client):
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    fake = client.app.state.fake
+    r = client.post("/api/wifi/scan")
+    assert r.status_code == 200
+    assert r.json()["ok"] is True
+    # Not just "the route answered ok" -- the `wifiscan` op must actually have
+    # gone out over the wire, so a route that skipped device.start_wifi_scan()
+    # and just returned {"ok": True} itself would fail this.
+    last_req = json.loads(fake.written[-1].decode())
+    assert last_req["op"] == "wifiscan"

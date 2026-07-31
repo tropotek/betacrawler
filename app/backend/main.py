@@ -85,6 +85,8 @@ class Broadcaster:
             payload = {"type": "log", "data": msg["log"]}
         elif "state" in msg:
             payload = {"type": "state", "data": msg["state"]}
+        elif "scan" in msg:
+            payload = {"type": "scan", "data": msg["scan"]}
         else:
             payload = {"type": "raw", "data": msg}
         self.publish_event(payload["type"], payload["data"])
@@ -302,6 +304,15 @@ def create_app(device: DeviceModel | None = None,
         # The port is gone by now (see DeviceModel.enter_dfu), so this reports
         # the post-reboot state rather than the one the caller started in.
         return {"ok": True, **device.status()}
+
+    # --- wifi -----------------------------------------------------------------
+
+    @app.post("/api/wifi/scan")
+    def wifi_scan():
+        if device.status()["state"] != "connected":
+            raise DeviceError("disconnected", "not connected")
+        device.start_wifi_scan()
+        return {"ok": True}
 
     @app.post("/api/firmware/flash")
     def firmware_flash(body: FlashBody):

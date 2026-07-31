@@ -71,13 +71,18 @@ def device_responder(proto=1, caps=("dfu",), revert_src="flash",
             # here means "request accepted", not "already rebooted".
             emit({"id": rid, "ok": True} if "dfu" in caps
                  else {"id": rid, "ok": False, "err": "nodfu"})
+        elif op == "wifiscan":
+            # Mirrors the firmware: "busy" isn't modeled here (no test needs
+            # a mid-scan request), only the capability gate.
+            emit({"id": rid, "ok": True} if "wifiscan" in caps
+                 else {"id": rid, "ok": False, "err": "nowifi"})
         else:
             emit({"id": rid, "ok": False, "err": "badop"})
     return responder
 
 
-def make_device(proto=1):
-    fake = FakeSerial(responder=device_responder(proto))
+def make_device(proto=1, caps=("dfu",)):
+    fake = FakeSerial(responder=device_responder(proto, caps=caps))
     return DeviceModel(SerialLink(open_port=lambda p: fake)), fake
 
 
@@ -330,6 +335,64 @@ def test_enter_dfu_on_firmware_too_old_to_know_the_op():
             dev.enter_dfu()
         assert exc.value.code == "nodfu"
         assert "BOOT0" in str(exc.value)
+    finally:
+        dev.disconnect()
+
+
+# --- WiFi scan -----------------------------------------------------------------
+
+def test_start_wifi_scan_sends_wifiscan_op():
+    # caps includes both "dfu" and "wifiscan" deliberately: if start_wifi_scan
+    # sent the wrong op string (e.g. "dfu" by copy-paste from enter_dfu), the
+    # fake would still answer ok:true and a bare "must not raise" assertion
+    # would miss it -- so this also pins down the literal op on the wire.
+    dev, fake = make_device(caps=("dfu", "wifiscan"))
+    dev.connect("/dev/fake")
+    try:
+        dev.start_wifi_scan()   # must not raise
+        last_req = json.loads(fake.written[-1].decode())
+        assert last_req["op"] == "wifiscan"
+    finally:
+        dev.disconnect()
+
+
+def test_start_wifi_scan_raises_when_unsupported():
+    dev, _ = make_device(caps=("dfu",))   # no "wifiscan"
+    dev.connect("/dev/fake")
+    try:
+        with pytest.raises(DeviceError) as exc:
+            dev.start_wifi_scan()
+        assert exc.value.code == "nowifi"
+        assert "does not support scanning" in str(exc.value)
+    finally:
+        dev.disconnect()
+
+
+def test_start_wifi_scan_on_firmware_too_old_to_know_the_op():
+    """`badop` means the board predates the op entirely -- the same shape
+    enter_dfu()'s `nodfu`/`badop` handling covers. Must map to the same
+    friendly `nowifi` code/message as the `nowifi` case above, not leak the
+    raw wire token to a caller that cannot do anything useful with it."""
+    def old_firmware(req, emit):
+        rid = req["id"]
+        if req["op"] == "hello":
+            emit({"id": rid, "ok": True, "fw": "silkscreen 1.0.0", "proto": 1,
+                  "board": "blackpill_f411ce"})
+        elif req["op"] == "schema":
+            emit({"id": rid, "ok": True, "params": SCHEMA, "tlm": TLM_SCHEMA})
+        elif req["op"] == "getall":
+            emit({"id": rid, "ok": True, "vals": dict(VALUES)})
+        else:
+            emit({"id": rid, "ok": False, "err": "badop"})
+
+    fake = FakeSerial(responder=old_firmware)
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    dev.connect("/dev/fake")
+    try:
+        with pytest.raises(DeviceError) as exc:
+            dev.start_wifi_scan()
+        assert exc.value.code == "nowifi"
+        assert "does not support scanning" in str(exc.value)
     finally:
         dev.disconnect()
 
