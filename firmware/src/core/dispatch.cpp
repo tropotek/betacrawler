@@ -123,6 +123,10 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
           sif["key"] = d.showIfKey;
           sif["val"] = d.showIfVal;
         }
+        // Emitted only when true -- same "declared, not defaulted" rule
+        // showIf follows, and for the same reason: the schema is the
+        // largest line this firmware sends (see kMaxLineOut).
+        if (d.secret) e["secret"] = true;
       }
 
       // Telemetry descriptor: the same "firmware is the source of truth" rule

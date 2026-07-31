@@ -34,6 +34,11 @@ struct ParamDef {
   // compares the string straight against its current form value.
   const char* showIfKey;   // nullptr -> always visible
   const char* showIfVal;
+  // Display hint only, exactly like showIf/div/dec: the wire and flash
+  // storage still carry this value as plain text. A client renders a Str
+  // param with this set as a masked input with a reveal toggle, instead of
+  // a plain text box -- see docs/api.md.
+  bool        secret = false;
 };
 
 // Parameter values. Which parameters exist, and in what order, comes entirely

@@ -86,6 +86,12 @@ that parameter must currently hold for this one to be drawn. Like `div`/
 device still validates and accepts a `set`/restore against a parameter that
 is currently hidden, so a client must never treat `showIf` as an access rule.
 
+On a **parameter**, `secret` (`true`, omitted otherwise) marks a Str field whose value is a
+credential rather than a label — `wifi.password` is the first example. Like every other schema
+hint, this is display-only: the wire and flash storage carry it as plain text identical to any
+other setting, and Terminal `set`/INI restore accept it unchanged. A client renders it as a masked
+input rather than plain text.
+
 `fmt` names a renderer, which may be textual (`hms`) or visual (`bar`). It is a
 **name, not a format string**: both renderers (the browser and the firmware's
 own panel) have to implement it, and a client that does not recognise the name

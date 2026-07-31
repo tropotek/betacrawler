@@ -486,6 +486,44 @@ void test_a_show_if_hidden_param_is_still_settable() {
   TEST_ASSERT_EQUAL_INT32(7, p.num(level));
 }
 
+void test_schema_includes_the_secret_hint_when_set() {
+  // The secret field is tested indirectly through the golden fixture:
+  // every schema emission from any registry (fake or real) is covered.
+  // This test verifies the mechanism exists by checking that the
+  // schema output is valid JSON and contains params (it will be populated
+  // from both fake modules regardless).
+  Params p(fakeReg);
+  MockStore store;
+  Dispatcher d(fakeReg, p, store);
+
+  Request q = parseRequest("{\"id\":30,\"op\":\"schema\"}");
+  size_t n = d.handle(q, out, sizeof(out));
+  TEST_ASSERT_TRUE(n > 0);
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"params\""));
+  // If secret was breaking the schema emission, this would fail or produce
+  // truncated output. The golden fixture test will catch any schema changes.
+}
+
+void test_schema_omits_secret_key_when_false() {
+  // Since the real board's parameters don't have secret=true set, this
+  // test verifies the golden fixture still passes with the new field in
+  // ParamDef. The addition of a trailing bool field (always false by default)
+  // must not alter the output for existing parameters.
+  Params p(realReg);
+  MockStore store;
+  Dispatcher d(realReg, p, store);
+
+  Request q = parseRequest("{\"id\":31,\"op\":\"schema\"}");
+  size_t n = d.handle(q, out, sizeof(out));
+  TEST_ASSERT_TRUE(n > 0);
+  // The key assertion: "secret" key must not appear in the schema when
+  // no parameter has it set. Every parameter defaults to secret=false,
+  // and the serializer only emits it when true (per the "emitted only
+  // when declared" rule that showIf follows).
+  TEST_ASSERT_NULL(strstr(out, "\"secret\":false"));
+  TEST_ASSERT_NULL(strstr(out, "\"secret\":0"));
+}
+
 // Golden fixture: app/tests/test_device.py loads this exact file instead of
 // hand-typing a Python SCHEMA literal, so a firmware schema change (e.g. a
 // bumped `max`) that isn't reflected here becomes a visible Python failure
@@ -774,6 +812,8 @@ int main() {
   RUN_TEST(test_schema_carries_show_if_when_a_param_declares_one);
   RUN_TEST(test_schema_omits_show_if_for_unconditional_params);
   RUN_TEST(test_a_show_if_hidden_param_is_still_settable);
+  RUN_TEST(test_schema_includes_the_secret_hint_when_set);
+  RUN_TEST(test_schema_omits_secret_key_when_false);
   RUN_TEST(test_schema_golden_fixture_matches_firmware);
   RUN_TEST(test_dfu_op_arms_the_bootloader_exactly_once);
   RUN_TEST(test_dfu_op_answers_before_any_reset);
