@@ -444,12 +444,25 @@ void test_crossfire_rf_rates_match_the_tbs_profiles() {
 }
 
 void test_elrs_rf_rates_match_the_elrs_air_rate_enum() {
+  // Measured against a real receiver, ELRS 3.3.1 (ISM2G4, "e051b8"),
+  // 2026-08-01: read the wire byte raw while stepping through EVERY
+  // packet-rate option an EdgeTX handset offered, lowest to highest, and
+  // cross-checking each against the driver's own independently-measured
+  // `rate` telemetry. This is a full sweep of that TX's list end to end --
+  // every index it offered is a real reading. See rx_params.cpp for why
+  // 0/1/3/6 (never offered) deliberately stay 0 rather than an interpolated
+  // guess.
   const Protocol& p = kProtocols[PROTO_ELRS];
-  TEST_ASSERT_EQUAL_UINT16(500, p.rfRateHz(0));
-  TEST_ASSERT_EQUAL_UINT16(250, p.rfRateHz(1));
-  TEST_ASSERT_EQUAL_UINT16(150, p.rfRateHz(3));
-  TEST_ASSERT_EQUAL_UINT16(50, p.rfRateHz(5));
-  TEST_ASSERT_EQUAL_UINT16(4, p.rfRateHz(7));
+  TEST_ASSERT_EQUAL_UINT16(50,   p.rfRateHz(2));
+  TEST_ASSERT_EQUAL_UINT16(100,  p.rfRateHz(4));
+  TEST_ASSERT_EQUAL_UINT16(150,  p.rfRateHz(5));
+  TEST_ASSERT_EQUAL_UINT16(250,  p.rfRateHz(7));
+  TEST_ASSERT_EQUAL_UINT16(333,  p.rfRateHz(8));
+  TEST_ASSERT_EQUAL_UINT16(500,  p.rfRateHz(9));
+  TEST_ASSERT_EQUAL_UINT16(250,  p.rfRateHz(10));  // D250, nominal ceiling
+  TEST_ASSERT_EQUAL_UINT16(500,  p.rfRateHz(11));  // D500, nominal ceiling
+  TEST_ASSERT_EQUAL_UINT16(500,  p.rfRateHz(12));  // F500 (FLRC)
+  TEST_ASSERT_EQUAL_UINT16(1000, p.rfRateHz(13));  // F1000 (FLRC)
 }
 
 void test_an_unknown_rf_mode_index_reports_zero_rather_than_guessing() {
@@ -509,11 +522,13 @@ void test_decode_link_stats_extracts_the_rf_mode_and_tx_power_indices() {
 
 void test_the_same_indices_decode_differently_per_protocol() {
   // This is the assertion that justifies the selector doing real work: index
-  // 2 is 150Hz on Crossfire and 200Hz on ELRS, from one identical frame.
+  // 2 is a real, TBS-published 150Hz on Crossfire, but a real, hardware-
+  // measured 50Hz on ELRS (see rx_params.cpp) -- the same wire byte means two
+  // different rates depending which protocol is selected.
   LinkStats s = {};
   decodeLinkStats(kLinkFrame + 3, &s);
   TEST_ASSERT_EQUAL_UINT16(150, kProtocols[PROTO_CROSSFIRE].rfRateHz(s.rfMode));
-  TEST_ASSERT_EQUAL_UINT16(200, kProtocols[PROTO_ELRS].rfRateHz(s.rfMode));
+  TEST_ASSERT_EQUAL_UINT16(50, kProtocols[PROTO_ELRS].rfRateHz(s.rfMode));
   // TX power is CRSF's own table and does NOT vary by protocol.
   TEST_ASSERT_EQUAL_UINT16(100, txPowerMw(s.txPower));
 }

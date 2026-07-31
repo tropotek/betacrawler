@@ -17,14 +17,37 @@ static uint16_t crossfireRfRateHz(uint8_t idx) {
   return (idx < sizeof(kHz) / sizeof(kHz[0])) ? kHz[idx] : 0;
 }
 
-// ExpressLRS numbers its air rates with its own enum, descending from the
-// fastest. This table is unverified against any shipping ELRS release -- see
-// _notes/todo.md; ELRS 3.x adds faster rates above it and has renumbered
-// before, which is precisely why an index off the end returns 0 rather than
-// the nearest neighbour. Check `rfrate` against what the handset reports
-// before trusting this against a new ELRS release.
+// ExpressLRS's rf_mode index does NOT match the CRSF/TBS convention of "the
+// index IS the profile" -- measured 2026-08-01 against a real receiver on
+// ELRS 3.3.1 (ISM2G4, "e051b8"), EdgeTX handset: the wire byte was read raw
+// (this function temporarily returned idx unmodified) while stepping through
+// EVERY packet-rate option the TX offered, lowest to highest, and
+// cross-checking each against the driver's OWN independently-measured `rate`
+// telemetry (frame arrival counting, not this table). Every index the TX
+// actually offered is a real reading -- 2, 4-5, 7-13 -- covering the whole
+// list end to end (50Hz through F1000). Indices 0, 1, 3 and 6 never appeared
+// in that list; rather than guess what they might mean (a different region's
+// rate, a removed legacy entry, ...), they stay 0, the same policy as the
+// out-of-range default below. D250/D500 (10/11) are ELRS's own
+// link-adaptive modes; the value stored is their nominal ceiling rate, not a
+// live figure -- `rate` is where the actual live throughput lives.
 static uint16_t elrsRfRateHz(uint8_t idx) {
-  static const uint16_t kHz[] = {500, 250, 200, 150, 100, 50, 25, 4};
+  static const uint16_t kHz[] = {
+    0,     // 0 -- not offered by this TX/RX pairing, unconfirmed
+    0,     // 1 -- not offered by this TX/RX pairing, unconfirmed
+    50,    // 2 -- 50Hz
+    0,     // 3 -- not offered by this TX/RX pairing, unconfirmed
+    100,   // 4 -- 100Hz Full
+    150,   // 5 -- 150Hz
+    0,     // 6 -- not offered by this TX/RX pairing, unconfirmed
+    250,   // 7 -- 250Hz
+    333,   // 8 -- 333Hz Full
+    500,   // 9 -- 500Hz
+    250,   // 10 -- D250 (dynamic, nominal ceiling)
+    500,   // 11 -- D500 (dynamic, nominal ceiling)
+    500,   // 12 -- F500 (FLRC)
+    1000,  // 13 -- F1000 (FLRC), the fastest/last option this TX offers
+  };
   return (idx < sizeof(kHz) / sizeof(kHz[0])) ? kHz[idx] : 0;
 }
 
