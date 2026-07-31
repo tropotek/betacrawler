@@ -42,6 +42,7 @@
       --wd-servo: #1f8778;
       --wd-receiver: #7358b8;
       --wd-esc: #4c8c3c;
+      --wd-wifi: #b83b7a;
       --wd-power: #c23f34;
       --wd-ink: #161b22;
       --wd-muted: #5b6673;
@@ -68,6 +69,7 @@
     .wiring-diagram .fill-servo { fill: var(--wd-servo); }
     .wiring-diagram .fill-receiver { fill: var(--wd-receiver); }
     .wiring-diagram .fill-esc { fill: var(--wd-esc); }
+    .wiring-diagram .fill-wifi { fill: var(--wd-wifi); }
     .wiring-diagram .fill-power { fill: var(--wd-power); }
     .wiring-diagram .fill-surface { fill: var(--wd-surface); }
     .wiring-diagram .fill-surface2 { fill: var(--wd-surface-2); }
@@ -76,6 +78,7 @@
     .wiring-diagram .wire-servo { stroke: var(--wd-servo); stroke-width: 1.75; fill: none; }
     .wiring-diagram .wire-receiver { stroke: var(--wd-receiver); stroke-width: 1.75; fill: none; }
     .wiring-diagram .wire-esc { stroke: var(--wd-esc); stroke-width: 1.75; fill: none; }
+    .wiring-diagram .wire-wifi { stroke: var(--wd-wifi); stroke-width: 1.75; fill: none; }
     .wiring-diagram .wire-copper { stroke: var(--wd-copper); stroke-width: 1.75; fill: none; }
     .wiring-diagram .wire-reserved { stroke-dasharray: 3 3; opacity: 0.55; }
   </style>
@@ -579,11 +582,11 @@
 
           <div class="wiring-diagram">
             <div class="diagram-card">
-              <svg viewBox="0 0 1200 960" xmlns="http://www.w3.org/2000/svg" role="img"
-                   aria-label="Wiring diagram connecting a Black Pill STM32F411CE board to an ST7789 display, a hobby servo, a brushless ESC, a CRSF receiver, and a USB host">
+              <svg viewBox="0 0 1200 1130" xmlns="http://www.w3.org/2000/svg" role="img"
+                   aria-label="Wiring diagram connecting a Black Pill STM32F411CE board to an ST7789 display, a hobby servo, a brushless ESC, a CRSF receiver, an ESP-01 WiFi module, and a USB host">
 
                 <!-- ===== Board ===== -->
-                <rect x="490" y="90" width="220" height="660" rx="20" class="fill-surface2 stroke-border" stroke-width="1.5" />
+                <rect x="490" y="90" width="220" height="810" rx="20" class="fill-surface2 stroke-border" stroke-width="1.5" />
                 <text x="600" y="128" text-anchor="middle" class="lbl-heading fill-ink" font-size="16">STM32F411CE</text>
                 <text x="600" y="146" text-anchor="middle" class="lbl-mono fill-muted" font-size="10.5" letter-spacing="0.05em">WEACT BLACK PILL</text>
                 <line x1="522" y1="160" x2="678" y2="160" class="stroke-border" stroke-width="1" />
@@ -594,8 +597,8 @@
                 <text x="524" y="450" class="lbl-mono fill-muted" font-size="9">PA13/PA14 · SWD (alt. flash)</text>
 
                 <!-- USB-C nub + lead -->
-                <rect x="575" y="740" width="50" height="20" rx="3" class="fill-copper" />
-                <line x1="600" y1="760" x2="600" y2="800" class="wire-copper" />
+                <rect x="575" y="890" width="50" height="20" rx="3" class="fill-copper" />
+                <line x1="600" y1="910" x2="600" y2="950" class="wire-copper" />
 
                 <!-- ===== Left stubs: Display group ===== -->
                 <g class="wire-display">
@@ -666,6 +669,24 @@
                 <g class="lbl-mono fill-esc" font-size="10.5" font-weight="600" text-anchor="end">
                   <text x="703" y="481">PA6</text>
                   <text x="703" y="505">GND</text>
+                </g>
+
+                <!-- ===== Right stubs: WiFi group ===== -->
+                <g class="wire-wifi">
+                  <line x1="710" y1="710" x2="850" y2="710" />
+                  <line x1="710" y1="734" x2="850" y2="734" />
+                  <line x1="710" y1="758" x2="850" y2="758" />
+                  <line x1="710" y1="782" x2="850" y2="782" />
+                </g>
+                <g class="fill-wifi">
+                  <circle cx="710" cy="710" r="3" /><circle cx="710" cy="734" r="3" />
+                  <circle cx="710" cy="758" r="3" /><circle cx="710" cy="782" r="3" />
+                </g>
+                <g class="lbl-mono fill-wifi" font-size="10.5" font-weight="600" text-anchor="end">
+                  <text x="703" y="709">PA3</text>
+                  <text x="703" y="733">PA2</text>
+                  <text x="703" y="757">3V3</text>
+                  <text x="703" y="781">GND</text>
                 </g>
 
                 <!-- ===== Display card ===== -->
@@ -752,15 +773,37 @@
                   <circle cx="850" cy="482" r="3" /><circle cx="850" cy="506" r="3" />
                 </g>
 
+                <!-- ===== WiFi card ===== -->
+                <rect x="850" y="628" width="260" height="250" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="865" y="642" width="12" height="12" rx="2" class="fill-wifi" />
+                <text x="885" y="652" class="lbl-heading fill-ink" font-size="13">ESP-01 WiFi</text>
+                <text x="865" y="670" class="lbl-mono fill-muted" font-size="9.5">ESP8266 · stock AT firmware · module pins</text>
+                <line x1="865" y1="684" x2="1095" y2="684" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="865" y="714">TXD &#8594; PA3</text>
+                  <text x="865" y="738">RXD &#8592; PA2</text>
+                  <text x="865" y="762">VCC</text>
+                  <text x="865" y="786">GND</text>
+                </g>
+                <line x1="865" y1="802" x2="1095" y2="802" class="stroke-border" stroke-width="1" />
+                <text x="865" y="824" class="lbl-mono fill-muted" font-size="10">CH_PD, GPIO0, GPIO2, RST: pulled high</text>
+                <text x="865" y="840" class="lbl-mono fill-muted" font-size="10">locally on the module (10k to 3V3) —</text>
+                <text x="865" y="856" class="lbl-mono fill-muted" font-size="10">no STM32 pin needed for any of them.</text>
+                <g class="fill-wifi">
+                  <circle cx="850" cy="710" r="3" /><circle cx="850" cy="734" r="3" />
+                  <circle cx="850" cy="758" r="3" /><circle cx="850" cy="782" r="3" />
+                </g>
+
                 <!-- ===== USB card ===== -->
-                <rect x="430" y="800" width="340" height="140" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
-                <rect x="446" y="816" width="12" height="12" rx="2" class="fill-copper" />
-                <text x="466" y="826" class="lbl-heading fill-ink" font-size="13">USB-C · to host PC</text>
-                <text x="446" y="850" class="lbl-mono fill-muted" font-size="10.5">One cable carries the Configurator link,</text>
-                <text x="446" y="866" class="lbl-mono fill-muted" font-size="10.5">the serial console, and one-click DFU</text>
-                <text x="446" y="882" class="lbl-mono fill-muted" font-size="10.5">updates (PA11/PA12, built in).</text>
-                <text x="446" y="904" class="lbl-mono fill-muted" font-size="10.5">No cable? BOOT0+NRST by hand, or SWD</text>
-                <text x="446" y="920" class="lbl-mono fill-muted" font-size="10.5">(PA13/PA14), reach the same bootloader.</text>
+                <rect x="430" y="950" width="340" height="140" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="446" y="966" width="12" height="12" rx="2" class="fill-copper" />
+                <text x="466" y="976" class="lbl-heading fill-ink" font-size="13">USB-C · to host PC</text>
+                <text x="446" y="1000" class="lbl-mono fill-muted" font-size="10.5">One cable carries the Configurator link,</text>
+                <text x="446" y="1016" class="lbl-mono fill-muted" font-size="10.5">the serial console, and one-click DFU</text>
+                <text x="446" y="1032" class="lbl-mono fill-muted" font-size="10.5">updates (PA11/PA12, built in).</text>
+                <text x="446" y="1054" class="lbl-mono fill-muted" font-size="10.5">No cable? BOOT0+NRST by hand, or SWD</text>
+                <text x="446" y="1070" class="lbl-mono fill-muted" font-size="10.5">(PA13/PA14), reach the same bootloader.</text>
               </svg>
             </div>
           </div>
