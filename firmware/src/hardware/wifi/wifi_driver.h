@@ -28,6 +28,7 @@ class WifiDriver : public core::Module, public core::WifiScanner {
   void handleLine(const char* line);
   void beginJoin();
   void drainUart(uint32_t nowMs);
+  void finishScan();
 
   HardwareSerial* uart_ = nullptr;
   State    state_       = State::Init;
@@ -54,6 +55,13 @@ class WifiDriver : public core::Module, public core::WifiScanner {
   uint32_t   scanStartedAt_   = 0;
   ScanResult scanResults_[kMaxScanResults];
   uint8_t    scanCount_ = 0;
+  // Set when a WifiDisconnect URC's auto-rejoin arrives while scanning_ is
+  // still true: sending AT+CWJAP here would interleave a second in-flight
+  // command with AT+CWLAP's own still-outstanding reply, and scan
+  // completion is detected as "whichever Ok/Error arrives next while
+  // scanning_" -- there is no per-command correlation to tell the two
+  // replies apart. finishScan() acts on this once the scan actually ends.
+  bool       rejoinPending_   = false;
 };
 
 }  // namespace wifi

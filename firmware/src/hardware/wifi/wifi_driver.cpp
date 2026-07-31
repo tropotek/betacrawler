@@ -83,6 +83,12 @@ void WifiDriver::onParamChanged(uint8_t local, const core::Params& p) {
   if (ssid_[0] == '\0') {
     state_ = State::Idle;
     status_ = STATUS_OFF;
+    // Local state alone would leave the ESP-01 itself still associated --
+    // tell it to actually disassociate. Fire-and-forget, same as every
+    // other command this driver sends; its OK/ERROR reply is routed
+    // through the normal Ok/Error handling and ignored (state_ is Idle by
+    // then, so neither case does anything with it).
+    sendLine("AT+CWQAP");
   } else {
     beginJoin();
   }
@@ -99,8 +105,7 @@ void WifiDriver::handleLine(const char* line) {
       return;
     }
     if (kind == LineKind::Ok || kind == LineKind::Error) {
-      scanning_ = false;
-      scanResultReady_ = true;
+      finishScan();
       return;
     }
     // Fall through for anything else (e.g. a stray URC mid-scan) -- handled
@@ -121,7 +126,16 @@ void WifiDriver::handleLine(const char* line) {
         status_ = STATUS_OFF;
         rssi_ = 0;
         ip_ = 0;
-        if (ssid_[0] != '\0') beginJoin();   // auto-rejoin
+        if (ssid_[0] != '\0') {
+          // A scan's AT+CWLAP reply may still be outstanding -- sending
+          // AT+CWJAP now would put a second command on the wire with no
+          // per-command correlation to tell the replies apart (scan
+          // completion is "whichever Ok/Error arrives next while
+          // scanning_"). Defer the rejoin; finishScan() sends it once the
+          // scan actually ends.
+          if (scanning_) rejoinPending_ = true;
+          else beginJoin();
+        }
       }
       break;
     case LineKind::CwjapReply: {
@@ -182,8 +196,7 @@ void WifiDriver::tick(uint32_t nowMs) {
     else if (state_ == State::Init) { ++nextInitStep_; }   // skip a wedged init step rather than hang forever
   }
   if (scanning_ && nowMs - scanStartedAt_ > WIFI_SCAN_TIMEOUT_MS) {
-    scanning_ = false;
-    scanResultReady_ = true;   // report whatever rows arrived before the timeout
+    finishScan();   // report whatever rows arrived before the timeout
   }
 
   switch (state_) {
@@ -221,6 +234,23 @@ void WifiDriver::readTelemetry(core::TlmValue* out) {
   out[T_STATUS].u = (uint32_t)status_;
   out[T_RSSI].i   = rssi_;
   out[T_IP].u     = ip_;
+}
+
+// Called exactly once per scan, from whichever of the two places actually
+// ends it: handleLine()'s Ok/Error branch (the normal case) or tick()'s
+// WIFI_SCAN_TIMEOUT_MS guard (the scan wedged). Centralising this is what
+// guarantees a WifiDisconnect's deferred rejoin (see rejoinPending_) fires
+// exactly once, from whichever path actually closes the scan out.
+void WifiDriver::finishScan() {
+  scanning_ = false;
+  scanResultReady_ = true;
+  // The scan's own AT+CWLAP is no longer in flight either way -- via its
+  // Ok/Error reply, or because it just timed out.
+  cmdSentAt_ = 0;
+  if (rejoinPending_) {
+    rejoinPending_ = false;
+    beginJoin();
+  }
 }
 
 bool WifiDriver::startScan() {
