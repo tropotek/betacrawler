@@ -32,7 +32,7 @@
       )
       (hide yes)
     )
-    (property "Description" "WeAct STM32F411CE Black Pill -- pins used by silkscreen firmware (boards/blackpill_f411ce.h). Not the bare MCU die; see design spec."
+    (property "Description" "WeAct STM32F411CE Black Pill -- pins used by silkscreen firmware (boards/blackpill_f411ce.h). Left side: display+servo+USB. Right side: receiver+ESC+WiFi. Not the bare MCU die; see design spec."
       (at 0 -10.16 0)
       (effects
         (font (size 1.27 1.27))
@@ -42,7 +42,7 @@
     (symbol "BLACKPILL_F411CE_0_1"
       (rectangle
         (start 0 1.27)
-        (end 25.4 -46.99)
+        (end 25.4 -26.67)
         (stroke (width 0.254) (type default))
         (fill (type background))
       )
@@ -51,7 +51,7 @@
       (pin passive line
         (at -2.54 0 0)
         (length 2.54)
-        (name "PA0"
+        (name "PA5"
           (effects (font (size 1.27 1.27)))
         )
         (number "1"
@@ -61,7 +61,7 @@
       (pin passive line
         (at -2.54 -2.54 0)
         (length 2.54)
-        (name "PA2"
+        (name "PA7"
           (effects (font (size 1.27 1.27)))
         )
         (number "2"
@@ -71,7 +71,7 @@
       (pin passive line
         (at -2.54 -5.08 0)
         (length 2.54)
-        (name "PA3"
+        (name "PB1"
           (effects (font (size 1.27 1.27)))
         )
         (number "3"
@@ -81,7 +81,7 @@
       (pin passive line
         (at -2.54 -7.62 0)
         (length 2.54)
-        (name "PA5"
+        (name "PB0"
           (effects (font (size 1.27 1.27)))
         )
         (number "4"
@@ -91,7 +91,7 @@
       (pin passive line
         (at -2.54 -10.16 0)
         (length 2.54)
-        (name "PA6"
+        (name "3V3"
           (effects (font (size 1.27 1.27)))
         )
         (number "5"
@@ -101,7 +101,7 @@
       (pin passive line
         (at -2.54 -12.7 0)
         (length 2.54)
-        (name "PA7"
+        (name "GND"
           (effects (font (size 1.27 1.27)))
         )
         (number "6"
@@ -111,7 +111,7 @@
       (pin passive line
         (at -2.54 -15.24 0)
         (length 2.54)
-        (name "PA9"
+        (name "PB6"
           (effects (font (size 1.27 1.27)))
         )
         (number "7"
@@ -121,7 +121,7 @@
       (pin passive line
         (at -2.54 -17.78 0)
         (length 2.54)
-        (name "PA10"
+        (name "5V"
           (effects (font (size 1.27 1.27)))
         )
         (number "8"
@@ -131,7 +131,7 @@
       (pin passive line
         (at -2.54 -20.32 0)
         (length 2.54)
-        (name "PA13"
+        (name "GND"
           (effects (font (size 1.27 1.27)))
         )
         (number "9"
@@ -141,7 +141,7 @@
       (pin passive line
         (at -2.54 -22.86 0)
         (length 2.54)
-        (name "PA14"
+        (name "USB_DM"
           (effects (font (size 1.27 1.27)))
         )
         (number "10"
@@ -151,7 +151,7 @@
       (pin passive line
         (at -2.54 -25.4 0)
         (length 2.54)
-        (name "PB0"
+        (name "USB_DP"
           (effects (font (size 1.27 1.27)))
         )
         (number "11"
@@ -159,9 +159,9 @@
         )
       )
       (pin passive line
-        (at -2.54 -27.94 0)
+        (at 27.94 0 180)
         (length 2.54)
-        (name "PB1"
+        (name "PA10"
           (effects (font (size 1.27 1.27)))
         )
         (number "12"
@@ -169,9 +169,9 @@
         )
       )
       (pin passive line
-        (at -2.54 -30.48 0)
+        (at 27.94 -2.54 180)
         (length 2.54)
-        (name "PB6"
+        (name "PA9"
           (effects (font (size 1.27 1.27)))
         )
         (number "13"
@@ -179,9 +179,9 @@
         )
       )
       (pin passive line
-        (at -2.54 -33.02 0)
+        (at 27.94 -5.08 180)
         (length 2.54)
-        (name "PC13"
+        (name "5V"
           (effects (font (size 1.27 1.27)))
         )
         (number "14"
@@ -189,9 +189,9 @@
         )
       )
       (pin passive line
-        (at -2.54 -35.56 0)
+        (at 27.94 -7.62 180)
         (length 2.54)
-        (name "USB_DM"
+        (name "GND"
           (effects (font (size 1.27 1.27)))
         )
         (number "15"
@@ -199,9 +199,9 @@
         )
       )
       (pin passive line
-        (at -2.54 -38.1 0)
+        (at 27.94 -10.16 180)
         (length 2.54)
-        (name "USB_DP"
+        (name "PA6"
           (effects (font (size 1.27 1.27)))
         )
         (number "16"
@@ -209,9 +209,9 @@
         )
       )
       (pin passive line
-        (at -2.54 -40.64 0)
+        (at 27.94 -12.7 180)
         (length 2.54)
-        (name "3V3"
+        (name "GND"
           (effects (font (size 1.27 1.27)))
         )
         (number "17"
@@ -219,9 +219,9 @@
         )
       )
       (pin passive line
-        (at -2.54 -43.18 0)
+        (at 27.94 -15.24 180)
         (length 2.54)
-        (name "5V"
+        (name "PA3"
           (effects (font (size 1.27 1.27)))
         )
         (number "18"
@@ -229,12 +229,32 @@
         )
       )
       (pin passive line
-        (at -2.54 -45.72 0)
+        (at 27.94 -17.78 180)
+        (length 2.54)
+        (name "PA2"
+          (effects (font (size 1.27 1.27)))
+        )
+        (number "19"
+          (effects (font (size 1.27 1.27)))
+        )
+      )
+      (pin passive line
+        (at 27.94 -20.32 180)
+        (length 2.54)
+        (name "3V3"
+          (effects (font (size 1.27 1.27)))
+        )
+        (number "20"
+          (effects (font (size 1.27 1.27)))
+        )
+      )
+      (pin passive line
+        (at 27.94 -22.86 180)
         (length 2.54)
         (name "GND"
           (effects (font (size 1.27 1.27)))
         )
-        (number "19"
+        (number "21"
           (effects (font (size 1.27 1.27)))
         )
       )
@@ -270,7 +290,7 @@
       )
       (hide yes)
     )
-    (property "Description" "ST7789 240x240 IPS display module (GMT130) -- module pins only, no MISO/CS."
+    (property "Description" "ST7789 240x240 IPS display module (GMT130) -- module pins only, no MISO/CS. Pins face right toward the Black Pill."
       (at 0 -10.16 0)
       (effects
         (font (size 1.27 1.27))
@@ -287,7 +307,7 @@
     )
     (symbol "ST7789_DISPLAY_1_1"
       (pin passive line
-        (at -2.54 0 0)
+        (at 17.94 0 180)
         (length 2.54)
         (name "SCK"
           (effects (font (size 1.27 1.27)))
@@ -297,7 +317,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -2.54 0)
+        (at 17.94 -2.54 180)
         (length 2.54)
         (name "MOSI"
           (effects (font (size 1.27 1.27)))
@@ -307,7 +327,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -5.08 0)
+        (at 17.94 -5.08 180)
         (length 2.54)
         (name "DC"
           (effects (font (size 1.27 1.27)))
@@ -317,7 +337,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -7.62 0)
+        (at 17.94 -7.62 180)
         (length 2.54)
         (name "RST"
           (effects (font (size 1.27 1.27)))
@@ -327,7 +347,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -10.16 0)
+        (at 17.94 -10.16 180)
         (length 2.54)
         (name "VCC_BLK"
           (effects (font (size 1.27 1.27)))
@@ -337,7 +357,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -12.7 0)
+        (at 17.94 -12.7 180)
         (length 2.54)
         (name "GND"
           (effects (font (size 1.27 1.27)))
@@ -378,7 +398,7 @@
       )
       (hide yes)
     )
-    (property "Description" "Hobby servo, TIM4 CH1, 50 Hz -- module pins."
+    (property "Description" "Hobby servo, TIM4 CH1, 50 Hz -- module pins. Pins face right toward the Black Pill."
       (at 0 -10.16 0)
       (effects
         (font (size 1.27 1.27))
@@ -387,15 +407,15 @@
     )
     (symbol "HOBBY_SERVO_0_1"
       (rectangle
-        (start 0 1.27)
-        (end 15.24 -6.35)
+        (start 0 -13.97)
+        (end 15.24 -21.59)
         (stroke (width 0.254) (type default))
         (fill (type background))
       )
     )
     (symbol "HOBBY_SERVO_1_1"
       (pin passive line
-        (at -2.54 0 0)
+        (at 17.94 -15.24 180)
         (length 2.54)
         (name "SIGNAL"
           (effects (font (size 1.27 1.27)))
@@ -405,7 +425,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -2.54 0)
+        (at 17.94 -17.78 180)
         (length 2.54)
         (name "PLUS"
           (effects (font (size 1.27 1.27)))
@@ -415,7 +435,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -5.08 0)
+        (at 17.94 -20.32 180)
         (length 2.54)
         (name "GND"
           (effects (font (size 1.27 1.27)))
@@ -456,7 +476,7 @@
       )
       (hide yes)
     )
-    (property "Description" "TBS/ELRS CRSF receiver -- module pins. RX switched to CRSF mode first."
+    (property "Description" "TBS/ELRS CRSF receiver -- module pins. RX switched to CRSF mode first. Pins face left toward the Black Pill."
       (at 0 -10.16 0)
       (effects
         (font (size 1.27 1.27))
@@ -544,7 +564,7 @@
       )
       (hide yes)
     )
-    (property "Description" "Brushless ESC, TIM3 CH1 PWM out -- module pins. Own supply only, never board 5V."
+    (property "Description" "Brushless ESC, TIM3 CH1 PWM out -- module pins. Own supply only, never board 5V. Pins face left toward the Black Pill."
       (at 0 -10.16 0)
       (effects
         (font (size 1.27 1.27))
@@ -553,15 +573,15 @@
     )
     (symbol "BRUSHLESS_ESC_0_1"
       (rectangle
-        (start 0 1.27)
-        (end 15.24 -3.81)
+        (start 0 -8.89)
+        (end 15.24 -13.97)
         (stroke (width 0.254) (type default))
         (fill (type background))
       )
     )
     (symbol "BRUSHLESS_ESC_1_1"
       (pin passive line
-        (at -2.54 0 0)
+        (at -2.54 -10.16 0)
         (length 2.54)
         (name "SIGNAL"
           (effects (font (size 1.27 1.27)))
@@ -571,7 +591,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -2.54 0)
+        (at -2.54 -12.7 0)
         (length 2.54)
         (name "GND"
           (effects (font (size 1.27 1.27)))
@@ -612,7 +632,7 @@
       )
       (hide yes)
     )
-    (property "Description" "ESP-01 (ESP8266, stock AT firmware) -- module pins. CH_PD/GPIO0/GPIO2/RST pulled high locally."
+    (property "Description" "ESP-01 (ESP8266, stock AT firmware) -- module pins. CH_PD/GPIO0/GPIO2/RST pulled high locally. Pins face left toward the Black Pill."
       (at 0 -10.16 0)
       (effects
         (font (size 1.27 1.27))
@@ -621,15 +641,15 @@
     )
     (symbol "ESP01_WIFI_0_1"
       (rectangle
-        (start 0 1.27)
-        (end 15.24 -8.89)
+        (start 0 -13.97)
+        (end 15.24 -24.13)
         (stroke (width 0.254) (type default))
         (fill (type background))
       )
     )
     (symbol "ESP01_WIFI_1_1"
       (pin passive line
-        (at -2.54 0 0)
+        (at -2.54 -15.24 0)
         (length 2.54)
         (name "TXD"
           (effects (font (size 1.27 1.27)))
@@ -639,7 +659,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -2.54 0)
+        (at -2.54 -17.78 0)
         (length 2.54)
         (name "RXD"
           (effects (font (size 1.27 1.27)))
@@ -649,7 +669,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -5.08 0)
+        (at -2.54 -20.32 0)
         (length 2.54)
         (name "VCC"
           (effects (font (size 1.27 1.27)))
@@ -659,7 +679,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -7.62 0)
+        (at -2.54 -22.86 0)
         (length 2.54)
         (name "GND"
           (effects (font (size 1.27 1.27)))
@@ -700,7 +720,7 @@
       )
       (hide yes)
     )
-    (property "Description" "USB-C to host PC -- Configurator link, serial console, one-click DFU (PA11/PA12, built in)."
+    (property "Description" "USB-C to host PC -- Configurator link, serial console, one-click DFU (PA11/PA12, built in). Pins face right toward the Black Pill."
       (at 0 -10.16 0)
       (effects
         (font (size 1.27 1.27))
@@ -709,15 +729,15 @@
     )
     (symbol "USB_HOST_0_1"
       (rectangle
-        (start 0 1.27)
-        (end 15.24 -3.81)
+        (start 0 -21.59)
+        (end 15.24 -26.67)
         (stroke (width 0.254) (type default))
         (fill (type background))
       )
     )
     (symbol "USB_HOST_1_1"
       (pin passive line
-        (at -2.54 0 0)
+        (at 17.94 -22.86 180)
         (length 2.54)
         (name "DM"
           (effects (font (size 1.27 1.27)))
@@ -727,7 +747,7 @@
         )
       )
       (pin passive line
-        (at -2.54 -2.54 0)
+        (at 17.94 -25.4 180)
         (length 2.54)
         (name "DP"
           (effects (font (size 1.27 1.27)))
