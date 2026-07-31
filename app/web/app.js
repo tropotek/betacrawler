@@ -75,6 +75,7 @@ const Api = {
   // method whose signature pins the UI to an HTTP transport.
   flashUpload: (bytes, filename) => Api.sendBody(
     `/api/firmware/flash-upload?filename=${encodeURIComponent(filename)}`, bytes),
+  wifiScan:  ()          => Api.send('POST', '/api/wifi/scan'),
 
   // The push channel, exposed as a subscription rather than as a socket.
   // `handler` receives one parsed {type, data} frame per message; reconnection
@@ -144,6 +145,7 @@ function setState(state, info) {
   // script is not deferred, Alpine's is), and the Firmware page re-syncs on
   // entry anyway.
   window.Alpine?.store('firmware')?.syncDevice(connected, deviceInfo);
+  window.Alpine?.store('wifi')?.syncDevice(connected, deviceInfo);
 }
 
 // Telemetry-staleness: distinct from a hard disconnect. The port is still
@@ -231,6 +233,15 @@ const TLM_FORMATTERS = {
     const s = Math.floor(ms / 1000);
     const pad = (n) => String(n).padStart(2, '0');
     return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+  },
+
+  // Dotted-decimal from the packed u32 the wire carries. Mirrors
+  // core/tlm_format.cpp's formatIp() exactly -- both must agree on byte
+  // order (big-endian: a in the high byte) or the two renderers disagree
+  // about the same frame.
+  ip(packed) {
+    return [(packed >>> 24) & 0xFF, (packed >>> 16) & 0xFF,
+            (packed >>> 8) & 0xFF, packed & 0xFF].join('.');
   },
 };
 
@@ -464,6 +475,52 @@ document.addEventListener('alpine:init', () => {
       this.op = null;
       this.busy = true;
       el('fw-log').value = '';
+    },
+  });
+
+  // SSID scan is the one bespoke, non-schema-driven bit this module needs
+  // (see docs/api.md's "WiFi network scan") -- results arrive over the
+  // `scan` WS frame, handled in subscribeEvents() below, not in scan()
+  // itself, which only confirms the firmware started scanning.
+  Alpine.store('wifi', {
+    results: [],
+    scanning: false,
+    deviceConnected: false,
+    device: {},
+
+    syncDevice(isConnected, info) {
+      this.deviceConnected = isConnected;
+      this.device = info || {};
+    },
+
+    get canScan() {
+      return this.deviceConnected && (this.device.caps || []).includes('wifiscan');
+    },
+
+    async scan() {
+      this.scanning = true;
+      this.results = [];
+      try {
+        await Api.wifiScan();
+      } catch (e) {
+        this.scanning = false;
+        showError(`Scan: ${e.message}`);
+      }
+      // scanning stays true until the `scan` WS frame arrives (onScanEvent
+      // below) or the connection drops -- there is no separate "scan
+      // finished with nothing found" signal, an empty array IS that signal.
+    },
+
+    onScanEvent(nets) {
+      this.scanning = false;
+      this.results = nets;
+    },
+
+    pick(net) {
+      this.results = [];
+      const cfg = Alpine.store('config');
+      cfg.values['wifi.ssid'] = net.ssid;
+      cfg.commit({ key: 'wifi.ssid', type: 'str', label: 'SSID' });
     },
   });
 });
@@ -845,6 +902,8 @@ function subscribeEvents() {
       // render in the Terminal as `[device] …`. This is dfu-util running on
       // the host, and putting it in the Terminal would misattribute it.
       Alpine.store('firmware').onFlashEvent(msg.data);
+    } else if (msg.type === 'scan') {
+      Alpine.store('wifi').onScanEvent(msg.data);
     } else if (msg.type === 'log') {
       // Device log lines are unprompted, so they are marked to distinguish
       // them from a reply to something the user typed. The firmware replays
