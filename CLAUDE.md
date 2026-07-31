@@ -43,15 +43,8 @@ Two ST-Link/V2 units may be attached at once — if upload grabs the wrong one, 
 .venv/bin/uvicorn backend.main:app --port 8080           # serves API + app/web/ together
 ```
 
-**Firmware bundle** (from the repo root), after any firmware change worth shipping. `app/firmware/`
-is gitignored build output, so a fresh checkout has none until this is run:
-```
-python3 app/tools/bundle_firmware.py                    # builds, then updates app/firmware/
-python3 app/tools/bundle_firmware.py board_a board_b    # the whole release set, in one go
-python3 app/tools/bundle_firmware.py --add other_board  # merge, don't prune the rest
-python3 app/tools/bundle_firmware.py --dry-run          # report only
-```
-Also the **Build release firmware** task in `silkscreen.code-workspace`.
+Building and bundling release firmware images (`app/firmware/`) is covered by the
+`bundle-firmware` skill — invoke it rather than reading this file for those steps.
 
 **Web UI**: no build step. `app/web/{index.html,app.js}` are static files served directly by the
 FastAPI app above (`main.py` mounts `app/web/` at `/`). No automated UI test suite exists, by
