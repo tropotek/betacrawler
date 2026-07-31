@@ -57,6 +57,13 @@ class Registry {
   void notify(ParamId global, const Params& p);   // -> owner->onParamChanged(local, p)
   void collectTelemetry(TlmValue* out) const;     // fills tlmCount() entries
 
+  // Polls every registered module's pollPush() in registration order and
+  // returns the first non-zero result -- at most one module uses this
+  // today, but the loop is generic so a second composes with no change
+  // here. A module with no driver (the native test build's shape for any
+  // module registered with driver=nullptr) is skipped, same as tick().
+  size_t pollPush(char* out, size_t cap) const;
+
   // Identifies the parameter *layout* -- every key, type and bound, in order.
   // storage.cpp writes it into the flash header so that changing the enabled
   // module set (or editing a parameter's bounds) invalidates saved settings

@@ -120,6 +120,14 @@ void loop() {
 
   g_reg.tick(now);
 
+  // Generic unsolicited-push channel (core::Module::pollPush) -- currently
+  // only used by wifi's SSID-scan result, but nothing here names it. A
+  // second module that needs one composes for free.
+  {
+    size_t n = g_reg.pollPush(g_out, sizeof(g_out));
+    if (n > 0) Serial.println(g_out);
+  }
+
   if (g_dispatch.telemetryEnabled() && g_tlmRateId != kNoParam) {
     uint32_t period = 1000u / (uint32_t)g_params.num(g_tlmRateId);
     if (period == 0) period = 1;

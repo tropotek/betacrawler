@@ -86,6 +86,19 @@ struct ObserverDriver : Module {
   }
 };
 
+// A driver that has nothing to push, by default -- exercises the "0 means
+// nothing to send" contract every existing driver relies on implicitly.
+struct PushDriver : core::Module {
+  const char* pending = nullptr;   // set by a test right before calling tick()/pollPush
+  size_t pollPush(char* out, size_t cap) override {
+    if (!pending) return 0;
+    size_t n = strlen(pending);
+    if (n + 1 > cap) return 0;
+    memcpy(out, pending, n + 1);
+    return n;
+  }
+};
+
 // --- tests -------------------------------------------------------------------
 
 void test_flattens_params_in_registration_order() {
@@ -329,6 +342,40 @@ void test_fingerprint_changes_when_a_bound_changes() {
   TEST_ASSERT_NOT_EQUAL(a.fingerprint(), b.fingerprint());
 }
 
+void test_registry_pollPush_returns_zero_when_no_module_has_anything() {
+  Registry reg;
+  PushDriver a, b;
+  reg.add(core::ModuleDesc{"a", "A", nullptr, 0, nullptr, 0}, &a);
+  reg.add(core::ModuleDesc{"b", "B", nullptr, 0, nullptr, 0}, &b);
+
+  char out[64];
+  TEST_ASSERT_EQUAL_UINT(0, reg.pollPush(out, sizeof(out)));
+}
+
+void test_registry_pollPush_returns_first_modules_pending_line() {
+  Registry reg;
+  PushDriver a, b;
+  reg.add(core::ModuleDesc{"a", "A", nullptr, 0, nullptr, 0}, &a);
+  reg.add(core::ModuleDesc{"b", "B", nullptr, 0, nullptr, 0}, &b);
+  b.pending = "{\"scan\":[]}";
+
+  char out[64];
+  size_t n = reg.pollPush(out, sizeof(out));
+  TEST_ASSERT_EQUAL_UINT(strlen("{\"scan\":[]}"), n);
+  TEST_ASSERT_EQUAL_STRING_LEN("{\"scan\":[]}", out, n);
+}
+
+void test_registry_pollPush_skips_a_null_driver() {
+  Registry reg;
+  reg.add(core::ModuleDesc{"a", "A", nullptr, 0, nullptr, 0}, nullptr);   // native test build shape
+  PushDriver b;
+  reg.add(core::ModuleDesc{"b", "B", nullptr, 0, nullptr, 0}, &b);
+  b.pending = "x";
+
+  char out[64];
+  TEST_ASSERT_EQUAL_UINT(1, reg.pollPush(out, sizeof(out)));
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -350,5 +397,8 @@ int main() {
   RUN_TEST(test_add_refuses_to_exceed_capacity);
   RUN_TEST(test_fingerprint_changes_with_the_module_set);
   RUN_TEST(test_fingerprint_changes_when_a_bound_changes);
+  RUN_TEST(test_registry_pollPush_returns_zero_when_no_module_has_anything);
+  RUN_TEST(test_registry_pollPush_returns_first_modules_pending_line);
+  RUN_TEST(test_registry_pollPush_skips_a_null_driver);
   return UNITY_END();
 }

@@ -111,6 +111,15 @@ void Registry::tick(uint32_t nowMs) {
     if (mods_[i].driver) mods_[i].driver->tick(nowMs);
 }
 
+size_t Registry::pollPush(char* out, size_t cap) const {
+  for (uint8_t i = 0; i < modCount_; ++i) {
+    if (!mods_[i].driver) continue;
+    size_t n = mods_[i].driver->pollPush(out, cap);
+    if (n > 0) return n;
+  }
+  return 0;
+}
+
 void Registry::notify(ParamId global, const Params& p) {
   uint8_t local = 0;
   const Entry* e = ownerOfParam(global, &local);
