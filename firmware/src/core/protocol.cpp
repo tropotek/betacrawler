@@ -39,6 +39,7 @@ static Op opFromString(const char* s) {
   if (strcmp(s, "revert") == 0)   return Op::Revert;
   if (strcmp(s, "tlm") == 0)      return Op::Tlm;
   if (strcmp(s, "dfu") == 0)      return Op::Dfu;
+  if (strcmp(s, "wifiscan") == 0) return Op::WifiScan;
   return Op::Unknown;
 }
 

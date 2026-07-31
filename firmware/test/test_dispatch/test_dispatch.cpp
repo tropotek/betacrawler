@@ -122,6 +122,18 @@ struct MockBootloader : Bootloader {
   bool enterDfu() override { ++enterCalls; return available; }
 };
 
+// The SSID-scan seam. Counting calls is the point, same reasoning as
+// MockBootloader: an armed scan must call startScan() exactly once, and a
+// refused one (already scanning, or unsupported) must not re-arm it.
+struct MockWifiScanner : WifiScanner {
+  bool available = true;    // false models "already scanning" here --
+                             // there is no separate "unsupported" flag
+                             // because an absent seam (nullptr) already
+                             // covers that case, see the no-scanner test.
+  int  startCalls = 0;
+  bool startScan() override { ++startCalls; return available; }
+};
+
 static Registry fakeReg;
 static Registry realReg;
 static MockDriver driver;    // owns globals 0..1
@@ -784,6 +796,55 @@ void test_revert_is_parsed_as_its_own_op() {
   TEST_ASSERT_FALSE(bad.ok);
 }
 
+// --- SSID scan ----------------------------------------------------------
+
+void test_wifiscan_op_arms_the_scanner_exactly_once() {
+  Params p(fakeReg); MockStore store; MockWifiScanner scanner;
+  Dispatcher d(fakeReg, p, store);
+  d.setWifiScanner(&scanner);
+
+  Request q = parseRequest("{\"id\":40,\"op\":\"wifiscan\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_EQUAL_INT(1, scanner.startCalls);
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"ok\":true"));
+}
+
+void test_wifiscan_op_reports_busy_when_scanner_refuses() {
+  Params p(fakeReg); MockStore store; MockWifiScanner scanner;
+  scanner.available = false;
+  Dispatcher d(fakeReg, p, store);
+  d.setWifiScanner(&scanner);
+
+  Request q = parseRequest("{\"id\":41,\"op\":\"wifiscan\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"ok\":false"));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"err\":\"busy\""));
+}
+
+// FEATURE_WIFI off wires no scanner at all -- the op must still answer
+// rather than dereference a null seam, exactly the dfu precedent.
+void test_wifiscan_op_with_no_scanner_wired_reports_nowifi() {
+  Params p(fakeReg); MockStore store;
+  Dispatcher d(fakeReg, p, store);          // setWifiScanner() never called
+
+  Request q = parseRequest("{\"id\":42,\"op\":\"wifiscan\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"err\":\"nowifi\""));
+}
+
+void test_hello_advertises_wifiscan_in_caps_when_wired() {
+  Params p(realReg); MockStore store; MockWifiScanner scanner;
+  Dispatcher d(realReg, p, store);
+  d.setWifiScanner(&scanner);
+
+  Request q = parseRequest("{\"id\":43,\"op\":\"hello\"}");
+  d.handle(q, out, sizeof(out));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"wifiscan\""));
+}
+
 void setUp() { driver.reset(); driver2.reset(); }
 void tearDown() {}
 
@@ -840,5 +901,9 @@ int main() {
   RUN_TEST(test_revert_with_nothing_stored_falls_back_to_defaults);
   RUN_TEST(test_revert_consults_the_store_exactly_once);
   RUN_TEST(test_revert_is_parsed_as_its_own_op);
+  RUN_TEST(test_wifiscan_op_arms_the_scanner_exactly_once);
+  RUN_TEST(test_wifiscan_op_reports_busy_when_scanner_refuses);
+  RUN_TEST(test_wifiscan_op_with_no_scanner_wired_reports_nowifi);
+  RUN_TEST(test_hello_advertises_wifiscan_in_caps_when_wired);
   return UNITY_END();
 }

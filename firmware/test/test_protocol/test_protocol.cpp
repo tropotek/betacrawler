@@ -92,6 +92,12 @@ void test_unknown_op_rejected() {
   TEST_ASSERT_EQUAL_UINT32(1, q.id);  // id preserved so we can still reply
 }
 
+void test_parses_wifiscan_op() {
+  Request q = parseRequest("{\"id\":1,\"op\":\"wifiscan\"}");
+  TEST_ASSERT_TRUE(q.ok);
+  TEST_ASSERT_TRUE(Op::WifiScan == q.op);
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -107,5 +113,6 @@ int main() {
   RUN_TEST(test_parse_tlm_carries_no_rate);
   RUN_TEST(test_malformed_json_rejected);
   RUN_TEST(test_unknown_op_rejected);
+  RUN_TEST(test_parses_wifiscan_op);
   return UNITY_END();
 }

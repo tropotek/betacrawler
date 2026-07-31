@@ -28,6 +28,17 @@ struct Bootloader {
   virtual bool enterDfu() = 0;          // false if this board cannot
 };
 
+// The SSID-scan seam, parallel to Bootloader above: an effect core/ must be
+// able to request but must not implement (the real AT+CWLAP exchange lives
+// in wifi_driver.cpp, Arduino-only). startScan() only ARMS the scan --
+// Dispatcher::handle() must never block, and a multi-second AT exchange
+// cannot run inside it. The result reaches the host later, through
+// Module::pollPush(), not through this interface.
+struct WifiScanner {
+  virtual ~WifiScanner() {}
+  virtual bool startScan() = 0;   // false if already scanning
+};
+
 // Serializes one telemetry frame from values collected by the registry. The
 // field set comes entirely from the registered modules' TlmDefs, so a board
 // that enables a new sensor module publishes it with no change here.
@@ -56,11 +67,19 @@ class Dispatcher {
 
   bool telemetryEnabled() const { return tlmOn_; }
 
+  // Wired separately from the constructor, not as another optional
+  // constructor argument: unlike Bootloader (a single global singleton
+  // constructed before registerModules() runs), the wifi driver instance
+  // this points at is a static inside modules.cpp and only exists once
+  // registerModules() has run -- see main.cpp's setup().
+  void setWifiScanner(WifiScanner* s) { wifi_ = s; }
+
  private:
   Registry&    reg_;
   Params&      p_;
   Persistence& store_;
   Bootloader*  boot_;
+  WifiScanner* wifi_ = nullptr;
   bool         tlmOn_ = true;
 };
 

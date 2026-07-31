@@ -82,6 +82,7 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
       // missing `caps` as "none", so no existing consumer is affected.
       JsonArray caps = doc["caps"].to<JsonArray>();
       if (boot_ && boot_->supported()) caps.add("dfu");
+      if (wifi_) caps.add("wifiscan");
       break;
     }
 
@@ -227,6 +228,15 @@ size_t Dispatcher::handle(const Request& q, char* out, size_t cap) {
       // performs it after this response has been flushed to the host.
       doc["ok"] = boot_ && boot_->enterDfu();
       if (!doc["ok"]) doc["err"] = "nodfu";
+      break;
+
+    case Op::WifiScan:
+      // Same shape as Op::Dfu's err naming: a null seam (FEATURE_WIFI off)
+      // and a busy seam (already scanning) are both "false", told apart by
+      // which is actually the case.
+      if (!wifi_) { doc["ok"] = false; doc["err"] = "nowifi"; break; }
+      doc["ok"] = wifi_->startScan();
+      if (!doc["ok"]) doc["err"] = "busy";
       break;
 
     case Op::Unknown:

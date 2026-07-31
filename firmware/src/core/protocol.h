@@ -3,7 +3,7 @@
 
 namespace core {
 
-enum class Op { Hello, Schema, Get, GetAll, Set, Save, Defaults, Revert, Tlm, Dfu, Unknown };
+enum class Op { Hello, Schema, Get, GetAll, Set, Save, Defaults, Revert, Tlm, Dfu, WifiScan, Unknown };
 
 struct Request {
   uint32_t id      = 0;

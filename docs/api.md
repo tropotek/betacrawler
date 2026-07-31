@@ -38,6 +38,9 @@ can *do* rather than things it *has*. Currently only `"dfu"`, present when the
 firmware was built with `FEATURE_DFU`. Same additive contract as `mods`:
 firmware that predates it omits the key and the backend reports `[]`.
 
+`caps` also carries `"wifiscan"` when the firmware was built with `FEATURE_WIFI` — see
+`POST /api/wifi/scan` below.
+
 `built` is the firmware's own `__DATE__ " " __TIME__`, and the firmware bundle's
 manifest records the identical string. That makes "is the device running *this*
 image?" an exact comparison rather than a version-number guess — two builds of
