@@ -17,7 +17,7 @@
 #define FEATURE_BUTTON  1
 #define FEATURE_ST7789_240X240 1
 #define FEATURE_SERVO   1
-#define FEATURE_RX      0
+#define FEATURE_RX      1
 #define FEATURE_ESC     0
 #define FEATURE_WIFI    1
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
