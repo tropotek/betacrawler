@@ -376,6 +376,20 @@ void test_registry_pollPush_skips_a_null_driver() {
   TEST_ASSERT_EQUAL_UINT(1, reg.pollPush(out, sizeof(out)));
 }
 
+void test_registry_pollPush_returns_first_when_multiple_have_data() {
+  Registry reg;
+  PushDriver a, b;
+  reg.add(core::ModuleDesc{"a", "A", nullptr, 0, nullptr, 0}, &a);
+  reg.add(core::ModuleDesc{"b", "B", nullptr, 0, nullptr, 0}, &b);
+  a.pending = "first";
+  b.pending = "second";
+
+  char out[64];
+  size_t n = reg.pollPush(out, sizeof(out));
+  TEST_ASSERT_EQUAL_UINT(strlen("first"), n);
+  TEST_ASSERT_EQUAL_STRING_LEN("first", out, n);
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -400,5 +414,6 @@ int main() {
   RUN_TEST(test_registry_pollPush_returns_zero_when_no_module_has_anything);
   RUN_TEST(test_registry_pollPush_returns_first_modules_pending_line);
   RUN_TEST(test_registry_pollPush_skips_a_null_driver);
+  RUN_TEST(test_registry_pollPush_returns_first_when_multiple_have_data);
   return UNITY_END();
 }

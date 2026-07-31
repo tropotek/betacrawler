@@ -111,9 +111,8 @@ struct Module {
   // Writes one complete JSON line (no trailing newline) into `out` and
   // returns its length, or 0 when this module has nothing to send right
   // now. The default never does -- only a module that produces a result
-  // too slow/large for telemetry (wifi's SSID scan is the first) overrides
-  // this. Unlike readTelemetry(), callers must NOT assume it is called at
-  // any fixed rate.
+  // too slow or large for the telemetry frame overrides this. Unlike
+  // readTelemetry(), callers must NOT assume it is called at any fixed rate.
   virtual size_t pollPush(char* out, size_t cap) { (void)out; (void)cap; return 0; }
 
  protected:

@@ -121,8 +121,8 @@ void loop() {
   g_reg.tick(now);
 
   // Generic unsolicited-push channel (core::Module::pollPush) -- currently
-  // only used by wifi's SSID-scan result, but nothing here names it. A
-  // second module that needs one composes for free.
+  // used by exactly one module, but nothing here names it. A second module
+  // that needs one composes for free.
   {
     size_t n = g_reg.pollPush(g_out, sizeof(g_out));
     if (n > 0) Serial.println(g_out);
