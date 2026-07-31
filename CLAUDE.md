@@ -105,6 +105,12 @@ app/web/                static HTML/JS only, talks to the backend exclusively th
                         for a hypothetical future Electron rewrite.
 ```
 
+**`hardware/`** sits outside those three tiers — KiCad schematic/PCB source for the wiring
+diagrams shown on the Examples page (`app/web/index.html`'s inline SVGs, format documented in the
+`wiring-diagram-svg` skill). Reference material only: nothing in `firmware/`, `app/`, or the build
+reads it, and it is opened directly in KiCad, not through either tested tier. Registered as its own
+folder in `silkscreen.code-workspace`, same pattern as `firmware/`.
+
 ## Rules that must not be undone
 
 Each of these has cost real defects or real rework. The reasoning is in `docs/architecture.md`

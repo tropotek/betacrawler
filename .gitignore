@@ -20,6 +20,12 @@ venv/
 .pytest_cache/
 .ruff_cache/
 
+# KiCad (hardware/) local caches & backups -- not project source
+*.kicad_prl
+*-backups/
+_autosave-*
+fp-info-cache
+
 # Editor / OS
 .vscode/
 .DS_Store

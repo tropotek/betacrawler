@@ -7,12 +7,17 @@
         {
             "name": "firmware",
             "path": "firmware"
+        },
+        {
+            "name": "hardware",
+            "path": "hardware"
         }
     ],
     "settings": {
         "platformio-ide.activateProjectOnTextEditorChange": true,
         "files.exclude": {
-            "firmware": true
+            "firmware": true,
+            "hardware": true
         }
     },
     "extensions": {
