@@ -53,6 +53,13 @@ void scale(const TlmDef& def, TlmValue v, uint8_t dec, bool* neg, uint64_t* mag)
 size_t formatTlm(const TlmDef& def, TlmValue v, char* out, size_t n) {
   if (!out || n == 0) return 0;
 
+  // Named renderers for formats that division and decimal places cannot express.
+  if (def.fmt) {
+    if (strcmp(def.fmt, "ip") == 0) {
+      return formatIp(v.u, out, n);
+    }
+  }
+
   const uint8_t dec = def.dec > kMaxDec ? kMaxDec : def.dec;
   bool neg = false;
   uint64_t mag = 0;
@@ -88,6 +95,16 @@ size_t formatUptime(uint32_t ms, char* out, size_t n) {
                    (unsigned long)((s / 60u) % 60u), (unsigned long)(s % 60u));
   if (w < 0) { out[0] = '\0'; return 0; }
   return (size_t)w < n ? (size_t)w : n - 1;
+}
+
+size_t formatIp(uint32_t packed, char* out, size_t n) {
+  if (!out || n == 0) return 0;
+  int written = snprintf(out, n, "%u.%u.%u.%u",
+                          (unsigned)(packed >> 24) & 0xFF, (unsigned)(packed >> 16) & 0xFF,
+                          (unsigned)(packed >> 8) & 0xFF,  (unsigned)packed & 0xFF);
+  if (written < 0) return 0;
+  size_t len = (size_t)written;
+  return len < n ? len : n - 1;
 }
 
 }  // namespace core

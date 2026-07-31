@@ -141,6 +141,28 @@ void test_uptime_hours_are_not_clamped_to_two_digits() {
   TEST_ASSERT_EQUAL_STRING("1193:02:47", buf);
 }
 
+// --- formatIp ---------------------------------------------------------------
+
+void test_format_ip_renders_dotted_decimal() {
+  char buf[32];
+  size_t n = formatIp(0xC0A80001u, buf, sizeof(buf));   // 192.168.0.1
+  TEST_ASSERT_EQUAL_STRING_LEN("192.168.0.1", buf, n);
+}
+
+void test_format_ip_zero_renders_all_zeroes() {
+  char buf[32];
+  size_t n = formatIp(0, buf, sizeof(buf));
+  TEST_ASSERT_EQUAL_STRING_LEN("0.0.0.0", buf, n);
+}
+
+void test_formatTlm_dispatches_to_ip_renderer() {
+  TlmDef def{"wifi.ip", "IP", nullptr, TlmType::U32, 0, 0, "ip", nullptr, 0, 0};
+  TlmValue v; v.u = 0xC0A80001u;
+  char buf[48];
+  size_t n = formatTlm(def, v, buf, sizeof(buf));
+  TEST_ASSERT_TRUE(strstr(buf, "192.168.0.1") != nullptr);
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -162,5 +184,8 @@ int main() {
   RUN_TEST(test_uptime_sub_minute_pads);
   RUN_TEST(test_uptime_hours_minutes_seconds);
   RUN_TEST(test_uptime_hours_are_not_clamped_to_two_digits);
+  RUN_TEST(test_format_ip_renders_dotted_decimal);
+  RUN_TEST(test_format_ip_zero_renders_all_zeroes);
+  RUN_TEST(test_formatTlm_dispatches_to_ip_renderer);
   return UNITY_END();
 }

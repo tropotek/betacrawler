@@ -25,4 +25,8 @@ size_t formatTlm(const TlmDef& def, TlmValue v, char* out, size_t n);
 // wraps at ~49.7 days and the real figure is more useful than a truncated one.
 size_t formatUptime(uint32_t ms, char* out, size_t n);
 
+// "a.b.c.d" from a u32 packed big-endian (a in the high byte). Same
+// truncate-don't-overflow contract as formatTlm/formatUptime.
+size_t formatIp(uint32_t packed, char* out, size_t n);
+
 }  // namespace core
