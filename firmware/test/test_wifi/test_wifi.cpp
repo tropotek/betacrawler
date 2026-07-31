@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "hardware/wifi/proto_at.h"
+#include "hardware/wifi/wifi_params.h"
 
 using namespace wifi;
 
@@ -88,6 +89,21 @@ void test_parse_cifsr_rejects_malformed_line() {
   TEST_ASSERT_FALSE(parseCifsr("+CIFSR:STAIP,\"not-an-ip\"", &ip));
 }
 
+void test_wifi_desc_has_two_params_and_three_tlm_fields() {
+  TEST_ASSERT_EQUAL_UINT(2, wifi::kDesc.paramCount);
+  TEST_ASSERT_EQUAL_UINT(3, wifi::kDesc.tlmCount);
+  TEST_ASSERT_EQUAL_STRING("wifi", wifi::kDesc.id);
+}
+
+void test_wifi_password_param_is_secret_ssid_is_not() {
+  TEST_ASSERT_FALSE(wifi::kDesc.params[wifi::P_SSID].secret);
+  TEST_ASSERT_TRUE(wifi::kDesc.params[wifi::P_PASSWORD].secret);
+}
+
+void test_wifi_ip_tlm_uses_the_ip_renderer() {
+  TEST_ASSERT_EQUAL_STRING("ip", wifi::kDesc.tlm[wifi::T_IP].fmt);
+}
+
 int main(int argc, char** argv) {
   UNITY_BEGIN();
   RUN_TEST(test_classify_ok_and_error);
@@ -101,5 +117,8 @@ int main(int argc, char** argv) {
   RUN_TEST(test_parse_cwlap_row_truncates_an_oversized_ssid_rather_than_overflow);
   RUN_TEST(test_parse_cifsr_packs_octets_big_endian);
   RUN_TEST(test_parse_cifsr_rejects_malformed_line);
+  RUN_TEST(test_wifi_desc_has_two_params_and_three_tlm_fields);
+  RUN_TEST(test_wifi_password_param_is_secret_ssid_is_not);
+  RUN_TEST(test_wifi_ip_tlm_uses_the_ip_renderer);
   return UNITY_END();
 }
