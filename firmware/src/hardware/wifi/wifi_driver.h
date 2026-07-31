@@ -36,6 +36,10 @@ class WifiDriver : public core::Module, public core::WifiScanner {
   uint32_t nextInitStep_ = 0;     // index into the boot AT-command sequence
   uint32_t lastStatusPollMs_ = 0;
   uint32_t failedAt_     = 0;
+  // Alternates which status-poll command fires on successive Connected
+  // ticks: false sends AT+CWJAP? (RSSI), true sends AT+CIFSR (IP). Only one
+  // command may be in flight at a time, so each gets every second poll.
+  bool     pollIp_       = false;
 
   char ssid_[core::kMaxStrLen + 1]     = {0};
   char password_[core::kMaxStrLen + 1] = {0};
@@ -55,13 +59,20 @@ class WifiDriver : public core::Module, public core::WifiScanner {
   uint32_t   scanStartedAt_   = 0;
   ScanResult scanResults_[kMaxScanResults];
   uint8_t    scanCount_ = 0;
-  // Set when a WifiDisconnect URC's auto-rejoin arrives while scanning_ is
+  // Set when a join is wanted -- a WifiDisconnect URC's auto-rejoin, or
+  // onParamChanged() setting a new ssid/password -- while scanning_ is
   // still true: sending AT+CWJAP here would interleave a second in-flight
   // command with AT+CWLAP's own still-outstanding reply, and scan
   // completion is detected as "whichever Ok/Error arrives next while
   // scanning_" -- there is no per-command correlation to tell the two
   // replies apart. finishScan() acts on this once the scan actually ends.
   bool       rejoinPending_   = false;
+  // Same hazard, the other direction: a param change clears wifi.ssid (the
+  // user wants to disassociate) while a scan's AT+CWLAP reply is still
+  // outstanding. finishScan() sends AT+CWQAP once the scan actually ends.
+  // Mutually exclusive with rejoinPending_ by construction -- one requires
+  // ssid_ empty, the other requires it non-empty, and ssid_ is one field.
+  bool       pendingDisassociate_ = false;
 };
 
 }  // namespace wifi

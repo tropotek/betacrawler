@@ -22,7 +22,7 @@ static const TlmDef kTlm[T_COUNT] = {
 
 const core::ModuleDesc kDesc = {
   "wifi", "WiFi",
-  kParams, 2,
+  kParams, sizeof(kParams) / sizeof(kParams[0]),
   kTlm, T_COUNT,
 };
 

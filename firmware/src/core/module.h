@@ -16,10 +16,11 @@ enum class TlmType { U32, I32, F32 };
 // the value the firmware validates and the value the wire carries identical.
 //
 // `fmt` names a renderer for what a divisor and a decimal count cannot
-// express -- currently just "hms", uptime milliseconds as HH:MM:SS. It is a
-// name, not a format string: both renderers (this firmware's panel and the
-// browser) have to implement it, and a printf-style template would let the
-// firmware describe something the browser has no way to honour.
+// express -- named renderers such as "hms" (uptime milliseconds as
+// HH:MM:SS) and "ip" (a packed u32 as dotted-quad). It is a name, not a
+// format string: both renderers (this firmware's panel and the browser)
+// have to implement it, and a printf-style template would let the firmware
+// describe something the browser has no way to honour.
 struct TlmDef {
   const char* key;     // "vdd"
   const char* label;   // "VDD"

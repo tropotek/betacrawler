@@ -35,12 +35,11 @@ modules the connected firmware was built with (`["device","system","button",
 reports them as `null` / `[]` rather than failing the handshake.
 
 `caps` lists device capabilities that are **not** modules — things the device
-can *do* rather than things it *has*. Currently only `"dfu"`, present when the
-firmware was built with `FEATURE_DFU`. Same additive contract as `mods`:
-firmware that predates it omits the key and the backend reports `[]`.
-
-`caps` also carries `"wifiscan"` when the firmware was built with `FEATURE_WIFI` — see
-`POST /api/wifi/scan` below.
+can *do* rather than things it *has*. Currently `"dfu"` and `"wifiscan"`, each
+present when the corresponding feature (`FEATURE_DFU`, `FEATURE_WIFI`) was
+compiled in — see `POST /api/wifi/scan` below for the latter. Same additive
+contract as `mods`: firmware that predates a given cap omits the key and the
+backend reports `[]`.
 
 `built` is the firmware's own `__DATE__ " " __TIME__`, and the firmware bundle's
 manifest records the identical string. That makes "is the device running *this*
@@ -94,7 +93,9 @@ On a **parameter**, `secret` (`true`, omitted otherwise) marks a Str field whose
 credential rather than a label — `wifi.password` is the first example. Like every other schema
 hint, this is display-only: the wire and flash storage carry it as plain text identical to any
 other setting, and Terminal `set`/INI restore accept it unchanged. A client renders it as a masked
-input rather than plain text.
+input rather than plain text. Note that an INI settings backup/dump therefore also contains the
+password in clear text, same as every other setting — masking is a display convenience, not a
+storage guarantee.
 
 `fmt` names a renderer, which may be textual (`hms`) or visual (`bar`). It is a
 **name, not a format string**: both renderers (the browser and the firmware's
@@ -211,7 +212,8 @@ response. They arrive later over `/ws` as a `scan` frame:
 ```
 
 Present only when the connected firmware's `caps` includes `"wifiscan"` (`FEATURE_WIFI` compiled
-in). `409 disconnected` otherwise-normal; a device that has never joined a network can still scan.
+in). `409 disconnected` applies as it does everywhere else; a device that has never joined a
+network can still scan.
 
 ### Error responses
 

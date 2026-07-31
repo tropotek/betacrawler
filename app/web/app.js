@@ -491,6 +491,10 @@ document.addEventListener('alpine:init', () => {
     syncDevice(isConnected, info) {
       this.deviceConnected = isConnected;
       this.device = info || {};
+      if (!isConnected) {
+        this.scanning = false;
+        this.results = [];
+      }
     },
 
     get canScan() {

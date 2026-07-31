@@ -325,7 +325,7 @@
               <span x-text="$store.wifi.scanning ? 'Scanning…' : 'Scan for networks'"></span>
             </button>
             <ul class="list-group mt-2" x-show="$store.wifi.results.length">
-              <template x-for="net in $store.wifi.results" :key="net.ssid">
+              <template x-for="(net, i) in $store.wifi.results" :key="i">
                 <li class="list-group-item d-flex justify-content-between align-items-center"
                     role="button" @click="$store.wifi.pick(net)">
                   <span x-text="net.ssid"></span>

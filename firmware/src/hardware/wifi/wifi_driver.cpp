@@ -88,9 +88,16 @@ void WifiDriver::onParamChanged(uint8_t local, const core::Params& p) {
     // other command this driver sends; its OK/ERROR reply is routed
     // through the normal Ok/Error handling and ignored (state_ is Idle by
     // then, so neither case does anything with it).
-    sendLine("AT+CWQAP");
+    //
+    // AT+CWLAP's reply may still be outstanding (scanning_) -- sending now
+    // would put a second command on the wire with no per-command
+    // correlation to tell the replies apart, same hazard WifiDisconnect
+    // avoids below. Defer it; finishScan() sends it once the scan ends.
+    if (scanning_) { pendingDisassociate_ = true; rejoinPending_ = false; }
+    else sendLine("AT+CWQAP");
   } else {
-    beginJoin();
+    if (scanning_) { rejoinPending_ = true; pendingDisassociate_ = false; }
+    else beginJoin();
   }
 }
 
@@ -217,12 +224,13 @@ void WifiDriver::tick(uint32_t nowMs) {
     case State::Connected:
       if (!scanning_ && cmdSentAt_ == 0 && nowMs - lastStatusPollMs_ > WIFI_STATUS_POLL_MS) {
         lastStatusPollMs_ = nowMs;
-        sendLine("AT+CWJAP?");
-        // AT+CIFSR is queued on the reply to AT+CWJAP? in a fuller
-        // implementation; issuing both back-to-back here is simplest and
-        // the ESP-01 queues AT commands, so this is left as the first one
-        // -- a second poll cycle three seconds later picks up AT+CIFSR.
-        // (Revisit if IP goes stale in bring-up testing -- Task 12.)
+        // Alternate the two status polls across successive ticks -- only
+        // one command may be in flight at a time (no per-command
+        // correlation), so AT+CWJAP? (RSSI) and AT+CIFSR (IP) each get
+        // every second poll instead of both firing on the same one.
+        if (pollIp_) sendLine("AT+CIFSR");
+        else sendLine("AT+CWJAP?");
+        pollIp_ = !pollIp_;
       }
       break;
     default:
@@ -250,11 +258,21 @@ void WifiDriver::finishScan() {
   if (rejoinPending_) {
     rejoinPending_ = false;
     beginJoin();
+  } else if (pendingDisassociate_) {
+    pendingDisassociate_ = false;
+    sendLine("AT+CWQAP");
   }
 }
 
 bool WifiDriver::startScan() {
-  if (scanning_) return false;
+  // Also refuse while any other command is in flight (e.g. a join:
+  // state_ == State::Joining, cmdSentAt_ set to its send time). Without
+  // this, starting a scan mid-join overwrites cmdSentAt_ with the scan's
+  // own send time; when the join's FAIL/ERROR line later arrives,
+  // scanning_ routes it into finishScan() instead of the outer switch's
+  // case Error, and nothing ever notices the join failed -- status_ wedges
+  // at STATUS_CONNECTING with no case State::Joining in tick() to recover.
+  if (scanning_ || cmdSentAt_ != 0) return false;
   scanning_ = true;
   scanCount_ = 0;
   scanStartedAt_ = millis();

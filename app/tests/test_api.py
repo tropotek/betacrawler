@@ -326,6 +326,43 @@ def test_device_log_line_reaches_the_websocket_as_a_log_frame(client):
         }
 
 
+def test_wifi_scan_result_reaches_the_websocket_as_a_scan_frame(client):
+    """Covers the other half of WiFi scan: the arming route is tested below,
+    but nothing previously exercised the push side -- the firmware's
+    unsolicited `{"scan": [...]}` line (wifi_driver.cpp's pollPush()) has to
+    survive the same reader-thread -> broadcaster -> WS path as a `log` line
+    above and come out the other end as a distinct `scan` frame, which is
+    what app.js's onScanEvent() actually listens for.
+    """
+    client.post("/api/connect", json={"port": "/dev/fake"})
+    fake = client.app.state.fake
+
+    with client.websocket_connect("/ws") as ws:
+        assert ws.receive_json()["type"] == "state"
+        fake.emit({"scan": [{"ssid": "Home", "rssi": -52}]})
+
+        # Same bounded-wait pattern as the log-frame test above: a dropped
+        # message must fail in 2s rather than hang the run.
+        result: "queue.Queue" = queue.Queue(maxsize=1)
+
+        def _recv():
+            try:
+                result.put(("ok", ws.receive_json()))
+            except Exception as exc:  # pragma: no cover - defensive
+                result.put(("err", exc))
+
+        threading.Thread(target=_recv, daemon=True).start()
+        try:
+            kind, payload = result.get(timeout=2.0)
+        except queue.Empty:
+            pytest.fail("wifi scan result line never arrived on the websocket")
+        assert kind == "ok", f"receive_json raised: {payload!r}"
+        assert payload == {
+            "type": "scan",
+            "data": [{"ssid": "Home", "rssi": -52}],
+        }
+
+
 # --- WiFi scan -----------------------------------------------------------------
 
 def test_wifi_scan_requires_a_connection(client):
