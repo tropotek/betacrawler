@@ -29,6 +29,9 @@ fp-info-cache
 # Editor / OS
 .vscode/
 .DS_Store
+# VS Code "Local History" extension -- per-file snapshot dir, keeps its own
+# nested .git. Can appear under any folder that gets edited, not just one.
+.history/
 
 # superpowers subagent-driven-development scratch (ledgers, briefs, reports)
 .superpowers/
