@@ -50,6 +50,7 @@ class DeviceModel:
         self._by_key: dict[str, dict] = {}
         self._values: dict = {}
         self._info: dict = {}
+        self._port: str | None = None
 
     def subscribe(self, callback):
         self._link.subscribe(callback)
@@ -94,10 +95,12 @@ class DeviceModel:
             self._tlm_schema = schema.get("tlm", [])
             self._by_key = {p["key"]: p for p in self._schema}
             self._values = self._send("getall")["vals"]
+            self._port = port
         except Exception:
             self._link.disconnect()
             self._schema, self._tlm_schema = [], []
             self._by_key, self._values, self._info = {}, {}, {}
+            self._port = None
             raise
 
     def disconnect(self):
@@ -105,7 +108,7 @@ class DeviceModel:
 
     # --- reads --------------------------------------------------------------
     def status(self) -> dict:
-        return {"state": self._link.state, **self._info}
+        return {"state": self._link.state, "port": self._port, **self._info}
 
     def schema(self) -> dict:
         """Both descriptors the UI renders from: config controls and telemetry

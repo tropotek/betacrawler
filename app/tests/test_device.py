@@ -141,6 +141,40 @@ def test_missing_optional_hello_fields_do_not_break_connect():
         dev.disconnect()
 
 
+def test_status_reports_the_connected_port():
+    fake = FakeSerial(responder=device_responder())
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    dev.connect("/dev/ttyFAKE0")
+    assert dev.status()["port"] == "/dev/ttyFAKE0"
+    dev.disconnect()
+
+
+def test_status_port_is_none_before_any_connection():
+    dev = DeviceModel(SerialLink(open_port=lambda p: FakeSerial(responder=device_responder())))
+    assert dev.status()["port"] is None
+
+
+def test_status_port_survives_disconnect_like_board_and_fw_do():
+    """Matches the existing behavior of board/fw/caps: status() keeps
+    reporting the last-known value after a disconnect, not None -- the
+    Firmware page's "not connected (last seen: ...)" text relies on exactly
+    this pattern for `board` already."""
+    fake = FakeSerial(responder=device_responder())
+    dev = DeviceModel(SerialLink(open_port=lambda p: fake))
+    dev.connect("/dev/ttyFAKE0")
+    dev.disconnect()
+    assert dev.status()["port"] == "/dev/ttyFAKE0"
+
+
+def test_status_port_is_cleared_on_a_failed_connect():
+    def boom(p):
+        raise OSError("no such port")
+    dev = DeviceModel(SerialLink(open_port=boom))
+    with pytest.raises(DeviceError):
+        dev.connect("/dev/ttyGHOST")
+    assert dev.status()["port"] is None
+
+
 def test_proto_mismatch_refuses_connection():
     dev, _ = make_device(proto=99)
     with pytest.raises(ProtoMismatch):
