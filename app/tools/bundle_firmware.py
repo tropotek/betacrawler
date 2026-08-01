@@ -104,6 +104,24 @@ def board_header_path(env: str) -> Path:
     return header
 
 
+def method_for(env: str) -> str:
+    """"esptool" for an ESP32 env, "dfu" for everything else.
+
+    Read from the same platformio.ini block board_header_path() already
+    parses, keyed on the FW_MCU_ESP32 build flag the 2026-08-01 ESP32 design
+    introduced to guard architecture-specific driver bodies -- reusing it
+    here means there is exactly one place in the tree that says "this env is
+    an ESP32", not two that could drift apart.
+    """
+    ini = (FIRMWARE / "platformio.ini").read_text()
+    block = re.search(rf'^\[env:{re.escape(env)}\](.*?)(?=^\[|\Z)', ini, re.M | re.S)
+    if not block:
+        raise BundleError(f"no [env:{env}] section in firmware/platformio.ini")
+    if re.search(r"-D\s+FW_MCU_ESP32\s*=\s*1\b", block.group(1)):
+        return "esptool"
+    return "dfu"
+
+
 def enabled_features(header_text: str) -> list[str]:
     """FEATURE_* flags set to 1, lowercased and stripped of the prefix.
 
@@ -273,6 +291,27 @@ def check_vector_table(blob: bytes) -> None:
         raise BundleError(
             f"reset vector 0x{reset:08x} is not a Thumb address in flash "
             f"(0x{FLASH_LO:08x}..0x{FLASH_HI:08x})")
+
+
+# A merged ESP32 image is sparse: bytes 0x0-0xFFF are 0xFF padding because
+# bootloader.bin (the first real content) starts at offset 0x1000, not 0.
+# Verified against a real `esptool merge-bin` run -- checking blob[0] would
+# reject every genuine merged image AND wrongly accept a bare, unbootable
+# firmware.bin (which does have the magic byte at offset 0 on its own).
+ESP32_IMAGE_MAGIC_OFFSET = 0x1000
+ESP32_IMAGE_MAGIC = 0xE9
+
+
+def check_esp32_image(blob: bytes) -> None:
+    if len(blob) < ESP32_IMAGE_MAGIC_OFFSET + 1:
+        raise BundleError(
+            f"binary is only {len(blob)} bytes -- too small to contain a "
+            f"bootloader image at offset 0x{ESP32_IMAGE_MAGIC_OFFSET:x}")
+    if blob[ESP32_IMAGE_MAGIC_OFFSET] != ESP32_IMAGE_MAGIC:
+        raise BundleError(
+            f"byte at offset 0x{ESP32_IMAGE_MAGIC_OFFSET:x} is "
+            f"0x{blob[ESP32_IMAGE_MAGIC_OFFSET]:02x}, not the ESP image magic "
+            f"(0x{ESP32_IMAGE_MAGIC:02x}) -- not a raw merged esptool image?")
 
 
 # --- manifest ------------------------------------------------------------------

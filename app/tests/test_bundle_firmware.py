@@ -51,6 +51,64 @@ def fake_bin(name: str, version: str, board: str, stamp: str) -> bytes:
     return head + body + b"\x00" * (2048 - len(head) - len(body))
 
 
+# --- method derivation ----------------------------------------------------
+
+def test_method_for_a_normal_stm32_env_is_dfu(tree):
+    mod = tree
+    assert mod.method_for("board_a") == "dfu"
+
+
+def test_method_for_an_esp32_env_is_esptool(tree):
+    mod = tree
+    (mod.FIRMWARE / "platformio.ini").write_text(
+        (mod.FIRMWARE / "platformio.ini").read_text() +
+        "\n[env:board_c]\n"
+        "build_flags = -D BOARD_HEADER='\"boards/board_a.h\"' -D FW_MCU_ESP32=1\n")
+    assert mod.method_for("board_c") == "esptool"
+
+
+# --- esp32 image validation -------------------------------------------------
+
+def fake_esp32_merged_image(size=8192) -> bytes:
+    """Shaped like a real merge-bin output: 0xFF padding up to 0x1000, then
+    the ESP image magic byte -- not a magic byte at offset 0, which a real
+    merged image never has."""
+    pad = b"\xff" * 0x1000
+    body = b"\xe9" + b"\x00" * (size - len(pad) - 1)
+    return pad + body
+
+
+def test_check_esp32_image_accepts_a_plausible_merged_image(tree):
+    mod = tree
+    mod.check_esp32_image(fake_esp32_merged_image())
+
+
+def test_check_esp32_image_rejects_a_missing_magic_byte(tree):
+    mod = tree
+    blob = bytearray(fake_esp32_merged_image())
+    blob[0x1000] = 0x00
+    with pytest.raises(mod.BundleError, match="0xE9|magic"):
+        mod.check_esp32_image(bytes(blob))
+
+
+def test_check_esp32_image_rejects_a_magic_byte_at_offset_zero(tree):
+    """The realistic mistake this guards against: checking blob[0] instead
+    of blob[0x1000] would wrongly accept a bare firmware.bin (which DOES
+    have 0xE9 at offset 0) as if it were a flashable merged image."""
+    mod = tree
+    blob = bytearray(fake_esp32_merged_image())
+    blob[0] = 0xe9   # looks right at offset 0, but that's not where it counts
+    blob[0x1000] = 0x00
+    with pytest.raises(mod.BundleError, match="0xE9|magic"):
+        mod.check_esp32_image(bytes(blob))
+
+
+def test_check_esp32_image_rejects_tiny_input(tree):
+    mod = tree
+    with pytest.raises(mod.BundleError, match="too small"):
+        mod.check_esp32_image(b"\x00" * 16)
+
+
 @pytest.fixture
 def tree(tmp_path, monkeypatch):
     """A repo-shaped fixture the script can be pointed at wholesale."""
