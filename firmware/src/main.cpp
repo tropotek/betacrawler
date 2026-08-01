@@ -32,20 +32,28 @@ static ParamId  g_tlmRateId = kNoParam;
 // before anything has had a chance to grow.
 //
 // STM32's Arduino core declares sbrk() nowhere public, so this file has
-// always had to declare it itself. The ESP32 core's own <unistd.h> (dragged
-// in transitively by Arduino.h -> HardwareSerial.h -> ... on that platform)
-// already declares it as `void* sbrk(ptrdiff_t)` -- a different but
-// compatible signature -- so redeclaring it as `char* sbrk(int)` there is a
-// conflicting-declaration error, not a no-op. Use whichever the platform
-// already provides instead of re-declaring on ESP32; the (char*) cast below
-// works against either return type.
+// always had to declare it itself and call it directly. The ESP32 core's own
+// <unistd.h> (dragged in transitively by Arduino.h -> HardwareSerial.h ->
+// ... on that platform) DOES declare a compatible-looking `void*
+// sbrk(ptrdiff_t)` -- but arduino-esp32 does not implement a classic
+// sbrk()-growable heap at all (it uses a multi-region heap-caps allocator
+// instead), so calling it is not just a declaration mismatch to paper over:
+// it hits syscall_not_implemented_aborts() and crash-loops the board before
+// setup() ever completes (confirmed on real hardware). system_esp32_driver.cpp
+// (Task 3) already solved the equivalent problem for its own RAM telemetry
+// field with ESP.getFreeHeap(); reuse that here instead of sbrk() on this
+// platform.
 #if !FW_MCU_ESP32
 extern "C" char* sbrk(int incr);
-#endif
 static int freeRamBytes() {
   char top;
   return (int)(&top - (char*)sbrk(0));
 }
+#else
+static int freeRamBytes() {
+  return (int)ESP.getFreeHeap();
+}
+#endif
 
 // Replays everything recorded during setup(). Called at the end of boot (for
 // whoever is watching the serial monitor) and again after every `hello` --
