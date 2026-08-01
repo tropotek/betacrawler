@@ -541,14 +541,28 @@ function alpineNextTick() {
 async function refreshPorts() {
   const ports = await Api.ports();
   const sel = el('port');
+  // The watchdog calls this every second while disconnected so a replugged
+  // board reappears -- but rebuilding the <option> list from scratch used to
+  // discard whatever the user had picked, snapping back to the browser's own
+  // "nothing selected -> pick the first option" default before they could
+  // even click Connect. Preserve the current selection across the rebuild
+  // whenever the port it names still exists; only fall back to
+  // auto-selecting a recognized board (or the browser's own default) when
+  // there is nothing to preserve, e.g. first load or the previous port was
+  // unplugged.
+  const prevValue = sel.value;
+  const stillPresent = ports.some((p) => p.port === prevValue);
+  let matched = null;
   sel.innerHTML = '';
   for (const p of ports) {
     const o = document.createElement('option');
     o.value = p.port;
     o.textContent = p.match ? `${p.port} (STM32)` : p.port;
-    if (p.match) o.selected = true;
     sel.appendChild(o);
+    if (p.match) matched = p.port;
   }
+  if (stillPresent) sel.value = prevValue;
+  else if (matched) sel.value = matched;
 }
 
 async function loadDevice() {
