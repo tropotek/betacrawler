@@ -83,6 +83,15 @@ def read_define(text: str, name: str) -> str | None:
     return m.group(1).strip().strip('"')
 
 
+def _env_block(env: str) -> str:
+    """The [env:<env>] section's body from platformio.ini, or raise."""
+    ini = (FIRMWARE / "platformio.ini").read_text()
+    block = re.search(rf'^\[env:{re.escape(env)}\](.*?)(?=^\[|\Z)', ini, re.M | re.S)
+    if not block:
+        raise BundleError(f"no [env:{env}] section in firmware/platformio.ini")
+    return block.group(1)
+
+
 def board_header_path(env: str) -> Path:
     """Resolve the board header this env compiles against, from platformio.ini.
 
@@ -91,11 +100,8 @@ def board_header_path(env: str) -> Path:
     "<env>.h" here would reintroduce exactly the drift that indirection
     removes.
     """
-    ini = (FIRMWARE / "platformio.ini").read_text()
-    block = re.search(rf'^\[env:{re.escape(env)}\](.*?)(?=^\[|\Z)', ini, re.M | re.S)
-    if not block:
-        raise BundleError(f"no [env:{env}] section in firmware/platformio.ini")
-    m = re.search(r"-D\s+BOARD_HEADER\s*=\s*'\"(.+?)\"'", block.group(1))
+    block = _env_block(env)
+    m = re.search(r"-D\s+BOARD_HEADER\s*=\s*'\"(.+?)\"'", block)
     if not m:
         raise BundleError(f"[env:{env}] defines no BOARD_HEADER")
     header = FIRMWARE / "include" / m.group(1)
@@ -105,7 +111,7 @@ def board_header_path(env: str) -> Path:
 
 
 def method_for(env: str) -> str:
-    """"esptool" for an ESP32 env, "dfu" for everything else.
+    """Method for an env: "esptool" if ESP32, else "dfu".
 
     Read from the same platformio.ini block board_header_path() already
     parses, keyed on the FW_MCU_ESP32 build flag the 2026-08-01 ESP32 design
@@ -113,11 +119,8 @@ def method_for(env: str) -> str:
     here means there is exactly one place in the tree that says "this env is
     an ESP32", not two that could drift apart.
     """
-    ini = (FIRMWARE / "platformio.ini").read_text()
-    block = re.search(rf'^\[env:{re.escape(env)}\](.*?)(?=^\[|\Z)', ini, re.M | re.S)
-    if not block:
-        raise BundleError(f"no [env:{env}] section in firmware/platformio.ini")
-    if re.search(r"-D\s+FW_MCU_ESP32\s*=\s*1\b", block.group(1)):
+    block = _env_block(env)
+    if re.search(r"-D\s+FW_MCU_ESP32\s*=\s*1\b", block):
         return "esptool"
     return "dfu"
 
