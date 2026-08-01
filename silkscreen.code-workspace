@@ -49,6 +49,17 @@
                     "clear": true,
                     "focus": true
                 }
+            },
+            {
+                "label": "Build ALL release firmware",
+                "type": "shell",
+                "command": "python3 ${workspaceFolder:silkscreen}/app/tools/bundle_firmware.py --all",
+                "problemMatcher": [],
+                "presentation": {
+                    "panel": "dedicated",
+                    "clear": true,
+                    "focus": true
+                }
             }
         ],
         "inputs": [

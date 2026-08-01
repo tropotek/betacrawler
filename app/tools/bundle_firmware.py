@@ -9,6 +9,7 @@ because only a developer ever sees that state.
 
     python app/tools/bundle_firmware.py                    # blackpill_f411ce
     python app/tools/bundle_firmware.py board_a board_b    # the release set
+    python app/tools/bundle_firmware.py --all              # every board target
     python app/tools/bundle_firmware.py --add other_board  # merge, don't prune
     python app/tools/bundle_firmware.py --dry-run          # report, change nothing
     python app/tools/bundle_firmware.py --no-build         # bundle what's already built
@@ -144,6 +145,22 @@ def method_for(env: str) -> str:
     if re.search(r"-D\s+FW_MCU_ESP32\s*=\s*1\b", block):
         return "esptool"
     return "dfu"
+
+
+def all_board_envs() -> list[str]:
+    """Every [env:*] in platformio.ini that names a BOARD_HEADER, in file
+    order. `native` (and any other host-side env with no board header) is
+    excluded without a name-based blocklist, which would itself go stale --
+    exactly the kind of drift this script exists to prevent (see module
+    docstring)."""
+    ini = (FIRMWARE / "platformio.ini").read_text()
+    envs = []
+    for m in re.finditer(r'^\[env:([\w-]+)\]', ini, re.M):
+        env = m.group(1)
+        block = re.search(rf'^\[env:{re.escape(env)}\](.*?)(?=^\[|\Z)', ini, re.M | re.S)
+        if block and re.search(r"-D\s+BOARD_HEADER\s*=", block.group(1)):
+            envs.append(env)
+    return envs
 
 
 def enabled_features(header_text: str) -> list[str]:
@@ -609,9 +626,12 @@ def release(envs: list[str], dry_run: bool = False, force: bool = False,
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("envs", nargs="*", metavar="ENV",
+    ap.add_argument("envs", nargs="*", metavar="ENV", default=[],
                     help=f"PlatformIO envs to build and ship "
                          f"(default: {DEFAULT_ENV})")
+    ap.add_argument("--all", action="store_true",
+                    help="build every board env with a BOARD_HEADER, "
+                         "instead of just the default")
     ap.add_argument("--add", action="store_true",
                     help="merge into the existing manifest instead of "
                          "replacing it with exactly these envs")
@@ -624,10 +644,24 @@ def main() -> int:
                     help="with --no-build, bundle even if sources look newer")
     args = ap.parse_args()
 
+    # A plain ap.error() check rather than add_mutually_exclusive_group():
+    # argparse's mutually-exclusive groups are unreliable for a positional
+    # nargs="*" arg (zero-given doesn't consistently register as "used"
+    # across versions), so this is deterministic where that would not be.
+    if args.all and args.envs:
+        ap.error("--all cannot be combined with explicit ENV arguments")
+
+    envs = all_board_envs() if args.all else args.envs
+
     try:
-        entries, pruned = release(args.envs, dry_run=args.dry_run,
+        # builder=run_build passed explicitly: release()'s own default for
+        # that parameter is bound at module-load time (the same footgun
+        # merge_esp32_image()'s docstring calls out for `runner`), so a
+        # test's monkeypatch.setattr(mod, "run_build", fake) would silently
+        # have no effect without this call-time lookup of the global name.
+        entries, pruned = release(envs, dry_run=args.dry_run,
                                   force=args.force, build=not args.no_build,
-                                  pio=args.pio, add=args.add)
+                                  pio=args.pio, add=args.add, builder=run_build)
     except BundleError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

@@ -589,3 +589,38 @@ def test_force_version_rebuild_tolerates_a_tree_that_has_never_been_built(tree):
     # Build directory present but no object file yet -- same requirement.
     (mod.FIRMWARE / ".pio" / "build" / "board_a").mkdir(parents=True)
     assert mod.force_version_rebuild("board_a") == []
+
+
+# --- --all -------------------------------------------------------------------
+
+def test_all_board_envs_finds_every_env_with_a_board_header(tree):
+    mod = tree
+    # native-shaped env: no BOARD_HEADER at all.
+    with (mod.FIRMWARE / "platformio.ini").open("a") as f:
+        f.write("\n[env:native]\nplatform = native\n")
+    assert mod.all_board_envs() == ["board_a", "board_b"]
+
+
+def test_all_board_envs_includes_an_esptool_env(esp32_tree):
+    mod = esp32_tree
+    assert mod.all_board_envs() == ["board_a", "board_b", "board_c"]
+
+
+def test_main_all_flag_builds_every_board(tree, monkeypatch, capsys):
+    mod = tree
+    monkeypatch.setattr(mod, "run_build", builder_for(mod))
+    monkeypatch.setattr("sys.argv", ["bundle_firmware.py", "--all", "--dry-run"])
+    rc = mod.main()
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "board_a-silkscreen-1.0.0" in out
+    assert "board_b-silkscreen-1.0.0" in out
+
+
+def test_all_flag_rejects_explicit_envs_too(tree, monkeypatch, capsys):
+    mod = tree
+    monkeypatch.setattr("sys.argv", ["bundle_firmware.py", "--all", "board_a"])
+    with pytest.raises(SystemExit) as exc:
+        mod.main()
+    assert exc.value.code != 0
+    assert "--all" in capsys.readouterr().err
