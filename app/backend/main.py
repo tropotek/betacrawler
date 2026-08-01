@@ -348,7 +348,8 @@ def create_app(device: DeviceModel | None = None,
         return {"ok": True, "id": body.id}
 
     @app.post("/api/firmware/flash-upload")
-    async def firmware_flash_upload(request: Request, filename: str = "uploaded image"):
+    async def firmware_flash_upload(request: Request, filename: str = "uploaded image",
+                                    method: str = "dfu", port: str | None = None):
         """The Advanced path: flash a .bin the user picked themselves.
 
         Takes the image as the raw request body rather than a multipart form.
@@ -357,14 +358,27 @@ def create_app(device: DeviceModel | None = None,
         browser-only type in the app's transport seam (see `Api.flashUpload`).
 
         Unlike a bundled image there is no checksum to check this against, so
-        validate_image() is the only thing standing between "picked the wrong
-        file out of .pio/build" and a board that no longer enumerates.
+        validate_dfu_image()/validate_esp32_image() is the only thing
+        standing between "picked the wrong file out of .pio/build" (or the
+        wrong TARGET entirely) and a board that no longer enumerates.
         """
         blob = await request.body()
-        validate_image(blob)
+        if method == "esptool":
+            validate_esp32_image(blob)
+            if not port:
+                raise FirmwareError("a port is required to flash this image")
+            _release_if_connected_on(port)
+        else:
+            validate_dfu_image(blob)
+
         path = upload_dir / "upload.bin"
         path.write_bytes(blob)
-        flash.start(path, filename)
+
+        if method == "esptool":
+            flash.start(path, filename, flasher=esptool_flasher, wait=False,
+                       port=port)
+        else:
+            flash.start(path, filename)
         return {"ok": True, "filename": filename, "size": len(blob)}
 
     @app.post("/api/terminal")

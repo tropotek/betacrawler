@@ -307,6 +307,42 @@ def test_upload_flash_rejects_junk(client):
     assert "too small" in r.json()["detail"]
 
 
+def test_upload_flash_esptool_accepts_a_real_looking_image(client):
+    from tests.test_firmware import make_esp32_image
+    r = client.post(
+        "/api/firmware/flash-upload?filename=merged.bin&method=esptool&port=/dev/ttyUSB0",
+        content=make_esp32_image())
+    assert r.status_code == 200
+    assert r.json()["filename"] == "merged.bin"
+    _settle(client)
+
+
+def test_upload_flash_esptool_requires_a_port(client):
+    from tests.test_firmware import make_esp32_image
+    r = client.post(
+        "/api/firmware/flash-upload?filename=merged.bin&method=esptool",
+        content=make_esp32_image())
+    assert r.status_code == 400
+    assert "port" in r.json()["detail"]
+
+
+def test_upload_flash_esptool_rejects_a_bad_magic_byte(client):
+    r = client.post(
+        "/api/firmware/flash-upload?filename=merged.bin&method=esptool&port=/dev/ttyUSB0",
+        content=b"\x00" * 8192)
+    assert r.status_code == 400
+    assert "magic" in r.json()["detail"] or "0x1000" in r.json()["detail"]
+
+
+def test_upload_flash_defaults_to_dfu_method(client):
+    """No `method` param at all -- the existing STM32 Advanced-upload
+    behavior from before this feature, unchanged."""
+    r = client.post("/api/firmware/flash-upload?filename=firmware.bin",
+                    content=make_image())
+    assert r.status_code == 200
+    _settle(client)
+
+
 def test_progress_reaches_the_websocket_as_flash_frames(client):
     """Flash progress must arrive as its own frame type.
 

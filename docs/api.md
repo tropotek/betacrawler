@@ -22,8 +22,8 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 | GET | `/api/firmware/catalog` | — | `{app_version, images, board, recommended}` |
 | GET | `/api/firmware/dfu-status` | — | `{present, devices, busy}` |
 | POST | `/api/firmware/enter-dfu` | — | `{ok, ...status}` |
-| POST | `/api/firmware/flash` | `{"id": "<catalog id>"}` | `{ok, id}` |
-| POST | `/api/firmware/flash-upload` | raw `.bin` bytes | `{ok, filename, size}` |
+| POST | `/api/firmware/flash` | `{"id": "<catalog id>", "port": "<optional, required for esptool-method images>"}` | `{ok, id}` |
+| POST | `/api/firmware/flash-upload?method=dfu\|esptool&port=<required for esptool>` | raw `.bin` bytes | `{ok, filename, size}` |
 | POST | `/api/wifi/scan` | — | `{ok}` |
 
 ### Status fields
@@ -198,6 +198,13 @@ rejects sizes outside 1KB–512KB — which is what catches the realistic mistak
 picking `firmware.elf` or `firmware.hex` out of `.pio/build` instead of
 `firmware.bin`. It takes the image as the **raw request body**, not a multipart
 form: one fewer backend dependency, and the caller only has to produce bytes.
+
+An `esptool`-method image (currently `esp32_wroom32`) is flashed differently under the hood: an
+ESP32 in its ROM bootloader has no distinct USB identity to detect the way a Black Pill in DFU
+mode does (`0483:df11`), so both `flash` and `flash-upload` require an explicit `port` for such
+an image, and skip the `waiting` phase entirely (there is nothing to poll for). If the app is
+currently connected to the board on that same port, it is released first so `esptool` can open
+it; a connection on a different port is left alone.
 
 Only one flash runs at a time; a second request is `409 {"err": "busy"}`.
 
