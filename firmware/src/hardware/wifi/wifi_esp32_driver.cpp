@@ -1,8 +1,9 @@
 #include "hardware/wifi/wifi_esp32_driver.h"
+#include "config.h"
 
 // Onboard-ESP32 counterpart to wifi_driver.cpp -- see that file's own header
-// comment for why each is guarded to compile to nothing on the other
-// architecture rather than being excluded by a build_src_filter.
+// comment for why each is guarded to compile to no driver logic on the
+// other architecture rather than being excluded by a build_src_filter.
 #if FEATURE_WIFI && FW_MCU_ESP32
 
 #include <Arduino.h>
@@ -173,7 +174,16 @@ void WifiEsp32Driver::tick(uint32_t nowMs) {
       break;
     case STATUS_CONNECTED:
       if (s != WL_CONNECTED) {
-        status_ = STATUS_CONNECTING;   // WiFi.setAutoReconnect(true) is already retrying
+        // WiFi.setAutoReconnect(true) is already retrying in the background --
+        // give it a fresh, tick-consistent kJoinTimeoutMs window rather than
+        // reusing joinStartedAt_ from the original join. Without this,
+        // elapsedMs() below sees an already-stale start time and the
+        // watchdog fires on the very next tick instead of after a genuine
+        // 15s grace period, turning nearly every WiFi blip into a forced
+        // STATUS_FAILED. Assigned from this tick's own nowMs, so no
+        // underflow risk -- same pattern the scan retry branch above uses.
+        status_ = STATUS_CONNECTING;
+        joinStartedAt_ = nowMs;
         rssi_ = 0;
         ip_ = 0;
       } else {
@@ -184,7 +194,16 @@ void WifiEsp32Driver::tick(uint32_t nowMs) {
       }
       break;
     case STATUS_FAILED:
-      if (nowMs - failedAt_ > kFailBackoffMs && ssid_[0] != '\0') beginJoin();
+      if (s == WL_CONNECTED) {
+        // Self-healed during the backoff window (WiFi.setAutoReconnect(true)
+        // got there first) -- go straight back to Connected and let this
+        // case's own branch above populate rssi_/ip_ next tick, rather than
+        // blindly waiting out kFailBackoffMs and forcing a needless
+        // WiFi.begin() that tears down a link that's already fine.
+        status_ = STATUS_CONNECTED;
+      } else if (elapsedMs(nowMs, failedAt_) > kFailBackoffMs && ssid_[0] != '\0') {
+        beginJoin();
+      }
       break;
     default:
       break;
