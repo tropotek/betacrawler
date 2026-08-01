@@ -14,8 +14,8 @@ import time
 import pytest
 
 from backend.firmware import (
-    Catalog, DfuFlasher, FlashSession, FirmwareError, _Process,
-    validate_image, FLASH_ORIGIN,
+    Catalog, DfuFlasher, EsptoolFlasher, FlashSession, FirmwareError, _Process,
+    validate_dfu_image, validate_esp32_image, FLASH_ORIGIN,
 )
 
 
@@ -83,35 +83,163 @@ def make_image(size=2048, msp=0x2002_0000, reset=0x0800_ee59):
 # --- image validation ---------------------------------------------------------
 
 def test_validate_accepts_a_plausible_image():
-    validate_image(make_image())
+    validate_dfu_image(make_image())
 
 
 def test_validate_accepts_msp_at_the_very_top_of_sram():
     # Not a hypothetical: a real silkscreen build has MSP == 0x20020000 exactly.
     # An exclusive upper bound here would reject every genuine image.
-    validate_image(make_image(msp=0x2002_0000))
+    validate_dfu_image(make_image(msp=0x2002_0000))
 
 
 def test_validate_rejects_an_elf():
     with pytest.raises(FirmwareError, match="stack pointer"):
-        validate_image(b"\x7fELF" + b"\x00" * 4096)
+        validate_dfu_image(b"\x7fELF" + b"\x00" * 4096)
 
 
 def test_validate_rejects_a_bad_reset_vector():
     with pytest.raises(FirmwareError, match="reset vector"):
-        validate_image(make_image(reset=0x2000_0000))
+        validate_dfu_image(make_image(reset=0x2000_0000))
 
 
 def test_validate_rejects_a_non_thumb_reset_vector():
     with pytest.raises(FirmwareError, match="reset vector"):
-        validate_image(make_image(reset=0x0800_ee58))   # bit 0 clear
+        validate_dfu_image(make_image(reset=0x0800_ee58))   # bit 0 clear
 
 
 def test_validate_rejects_tiny_and_oversized():
     with pytest.raises(FirmwareError, match="too small"):
-        validate_image(b"\x00" * 16)
+        validate_dfu_image(b"\x00" * 16)
     with pytest.raises(FirmwareError, match="larger than"):
-        validate_image(make_image(size=513 * 1024))
+        validate_dfu_image(make_image(size=513 * 1024))
+
+
+# --- esp32 upload validation ---------------------------------------------------
+
+def make_esp32_image(size=8192) -> bytes:
+    """Shaped like a real merge-bin output: 0xFF padding to 0x1000, then the
+    ESP image magic byte there, not at offset 0."""
+    return b"\xff" * 0x1000 + b"\xe9" + b"\x00" * (size - 0x1001)
+
+
+def test_validate_esp32_accepts_a_plausible_merged_image():
+    validate_esp32_image(make_esp32_image())
+
+
+def test_validate_esp32_rejects_a_magic_byte_at_offset_zero_only():
+    blob = bytearray(make_esp32_image())
+    blob[0] = 0xe9
+    blob[0x1000] = 0x00
+    with pytest.raises(FirmwareError, match="0x1000|offset"):
+        validate_esp32_image(bytes(blob))
+
+
+def test_validate_esp32_rejects_tiny_input():
+    with pytest.raises(FirmwareError, match="too small"):
+        validate_esp32_image(b"\x00" * 16)
+
+
+# --- esptool flashing -----------------------------------------------------------
+
+# Captured from the real, installed esptool v5.3.1 package's own logger code
+# (esptool/logger.py's progress_bar()), not assumed -- the float percent and
+# bracketed bar are real, not the "(NN %)" shape older esptool versions used.
+ESPTOOL_WRITE = [
+    "esptool v5.3.1",
+    "Serial port /dev/ttyUSB0",
+    "Connecting....",
+    "Uploading stub...",
+    "Running stub...",
+    "Writing at 0x00010000 [                              ]   0.0% 0/334144 bytes...",
+    "Writing at 0x00010000 [==>                           ]  12.3% 41000/334144 bytes...",
+    "Writing at 0x00010000 [==============================] 100.0% 334144/334144 bytes...",
+    "Hash of data verified.",
+    "",
+    "Leaving...",
+    "Hard resetting via RTS pin...",
+]
+
+
+def test_esptool_flash_builds_the_right_command(tmp_path):
+    calls = []
+    image = tmp_path / "merged.bin"
+    image.write_bytes(make_esp32_image())
+    EsptoolFlasher(runner=runner_for(ESPTOOL_WRITE, record=calls)).flash(
+        image, "/dev/ttyUSB0")
+    assert calls[0] == [
+        "esptool", "--chip", "esp32", "--port", "/dev/ttyUSB0",
+        "--baud", "460800", "write-flash", "0x0", str(image),
+    ]
+
+
+def test_esptool_flash_reports_write_progress_monotonically(tmp_path):
+    seen = []
+    image = tmp_path / "merged.bin"
+    image.write_bytes(make_esp32_image())
+    EsptoolFlasher(runner=runner_for(ESPTOOL_WRITE)).flash(
+        image, "/dev/ttyUSB0", on_progress=seen.append)
+
+    writing = [e["pct"] for e in seen if e["op"] == "writing"]
+    assert writing == [0, 12, 100]
+
+
+def test_esptool_flash_passes_through_non_progress_lines(tmp_path):
+    seen = []
+    image = tmp_path / "merged.bin"
+    image.write_bytes(make_esp32_image())
+    EsptoolFlasher(runner=runner_for(ESPTOOL_WRITE)).flash(
+        image, "/dev/ttyUSB0", on_progress=seen.append)
+
+    plain = [e["line"] for e in seen if e["pct"] is None]
+    assert any("Hash of data verified" in line for line in plain)
+    assert any("Hard resetting" in line for line in plain)
+
+
+def test_esptool_flash_raises_on_nonzero_exit(tmp_path):
+    image = tmp_path / "merged.bin"
+    image.write_bytes(make_esp32_image())
+    lines = ["Connecting....", "A fatal error occurred: Failed to connect"]
+    with pytest.raises(FirmwareError, match="Failed to connect"):
+        EsptoolFlasher(runner=runner_for(lines, rc=2)).flash(image, "/dev/ttyUSB0")
+
+
+def test_esptool_flash_reports_a_missing_esptool(tmp_path):
+    image = tmp_path / "merged.bin"
+    image.write_bytes(make_esp32_image())
+
+    def missing(argv):
+        raise FileNotFoundError("esptool")
+    with pytest.raises(FirmwareError, match="not installed"):
+        EsptoolFlasher(runner=missing).flash(image, "/dev/ttyUSB0")
+
+
+def test_esptool_flash_sets_no_color(monkeypatch):
+    """Verified separately (see the design spec) that a color-capable
+    inherited TERM makes esptool emit raw ANSI escapes into a piped
+    subprocess even with no tty -- NO_COLOR=1 forces plain output
+    regardless. Checks the default runner actually sets it, via
+    monkeypatch.setattr (auto-restoring) rather than a hand-rolled
+    patch/restore -- nothing here needs a real subprocess, just to observe
+    what env `_default_esptool_runner` would hand to one."""
+    from backend.firmware import _default_esptool_runner
+    import subprocess
+
+    captured = {}
+
+    class FakeCompletedPopen:
+        def __init__(self, argv, **kwargs):
+            captured["env"] = kwargs.get("env")
+            self.stdout = None
+            self.returncode = 0
+
+        def wait(self):
+            return 0
+
+    monkeypatch.setattr(subprocess, "Popen", FakeCompletedPopen)
+    _default_esptool_runner(["esptool", "--help"])
+
+    assert captured["env"] is not None
+    assert captured["env"].get("NO_COLOR") == "1"
 
 
 # --- catalog ------------------------------------------------------------------

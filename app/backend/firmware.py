@@ -20,6 +20,7 @@ the time it runs, the board is already in DFU mode, however it got there.
 import hashlib
 import json
 import logging
+import os
 import re
 import subprocess
 import threading
@@ -57,7 +58,7 @@ class FlashBusy(FirmwareError):
 
 # --- image validation ---------------------------------------------------------
 
-def validate_image(blob: bytes) -> None:
+def validate_dfu_image(blob: bytes) -> None:
     """Reject anything that is obviously not a raw STM32F411 image.
 
     Applied to UPLOADED files only -- a bundled image is covered by its
@@ -85,6 +86,33 @@ def validate_image(blob: bytes) -> None:
         raise FirmwareError(
             f"not a raw firmware binary: reset vector 0x{reset:08x} is not a "
             f"Thumb address in flash")
+
+
+# Same offset/magic-byte reasoning as bundle_firmware.py's check_esp32_image
+# (see that function's comment) -- a merged ESP32 image is sparse, with the
+# ESP image magic byte at 0x1000, not 0.
+ESP32_IMAGE_MAGIC_OFFSET = 0x1000
+ESP32_IMAGE_MAGIC = 0xE9
+
+
+def validate_esp32_image(blob: bytes) -> None:
+    """Reject anything that is obviously not a raw merged ESP32 image.
+
+    Applied to UPLOADED files only, same as validate_dfu_image() -- a
+    bundled image is covered by its sha256 instead.
+    """
+    if len(blob) < ESP32_IMAGE_MAGIC_OFFSET + 1:
+        raise FirmwareError(
+            f"image is only {len(blob)} bytes -- too small to contain a "
+            f"bootloader image at offset 0x{ESP32_IMAGE_MAGIC_OFFSET:x}")
+    if len(blob) > MAX_IMAGE:
+        raise FirmwareError(
+            f"image is {len(blob)} bytes, larger than the 512KB flash")
+    if blob[ESP32_IMAGE_MAGIC_OFFSET] != ESP32_IMAGE_MAGIC:
+        raise FirmwareError(
+            f"not a raw merged esptool image: byte at offset "
+            f"0x{ESP32_IMAGE_MAGIC_OFFSET:x} is not the ESP image magic "
+            f"(0x{ESP32_IMAGE_MAGIC:02x})")
 
 
 # --- the bundle ---------------------------------------------------------------
@@ -178,10 +206,10 @@ class _Process:
     splitting on both terminators is what makes the bar move.
     """
 
-    def __init__(self, argv: list[str]):
+    def __init__(self, argv: list[str], env: dict | None = None):
         self._proc = subprocess.Popen(
             argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, bufsize=0)
+            text=True, bufsize=0, env=env)
 
     def lines(self):
         buf = ""
@@ -322,6 +350,69 @@ class DfuFlasher:
         if proc.returncode != 0:
             raise FirmwareError(
                 "dfu-util failed (exit {}):\n{}".format(
+                    proc.returncode, "\n".join(tail)))
+
+
+# esptool's real `write-flash` progress line (captured from the installed
+# v5.3.1 package's own logger, not assumed): a bracketed bar and a FLOAT
+# percent with one decimal --
+#   "Writing at 0x00010000 [====>          ]  12.3% 41000/334144 bytes..."
+# not the "(NN %)" shape older esptool docs/memory suggest. There is only
+# ever one progress source in the default stub-based write path (no separate
+# erase-percentage line), so `op` is always "writing" when this matches.
+_ESPTOOL_PROGRESS = re.compile(
+    r"^Writing at 0x[0-9a-fA-F]+\s+\[.*?\]\s*(?P<pct>\d{1,3}(?:\.\d+)?)%")
+
+
+def _default_esptool_runner(argv: list[str]) -> _Process:
+    # NO_COLOR=1: verified that a color-capable TERM inherited from this
+    # process (not tty-ness -- stdout is always a pipe here) makes esptool
+    # emit raw ANSI escape codes and \r-based overwrites, which would
+    # otherwise land as literal escape bytes in the user-visible log.
+    env = dict(os.environ)
+    env["NO_COLOR"] = "1"
+    return _Process(argv, env=env)
+
+
+class EsptoolFlasher:
+    def __init__(self, runner=None, esptool: str = "esptool"):
+        self._run = runner or _default_esptool_runner
+        self._esptool = esptool
+
+    def flash(self, path: Path, port: str, on_progress=None) -> None:
+        """Write a merged image to `port` and leave esptool's bootloader.
+
+        No devices()/wait_for_device(): unlike a Black Pill in DFU mode, an
+        ESP32 in its ROM bootloader has no distinct USB identity to poll
+        for. `port` is supplied by the caller (the Firmware page's explicit
+        port picker) and esptool performs the reset-into-bootloader
+        handshake itself when it opens it.
+        """
+        argv = [self._esptool, "--chip", "esp32", "--port", port,
+                "--baud", "460800", "write-flash", "0x0", str(path)]
+        try:
+            proc = self._run(argv)
+        except FileNotFoundError as exc:
+            raise FirmwareError(
+                f"{self._esptool} is not installed or not on PATH") from exc
+        except OSError as exc:
+            raise FirmwareError(f"could not run {self._esptool}: {exc}") from exc
+
+        tail = []
+        for line in proc.lines():
+            tail.append(line)
+            del tail[:-8]
+            m = _ESPTOOL_PROGRESS.match(line)
+            if on_progress:
+                on_progress({
+                    "op": "writing" if m else None,
+                    "pct": min(100, int(float(m.group("pct")))) if m else None,
+                    "line": line,
+                })
+
+        if proc.returncode != 0:
+            raise FirmwareError(
+                "esptool failed (exit {}):\n{}".format(
                     proc.returncode, "\n".join(tail)))
 
 
