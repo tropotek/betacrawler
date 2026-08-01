@@ -7,7 +7,9 @@ which runs a real subprocess on purpose -- the carriage-return handling is the
 part a fake could trivially get wrong in the same way the code does.
 """
 import hashlib
+import importlib.util
 import json
+import sys
 import threading
 import time
 
@@ -175,9 +177,47 @@ def test_esptool_flash_builds_the_right_command(tmp_path):
     EsptoolFlasher(runner=runner_for(ESPTOOL_WRITE, record=calls)).flash(
         image, "/dev/ttyUSB0")
     assert calls[0] == [
-        "esptool", "--chip", "esp32", "--port", "/dev/ttyUSB0",
+        sys.executable, "-m", "esptool",
+        "--chip", "esp32", "--port", "/dev/ttyUSB0",
         "--baud", "460800", "write-flash", "0x0", str(image),
     ]
+
+
+def test_esptool_defaults_to_this_interpreters_own_esptool(tmp_path):
+    """The one thing that makes the default work regardless of PATH.
+
+    `app/.venv/bin/uvicorn backend.main:app` -- the documented way to run the
+    backend -- does NOT put `app/.venv/bin` on PATH (only `activate` does), so
+    a bare "esptool" argv[0] cannot be found even though the package IS
+    installed in the venv the server is running from. Invoking the running
+    interpreter's own `-m esptool` sidesteps PATH entirely.
+    """
+    calls = []
+    image = tmp_path / "merged.bin"
+    image.write_bytes(make_esp32_image())
+    EsptoolFlasher(runner=runner_for(ESPTOOL_WRITE, record=calls)).flash(
+        image, "/dev/ttyUSB0")
+    assert calls[0][:3] == [sys.executable, "-m", "esptool"]
+
+
+def test_esptool_is_importable_by_the_interpreter_running_these_tests():
+    """Pins the assumption the default above rests on: `esptool` is a
+    dependency of the app's own venv (app/requirements.txt), so
+    `sys.executable -m esptool` resolves for the same interpreter that serves
+    the app. If this fails, the venv is under-provisioned, not the code."""
+    assert importlib.util.find_spec("esptool") is not None
+
+
+def test_esptool_command_can_still_be_overridden(tmp_path):
+    """The injection seam stays: a packaged build that ships its own esptool
+    binary can name it, without having to know about `-m`."""
+    calls = []
+    image = tmp_path / "merged.bin"
+    image.write_bytes(make_esp32_image())
+    EsptoolFlasher(runner=runner_for(ESPTOOL_WRITE, record=calls),
+                   esptool="/opt/bin/esptool").flash(image, "/dev/ttyUSB0")
+    assert calls[0][:1] == ["/opt/bin/esptool"]
+    assert calls[0][1:3] == ["--chip", "esp32"]
 
 
 def test_esptool_flash_reports_write_progress_monotonically(tmp_path):

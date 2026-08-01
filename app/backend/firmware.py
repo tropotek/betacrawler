@@ -23,6 +23,7 @@ import logging
 import os
 import re
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
@@ -378,10 +379,36 @@ def _default_esptool_runner(argv: list[str]) -> _Process:
     return _Process(argv, env=env)
 
 
+def esptool_argv_prefix() -> list[str]:
+    """How to invoke esptool without depending on PATH.
+
+    esptool is a pip dependency of this app (app/requirements.txt), installed
+    into `app/.venv/`. A bare "esptool" argv[0] only resolves when that venv's
+    `bin/` is on PATH -- which `source .venv/bin/activate` does but the
+    project's own documented run command, `app/.venv/bin/uvicorn
+    backend.main:app`, does NOT. Flashing therefore failed with "esptool is
+    not installed or not on PATH" on a machine where it was installed
+    correctly.
+
+    The interpreter currently running is, by construction, the one the venv
+    provisioned, so its own `-m esptool` always resolves -- no PATH involved.
+    Confirmed against the installed esptool v5.3.1: `python -m esptool` is a
+    supported entry point, identical to the console script.
+    """
+    return [sys.executable, "-m", "esptool"]
+
+
 class EsptoolFlasher:
-    def __init__(self, runner=None, esptool: str = "esptool"):
+    def __init__(self, runner=None, esptool: str | None = None):
         self._run = runner or _default_esptool_runner
-        self._esptool = esptool
+        # A caller (or a packaged build shipping its own esptool binary) can
+        # still name one explicitly; the default is PATH-independent.
+        self._prefix = [esptool] if esptool else esptool_argv_prefix()
+
+    @property
+    def _esptool(self) -> str:
+        """What to call the tool in an error message."""
+        return " ".join(self._prefix)
 
     def flash(self, path: Path, port: str, on_progress=None) -> None:
         """Write a merged image to `port` and leave esptool's bootloader.
@@ -392,7 +419,7 @@ class EsptoolFlasher:
         port picker) and esptool performs the reset-into-bootloader
         handshake itself when it opens it.
         """
-        argv = [self._esptool, "--chip", "esp32", "--port", port,
+        argv = [*self._prefix, "--chip", "esp32", "--port", port,
                 "--baud", "460800", "write-flash", "0x0", str(path)]
         try:
             proc = self._run(argv)

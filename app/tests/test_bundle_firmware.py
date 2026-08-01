@@ -160,6 +160,10 @@ def esp32_tree(tree, monkeypatch):
     boot_app0.parent.mkdir(parents=True)
     boot_app0.write_bytes(b"\xe9" + b"\x00" * 64)
     monkeypatch.setattr(mod, "BOOT_APP0_PATH", boot_app0)
+    # No test here shells out to a real esptool (every one injects a runner),
+    # so resolving one would only make the suite depend on the machine it
+    # runs on. find_esptool()'s own behavior is tested directly, above.
+    monkeypatch.setattr(mod, "find_esptool", lambda: "esptool")
     return mod
 
 
@@ -177,6 +181,51 @@ def build_esp32_parts_into(mod, env: str, stamp: str = STAMP_A, board: str | Non
     (build_dir / "firmware.bin").write_bytes(
         fake_bin("silkscreen", "1.0.0", board or env, stamp))
     return build_dir
+
+
+# --- locating esptool ---------------------------------------------------------
+
+def test_find_esptool_prefers_the_apps_venv(tree, monkeypatch):
+    """The venv copy is tried first for the same reason find_pio() tries
+    PlatformIO's: this script's documented invocation is the SYSTEM python3,
+    whose PATH has neither tool on it."""
+    mod = tree
+    tool = mod.ROOT / "app" / ".venv" / "bin" / "esptool"
+    tool.parent.mkdir(parents=True)
+    tool.write_text("#!/bin/sh\n")
+    tool.chmod(0o755)
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/esptool")
+    assert mod.find_esptool() == str(tool)
+
+
+def test_find_esptool_falls_back_to_path(tree, monkeypatch):
+    mod = tree
+    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/esptool")
+    assert mod.find_esptool() == "/usr/bin/esptool"
+
+
+def test_find_esptool_reports_a_clean_error_when_missing(tree, monkeypatch):
+    """A traceback out of subprocess is not an error message. This is the
+    one place that can say what to install and where."""
+    mod = tree
+    monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+    with pytest.raises(mod.BundleError, match="esptool"):
+        mod.find_esptool()
+
+
+def test_run_esptool_reports_a_missing_binary_as_a_bundle_error(tree, monkeypatch):
+    """Belt and braces for the same finding: even if find_esptool() hands
+    back a path that has since vanished, subprocess's FileNotFoundError must
+    not escape as a raw traceback (run_build() already handles `pio` this
+    way)."""
+    mod = tree
+
+    def boom(argv, **kwargs):
+        raise FileNotFoundError(2, "No such file or directory", argv[0])
+
+    monkeypatch.setattr(mod.subprocess, "run", boom)
+    with pytest.raises(mod.BundleError, match="esptool"):
+        mod._run_esptool(["/nope/esptool", "--chip", "esp32", "merge-bin"])
 
 
 # --- merging ------------------------------------------------------------------

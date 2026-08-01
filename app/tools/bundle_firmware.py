@@ -249,6 +249,33 @@ def find_pio() -> str | None:
     return shutil.which("pio")
 
 
+def find_esptool() -> str:
+    """Locate the esptool CLI, the same way find_pio() locates PlatformIO.
+
+    esptool is a pip dependency of the APP (app/requirements.txt), installed
+    into app/.venv/ -- while this script's documented invocation is
+    `python3 app/tools/bundle_firmware.py`, i.e. the SYSTEM python3, whose
+    PATH has neither the package nor the console script. Trying the venv copy
+    first makes PATH irrelevant for the normal case; the PATH fallback covers
+    a system-wide install.
+
+    Raises rather than returning None (unlike find_pio(), whose caller has its
+    own message for that) so a missing tool reads as an instruction instead of
+    a FileNotFoundError traceback out of subprocess.
+    """
+    candidate = ROOT / "app" / ".venv" / "bin" / "esptool"
+    if candidate.is_file() and os.access(candidate, os.X_OK):
+        return str(candidate)
+    found = shutil.which("esptool")
+    if found:
+        return found
+    raise BundleError(
+        "esptool not found. It ships as a dependency of the app's venv:\n"
+        "    app/.venv/bin/pip install -r app/requirements.txt\n"
+        "(or install it so `esptool` is on PATH). Only esptool-method envs "
+        "-- the ESP32 targets -- need it.")
+
+
 def force_version_rebuild(env: str) -> list[Path]:
     """Delete version.cpp's object file so the build re-stamps __DATE__/__TIME__.
 
@@ -311,7 +338,13 @@ def run_build(env: str, pio: str) -> None:
 
 
 def _run_esptool(argv: list[str]) -> int:
-    proc = subprocess.run(argv, capture_output=True, text=True)
+    try:
+        proc = subprocess.run(argv, capture_output=True, text=True)
+    except OSError as exc:
+        # run_build() reports a broken `pio` as a BundleError rather than a
+        # traceback; the same applies here, for the same reason: the caller
+        # prints BundleError as the tool's error message.
+        raise BundleError(f"could not run esptool ({argv[0]}): {exc}") from exc
     if proc.returncode != 0:
         raise BundleError(
             "esptool merge-bin failed:\n" +
@@ -319,7 +352,7 @@ def _run_esptool(argv: list[str]) -> int:
     return proc.returncode
 
 
-def merge_esp32_image(env: str, esptool: str = "esptool", runner=None) -> Path:
+def merge_esp32_image(env: str, esptool: str | None = None, runner=None) -> Path:
     """Fold this env's four PlatformIO build outputs into one flashable file.
 
     `runner` is injected the same way run_build()'s `builder` param is --
@@ -330,6 +363,10 @@ def merge_esp32_image(env: str, esptool: str = "esptool", runner=None) -> Path:
     def-time, so a test's `monkeypatch.setattr(mod, "_run_esptool", fake)`
     would silently have no effect on any caller (like plan_entry() below)
     that doesn't pass its own runner explicitly.
+
+    `esptool` is resolved the same way and for the same reason -- a bare
+    "esptool" only works when the app venv happens to be on PATH, which it
+    is not under this script's documented invocation. See find_esptool().
     """
     runner = runner or _run_esptool
     build_dir = FIRMWARE / ".pio" / "build" / env
@@ -344,7 +381,7 @@ def merge_esp32_image(env: str, esptool: str = "esptool", runner=None) -> Path:
         inputs.append((offset, path))
 
     merged = build_dir / "merged-flash.bin"
-    argv = [esptool, "--chip", "esp32", "merge-bin", "-o", str(merged),
+    argv = [esptool or find_esptool(), "--chip", "esp32", "merge-bin", "-o", str(merged),
             "--flash-mode", "dio", "--flash-freq", "40m", "--flash-size", "4MB"]
     for offset, path in inputs:
         argv += [offset, str(path)]
