@@ -49,18 +49,29 @@ one flashable image with `esptool.py merge_bin`:
 | `boot_app0.bin` | `0xe000` | the Arduino framework package (`framework-arduinoespressif32/tools/partitions/boot_app0.bin`) |
 | `firmware.bin` | `0x10000` | `.pio/build/<env>/firmware.bin` |
 
-These are the `esp32dev` board's standard 4MB/DIO/40MHz defaults — the same ones the
-2026-08-01 spec's manual flashing procedure already relies on implicitly. They are not
-re-derived per build; if a future `platformio.ini` change alters flash size or partition table,
-the merge step is expected to start producing a boot-broken image, loudly, rather than silently
-guessing — this is called out as a follow-up risk, not solved here (see Non-goals).
+These are the `esp32dev` board's standard 4MB/DIO/40MHz defaults, confirmed (not assumed) against
+this project's own `~/.platformio/platforms/espressif32*/boards/esp32dev.json`
+(`flash_size: "4MB"`, `flash_mode: "dio"`, `f_flash: "40000000L"`, upload speed `460800`) and by
+actually running `esptool merge-bin` against this repo's real `esp32_wroom32` build output —
+`boot_app0.bin` lives at the exact path above with no version suffix on this machine. They are
+not re-derived per build; if a future `platformio.ini` change alters flash size or partition
+table, the merge step is expected to start producing a boot-broken image, loudly, rather than
+silently guessing — this is called out as a follow-up risk, not solved here (see Non-goals).
+
+The resulting merged file is a **sparse** image, not four files back to back: bytes `0x0`-`0xFFF`
+are `0xFF` padding (flash's erased-state value) because the first real content, `bootloader.bin`,
+starts at offset `0x1000`. This matters for `check_esp32_image` below — the ESP image magic byte
+is at offset `0x1000` in the merged file, not offset `0`.
 
 Validation splits by method:
 - `dfu`-method envs keep today's `check_vector_table` (MSP in SRAM, reset vector in flash).
-- `esptool`-method envs get a new `check_esp32_image`: first byte is the ESP image magic
-  (`0xE9`), and size is within sane bounds. This is the same check `firmware.py` applies to a
-  bundled image, mirrored for the merge step the way `check_vector_table` already mirrors
-  `firmware.py`'s upload-time check.
+- `esptool`-method envs get a new `check_esp32_image`. Verified against a real `merge-bin` run
+  against this project's own build output: bytes `0x0`-`0xFFF` of the merged image are `0xFF`
+  padding (the bootloader offset is `0x1000`, not `0x0`), so the ESP image magic byte (`0xE9`)
+  has to be checked at offset `0x1000`, not offset `0` — a bare `blob[0] == 0xE9` would reject
+  every real merged image. Size is also checked against sane bounds.
+  This is the same check `firmware.py` applies to a bundled image, mirrored for the merge step
+  the way `check_vector_table` already mirrors `firmware.py`'s upload-time check.
 
 Manifest entries are otherwise unchanged in shape — one file, one sha256, one `size` — so
 `Catalog` in the backend needs no changes at all.
@@ -109,21 +120,40 @@ class EsptoolFlasher:
         ...
     def flash(self, path: Path, port: str, on_progress=None) -> None:
         argv = [self._esptool, "--chip", "esp32", "--port", port,
-                "--baud", "460800", "write_flash", "0x0", str(path)]
+                "--baud", "460800", "write-flash", "0x0", str(path)]
+        # NO_COLOR=1: forces plain output even when the backend process
+        # inherited a color-capable TERM, so the log never carries raw
+        # ANSI escape bytes.
         ...
 ```
 
 - No `devices()` / `wait_for_device()` — there is nothing to enumerate. The port is supplied by
   the caller (see UI below), and `esptool` performs the reset-into-bootloader handshake itself
   when it opens that port.
-- Progress: `esptool` prints lines like `Writing at 0x00010000... (34 %)`. A new regex extracts
-  `pct`; `op` is bucketed from the line text (`erasing` / `writing`). Output stays the same
-  `{"op", "pct", "line"}` dict shape `on_progress` already produces for DFU, so
-  `FlashSession`, the WS `flash` event, and app.js's `onFlashEvent` need no changes.
-- `esptool` ships as a pip package with a console-script entry point — added to
+- Progress: verified against the real, installed `esptool` package (v5.3.1) rather than
+  assumed — its actual `write-flash` output is `Writing at 0x00010000 [====>          ]  12.3%
+  41000/334144 bytes...` (a bracketed bar, and a **float** percent with one decimal, not the
+  `(NN %)` shape older esptool docs/memory suggest). A regex pulls the float and rounds it to an
+  int; there is only ever one progress source (the write pass — the stub-based path esptool uses
+  by default never prints a separate erase percentage), so `op` is `"writing"` whenever it
+  matches, `None` otherwise. Also verified: with no controlling TTY (a subprocess pipe) but a
+  color-capable `TERM` inherited from the parent process, esptool still emits ANSI escape codes
+  and `\r`-based overwrites, which would otherwise land as literal escape bytes in the log
+  textarea — `EsptoolFlasher` sets `NO_COLOR=1` in the subprocess environment to force plain
+  output regardless of what the backend process's own terminal supports. The existing `_Process`
+  wrapper (already splits on both `\r` and `\n` for `dfu-util`'s sake) is reused as-is.
+  Output stays the same `{"op", "pct", "line"}` dict shape `on_progress` already produces for
+  DFU, so `FlashSession`, the WS `flash` event, and app.js's `onFlashEvent` need no changes.
+- `esptool` ships as a pip package with a console-script entry point (confirmed: `pip install
+  esptool` provides both an `esptool` and an `esptool.py` command) — added to
   `app/requirements.txt`, not expected on `PATH` like `dfu-util` (which has no pip package).
   A missing install is handled the same way a missing `dfu-util` is: caught `FileNotFoundError`
   → a `FirmwareError` the Firmware page can show, not a crash.
+- CLI syntax: esptool v5 deprecated the underscored subcommands/flags (`write_flash`,
+  `merge_bin`, `--flash_mode`) in favor of hyphenated ones (`write-flash`, `merge-bin`,
+  `--flash-mode`) — the old spellings still work today but print a deprecation warning line on
+  every single flash, which would appear in the user-facing log. `EsptoolFlasher` and the
+  bundler's merge step both use the hyphenated forms throughout.
 
 **Releasing the port.** If the app is currently connected to the board on the same port the user
 selected, `SerialLink` is holding it open and `esptool` cannot also open it. Before starting an
