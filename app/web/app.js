@@ -557,7 +557,15 @@ async function refreshPorts() {
   for (const p of ports) {
     const o = document.createElement('option');
     o.value = p.port;
-    o.textContent = p.match ? `${p.port} (STM32)` : p.port;
+    // Every board this template's `match` heuristic doesn't recognize (any
+    // non-STM32 board, e.g. an ESP32) used to render as a bare path,
+    // indistinguishable from this environment's own placeholder serial
+    // ports (or any other port with nothing plugged in). Any port with a
+    // real USB descriptor at least proves *something* is actually
+    // connected there, which is worth surfacing even without a name for it.
+    o.textContent = p.match ? `${p.port} (STM32)`
+      : p.vid ? `${p.port} (USB ${p.vid}:${p.pid})`
+      : p.port;
     sel.appendChild(o);
     if (p.match) matched = p.port;
   }
