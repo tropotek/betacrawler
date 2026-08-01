@@ -1,6 +1,19 @@
-#include <Arduino.h>
 #include "hardware/wifi/wifi_driver.h"
 #include "hardware/wifi/wifi_params.h"
+
+// This whole file is the STM32-side driver: an external ESP-01 module
+// talked to over UART with AT commands. FW_MCU_ESP32 selects
+// wifi_esp32_driver.cpp instead, which drives an onboard ESP32's own radio
+// directly through WiFi.h -- no UART, no AT parser. The body (not just the
+// class) must be guarded: PlatformIO compiles every .cpp under src/ as its
+// own translation unit no matter what includes it, so an unguarded file
+// here would still demand WIFI_RX_PIN/WIFI_TX_PIN/WIFI_BAUD (or fail to
+// build against a different HardwareSerial constructor) on any board that
+// never defines them -- exactly what silently broke blackpill_f401ce
+// (FEATURE_WIFI off, no WIFI_* pins) until this guard was added.
+#if FEATURE_WIFI && !FW_MCU_ESP32
+
+#include <Arduino.h>
 #include "config.h"
 #include <ArduinoJson.h>
 #include <string.h>
@@ -8,12 +21,6 @@
 
 #ifndef WIFI_RX_PIN
 #error "FEATURE_WIFI is on but the board header defines no WIFI_RX_PIN"
-#endif
-#ifndef WIFI_TX_PIN
-#error "FEATURE_WIFI is on but the board header defines no WIFI_TX_PIN"
-#endif
-#ifndef WIFI_BAUD
-#error "FEATURE_WIFI is on but the board header defines no WIFI_BAUD"
 #endif
 
 // Board-header overridable, defaulted here -- same pattern esc_driver.cpp
@@ -296,3 +303,5 @@ size_t WifiDriver::pollPush(char* out, size_t cap) {
 }
 
 }  // namespace wifi
+
+#endif  // FEATURE_WIFI && !FW_MCU_ESP32

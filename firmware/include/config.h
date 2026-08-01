@@ -86,3 +86,15 @@
 #ifndef FEATURE_WIFI
 #define FEATURE_WIFI 0
 #endif
+
+// Set only by an ESP32 environment's own build_flags (see platformio.ini's
+// [env:esp32_wroom32]) to select the ESP32-native bodies of storage.cpp,
+// hardware/system/system_driver.cpp and hardware/wifi/wifi_driver.cpp --
+// each guards its own STM32-specific body with `#if !FW_MCU_ESP32` and is
+// paired with a `*_esp32_*` file guarded the other way, so every board
+// compiles cleanly with no per-environment build_src_filter bookkeeping.
+// FW_TARGET_ARDUINO alone still answers "is this a real target at all,"
+// exactly as it always has -- this only disambiguates which real target.
+#ifndef FW_MCU_ESP32
+#define FW_MCU_ESP32 0
+#endif
