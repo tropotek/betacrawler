@@ -50,6 +50,12 @@ class WifiEsp32Driver : public core::Module, public core::WifiScanner {
   uint32_t      scanStartedAt_   = 0;
   EspScanResult scanResults_[kMaxScanResults];
   uint8_t       scanCount_ = 0;
+  // WiFi.scanComplete() settling on WIFI_SCAN_FAILED for a scan that, given
+  // another attempt, succeeds is real-hardware-observed flakiness in the
+  // ESP32 core's async scan path (roughly 1 in 3 attempts failed in
+  // on-bench testing) -- not a wedge, not a permanent failure. Retried
+  // in-place, bounded, before ever reporting empty results to the host.
+  uint8_t       scanRetries_ = 0;
 };
 
 }  // namespace wifi

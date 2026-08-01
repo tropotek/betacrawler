@@ -28,7 +28,35 @@ static const uint32_t kJoinTimeoutMs = 15000;
 // Matches the STM32/AT driver's own WIFI_SCAN_TIMEOUT_MS default.
 static const uint32_t kScanTimeoutMs = 8000;
 
+// Bounded retries for a WiFi.scanComplete() that settles on WIFI_SCAN_FAILED
+// -- real-hardware-verified as transient flakiness in the ESP32 core's async
+// scan path (roughly 1 in 3 attempts failed on the bench, each still taking
+// the full ~6s a real scan takes; a blocking WiFi.scanNetworks() call in the
+// same spot succeeded every time it was tried). Retrying in place, rather
+// than reporting empty on the first failure, is what makes the async path
+// actually usable -- 2 retries (3 attempts total) cleared every observed
+// failure run in testing.
+static const uint8_t kMaxScanRetries = 2;
+
+// Minimum time after startScan() before the first WiFi.scanComplete() poll
+// is trusted -- see tick()'s own comment for why an earlier poll spuriously
+// reports zero results.
+static const uint32_t kScanMinPollDelayMs = 200;
+
 namespace wifi {
+
+// scanStartedAt_/joinStartedAt_ are stamped with a fresh millis() call from
+// startScan()/beginJoin(), which can run mid-loop-iteration (a dispatch-
+// triggered wifiscan op or a `set wifi.ssid` param change) -- AFTER
+// main.cpp's own `nowMs` for that same iteration was already captured at
+// the top of loop(). A plain `nowMs - startedAt` then underflows to a huge
+// unsigned value on the very first tick() that follows, making every
+// elapsed-time check against it fire one tick early. Real-hardware-verified:
+// this made a genuine ~5.8s WiFi scan that legitimately finds nearby
+// networks report back instantly as "0 networks found" instead.
+static inline uint32_t elapsedMs(uint32_t nowMs, uint32_t startedAt) {
+  return (nowMs >= startedAt) ? (nowMs - startedAt) : 0;
+}
 
 void WifiEsp32Driver::attach(const core::Registry& reg, const core::Params& p) {
   (void)reg;
@@ -82,10 +110,15 @@ void WifiEsp32Driver::onParamChanged(uint8_t local, const core::Params& p) {
 }
 
 void WifiEsp32Driver::tick(uint32_t nowMs) {
-  if (scanning_) {
+  if (scanning_ && elapsedMs(nowMs, scanStartedAt_) >= kScanMinPollDelayMs) {
     // WiFi.scanComplete()'s contract: -1 (WIFI_SCAN_RUNNING) while still
     // scanning, -2 (WIFI_SCAN_FAILED) if the scan could not start or
-    // errored, otherwise the network count.
+    // errored, otherwise the network count. Real-hardware-verified: polling
+    // it in the same tick startScan() armed the scan (microseconds later)
+    // returns 0 spuriously -- the ESP32 core's internal scan state hasn't
+    // initialized yet -- reporting "no networks" for a scan that, given
+    // time, correctly finds real ones. kScanMinPollDelayMs defers the first
+    // poll long enough for that state to settle.
     int16_t n = WiFi.scanComplete();
     if (n >= 0) {
       scanCount_ = (uint8_t)(n > kMaxScanResults ? kMaxScanResults : n);
@@ -99,10 +132,20 @@ void WifiEsp32Driver::tick(uint32_t nowMs) {
       scanResultReady_ = true;
     } else if (n == -2) {
       WiFi.scanDelete();
-      scanCount_ = 0;
-      scanning_ = false;
-      scanResultReady_ = true;   // report an empty result rather than wedge
-    } else if (nowMs - scanStartedAt_ > kScanTimeoutMs) {
+      if (scanRetries_ < kMaxScanRetries) {
+        // Transient failure -- try again in place rather than reporting an
+        // empty result the first time it happens. scanStartedAt_ resets to
+        // this tick's own nowMs (not a fresh millis() call), so the retry's
+        // own elapsedMs() comparisons stay correct with no underflow risk.
+        ++scanRetries_;
+        scanStartedAt_ = nowMs;
+        WiFi.scanNetworks(true);
+      } else {
+        scanCount_ = 0;
+        scanning_ = false;
+        scanResultReady_ = true;   // retries exhausted -- report empty rather than wedge
+      }
+    } else if (elapsedMs(nowMs, scanStartedAt_) > kScanTimeoutMs) {
       // WiFi.scanComplete() never settled -- force-finish rather than latch
       // scanning_ true forever and fail every future startScan() call.
       WiFi.scanDelete();
@@ -120,7 +163,7 @@ void WifiEsp32Driver::tick(uint32_t nowMs) {
       } else if (s == WL_CONNECT_FAILED || s == WL_NO_SSID_AVAIL) {
         status_ = STATUS_FAILED;
         failedAt_ = nowMs;
-      } else if (nowMs - joinStartedAt_ > kJoinTimeoutMs) {
+      } else if (elapsedMs(nowMs, joinStartedAt_) > kJoinTimeoutMs) {
         // Some other wl_status_t (e.g. WL_DISCONNECTED) can also mean a
         // failed/timed-out join -- a flat deadline catches those without
         // trying to enumerate every value the stack might settle on.
@@ -158,6 +201,7 @@ bool WifiEsp32Driver::startScan() {
   if (scanning_) return false;
   scanning_ = true;
   scanResultReady_ = false;
+  scanRetries_ = 0;
   scanStartedAt_ = millis();
   WiFi.scanNetworks(true);   // async
   return true;
