@@ -73,8 +73,11 @@ const Api = {
   // File itself even though fetch would accept a File as a body directly --
   // a File cannot cross an IPC boundary, and this would otherwise be the one
   // method whose signature pins the UI to an HTTP transport.
-  flashUpload: (bytes, filename) => Api.sendBody(
-    `/api/firmware/flash-upload?filename=${encodeURIComponent(filename)}`, bytes),
+  flashUpload: (bytes, filename, method = 'dfu', port = null) => {
+    const params = new URLSearchParams({ filename, method });
+    if (port) params.set('port', port);
+    return Api.sendBody(`/api/firmware/flash-upload?${params}`, bytes);
+  },
   wifiScan:  ()          => Api.send('POST', '/api/wifi/scan'),
 
   // The push channel, exposed as a subscription rather than as a socket.
@@ -370,6 +373,8 @@ document.addEventListener('alpine:init', () => {
     op: null,
     ports: [],
     selectedPort: null,
+    uploadTarget: 'dfu',
+    uploadPort: null,
 
     // Connection state is mirrored in here rather than read from the
     // module-level `connected`/`deviceInfo`. Those are plain variables, and
@@ -437,6 +442,11 @@ document.addEventListener('alpine:init', () => {
       return img.method === 'esptool' ? !!this.selectedPort : this.dfuPresent;
     },
 
+    get canUpload() {
+      if (this.busy) return false;
+      return this.uploadTarget === 'esptool' ? !!this.uploadPort : this.dfuPresent;
+    },
+
     get statusText() {
       switch (this.phase) {
         case 'waiting':  return 'waiting for a device in DFU mode…';
@@ -470,6 +480,9 @@ document.addEventListener('alpine:init', () => {
         const stillThere = (port) => this.ports.some((p) => p.port === port);
         if (!stillThere(this.selectedPort)) {
           this.selectedPort = this.ports.find((p) => p.match)?.port || null;
+        }
+        if (!stillThere(this.uploadPort)) {
+          this.uploadPort = this.ports.find((p) => p.match)?.port || null;
         }
       } catch { /* backend restarting; the next page-enter retries */ }
     },
@@ -966,7 +979,9 @@ el('fw-upload-file').addEventListener('change', async (ev) => {
   try {
     // Read here rather than handing the File to Api: the transport seam takes
     // bytes, so that it can be something other than fetch one day.
-    await Api.flashUpload(await file.arrayBuffer(), file.name);
+    await Api.flashUpload(await file.arrayBuffer(), file.name,
+                          store.uploadTarget,
+                          store.uploadTarget === 'esptool' ? store.uploadPort : null);
   } catch (e) {
     store.onFlashEvent({ phase: 'error', line: e.message });
     showError(e.message);

@@ -553,6 +553,12 @@
             disconnected, which is the whole point: a board that needs re-flashing often can't
             be talked to.
           </p>
+          <p class="text-secondary small">
+            For an ESP32 board: hold the <strong>BOOT</strong> (sometimes labeled
+            <strong>IO0</strong>) button until <code>esptool</code> reports
+            "Writing at...". Only needed if the specific board lacks auto-reset
+            circuitry, or if flashing hangs at "Connecting....".
+          </p>
 
           <details class="mt-4">
             <summary class="h6">Advanced: flash a local file</summary>
@@ -565,12 +571,28 @@
                 still works, so this is recoverable — just tedious).
               </div>
               <p class="small text-secondary">
-                For a locally built image this is
+                For a locally built STM32 image this is
                 <code>firmware/.pio/build/&lt;env&gt;/firmware.bin</code> — the
                 <code>.bin</code>, not the <code>.elf</code> or <code>.hex</code> beside it.
+                For ESP32 it's the merged image <code>bundle_firmware.py</code> itself
+                produces, or the output of <code>esptool merge-bin</code> run by hand.
               </p>
+              <div class="d-flex gap-2 flex-wrap align-items-center mb-2">
+                <select id="fw-target" class="form-select form-select-sm w-auto"
+                        x-model="$store.firmware.uploadTarget">
+                  <option value="dfu">STM32 (DFU)</option>
+                  <option value="esptool">ESP32 (esptool)</option>
+                </select>
+                <select id="fw-upload-port" class="form-select form-select-sm w-auto"
+                        x-show="$store.firmware.uploadTarget === 'esptool'"
+                        x-model="$store.firmware.uploadPort">
+                  <template x-for="p in $store.firmware.ports" :key="p.port">
+                    <option :value="p.port" x-text="$store.firmware.portLabel(p)"></option>
+                  </template>
+                </select>
+              </div>
               <button id="fw-upload" class="btn btn-outline-danger btn-sm"
-                      :disabled="!$store.firmware.dfuPresent || $store.firmware.busy">
+                      :disabled="!$store.firmware.canUpload">
                 Choose a .bin and flash…
               </button>
               <input id="fw-upload-file" type="file" accept=".bin,application/octet-stream"
