@@ -13,7 +13,8 @@ from pydantic import BaseModel, StrictInt, StrictStr
 from . import settings_ini, terminal
 from .device import DeviceModel, DeviceError, ProtoMismatch
 from .firmware import (
-    Catalog, DfuFlasher, FlashBusy, FlashSession, FirmwareError, validate_image)
+    Catalog, DfuFlasher, EsptoolFlasher, FlashBusy, FlashSession, FirmwareError,
+    validate_dfu_image, validate_esp32_image)
 from .link import list_candidate_ports
 
 log = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ class RestoreBody(BaseModel):
 
 class FlashBody(BaseModel):
     id: str
+    port: str | None = None
 
 
 class Broadcaster:
@@ -120,10 +122,12 @@ class Broadcaster:
 
 def create_app(device: DeviceModel | None = None,
                catalog: Catalog | None = None,
-               flasher: DfuFlasher | None = None) -> FastAPI:
+               flasher: DfuFlasher | None = None,
+               esptool_flasher: EsptoolFlasher | None = None) -> FastAPI:
     device = device or DeviceModel()
     catalog = catalog or Catalog()
     flasher = flasher or DfuFlasher()
+    esptool_flasher = esptool_flasher or EsptoolFlasher()
     bus = Broadcaster()
     device.subscribe(bus.publish_threadsafe)
     flash = FlashSession(flasher, on_event=lambda ev: bus.publish_event("flash", ev))
@@ -262,6 +266,17 @@ def create_app(device: DeviceModel | None = None,
     # re-flashing is frequently a board that cannot be talked to. The one
     # exception is enter-dfu, which by definition needs a live device.
 
+    def _release_if_connected_on(port: str) -> None:
+        # Only ESP32/esptool flashing needs this: DFU's board disappears
+        # from its serial port on its own (see enter_dfu()) before a DFU
+        # flash ever starts, so the app is never holding the port DfuFlasher
+        # needs. An ESP32 stays on the same port throughout, so if the app
+        # happens to be connected to the very board being flashed, esptool
+        # can't also open it -- release it first. A board connected on a
+        # DIFFERENT port is left alone.
+        if device.status().get("port") == port:
+            device.disconnect()
+
     @app.get("/api/firmware/catalog")
     def firmware_catalog():
         """What this app shipped with, plus which entry suits the last board seen.
@@ -321,7 +336,15 @@ def create_app(device: DeviceModel | None = None,
         # the cost of being wrong is a board that no longer boots.
         path = catalog.verify(body.id)
         img = catalog.get(body.id)
-        flash.start(path, f"{img['name']} {img['version']} ({img['board']})")
+        label = f"{img['name']} {img['version']} ({img['board']})"
+        if img.get("method") == "esptool":
+            if not body.port:
+                raise FirmwareError("a port is required to flash this image")
+            _release_if_connected_on(body.port)
+            flash.start(path, label, flasher=esptool_flasher, wait=False,
+                       port=body.port)
+        else:
+            flash.start(path, label)
         return {"ok": True, "id": body.id}
 
     @app.post("/api/firmware/flash-upload")

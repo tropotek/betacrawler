@@ -26,8 +26,11 @@ from tests.test_firmware import DFU_LIST, DFU_DOWNLOAD, make_image, runner_for
 @pytest.fixture
 def bundle(tmp_path):
     blob = make_image()
+    esp_blob = b"\xff" * 0x1000 + b"\xe9" + b"\x00" * 512
     (tmp_path / "blackpill_f411ce").mkdir()
     (tmp_path / "blackpill_f411ce" / "silkscreen-1.0.0.bin").write_bytes(blob)
+    (tmp_path / "esp32_wroom32").mkdir()
+    (tmp_path / "esp32_wroom32" / "silkscreen-1.0.0.bin").write_bytes(esp_blob)
     (tmp_path / "manifest.json").write_text(json.dumps({
         "app_version": "1.0.0",
         "images": [{
@@ -45,13 +48,20 @@ def bundle(tmp_path):
             "method": "dfu", "file": "otherboard/silkscreen-1.0.0.bin",
             "size": len(blob), "sha256": hashlib.sha256(blob).hexdigest(),
             "notes": "led",
+        }, {
+            "id": "esp32_wroom32-silkscreen-1.0.0",
+            "board": "esp32_wroom32", "name": "silkscreen",
+            "version": "1.0.0", "built": "Jul 26 2026 15:02:35", "proto": 1,
+            "method": "esptool", "file": "esp32_wroom32/silkscreen-1.0.0.bin",
+            "size": len(esp_blob), "sha256": hashlib.sha256(esp_blob).hexdigest(),
+            "notes": "led, wifi",
         }],
     }))
     return tmp_path
 
 
 def make_client(bundle, dfu_lines=DFU_LIST, flash_lines=DFU_DOWNLOAD,
-                flash_rc=0, caps=("dfu",)):
+                flash_rc=0, caps=("dfu",), esptool_lines=None, esptool_rc=0):
     fake = FakeSerial(responder=device_responder(caps=caps))
     device = DeviceModel(SerialLink(open_port=lambda p: fake))
 
@@ -64,9 +74,16 @@ def make_client(bundle, dfu_lines=DFU_LIST, flash_lines=DFU_DOWNLOAD,
             return FakeProcess(flash_lines, rc=flash_rc)
         return FakeProcess(dfu_lines)
 
+    def esptool_runner(argv):
+        from tests.test_firmware import FakeProcess
+        return FakeProcess(esptool_lines or ["Writing at 0x0 [====] 100.0% 1/1 bytes..."],
+                           rc=esptool_rc)
+
+    from backend.firmware import EsptoolFlasher
     app = create_app(device,
                      catalog=Catalog(bundle),
-                     flasher=DfuFlasher(runner=runner))
+                     flasher=DfuFlasher(runner=runner),
+                     esptool_flasher=EsptoolFlasher(runner=esptool_runner))
     app.state.fake = fake
     app.state.device = device
     return app
@@ -86,7 +103,8 @@ def test_catalog_lists_bundled_images(client):
     body = client.get("/api/firmware/catalog").json()
     assert body["app_version"] == "1.0.0"
     assert {i["id"] for i in body["images"]} == {
-        "blackpill_f411ce-silkscreen-1.0.0", "otherboard-silkscreen-1.0.0"}
+        "blackpill_f411ce-silkscreen-1.0.0", "otherboard-silkscreen-1.0.0",
+        "esp32_wroom32-silkscreen-1.0.0"}
 
 
 def test_catalog_marks_a_missing_binary_unavailable(client):
@@ -194,6 +212,76 @@ def test_flash_rejects_a_corrupted_bundled_image(client, bundle):
                     json={"id": "blackpill_f411ce-silkscreen-1.0.0"})
     assert r.status_code == 400
     assert "checksum" in r.json()["detail"]
+
+
+# --- esptool flashing -----------------------------------------------------------
+
+def test_flash_an_esptool_image_requires_a_port(client):
+    r = client.post("/api/firmware/flash",
+                    json={"id": "esp32_wroom32-silkscreen-1.0.0"})
+    assert r.status_code == 400
+    assert "port" in r.json()["detail"]
+
+
+def test_flash_an_esptool_image_with_a_port(client):
+    r = client.post("/api/firmware/flash",
+                    json={"id": "esp32_wroom32-silkscreen-1.0.0",
+                          "port": "/dev/ttyUSB0"})
+    assert r.status_code == 200
+    assert r.json()["ok"] is True
+    _settle(client)
+
+
+def test_flash_an_esptool_image_skips_the_dfu_waiting_phase(client):
+    with client.websocket_connect("/ws") as ws:
+        assert ws.receive_json()["type"] == "state"
+        client.post("/api/firmware/flash",
+                    json={"id": "esp32_wroom32-silkscreen-1.0.0",
+                          "port": "/dev/ttyUSB0"})
+        frames = _drain(ws, until=lambda f: f["data"].get("phase") == "done")
+    phases = [f["data"]["phase"] for f in frames]
+    assert "waiting" not in phases
+    assert phases[0] == "flashing"
+
+
+def test_flash_releases_the_port_if_currently_connected_on_it(bundle):
+    app = make_client(bundle)
+    with TestClient(app) as c:
+        c.post("/api/connect", json={"port": "/dev/ttyUSB0"})
+        assert c.get("/api/status").json()["state"] == "connected"
+
+        c.post("/api/firmware/flash",
+              json={"id": "esp32_wroom32-silkscreen-1.0.0", "port": "/dev/ttyUSB0"})
+        _settle(c)
+
+        assert c.get("/api/status").json()["state"] == "disconnected"
+    app.state.device.disconnect()
+
+
+def test_flash_leaves_a_different_ports_connection_alone(bundle):
+    """Flashing an ESP32 on one port must not disconnect a board connected
+    on a DIFFERENT port."""
+    app = make_client(bundle)
+    with TestClient(app) as c:
+        c.post("/api/connect", json={"port": "/dev/ttyACM0"})
+        c.post("/api/firmware/flash",
+              json={"id": "esp32_wroom32-silkscreen-1.0.0", "port": "/dev/ttyUSB0"})
+        _settle(c)
+        assert c.get("/api/status").json()["state"] == "connected"
+    app.state.device.disconnect()
+
+
+def test_a_failed_esptool_flash_reports_an_error_frame(bundle):
+    app = make_client(bundle, esptool_lines=["A fatal error occurred: no device"],
+                      esptool_rc=2)
+    with TestClient(app) as c:
+        with c.websocket_connect("/ws") as ws:
+            assert ws.receive_json()["type"] == "state"
+            c.post("/api/firmware/flash",
+                   json={"id": "esp32_wroom32-silkscreen-1.0.0", "port": "/dev/ttyUSB0"})
+            frames = _drain(ws, until=lambda f: f["data"].get("phase") == "error")
+        assert frames[-1]["data"]["phase"] == "error"
+    app.state.device.disconnect()
 
 
 def test_upload_flash_accepts_a_real_looking_image(client):
