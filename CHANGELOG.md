@@ -5,6 +5,21 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Version 1.0.0 (2026-07-29)
 
+- **feat(app): the Firmware page can flash `esp32_wroom32` over `esptool`, not just STM32 boards
+  over DFU.** The manifest's `method` field (`"dfu"`/`"esptool"`) now has a real dispatch behind
+  it: a new `EsptoolFlasher` backend class alongside the existing `DfuFlasher`, a `bundle_firmware.py`
+  step that merges the ESP32 build's four PlatformIO outputs into one flashable image via
+  `esptool merge-bin`, and an explicit serial-port picker on both the bundled-image and Advanced
+  local-file flows — an ESP32 in its ROM bootloader has no distinct USB identity the way a Black
+  Pill in DFU mode does, so the port has to be chosen by hand rather than detected. A new `--all`
+  bundler flag builds every board target in one run (opt-in; the bare command's single-board
+  default is unchanged). Full design in
+  `docs/superpowers/specs/2026-08-02-esp32-esptool-flashing-design.md`, implementation record in
+  `docs/superpowers/plans/2026-08-02-esp32-esptool-flashing.md`. **Hardware-verified 2026-08-02**
+  — see `_notes/todo.md`'s "Second board target" entry for the real-board flash record and the one
+  real bug (`esptool` never resolving under the documented `.venv/bin/uvicorn` run command) that
+  verification caught and fixed.
+
 - **feat(hardware): new `esp32_wroom32` firmware target.** A generic ESP32 WROOM-32 dev board,
   using its onboard LED and onboard WiFi radio directly (`WifiEsp32Driver`, driven through
   `WiFi.h`, not the AT-command driver the STM32 boards use to talk to an external ESP-01) — no
