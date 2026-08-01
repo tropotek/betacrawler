@@ -404,11 +404,9 @@ class EsptoolFlasher:
         # A caller (or a packaged build shipping its own esptool binary) can
         # still name one explicitly; the default is PATH-independent.
         self._prefix = [esptool] if esptool else esptool_argv_prefix()
-
-    @property
-    def _esptool(self) -> str:
-        """What to call the tool in an error message."""
-        return " ".join(self._prefix)
+        # What an error message calls the tool: the exact command tried, so a
+        # failure names something the reader can run themselves.
+        self._label = " ".join(self._prefix)
 
     def flash(self, path: Path, port: str, on_progress=None) -> None:
         """Write a merged image to `port` and leave esptool's bootloader.
@@ -425,9 +423,10 @@ class EsptoolFlasher:
             proc = self._run(argv)
         except FileNotFoundError as exc:
             raise FirmwareError(
-                f"{self._esptool} is not installed or not on PATH") from exc
+                f"esptool is not installed or could not be run "
+                f"(tried: {self._label})") from exc
         except OSError as exc:
-            raise FirmwareError(f"could not run {self._esptool}: {exc}") from exc
+            raise FirmwareError(f"could not run {self._label}: {exc}") from exc
 
         tail = []
         for line in proc.lines():
