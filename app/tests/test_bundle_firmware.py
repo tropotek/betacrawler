@@ -221,6 +221,47 @@ def test_merge_esp32_image_requires_all_four_inputs(esp32_tree):
         mod.merge_esp32_image("board_c", runner=lambda argv: 0)
 
 
+def test_merge_esp32_image_invokes_esptool_with_the_right_argv(esp32_tree):
+    """The other merge tests' fakes only look at `-o` -- none of them check
+    that the offsets/paths/flags actually sent to esptool are right. A
+    transposed offset in ESP32_MERGE_LAYOUT, or a flag reverted to a
+    deprecated underscored spelling (`merge_bin` instead of `merge-bin`),
+    would pass every other test here and only bite at real-flash time."""
+    mod = esp32_tree
+    build_dir = build_esp32_parts_into(mod, "board_c")
+
+    calls = []
+
+    def recording_esptool(argv):
+        calls.append(argv)
+        out = Path(argv[argv.index("-o") + 1])
+        out.write_bytes(b"\xff" * 0x1000 + b"\xe9" + b"\x00" * 512)
+        return 0
+
+    mod.merge_esp32_image("board_c", runner=recording_esptool)
+
+    assert len(calls) == 1
+    argv = calls[0]
+
+    assert argv[0:3] == ["esptool", "--chip", "esp32"]
+    assert argv[3] == "merge-bin"
+    assert "merge_bin" not in argv   # the deprecated underscored spelling
+
+    assert argv[argv.index("--flash-mode") + 1] == "dio"
+    assert argv[argv.index("--flash-freq") + 1] == "40m"
+    assert argv[argv.index("--flash-size") + 1] == "4MB"
+
+    # Offset/path pairs, in the documented ESP32_MERGE_LAYOUT order.
+    tail = argv[argv.index("--flash-size") + 2:]
+    pairs = list(zip(tail[0::2], tail[1::2]))
+    assert pairs == [
+        ("0x1000", str(build_dir / "bootloader.bin")),
+        ("0x8000", str(build_dir / "partitions.bin")),
+        ("0xe000", str(mod.BOOT_APP0_PATH)),
+        ("0x10000", str(build_dir / "firmware.bin")),
+    ]
+
+
 # --- plan_entry / release dispatch on method -----------------------------
 
 def test_release_bundles_an_esp32_env_as_the_merged_image(esp32_tree, monkeypatch):
@@ -259,6 +300,43 @@ def test_release_rejects_an_esp32_env_missing_boot_app0(esp32_tree, monkeypatch)
 
     with pytest.raises(mod.BundleError, match="boot_app0"):
         mod.release(["board_c"], builder=builder)
+
+
+def test_release_checks_esp32_image_format_before_identity(esp32_tree, monkeypatch):
+    """Mirrors test_a_binary_that_fails_validation_stops_the_whole_release's
+    technique for the DFU path: firmware.bin here carries none of the
+    FW_PROJECT_NAME/FW_VERSION/BOARD_ID strings check_identity() looks for,
+    AND the merged image is missing its format magic byte, so BOTH checks
+    would fail if reached. Only the check that runs first ever raises.
+
+    A version with valid identity strings would not prove anything here --
+    check_identity() would then pass silently regardless of which check ran
+    first, and the observed error would be the format error either way. Only
+    making both fail lets the assertion tell the two orderings apart.
+    """
+    mod = esp32_tree
+
+    def builder(env, pio):
+        build_dir = mod.FIRMWARE / ".pio" / "build" / env
+        build_dir.mkdir(parents=True, exist_ok=True)
+        (build_dir / "bootloader.bin").write_bytes(b"\xe9" + b"\x11" * 256)
+        (build_dir / "partitions.bin").write_bytes(b"\x00" * 128)
+        # No identity strings at all -- see the docstring above.
+        (build_dir / "firmware.bin").write_bytes(b"\x00" * 2048)
+
+    def bad_esptool(argv):
+        out = Path(argv[argv.index("-o") + 1])
+        # Missing the ESP image magic byte at 0x1000.
+        out.write_bytes(b"\xff" * 0x1000 + b"\x00" + b"\x00" * 512)
+        return 0
+    monkeypatch.setattr(mod, "_run_esptool", bad_esptool)
+
+    with pytest.raises(mod.BundleError) as exc_info:
+        mod.release(["board_c"], builder=builder)
+
+    msg = str(exc_info.value)
+    assert "0xE9" in msg or "magic" in msg or "0x1000" in msg
+    assert "does not contain" not in msg   # would mean check_identity() ran first
 
 
 def build_into(mod, env: str, stamp: str = STAMP_A, board: str | None = None):
