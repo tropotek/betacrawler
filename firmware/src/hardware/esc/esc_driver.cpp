@@ -1,3 +1,17 @@
+#include "hardware/esc/esc_driver.h"
+#include "core/registry.h"
+#include "config.h"
+
+// The body (not just the class) must be guarded: PlatformIO compiles every
+// .cpp under src/ as its own translation unit no matter what includes it, so
+// an unguarded file here would still demand ESC_PIN/ESC_TIMER -- and drag in
+// the STM32-only <HardwareTimer.h> -- on any board that never defines them.
+// Same trap wifi_driver.cpp documents its own guard against, first hit for
+// real by esp32_wroom32 (FEATURE_ESC off, no ESC hardware on a bare
+// WROOM-32 dev board, and no ESP32 timer-PWM counterpart written for this
+// module).
+#if FEATURE_ESC
+
 #include <Arduino.h>
 #include <HardwareTimer.h>
 #include <new>
@@ -10,10 +24,6 @@
 // go through Arduino's pinMode/timer_->setMode), so undefining it here is
 // safe and confined to this one translation unit.
 #undef MODE_INPUT
-
-#include "hardware/esc/esc_driver.h"
-#include "core/registry.h"
-#include "config.h"
 
 #ifndef ESC_PIN
 #error "FEATURE_ESC is on but the board header defines no ESC_PIN"
@@ -199,3 +209,5 @@ void EscDriver::readTelemetry(core::TlmValue* out) {
 }
 
 }  // namespace esc
+
+#endif  // FEATURE_ESC

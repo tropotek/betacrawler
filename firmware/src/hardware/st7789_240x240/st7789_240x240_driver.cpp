@@ -1,14 +1,22 @@
-#include <Arduino.h>
-#include <Arduino_GFX_Library.h>
-#include "FreeSans9pt7b.h"   // must follow Arduino_GFX_Library.h
-#include <stdio.h>
-#include <string.h>
-
 #include "hardware/st7789_240x240/st7789_240x240_driver.h"
 #include "core/boot_log.h"
 #include "core/tlm_format.h"
 #include "core/version.h"
 #include "config.h"
+
+// The body (not just the class) must be guarded: PlatformIO compiles every
+// .cpp under src/ as its own translation unit no matter what includes it, so
+// an unguarded file here would still demand DISPLAY_DC/DISPLAY_RST on any
+// board that never defines them. Same trap wifi_driver.cpp documents its own
+// guard against, first hit for real by esp32_wroom32 (FEATURE_ST7789_240X240
+// off, no panel wired to a bare WROOM-32 dev board).
+#if FEATURE_ST7789_240X240
+
+#include <Arduino.h>
+#include <Arduino_GFX_Library.h>
+#include "FreeSans9pt7b.h"   // must follow Arduino_GFX_Library.h
+#include <stdio.h>
+#include <string.h>
 
 #ifndef DISPLAY_DC
 #error "FEATURE_ST7789_240X240 is on but the board header defines no DISPLAY_DC"
@@ -503,3 +511,5 @@ void St7789Driver::drawButton(bool pressed) {
 }
 
 }  // namespace st7789
+
+#endif  // FEATURE_ST7789_240X240

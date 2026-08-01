@@ -30,7 +30,18 @@ static ParamId  g_tlmRateId = kNoParam;
 // Space between the heap top and the current stack -- the cheapest "is this
 // build about to run out of RAM" signal there is, and worth capturing at boot
 // before anything has had a chance to grow.
+//
+// STM32's Arduino core declares sbrk() nowhere public, so this file has
+// always had to declare it itself. The ESP32 core's own <unistd.h> (dragged
+// in transitively by Arduino.h -> HardwareSerial.h -> ... on that platform)
+// already declares it as `void* sbrk(ptrdiff_t)` -- a different but
+// compatible signature -- so redeclaring it as `char* sbrk(int)` there is a
+// conflicting-declaration error, not a no-op. Use whichever the platform
+// already provides instead of re-declaring on ESP32; the (char*) cast below
+// works against either return type.
+#if !FW_MCU_ESP32
 extern "C" char* sbrk(int incr);
+#endif
 static int freeRamBytes() {
   char top;
   return (int)(&top - (char*)sbrk(0));

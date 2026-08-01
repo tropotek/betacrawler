@@ -1,9 +1,18 @@
 #include "hardware/rx/rx_driver.h"
 #include "core/boot_log.h"
 #include "core/led_curve.h"
+#include "config.h"
+
+// The body (not just the class) must be guarded: PlatformIO compiles every
+// .cpp under src/ as its own translation unit no matter what includes it, so
+// an unguarded file here would still demand RX_RX_PIN/RX_TX_PIN/RX_BAUD on
+// any board that never defines them. Same trap wifi_driver.cpp documents its
+// own guard against, first hit for real by esp32_wroom32 (FEATURE_RX off, no
+// receiver wired to a bare WROOM-32 dev board).
+#if FEATURE_RX
+
 #include <Arduino.h>
 #include <HardwareSerial.h>
-#include "config.h"
 
 #ifndef RX_RX_PIN
 #error "FEATURE_RX is on but the board header defines no RX_RX_PIN"
@@ -298,3 +307,5 @@ void RxDriver::readTelemetry(core::TlmValue* out) {
 }
 
 }  // namespace rx
+
+#endif  // FEATURE_RX

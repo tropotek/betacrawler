@@ -31,6 +31,19 @@ static uint16_t crossfireRfRateHz(uint8_t idx) {
 // out-of-range default below. D250/D500 (10/11) are ELRS's own
 // link-adaptive modes; the value stored is their nominal ceiling rate, not a
 // live figure -- `rate` is where the actual live throughput lives.
+// kProtocols (below) is a plain value table compiled in every environment --
+// native included, always against blackpill_f411ce.h, which defines this --
+// and by every Arduino env regardless of FEATURE_RX, since this file (unlike
+// rx_driver.cpp) carries no #if FEATURE_RX guard: descriptor TUs are meant to
+// stay hardware-agnostic. rx_driver.cpp's own #ifndef RX_BAUD check is what
+// actually enforces "the board header must define this when FEATURE_RX is
+// on"; this fallback only covers a board with no receiver wired up at all
+// (e.g. esp32_wroom32, FEATURE_RX off), where the value is never read by any
+// running code.
+#ifndef RX_BAUD
+#define RX_BAUD 420000
+#endif
+
 static uint16_t elrsRfRateHz(uint8_t idx) {
   static const uint16_t kHz[] = {
     0,     // 0 -- not offered by this TX/RX pairing, unconfirmed
