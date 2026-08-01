@@ -476,8 +476,19 @@ document.addEventListener('alpine:init', () => {
 
     async refreshPorts() {
       try {
-        this.ports = await Api.ports();
+        const ports = await Api.ports();
+        // Only reassign when the list actually changed. This runs on the
+        // Firmware page's 1.5s poll now, and swapping the array every tick
+        // would re-render both port <select>s continuously -- which, apart
+        // from the churn, can drop the option the user just chose.
+        if (JSON.stringify(ports) !== JSON.stringify(this.ports)) this.ports = ports;
         const stillThere = (port) => this.ports.some((p) => p.port === port);
+        // A port is only PRESELECTED when `match` recognizes it (link.py's
+        // _KNOWN_BOARDS). Nothing recognized means nothing selected -- never
+        // ports[0] as a fallback: flashing is destructive, and an honest
+        // disabled button plus a "pick a port" hint beats silently aiming at
+        // whatever happened to enumerate first. Any listed port can still be
+        // picked by hand, recognized or not.
         if (!stillThere(this.selectedPort)) {
           this.selectedPort = this.ports.find((p) => p.match)?.port || null;
         }
@@ -921,7 +932,16 @@ function setDfuPolling(on) {
     store.refresh();
     store.refreshPorts();
     store.pollDfu();
-    dfuPollTimer = setInterval(() => store.pollDfu(), 1500);
+    // Ports are polled alongside DFU status, not just on page entry: plugging
+    // a board in AFTER opening this page is the normal sequence, and without
+    // this the picker would keep showing the old list until you navigated
+    // away and back. /api/ports is a pyserial enumeration -- no subprocess,
+    // unlike the dfu-util call behind pollDfu() -- so it rides the same
+    // cadence for free.
+    dfuPollTimer = setInterval(() => {
+      store.pollDfu();
+      store.refreshPorts();
+    }, 1500);
   } else if (!on && dfuPollTimer) {
     clearInterval(dfuPollTimer);
     dfuPollTimer = null;

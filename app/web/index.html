@@ -502,6 +502,14 @@
             <select id="fw-port" class="form-select form-select-sm w-auto"
                     x-show="$store.firmware.selectedMethod === 'esptool'"
                     x-model="$store.firmware.selectedPort">
+              <!-- A real "nothing chosen" option, first and NOT disabled.
+                   With no matching option a browser selects the first
+                   non-disabled one by itself (the HTML reset algorithm), so
+                   without this the picker would show an arbitrary port while
+                   the store held null -- a dead Flash button next to what
+                   looks like a valid choice. Disabling it would just hand
+                   that role to the first real port instead. -->
+              <option value="">Select a port…</option>
               <template x-for="p in $store.firmware.ports" :key="p.port">
                 <option :value="p.port" x-text="$store.firmware.portLabel(p)"></option>
               </template>
@@ -512,6 +520,14 @@
             <span class="text-secondary small"
                   x-show="$store.firmware.selectedMethod !== 'esptool' && !$store.firmware.dfuPresent">
               The board must be in DFU mode first.
+            </span>
+            <!-- The esptool counterpart of that hint: nothing is preselected
+                 unless a port is recognized, and a board this template does
+                 not know by VID/PID (a CH340 clone, say) is still perfectly
+                 flashable once picked by hand. -->
+            <span id="fw-port-hint" class="text-secondary small"
+                  x-show="$store.firmware.selectedMethod === 'esptool' && !$store.firmware.selectedPort">
+              Pick the port your ESP32 is on.
             </span>
           </div>
 
@@ -586,10 +602,17 @@
                 <select id="fw-upload-port" class="form-select form-select-sm w-auto"
                         x-show="$store.firmware.uploadTarget === 'esptool'"
                         x-model="$store.firmware.uploadPort">
+                  <!-- See #fw-port above for why this placeholder is first
+                       and not disabled. -->
+                  <option value="">Select a port…</option>
                   <template x-for="p in $store.firmware.ports" :key="p.port">
                     <option :value="p.port" x-text="$store.firmware.portLabel(p)"></option>
                   </template>
                 </select>
+                <span id="fw-upload-port-hint" class="text-secondary small"
+                      x-show="$store.firmware.uploadTarget === 'esptool' && !$store.firmware.uploadPort">
+                  Pick the port your ESP32 is on.
+                </span>
               </div>
               <button id="fw-upload" class="btn btn-outline-danger btn-sm"
                       :disabled="!$store.firmware.canUpload">
