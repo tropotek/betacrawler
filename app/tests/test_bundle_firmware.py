@@ -436,6 +436,30 @@ def test_releases_every_named_env_into_one_manifest(tree):
     assert manifest(mod)["images"][1]["built"] == STAMP_B
 
 
+def test_release_resolves_run_build_at_call_time(tree, monkeypatch):
+    """`builder` must be looked up when the function RUNS, not bound as a
+    def-time default.
+
+    A `builder=run_build` default captures the function object at import, so
+    `monkeypatch.setattr(mod, "run_build", fake)` has no effect on any caller
+    that omits `builder=` -- which would shell out to a real PlatformIO from
+    a test. merge_esp32_image() already resolves its `runner` this way; these
+    two are what were left behind.
+    """
+    mod = tree
+    monkeypatch.setattr(mod, "run_build", builder_for(mod))
+    monkeypatch.setattr(mod, "find_pio", lambda: "/nonexistent/pio")
+    entries, _ = mod.release(["board_a"], dry_run=True)
+    assert [e["board"] for e in entries] == ["board_a"]
+
+
+def test_plan_entry_resolves_run_build_at_call_time(tree, monkeypatch):
+    mod = tree
+    monkeypatch.setattr(mod, "run_build", builder_for(mod))
+    entry = mod.plan_entry("board_a", pio="/nonexistent/pio")
+    assert entry["board"] == "board_a"
+
+
 def test_no_envs_falls_back_to_the_default(tree, monkeypatch):
     """The zero-argument form documented in CLAUDE.md and readme.md."""
     mod = tree

@@ -508,7 +508,7 @@ def prune(old: dict, new: dict) -> list[Path]:
 
 
 def plan_entry(env: str, force: bool = False, build: bool = True,
-               pio: str | None = None, builder=run_build) -> dict:
+               pio: str | None = None, builder=None) -> dict:
     """Build and validate one env, and return its manifest entry.
 
     Deliberately writes NOTHING under app/firmware/. Separating "work out what
@@ -518,8 +518,13 @@ def plan_entry(env: str, force: bool = False, build: bool = True,
 
     `builder` is injected the same way `SerialLink` takes `open_port` and
     `DfuFlasher` takes `runner` -- it is the one call that needs a toolchain,
-    so the tests replace it and exercise everything else for real.
+    so the tests replace it and exercise everything else for real. Resolved
+    to run_build INSIDE the body, exactly as merge_esp32_image() resolves its
+    `runner`: a `builder=run_build` default would bind the function object at
+    def-time, so a `monkeypatch.setattr(mod, "run_build", fake)` would be
+    silently ignored by any caller that omits `builder=`.
     """
+    builder = builder or run_build
     method = method_for(env)
     bin_path = bin_path_for(env)
 
@@ -599,13 +604,17 @@ def plan_entry(env: str, force: bool = False, build: bool = True,
 
 def release(envs: list[str], dry_run: bool = False, force: bool = False,
             build: bool = True, pio: str | None = None, add: bool = False,
-            builder=run_build) -> tuple[list[dict], list[Path]]:
+            builder=None) -> tuple[list[dict], list[Path]]:
     """Build every env, then write the bundle. Returns (entries, pruned).
 
     Nothing under app/firmware/ is touched until all of `envs` have built and
     validated -- see the module docstring for why that ordering is the point
     of this function rather than an implementation detail.
+
+    `builder` resolves to run_build inside the body, not as a default -- see
+    plan_entry() for why that distinction is not cosmetic.
     """
+    builder = builder or run_build
     envs = list(envs) or [DEFAULT_ENV]
     dupes = sorted({e for e in envs if envs.count(e) > 1})
     if dupes:
@@ -706,14 +715,9 @@ def main() -> int:
     envs = all_board_envs() if args.all else args.envs
 
     try:
-        # builder=run_build passed explicitly: release()'s own default for
-        # that parameter is bound at module-load time (the same footgun
-        # merge_esp32_image()'s docstring calls out for `runner`), so a
-        # test's monkeypatch.setattr(mod, "run_build", fake) would silently
-        # have no effect without this call-time lookup of the global name.
         entries, pruned = release(envs, dry_run=args.dry_run,
                                   force=args.force, build=not args.no_build,
-                                  pio=args.pio, add=args.add, builder=run_build)
+                                  pio=args.pio, add=args.add)
     except BundleError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
