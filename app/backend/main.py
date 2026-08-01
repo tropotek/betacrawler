@@ -277,6 +277,23 @@ def create_app(device: DeviceModel | None = None,
         if device.status().get("port") == port:
             device.disconnect()
 
+    def _start_flash(path: Path, label: str, method: str, port: str | None) -> None:
+        """The one place that knows how an esptool flash differs from a DFU one.
+
+        Both flash routes (bundled catalog image and Advanced upload) reach
+        the same three decisions -- is a port required, does the link need
+        releasing, which flasher runs without a DFU wait. Keeping them here
+        means a change to the esptool contract cannot land in one route and
+        be forgotten in the other.
+        """
+        if method != "esptool":
+            flash.start(path, label)
+            return
+        if not port:
+            raise FirmwareError("a port is required to flash this image")
+        _release_if_connected_on(port)
+        flash.start(path, label, flasher=esptool_flasher, wait=False, port=port)
+
     @app.get("/api/firmware/catalog")
     def firmware_catalog():
         """What this app shipped with, plus which entry suits the last board seen.
@@ -337,14 +354,7 @@ def create_app(device: DeviceModel | None = None,
         path = catalog.verify(body.id)
         img = catalog.get(body.id)
         label = f"{img['name']} {img['version']} ({img['board']})"
-        if img.get("method") == "esptool":
-            if not body.port:
-                raise FirmwareError("a port is required to flash this image")
-            _release_if_connected_on(body.port)
-            flash.start(path, label, flasher=esptool_flasher, wait=False,
-                       port=body.port)
-        else:
-            flash.start(path, label)
+        _start_flash(path, label, img.get("method", "dfu"), body.port)
         return {"ok": True, "id": body.id}
 
     @app.post("/api/firmware/flash-upload")
@@ -365,20 +375,18 @@ def create_app(device: DeviceModel | None = None,
         blob = await request.body()
         if method == "esptool":
             validate_esp32_image(blob)
-            if not port:
-                raise FirmwareError("a port is required to flash this image")
-            _release_if_connected_on(port)
         else:
             validate_dfu_image(blob)
 
         path = upload_dir / "upload.bin"
         path.write_bytes(blob)
 
-        if method == "esptool":
-            flash.start(path, filename, flasher=esptool_flasher, wait=False,
-                       port=port)
-        else:
-            flash.start(path, filename)
+        # Everything method-specific lives in _start_flash(), shared with the
+        # bundled route. A rejected flash (no port) therefore leaves the
+        # scratch file behind, which is harmless: it is a per-instance temp
+        # dir, overwritten by the next upload and never read except by the
+        # flash it belongs to.
+        _start_flash(path, filename, method, port)
         return {"ok": True, "filename": filename, "size": len(blob)}
 
     @app.post("/api/terminal")
