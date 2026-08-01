@@ -15,6 +15,19 @@
 // that driver, nothing about this timing depends on board wiring.
 static const uint32_t kFailBackoffMs = 5000;
 
+// Watchdog for a join attempt that never reaches WL_CONNECTED,
+// WL_CONNECT_FAILED or WL_NO_SSID_AVAIL -- the ESP32 WiFi stack can also
+// settle on other wl_status_t values (e.g. WL_DISCONNECTED) while a join is
+// failing, and enumerating all of them is a losing game. A flat deadline
+// catches every case that isn't one of the two explicit failure signals.
+static const uint32_t kJoinTimeoutMs = 15000;
+
+// Watchdog for an async scan whose WiFi.scanComplete() never settles
+// (>= 0 or -2). Without this, scanning_ latches true forever and every
+// later startScan() call fails with no way to recover short of a reboot.
+// Matches the STM32/AT driver's own WIFI_SCAN_TIMEOUT_MS default.
+static const uint32_t kScanTimeoutMs = 8000;
+
 namespace wifi {
 
 void WifiEsp32Driver::attach(const core::Registry& reg, const core::Params& p) {
@@ -26,6 +39,7 @@ void WifiEsp32Driver::attach(const core::Registry& reg, const core::Params& p) {
 void WifiEsp32Driver::beginJoin() {
   WiFi.begin(ssid_, password_);
   status_ = STATUS_CONNECTING;
+  joinStartedAt_ = millis();
 }
 
 void WifiEsp32Driver::begin() {
@@ -80,6 +94,13 @@ void WifiEsp32Driver::tick(uint32_t nowMs) {
       scanCount_ = 0;
       scanning_ = false;
       scanResultReady_ = true;   // report an empty result rather than wedge
+    } else if (nowMs - scanStartedAt_ > kScanTimeoutMs) {
+      // WiFi.scanComplete() never settled -- force-finish rather than latch
+      // scanning_ true forever and fail every future startScan() call.
+      WiFi.scanDelete();
+      scanCount_ = 0;
+      scanning_ = false;
+      scanResultReady_ = true;
     }
   }
 
@@ -91,11 +112,19 @@ void WifiEsp32Driver::tick(uint32_t nowMs) {
       } else if (s == WL_CONNECT_FAILED || s == WL_NO_SSID_AVAIL) {
         status_ = STATUS_FAILED;
         failedAt_ = nowMs;
+      } else if (nowMs - joinStartedAt_ > kJoinTimeoutMs) {
+        // Some other wl_status_t (e.g. WL_DISCONNECTED) can also mean a
+        // failed/timed-out join -- a flat deadline catches those without
+        // trying to enumerate every value the stack might settle on.
+        status_ = STATUS_FAILED;
+        failedAt_ = nowMs;
       }
       break;
     case STATUS_CONNECTED:
       if (s != WL_CONNECTED) {
         status_ = STATUS_CONNECTING;   // WiFi.setAutoReconnect(true) is already retrying
+        rssi_ = 0;
+        ip_ = 0;
       } else {
         rssi_ = (int16_t)WiFi.RSSI();
         IPAddress ip = WiFi.localIP();
@@ -121,6 +150,7 @@ bool WifiEsp32Driver::startScan() {
   if (scanning_) return false;
   scanning_ = true;
   scanResultReady_ = false;
+  scanStartedAt_ = millis();
   WiFi.scanNetworks(true);   // async
   return true;
 }

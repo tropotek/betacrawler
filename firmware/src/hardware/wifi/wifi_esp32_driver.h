@@ -39,13 +39,15 @@ class WifiEsp32Driver : public core::Module, public core::WifiScanner {
   char ssid_[core::kMaxStrLen + 1]     = {0};
   char password_[core::kMaxStrLen + 1] = {0};
 
-  int32_t  status_   = STATUS_OFF;
-  int16_t  rssi_     = 0;
-  uint32_t ip_       = 0;
-  uint32_t failedAt_ = 0;
+  int32_t  status_       = STATUS_OFF;
+  int16_t  rssi_         = 0;
+  uint32_t ip_           = 0;
+  uint32_t failedAt_     = 0;
+  uint32_t joinStartedAt_ = 0;
 
   bool          scanning_        = false;
   bool          scanResultReady_ = false;
+  uint32_t      scanStartedAt_   = 0;
   EspScanResult scanResults_[kMaxScanResults];
   uint8_t       scanCount_ = 0;
 };
