@@ -67,7 +67,7 @@ const Api = {
   firmwareCatalog: ()    => Api.get('/api/firmware/catalog'),
   dfuStatus: ()          => Api.get('/api/firmware/dfu-status'),
   enterDfu:  ()          => Api.send('POST', '/api/firmware/enter-dfu'),
-  flashBundled: (id)     => Api.send('POST', '/api/firmware/flash', { id }),
+  flashBundled: (id, port) => Api.send('POST', '/api/firmware/flash', port ? { id, port } : { id }),
   // The image goes up as the raw request body, not multipart: that keeps the
   // backend free of a python-multipart dependency. Takes bytes rather than the
   // File itself even though fetch would accept a File as a body directly --
@@ -368,6 +368,8 @@ document.addEventListener('alpine:init', () => {
     phase: 'idle',        // idle | waiting | flashing | done | error
     pct: 0,
     op: null,
+    ports: [],
+    selectedPort: null,
 
     // Connection state is mirrored in here rather than read from the
     // module-level `connected`/`deviceInfo`. Those are plain variables, and
@@ -414,9 +416,25 @@ document.addEventListener('alpine:init', () => {
         && (this.device.caps || []).includes('dfu');
     },
 
+    get selectedImage() {
+      return this.images.find((i) => i.id === this.selected) || null;
+    },
+
+    get selectedMethod() {
+      return this.selectedImage?.method || 'dfu';
+    },
+
+    // Hides the DFU-mode badge/polling text when the catalog has no
+    // dfu-method image at all -- an ESP32-only bundle, say -- rather than
+    // showing DFU-specific chrome that can never apply to anything selected.
+    get hasDfuImages() {
+      return this.images.some((i) => i.method !== 'esptool');
+    },
+
     get canFlash() {
-      const img = this.images.find((i) => i.id === this.selected);
-      return !!img && img.available && this.dfuPresent && !this.busy;
+      const img = this.selectedImage;
+      if (!img || !img.available || this.busy) return false;
+      return img.method === 'esptool' ? !!this.selectedPort : this.dfuPresent;
     },
 
     get statusText() {
@@ -440,6 +458,20 @@ document.addEventListener('alpine:init', () => {
         // Only preselect; never override a choice already made by hand.
         if (!this.selected && cat.recommended) this.selected = cat.recommended;
       } catch (e) { showError(e.message); }
+    },
+
+    portLabel(p) {
+      return portOptionLabel(p);
+    },
+
+    async refreshPorts() {
+      try {
+        this.ports = await Api.ports();
+        const stillThere = (port) => this.ports.some((p) => p.port === port);
+        if (!stillThere(this.selectedPort)) {
+          this.selectedPort = this.ports.find((p) => p.match)?.port || null;
+        }
+      } catch { /* backend restarting; the next page-enter retries */ }
     },
 
     async pollDfu() {
@@ -557,6 +589,18 @@ function alpineNextTick() {
 }
 
 // --- wiring ----------------------------------------------------------------
+function portOptionLabel(p) {
+  // Every board this template's `match` heuristic doesn't recognize (not
+  // one of link.py's _KNOWN_BOARDS) used to render as a bare path,
+  // indistinguishable from this environment's own placeholder serial
+  // ports (or any other port with nothing plugged in). Any port with a
+  // real USB descriptor at least proves *something* is actually
+  // connected there, which is worth surfacing even without a name for it.
+  return p.board ? `${p.port} (${p.board})`
+    : p.vid ? `${p.port} (USB ${p.vid}:${p.pid})`
+    : p.port;
+}
+
 async function refreshPorts() {
   const ports = await Api.ports();
   const sel = el('port');
@@ -576,15 +620,7 @@ async function refreshPorts() {
   for (const p of ports) {
     const o = document.createElement('option');
     o.value = p.port;
-    // Every board this template's `match` heuristic doesn't recognize (not
-    // one of link.py's _KNOWN_BOARDS) used to render as a bare path,
-    // indistinguishable from this environment's own placeholder serial
-    // ports (or any other port with nothing plugged in). Any port with a
-    // real USB descriptor at least proves *something* is actually
-    // connected there, which is worth surfacing even without a name for it.
-    o.textContent = p.board ? `${p.port} (${p.board})`
-      : p.vid ? `${p.port} (USB ${p.vid}:${p.pid})`
-      : p.port;
+    o.textContent = portOptionLabel(p);
     sel.appendChild(o);
     // First match wins -- ports.some() below already lets an existing
     // selection take priority over this, so this only matters on first
@@ -870,6 +906,7 @@ function setDfuPolling(on) {
   if (on && store && !dfuPollTimer) {
     store.syncDevice(connected, deviceInfo);
     store.refresh();
+    store.refreshPorts();
     store.pollDfu();
     dfuPollTimer = setInterval(() => store.pollDfu(), 1500);
   } else if (!on && dfuPollTimer) {
@@ -905,7 +942,7 @@ el('fw-flash').addEventListener('click', async () => {
   store.begin();
   firmwareLog(`> flash ${img.id}`);
   try {
-    await Api.flashBundled(img.id);
+    await Api.flashBundled(img.id, img.method === 'esptool' ? store.selectedPort : undefined);
   } catch (e) {
     // Progress arrives over the WebSocket, but a request rejected outright
     // (bad checksum, another flash already running) never gets that far.

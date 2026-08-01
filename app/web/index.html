@@ -424,7 +424,7 @@
             <!-- Two independent facts, so they get two badges: whether a board
                  is in DFU mode is knowable with no serial connection at all. -->
             <div class="d-flex gap-2 align-items-center">
-              <span class="badge"
+              <span class="badge" x-show="$store.firmware.hasDfuImages"
                     :class="$store.firmware.dfuPresent ? 'text-bg-warning' : 'text-bg-secondary'"
                     x-text="$store.firmware.dfuPresent ? 'DFU mode' : 'no DFU device'"></span>
             </div>
@@ -491,11 +491,26 @@
                  firmware built without FEATURE_DFU (or predating it entirely)
                  would just answer an error. -->
             <button id="fw-enter-dfu" class="btn btn-outline-secondary"
+                    x-show="$store.firmware.selectedMethod !== 'esptool'"
                     :disabled="!$store.firmware.canEnterDfu"
                     x-text="$store.firmware.dfuPresent ? 'Already in DFU mode' : 'Reboot to DFU'"></button>
+
+            <!-- Unlike a Black Pill in DFU mode, an ESP32 in its ROM
+                 bootloader has no distinct USB identity to detect -- there
+                 is no dfu-status equivalent to poll, so the port has to be
+                 picked explicitly. -->
+            <select id="fw-port" class="form-select form-select-sm w-auto"
+                    x-show="$store.firmware.selectedMethod === 'esptool'"
+                    x-model="$store.firmware.selectedPort">
+              <template x-for="p in $store.firmware.ports" :key="p.port">
+                <option :value="p.port" x-text="$store.firmware.portLabel(p)"></option>
+              </template>
+            </select>
+
             <button id="fw-flash" class="btn btn-danger"
                     :disabled="!$store.firmware.canFlash">Flash selected firmware</button>
-            <span class="text-secondary small" x-show="!$store.firmware.dfuPresent">
+            <span class="text-secondary small"
+                  x-show="$store.firmware.selectedMethod !== 'esptool' && !$store.firmware.dfuPresent">
               The board must be in DFU mode first.
             </span>
           </div>
