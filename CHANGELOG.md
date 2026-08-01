@@ -5,6 +5,31 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Version 1.0.0 (2026-07-29)
 
+- **feat(hardware): new `esp32_wroom32` firmware target.** A generic ESP32 WROOM-32 dev board,
+  using its onboard LED and onboard WiFi radio directly (`WifiEsp32Driver`, driven through
+  `WiFi.h`, not the AT-command driver the STM32 boards use to talk to an external ESP-01) — no
+  external modules wired up. Flashed via `esptool` over the board's own USB-UART bridge, never an
+  ST-Link. Required an `FW_MCU_ESP32` guard/`_esp32` counterpart for every file with an
+  STM32-specific body (`storage.cpp`, `hardware/system/system_driver.cpp`,
+  `hardware/wifi/wifi_driver.cpp`), each compiling to nothing on the other architecture rather
+  than being excluded by a per-environment `build_src_filter`. Side effect: adding those guards
+  fixed a latent `blackpill_f401ce` build break (`wifi_driver.cpp`'s body previously compiled
+  unconditionally and demanded `WIFI_RX_PIN`/`WIFI_TX_PIN`/`WIFI_BAUD`, which that board's header
+  never defined). See `docs/superpowers/specs/2026-08-01-esp32-wroom-target-design.md` /
+  `docs/superpowers/plans/2026-08-01-esp32-wroom-target.md` for the full design.
+
+- **feat(hardware): WiFi module for the ESP-01.** New `wifi` module on `blackpill_f411ce`'s
+  USART2 (`PA2`/`PA3`), independent of `rx`/`esc`'s pins. Exposes `wifi.ssid`/`wifi.password`
+  (password masked via a new generic `ParamDef.secret` schema hint, with a reveal-eye toggle in
+  the UI) plus `wifi.status`/`wifi.rssi`/`wifi.ip` telemetry (IP via a new `"ip"` display
+  renderer). SSID scan is a bespoke feature — new `Op::WifiScan` + `core::WifiScanner` seam
+  mirroring `Bootloader`/`dfu`, plus a new generic `Module::pollPush`/`Registry::pollPush`
+  unsolicited-push mechanism, results pushed as a `scan` WS frame. **Verified on hardware
+  2026-07-31**: `AT+CWLAP` scan returned real, currently-visible networks with plausible RSSI, and
+  joining a real network through the app UI produced a real IP end to end (app UI → backend →
+  firmware → ESP-01 and back), with no reset/brownout during the scan. See `_notes/plan-wifi.md` /
+  `_notes/spec-wifi.md` for the full design.
+
 - **feat(app): Configuration page fields show real descriptive help text.** New
   `app/web/field_help.js` maps each param's dotted schema key to authored copy, replacing the
   old auto-generated bound-only hint (`1–20`, `max 16 chars`). An unmapped key falls back to that

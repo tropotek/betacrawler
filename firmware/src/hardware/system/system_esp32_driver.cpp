@@ -1,4 +1,5 @@
 #include "hardware/system/system_driver.h"
+#include "config.h"
 
 #if FW_MCU_ESP32
 

@@ -1,5 +1,6 @@
 #include "hardware/wifi/wifi_driver.h"
 #include "hardware/wifi/wifi_params.h"
+#include "config.h"
 
 // This whole file is the STM32-side driver: an external ESP-01 module
 // talked to over UART with AT commands. FW_MCU_ESP32 selects
@@ -10,11 +11,14 @@
 // here would still demand WIFI_RX_PIN/WIFI_TX_PIN/WIFI_BAUD (or fail to
 // build against a different HardwareSerial constructor) on any board that
 // never defines them -- exactly what silently broke blackpill_f401ce
-// (FEATURE_WIFI off, no WIFI_* pins) until this guard was added.
+// (FEATURE_WIFI off, no WIFI_* pins) until this guard was added. This
+// compiles to no driver logic when the guard is false, not a literally
+// empty translation unit: the wifi_driver.h include above sits outside the
+// guard and still pulls in proto_at.h and <HardwareSerial.h> -- harmless on
+// an environment that never calls into this file, but present in the build.
 #if FEATURE_WIFI && !FW_MCU_ESP32
 
 #include <Arduino.h>
-#include "config.h"
 #include <ArduinoJson.h>
 #include <string.h>
 #include <stdio.h>

@@ -1,4 +1,5 @@
 #include "storage.h"
+#include "config.h"
 
 #if FW_MCU_ESP32
 
@@ -19,9 +20,11 @@ struct Header {
 };
 
 // arduino-esp32's EEPROM library emulates this many bytes of byte-addressable
-// storage inside the "eeprom" NVS partition every default partition table
-// (esp32dev's included) already reserves -- comfortably above what this
-// board ever needs (a Header plus FW_MAX_PARAMS Values, well under 1.5KB).
+// storage inside an "eeprom" NVS namespace it opens in the standard "nvs"
+// partition every default partition table (esp32dev's included) already
+// reserves -- there is no separate "eeprom" partition. Sized exactly for
+// what this board's parameter table needs (a Header plus FW_MAX_PARAMS
+// Values), not with headroom.
 static const size_t kEepromSize = sizeof(Header) + sizeof(Value) * FW_MAX_PARAMS;
 
 static uint16_t crc16(const uint8_t* d, size_t n) {
@@ -53,7 +56,7 @@ bool FlashStore::save(const core::Params& p) {
   // Unlike the STM32 buffered-EEPROM API, commit() reports failure directly
   // -- but a real integrity check requires reloading from flash, not the
   // in-RAM buffer. Call EEPROM.end() then EEPROM.begin() again to force a
-  // fresh reload from the actual "eeprom" NVS partition, making the readback
+  // fresh reload from the actual "eeprom" NVS namespace, making the readback
   // below a genuine flash round-trip, exactly like the STM32 side's
   // eeprom_buffer_fill() call.
   if (!EEPROM.commit()) return false;

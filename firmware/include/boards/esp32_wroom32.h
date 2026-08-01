@@ -25,6 +25,13 @@
 // any board with DFU off) covers this with no new code.
 #define FEATURE_DFU     0
 
+// This board's `system` module always reports temp=0.0C / vdd=0.000V on the
+// Telemetry page: the classic WROOM-32's die temperature sensor is
+// undocumented on original silicon and there is no measurable VDD rail the
+// way the STM32 boards' VREFINT trick reads (fixed onboard 3.3V regulator).
+// See system_esp32_driver.cpp. Not a sensor fault -- just not implemented on
+// this MCU.
+
 // --- pin map ----------------------------------------------------------------
 // GPIO2 is the onboard LED on most WROOM-32 devkit clones (silkscreened
 // "LED" or "D2" next to it) -- verify against your specific board once

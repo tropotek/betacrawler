@@ -1,4 +1,5 @@
 #include "storage.h"
+#include "config.h"
 
 // STM32-side body -- see storage_esp32.cpp for the ESP32 counterpart, and
 // wifi_driver.cpp's own comment (firmware/src/hardware/wifi/wifi_driver.cpp)

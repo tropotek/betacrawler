@@ -1,4 +1,5 @@
 #include "hardware/system/system_driver.h"
+#include "config.h"
 
 // STM32-side body -- see system_esp32_driver.cpp for the ESP32 counterpart,
 // and wifi_driver.cpp's own comment for why each architecture-specific file

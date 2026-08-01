@@ -23,6 +23,23 @@
 //            -D SERIAL_RX_BUFFER_SIZE=256
 //        lib_deps     = bblanchon/ArduinoJson@^7.0.4
 //
+// A non-STM32 MCU family needs more than swapping `platform`. `[env:esp32_wroom32]`
+// in platformio.ini plus `boards/esp32_wroom32.h` is a worked example -- follow that
+// pair, not this STM32-only template, when the family differs. Three things it had
+// to solve that this template doesn't cover:
+//   (a) Any shared file with an MCU-specific body (storage.cpp, system_driver.cpp,
+//       wifi_driver.cpp, ...) needs an ESP32-style twin (storage_esp32.cpp, etc.),
+//       each guarded by a new `FW_MCU_<FAMILY>` macro, if the new MCU has its own
+//       peripheral APIs the existing body can't reuse.
+//   (b) If the platform's default C++ standard is older than the rest of the tree
+//       (espressif32 defaults to gnu++11), add `-std=gnu++17` to build_flags AND
+//       `build_unflags = -std=gnu++11` -- the framework appends its own -std after
+//       build_flags, so the flag alone is silently overridden without the unflag.
+//   (c) `extra_scripts = pre:scripts/config_hash.py` -- already required for every
+//       board (editing a board header doesn't trigger a rebuild without it, since
+//       `#include BOARD_HEADER` is invisible to SCons), just easier to forget while
+//       chasing (a) and (b).
+//
 // Turning a feature on here is all that is needed to compile its module in:
 // src/modules.cpp already has the matching #if block, and the parameters,
 // telemetry fields and UI controls the module declares appear automatically

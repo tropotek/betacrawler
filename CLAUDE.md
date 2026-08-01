@@ -31,10 +31,13 @@ a description of the code today. Where it and the code disagree, the code is rig
 ~/.platformio/penv/bin/pio test -e native -f test_dispatch    # one suite only
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce            # compile for the real board
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce -t upload  # flash it (ST-Link/SWD)
+~/.platformio/penv/bin/pio run -e esp32_wroom32 -t upload     # flash the ESP32 board instead
 ~/.platformio/penv/bin/pio device monitor -b 115200           # raw serial console
 ```
 Two ST-Link/V2 units may be attached at once — if upload grabs the wrong one, add
-`upload_port = <device>` to `[env:blackpill_f411ce]`.
+`upload_port = <device>` to `[env:blackpill_f411ce]`. `esp32_wroom32` has no ST-Link involved at
+all — it flashes over its own USB-UART bridge with `esptool`, the `espressif32` platform's default
+upload path.
 
 **Backend** (from `app/`, venv already at `app/.venv/`):
 ```
