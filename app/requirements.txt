@@ -4,3 +4,4 @@ pyserial
 pytest
 httpx
 websockets
+esptool
