@@ -236,6 +236,10 @@ covers those invariants against a fixture tree with the `pio run` call injected 
 
 ## DFU
 
+The STM32 flashing mechanism, and the only one until the ESP32 target grew one (see the next
+section). Which mechanism an image uses is not inferred anywhere — it is the manifest's `method`
+field.
+
 Getting into DFU has two paths, and **both must keep working**: the `dfu` wire op (one click) and
 BOOT0+NRST by hand (for a board whose firmware is broken). That is also why the Firmware page,
 like the Terminal, is *not* in `CONNECTION_REQUIRED_PAGES` — gating the recovery tool on a working
@@ -252,6 +256,56 @@ registry would buy it nothing. Full detail: `_notes/_archive/spec-dfu-upload.md`
 nothing else. The app carries the `board` string forward from the last `hello` and says so plainly
 when it has none, rather than guessing. Any future "auto-detect the right firmware" idea runs into
 this wall first.
+
+## Flashing an ESP32 (esptool)
+
+The second flashing mechanism, dispatched off the manifest's `method` field (`"dfu"` /
+`"esptool"`). Four decisions here are worth the reasoning:
+
+**`method` lives in the manifest, not in a board-name check.** The bundler derives it once, from
+the env's `-D FW_MCU_ESP32=1` build flag in `platformio.ini` — the same macro the firmware already
+uses to guard ESP32-only driver bodies, so exactly one place in the tree says "this env is an
+ESP32". Everything downstream (bundler validation, backend flasher choice, the UI's port picker)
+reads the field. Inferring from `board` would put that knowledge in three places and let them
+drift.
+
+**An ESP32 flash needs an explicit port; a DFU flash does not.** A Black Pill in DFU mode leaves
+its serial port and reappears as a distinct USB device (`0483:df11`) that `dfu-util` finds by
+scanning USB, so the app never has to know where it was. An ESP32 never changes identity —
+`esptool` resets it into its ROM bootloader over DTR/RTS on the *same* port it speaks JSON on.
+There is nothing to poll for, so the port comes from the user, via a picker, and the `waiting`
+phase is skipped entirely. Nothing is auto-selected unless `link.py`'s `_KNOWN_BOARDS` recognizes
+it: guessing a port for a destructive write is worse than a disabled button and a hint. And
+because the app may itself be holding that port open, the route releases the link first when the
+requested port is the connected one (a connection on a *different* port is left alone).
+
+**One `FlashSession` serves both.** The invariant it exists to enforce is "one flash at a time in
+this app", not one per mechanism — two overlapping writes to a device's flash must be impossible,
+whichever tool performs them. So the flasher is chosen per call (`start(..., flasher=, wait=)`)
+rather than bound at construction, and both mechanisms share the one busy lock, the one event
+stream, and the one `{"op", "pct", "line"}` progress shape the UI already renders.
+`EsptoolFlasher` and `DfuFlasher` stay separate classes on purpose: same injected-`runner` testing
+seam, but different argv shapes, different progress formats, and independent upstream release
+cycles.
+
+**The bundler merges four artifacts into one image.** An Arduino-framework ESP32 build emits
+`bootloader.bin`, `partitions.bin`, `boot_app0.bin` and `firmware.bin` at four flash offsets.
+Shipping them as four manifest entries would push ESP32-shaped special cases into the manifest
+schema, the `Catalog`, and the UI; instead `esptool merge-bin` folds them into one file at release
+time, so an ESP32 entry has the same one-file/one-sha256 shape as an STM32 one. The cost is
+padding: the merged image is **sparse**, with `0xFF` from `0x0` to `0xFFF`, which is why its
+magic-byte check reads offset `0x1000` and not `0` — `blob[0] == 0xE9` would reject every genuine
+merged image *and* accept a bare, unbootable `firmware.bin`. The offsets and flash settings are
+hardcoded to today's `esp32dev`/4MB/DIO/40MHz config; changing the partition table means updating
+that table by hand.
+
+**Neither `esptool` invocation may rely on `PATH`.** It is a pip dependency of `app/.venv/`, and
+neither documented entry point puts that venv on `PATH` — the backend runs as
+`app/.venv/bin/uvicorn ...` (only `activate` sets `PATH`) and the bundler runs under the *system*
+`python3`. So the backend invokes the running interpreter's own `-m esptool`, and the bundler
+resolves `app/.venv/bin/esptool` before falling back to `PATH`, the same way `find_pio()` resolves
+PlatformIO's own venv copy first. A bare `"esptool"` argv[0] fails on a machine where esptool is
+installed perfectly correctly.
 
 ## Disconnect detection
 
