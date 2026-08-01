@@ -157,8 +157,10 @@ def all_board_envs() -> list[str]:
     envs = []
     for m in re.finditer(r'^\[env:([\w-]+)\]', ini, re.M):
         env = m.group(1)
-        block = re.search(rf'^\[env:{re.escape(env)}\](.*?)(?=^\[|\Z)', ini, re.M | re.S)
-        if block and re.search(r"-D\s+BOARD_HEADER\s*=", block.group(1)):
+        # _env_block() raises if the env has no section at all, but every
+        # name here just came from a regex match against this same file, so
+        # that can't happen in practice.
+        if re.search(r"-D\s+BOARD_HEADER\s*=", _env_block(env)):
             envs.append(env)
     return envs
 
