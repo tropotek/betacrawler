@@ -126,6 +126,14 @@ def test_validate_esp32_accepts_a_plausible_merged_image():
     validate_esp32_image(make_esp32_image())
 
 
+def test_validate_esp32_accepts_an_image_larger_than_the_stm32_flash():
+    # A real merged ESP32 image (bootloader + partition table + boot_app0.bin
+    # + app) is routinely 800KB+ -- this project's own esp32_wroom32 build
+    # measures 826432 bytes. MAX_IMAGE (512KB) is the STM32F411's flash size
+    # and must NOT be applied here, or every real upload gets rejected.
+    validate_esp32_image(make_esp32_image(size=826_432))
+
+
 def test_validate_esp32_rejects_a_magic_byte_at_offset_zero_only():
     blob = bytearray(make_esp32_image())
     blob[0] = 0xe9

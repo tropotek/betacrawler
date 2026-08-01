@@ -105,9 +105,13 @@ def validate_esp32_image(blob: bytes) -> None:
         raise FirmwareError(
             f"image is only {len(blob)} bytes -- too small to contain a "
             f"bootloader image at offset 0x{ESP32_IMAGE_MAGIC_OFFSET:x}")
-    if len(blob) > MAX_IMAGE:
-        raise FirmwareError(
-            f"image is {len(blob)} bytes, larger than the 512KB flash")
+    # No upper bound here, unlike validate_dfu_image(): MAX_IMAGE (512KB) is
+    # the STM32F411's flash size, not the ESP32's. A real merged ESP32 image
+    # (bootloader + partition table + boot_app0.bin + app) is routinely
+    # 800KB+ -- this project's own esp32_wroom32 build measures 826432 bytes
+    # -- well past 512KB but nowhere near the ESP32's actual 4MB flash.
+    # check_esp32_image() in bundle_firmware.py has the same reasoning and
+    # the same absence of an upper bound.
     if blob[ESP32_IMAGE_MAGIC_OFFSET] != ESP32_IMAGE_MAGIC:
         raise FirmwareError(
             f"not a raw merged esptool image: byte at offset "
