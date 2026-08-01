@@ -96,8 +96,13 @@ static core::Inputs g_inputs;
 #if FEATURE_WIFI
 #  include "hardware/wifi/wifi_params.h"
 #  if FW_TARGET_ARDUINO
-#    include "hardware/wifi/wifi_driver.h"
-     static wifi::WifiDriver g_wifi;
+#    if FW_MCU_ESP32
+#      include "hardware/wifi/wifi_esp32_driver.h"
+       static wifi::WifiEsp32Driver g_wifi;
+#    else
+#      include "hardware/wifi/wifi_driver.h"
+       static wifi::WifiDriver g_wifi;
+#    endif
 #    define WIFI_DRV (&g_wifi)
 #  else
 #    define WIFI_DRV nullptr
