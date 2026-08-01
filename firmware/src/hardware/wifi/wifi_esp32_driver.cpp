@@ -44,6 +44,14 @@ void WifiEsp32Driver::beginJoin() {
 
 void WifiEsp32Driver::begin() {
   WiFi.mode(WIFI_STA);
+  // Not a no-op despite nothing being connected yet: real-hardware testing
+  // showed WiFi.scanNetworks() called shortly after WiFi.mode(WIFI_STA) with
+  // no disconnect() in between can leave the STA interface not fully
+  // settled, so scans complete instantly with zero (sometimes stale/cached)
+  // results instead of doing a real RF sweep. This forces the interface into
+  // a clean, ready state -- the same fix the ESP32 core's own WiFiScan
+  // example sketch uses.
+  WiFi.disconnect();
   WiFi.setAutoReconnect(true);
   if (ssid_[0] != '\0') beginJoin();
 }
