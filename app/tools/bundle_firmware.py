@@ -18,6 +18,10 @@ firmware.py serves it, and re-checks the sha256 before every write), so the
 whole value of this script is that the manifest cannot quietly describe a
 binary that isn't there. Everything below exists to enforce that.
 
+An esptool-method env (currently esp32_wroom32) bundles a merged single
+binary built from PlatformIO's four separate output files, not a copy of
+firmware.bin directly -- see merge_esp32_image().
+
 That invariant is why a multi-board run is ALL-OR-NOTHING. Every env is built
 and validated before anything is written, so a second board failing to compile
 cannot leave behind a manifest that looks like a complete release and isn't.
@@ -46,6 +50,23 @@ FIRMWARE = ROOT / "firmware"
 BUNDLE = ROOT / "app" / "firmware"
 
 DEFAULT_ENV = "blackpill_f411ce"
+
+# Real path on this machine, confirmed present. If the ESP32 platform is
+# reinstalled to a different location this needs updating -- there is no
+# portable way to derive it without invoking PlatformIO itself, which this
+# stdlib-only script deliberately avoids (see the module docstring).
+BOOT_APP0_PATH = (Path.home() / ".platformio" / "packages"
+                  / "framework-arduinoespressif32" / "tools" / "partitions"
+                  / "boot_app0.bin")
+
+# Verified against esp32dev.json (flash_size/flash_mode/f_flash) and a real
+# `esptool merge-bin` run against this project's own esp32_wroom32 build.
+ESP32_MERGE_LAYOUT = (
+    ("0x1000", "bootloader.bin"),
+    ("0x8000", "partitions.bin"),
+    ("0xe000", None),          # boot_app0.bin, resolved via BOOT_APP0_PATH
+    ("0x10000", "firmware.bin"),
+)
 
 
 def manifest_path() -> Path:
@@ -257,6 +278,51 @@ def run_build(env: str, pio: str) -> None:
         raise BundleError(f"`pio run -e {env}` failed:\n{tail}")
 
 
+def _run_esptool(argv: list[str]) -> int:
+    proc = subprocess.run(argv, capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise BundleError(
+            "esptool merge-bin failed:\n" +
+            (proc.stdout + proc.stderr).strip())
+    return proc.returncode
+
+
+def merge_esp32_image(env: str, esptool: str = "esptool", runner=None) -> Path:
+    """Fold this env's four PlatformIO build outputs into one flashable file.
+
+    `runner` is injected the same way run_build()'s `builder` param is --
+    tests replace it with something that writes a fake merged file instead
+    of shelling out to a real esptool. Resolved to _run_esptool INSIDE the
+    body (a name lookup at call time), not as the default parameter value --
+    a default of `runner=_run_esptool` would bind the function object at
+    def-time, so a test's `monkeypatch.setattr(mod, "_run_esptool", fake)`
+    would silently have no effect on any caller (like plan_entry() below)
+    that doesn't pass its own runner explicitly.
+    """
+    runner = runner or _run_esptool
+    build_dir = FIRMWARE / ".pio" / "build" / env
+    inputs = []
+    for offset, name in ESP32_MERGE_LAYOUT:
+        path = build_dir / name if name else BOOT_APP0_PATH
+        if not path.is_file():
+            raise BundleError(
+                f"{path} does not exist -- build {env} first, or (for "
+                f"boot_app0.bin) check the ESP32 Arduino platform is "
+                f"installed")
+        inputs.append((offset, path))
+
+    merged = build_dir / "merged-flash.bin"
+    argv = [esptool, "--chip", "esp32", "merge-bin", "-o", str(merged),
+            "--flash-mode", "dio", "--flash-freq", "40m", "--flash-size", "4MB"]
+    for offset, path in inputs:
+        argv += [offset, str(path)]
+
+    runner(argv)
+    if not merged.is_file():
+        raise BundleError(f"esptool merge-bin did not produce {merged}")
+    return merged
+
+
 def sources_newer_than(bin_path: Path) -> list[Path]:
     """Source files newer than the binary (empty means it looks current).
 
@@ -385,6 +451,7 @@ def plan_entry(env: str, force: bool = False, build: bool = True,
     `DfuFlasher` takes `runner` -- it is the one call that needs a toolchain,
     so the tests replace it and exercise everything else for real.
     """
+    method = method_for(env)
     bin_path = bin_path_for(env)
 
     if build:
@@ -407,9 +474,29 @@ def plan_entry(env: str, force: bool = False, build: bool = True,
             "could not read FW_PROJECT_NAME/FW_VERSION from config.h or "
             f"BOARD_ID from {header.relative_to(ROOT)}")
 
-    blob = bin_path.read_bytes()
-    check_vector_table(blob)
-    check_identity(blob, name, version, board)
+    # Format check BEFORE check_identity(), same order the pre-existing code
+    # already used for the DFU path (check_vector_table() then
+    # check_identity()) -- test_a_binary_that_fails_validation_stops_the_
+    # whole_release feeds an ELF fixture and asserts the error mentions
+    # "stack pointer", which only holds if the vector-table check still runs
+    # first. Swapping the order would instead report a missing-identity
+    # error for the same fixture, silently changing what that test proves.
+    fw_blob = bin_path.read_bytes()
+
+    if method == "esptool":
+        image_path = merge_esp32_image(env)
+        blob = image_path.read_bytes()
+        check_esp32_image(blob)
+    else:
+        image_path = bin_path
+        blob = fw_blob
+        check_vector_table(blob)
+
+    # check_identity()/embedded_build_date() scan firmware.bin -- the
+    # ESP32 app partition -- for the FW_PROJECT_NAME/FW_VERSION/BOARD_ID
+    # strings and the __DATE__ stamp, regardless of whether that's the file
+    # actually shipped.
+    check_identity(fw_blob, name, version, board)
 
     # Only meaningful under --no-build: with a build just run, the binary is
     # current by construction and a timestamp comparison can only mislead.
@@ -429,13 +516,14 @@ def plan_entry(env: str, force: bool = False, build: bool = True,
         "board": board,
         "name": name,
         "version": version,
-        "built": embedded_build_date(blob),
+        "built": embedded_build_date(fw_blob),
         "proto": proto_version(),
-        "method": "dfu",
+        "method": method,
         "file": f"{board}/{name}-{version}.bin",
         "size": len(blob),
         "sha256": hashlib.sha256(blob).hexdigest(),
         "notes": ", ".join(enabled_features(header_text)) or "no optional modules",
+        "_source": image_path,   # internal only, consumed by release() below
     }
     return entry
 
@@ -484,6 +572,11 @@ def release(envs: list[str], dry_run: bool = False, force: bool = False,
             f"they build the same board, name and version")
 
     if dry_run:
+        # Stripped here too: dry_run output is returned to the caller
+        # (potentially printed), and _source is an internal Path object that
+        # was never meant to leak past this function.
+        for _, entry in plans:
+            entry.pop("_source", None)
         return entries, []
 
     # Without --add the run IS the release, so anything the previous manifest
@@ -499,7 +592,13 @@ def release(envs: list[str], dry_run: bool = False, force: bool = False,
     for env, entry in plans:
         dest = BUNDLE / entry["file"]
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(bin_path_for(env), dest)
+        shutil.copyfile(entry["_source"], dest)
+
+    # _source is an internal Path object, not JSON-serializable and not
+    # something the manifest should carry -- stripped only now, after the
+    # copy loop above has used it.
+    for _, entry in plans:
+        entry.pop("_source", None)
 
     # After the copies, so an image this run rewrote in place is never a
     # deletion candidate.
