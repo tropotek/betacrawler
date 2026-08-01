@@ -51,10 +51,15 @@ bool FlashStore::save(const core::Params& p) {
   for (size_t i = 0; i < payloadLen; ++i)     EEPROM.write(off++, payload[i]);
 
   // Unlike the STM32 buffered-EEPROM API, commit() reports failure directly
-  // -- but the header is still read back below anyway, exactly like the
-  // STM32 side, so a partial/corrupted write is caught the same way either
-  // path.
+  // -- but a real integrity check requires reloading from flash, not the
+  // in-RAM buffer. Call EEPROM.end() then EEPROM.begin() again to force a
+  // fresh reload from the actual "eeprom" NVS partition, making the readback
+  // below a genuine flash round-trip, exactly like the STM32 side's
+  // eeprom_buffer_fill() call.
   if (!EEPROM.commit()) return false;
+
+  EEPROM.end();
+  EEPROM.begin(kEepromSize);
 
   Header check;
   uint8_t* cp = reinterpret_cast<uint8_t*>(&check);
