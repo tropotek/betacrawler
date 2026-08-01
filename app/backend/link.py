@@ -13,8 +13,18 @@ from . import protocol
 
 log = logging.getLogger(__name__)
 
-VID = 0x0483
-PID = 0x5740
+# USB VID:PID pairs for the boards this app knows how to talk to, in the
+# order the port dropdown should prefer them when auto-selecting. A CP2102
+# is a generic USB-UART bridge chip (used by plenty of things that aren't
+# this project's ESP32 board), not a project-specific ID the way the
+# STM32's own VID:PID is -- but for this template, matching on it is the
+# practical choice: a wrong guess only pre-selects the wrong port in a
+# dropdown the user can still freely override, never anything that
+# auto-connects on its own.
+_KNOWN_BOARDS = [
+    (0x0483, 0x5740, "STM32"),   # Black Pill's native USB CDC
+    (0x10C4, 0xEA60, "ESP32"),   # CP2102 bridge, e.g. esp32_wroom32's devkit
+]
 
 
 class NotConnected(Exception):
@@ -37,12 +47,17 @@ class _Pending:
 def list_candidate_ports() -> list[dict]:
     out = []
     for p in list_ports.comports():
+        board = next(
+            (name for vid, pid, name in _KNOWN_BOARDS if p.vid == vid and p.pid == pid),
+            None,
+        )
         out.append({
             "port": p.device,
             "desc": p.description,
             "vid": f"{p.vid:04x}" if p.vid else None,
             "pid": f"{p.pid:04x}" if p.pid else None,
-            "match": p.vid == VID and p.pid == PID,
+            "match": board is not None,
+            "board": board,
         })
     return out
 

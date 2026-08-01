@@ -7,7 +7,7 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| GET | `/api/ports` | — | `[{port, desc, vid, pid, match}]` |
+| GET | `/api/ports` | — | `[{port, desc, vid, pid, match, board}]` |
 | POST | `/api/connect` | `{"port": "/dev/ttyACM0"}` | status object |
 | POST | `/api/disconnect` | — | status object |
 | GET | `/api/status` | — | `{state, fw, proto, board, name, ver, built, mods}` |

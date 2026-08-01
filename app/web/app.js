@@ -557,17 +557,21 @@ async function refreshPorts() {
   for (const p of ports) {
     const o = document.createElement('option');
     o.value = p.port;
-    // Every board this template's `match` heuristic doesn't recognize (any
-    // non-STM32 board, e.g. an ESP32) used to render as a bare path,
+    // Every board this template's `match` heuristic doesn't recognize (not
+    // one of link.py's _KNOWN_BOARDS) used to render as a bare path,
     // indistinguishable from this environment's own placeholder serial
     // ports (or any other port with nothing plugged in). Any port with a
     // real USB descriptor at least proves *something* is actually
     // connected there, which is worth surfacing even without a name for it.
-    o.textContent = p.match ? `${p.port} (STM32)`
+    o.textContent = p.board ? `${p.port} (${p.board})`
       : p.vid ? `${p.port} (USB ${p.vid}:${p.pid})`
       : p.port;
     sel.appendChild(o);
-    if (p.match) matched = p.port;
+    // First match wins -- ports.some() below already lets an existing
+    // selection take priority over this, so this only matters on first
+    // load / after everything disconnects, and "first" should mean the
+    // first one actually found, not whichever matched last.
+    if (p.match && !matched) matched = p.port;
   }
   if (stillPresent) sel.value = prevValue;
   else if (matched) sel.value = matched;
