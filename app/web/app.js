@@ -482,17 +482,22 @@ document.addEventListener('alpine:init', () => {
         // would re-render both port <select>s continuously -- which, apart
         // from the churn, can drop the option the user just chose.
         if (JSON.stringify(ports) !== JSON.stringify(this.ports)) this.ports = ports;
-        const stillThere = (port) => this.ports.some((p) => p.port === port);
         // A port is only PRESELECTED when `match` recognizes it (link.py's
         // _KNOWN_BOARDS). Nothing recognized means nothing selected -- never
         // ports[0] as a fallback: flashing is destructive, and an honest
         // disabled button plus a "pick a port" hint beats silently aiming at
         // whatever happened to enumerate first. Any listed port can still be
         // picked by hand, recognized or not.
-        if (!stillThere(this.selectedPort)) {
+        //
+        // '' is the placeholder option, i.e. a deliberate "none" -- left
+        // alone, since this now re-runs every 1.5s and would otherwise undo
+        // the user's choice a moment after they made it. null (never chosen)
+        // and a port that has since vanished both get a fresh preselection.
+        const keep = (port) => port === '' || this.ports.some((p) => p.port === port);
+        if (!keep(this.selectedPort)) {
           this.selectedPort = this.ports.find((p) => p.match)?.port || null;
         }
-        if (!stillThere(this.uploadPort)) {
+        if (!keep(this.uploadPort)) {
           this.uploadPort = this.ports.find((p) => p.match)?.port || null;
         }
       } catch { /* backend restarting; the next page-enter retries */ }
