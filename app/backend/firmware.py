@@ -431,7 +431,7 @@ class FlashSession:
     must be impossible rather than unlikely.
     """
 
-    def __init__(self, flasher: DfuFlasher, on_event=None):
+    def __init__(self, flasher, on_event=None):
         self._flasher = flasher
         self._on_event = on_event or (lambda ev: None)
         self._lock = threading.Lock()
@@ -443,13 +443,30 @@ class FlashSession:
         with self._lock:
             return self._busy
 
-    def start(self, path: Path, label: str) -> None:
+    def start(self, path: Path, label: str, flasher=None, wait: bool = True,
+             **flash_kwargs) -> None:
+        """Start a flash in the background.
+
+        `flasher` defaults to the one this session was constructed with
+        (every existing DFU call site keeps working unchanged). Passing a
+        different flasher -- e.g. an EsptoolFlasher -- lets one session/one
+        busy-lock serve both mechanisms, since the two overlapping-writes
+        invariant is about "one flash at a time in this app", not "one flash
+        at a time per mechanism". `wait=False` skips the "waiting for a
+        device in DFU mode" phase entirely, for a flasher (like
+        EsptoolFlasher) with no such concept -- there is nothing to poll for
+        an ESP32's bootloader by USB identity. `flash_kwargs` are forwarded
+        to `flasher.flash(path, on_progress=..., **flash_kwargs)`, e.g.
+        `port=` for EsptoolFlasher.
+        """
         with self._lock:
             if self._busy:
                 raise FlashBusy("a firmware flash is already in progress")
             self._busy = True
         self._thread = threading.Thread(
-            target=self._run, args=(path, label), daemon=True)
+            target=self._run,
+            args=(path, label, flasher or self._flasher, wait, flash_kwargs),
+            daemon=True)
         self._thread.start()
 
     def _emit(self, phase: str, **fields):
@@ -458,17 +475,19 @@ class FlashSession:
         except Exception:
             log.exception("flash event subscriber raised")
 
-    def _run(self, path: Path, label: str):
+    def _run(self, path: Path, label: str, flasher, wait: bool, flash_kwargs: dict):
         try:
-            self._emit("waiting", line=f"waiting for a device in DFU mode ({label})")
-            if not self._flasher.wait_for_device():
-                raise FirmwareError(
-                    "no device in DFU mode. Hold BOOT0, tap NRST, release "
-                    "BOOT0, then try again.")
+            if wait:
+                self._emit("waiting", line=f"waiting for a device in DFU mode ({label})")
+                if not flasher.wait_for_device():
+                    raise FirmwareError(
+                        "no device in DFU mode. Hold BOOT0, tap NRST, release "
+                        "BOOT0, then try again.")
             self._emit("flashing", pct=0, line=f"writing {label}")
-            self._flasher.flash(
+            flasher.flash(
                 path,
-                on_progress=lambda ev: self._emit("flashing", **ev))
+                on_progress=lambda ev: self._emit("flashing", **ev),
+                **flash_kwargs)
             self._emit("done", pct=100, line="flash complete")
         except FirmwareError as exc:
             self._emit("error", line=str(exc))

@@ -517,6 +517,50 @@ def test_session_refuses_a_concurrent_flash(tmp_path):
     assert session.busy is False
 
 
+def test_session_can_flash_with_a_different_flasher_per_call(tmp_path):
+    """The esptool path: FlashSession is constructed once (with a DfuFlasher,
+    as main.py does today) but a single call can override which flasher and
+    whether to wait -- this is what lets one FlashSession/one busy-lock
+    serve both mechanisms."""
+    image = tmp_path / "merged.bin"
+    image.write_bytes(make_image())
+    calls = []
+
+    class FakeEsptoolFlasher:
+        def flash(self, path, on_progress=None, port=None):
+            calls.append(port)
+            on_progress({"op": "writing", "pct": 100, "line": "done"})
+
+    dfu = DfuFlasher(runner=runner_for(DFU_LIST))
+    events = []
+    session = FlashSession(dfu, on_event=events.append)
+
+    session.start(image, "esp32 1.0.0", flasher=FakeEsptoolFlasher(),
+                 wait=False, port="/dev/ttyUSB0")
+    _join(session)
+
+    assert calls == ["/dev/ttyUSB0"]
+    phases = [e["phase"] for e in events]
+    assert "waiting" not in phases      # wait=False skips it entirely
+    assert phases[-1] == "done"
+
+
+def test_session_wait_false_skips_the_dfu_wait_for_device_call(tmp_path):
+    image = tmp_path / "merged.bin"
+    image.write_bytes(make_image())
+
+    class NeverCallMe:
+        def wait_for_device(self, **kw):
+            raise AssertionError("wait_for_device() must not be called when wait=False")
+
+        def flash(self, path, on_progress=None):
+            on_progress({"op": "writing", "pct": 100, "line": "done"})
+
+    session = FlashSession(DfuFlasher(runner=runner_for(DFU_LIST)))
+    session.start(image, "x", flasher=NeverCallMe(), wait=False)
+    _join(session)
+
+
 def _join(session, timeout=3.0):
     deadline = time.monotonic() + timeout
     while session.busy and time.monotonic() < deadline:
