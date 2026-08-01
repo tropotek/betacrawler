@@ -148,11 +148,21 @@ def method_for(env: str) -> str:
 
 
 def all_board_envs() -> list[str]:
-    """Every [env:*] in platformio.ini that names a BOARD_HEADER, in file
-    order. `native` (and any other host-side env with no board header) is
-    excluded without a name-based blocklist, which would itself go stale --
-    exactly the kind of drift this script exists to prevent (see module
-    docstring)."""
+    """Every [env:*] in platformio.ini that is a real board target, in file
+    order. Excluded without a name-based blocklist, which would itself go
+    stale -- exactly the kind of drift this script exists to prevent (see
+    module docstring). Two structural signals, both required:
+
+    - `-D BOARD_HEADER=...` -- what board_header_path()/method_for() key off.
+    - NOT `platform = native` -- [env:native] (the host-side Unity suite)
+      deliberately DOES set BOARD_HEADER too (the real board header, per the
+      comment on that section: its fixtures must describe the actual
+      device's parameter/telemetry set), so BOARD_HEADER alone is not enough
+      to tell it apart from a shippable board env. `platform` is PlatformIO's
+      own field for which toolchain an env builds with -- board envs are
+      always `ststm32`/`espressif32`, never `native` -- so this is the same
+      kind of structural signal as BOARD_HEADER, not a hardcoded env name.
+    """
     ini = (FIRMWARE / "platformio.ini").read_text()
     envs = []
     for m in re.finditer(r'^\[env:([\w-]+)\]', ini, re.M):
@@ -160,7 +170,10 @@ def all_board_envs() -> list[str]:
         # _env_block() raises if the env has no section at all, but every
         # name here just came from a regex match against this same file, so
         # that can't happen in practice.
-        if re.search(r"-D\s+BOARD_HEADER\s*=", _env_block(env)):
+        block = _env_block(env)
+        has_board_header = re.search(r"-D\s+BOARD_HEADER\s*=", block)
+        is_native = re.search(r"^platform\s*=\s*native\s*$", block, re.M)
+        if has_board_header and not is_native:
             envs.append(env)
     return envs
 

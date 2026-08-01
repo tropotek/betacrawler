@@ -601,6 +601,23 @@ def test_all_board_envs_finds_every_env_with_a_board_header(tree):
     assert mod.all_board_envs() == ["board_a", "board_b"]
 
 
+def test_all_board_envs_excludes_native_even_with_a_board_header(tree):
+    """Regression test for the real firmware/platformio.ini shape: the real
+    [env:native] section DOES define -D BOARD_HEADER (deliberately -- the
+    native suite's fixtures need to describe the real device's parameter set,
+    per the comment on that section), so BOARD_HEADER alone can't tell it
+    apart from a shippable board env. Caught by running `--all` against the
+    real repo, where it tried (and failed) to `pio run -e native`."""
+    mod = tree
+    with (mod.FIRMWARE / "platformio.ini").open("a") as f:
+        f.write(
+            "\n[env:native]\n"
+            "platform = native\n"
+            "build_flags =\n"
+            "    -D BOARD_HEADER='\"boards/board_a.h\"'\n")
+    assert mod.all_board_envs() == ["board_a", "board_b"]
+
+
 def test_all_board_envs_includes_an_esptool_env(esp32_tree):
     mod = esp32_tree
     assert mod.all_board_envs() == ["board_a", "board_b", "board_c"]
