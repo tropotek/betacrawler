@@ -65,11 +65,11 @@ Validation splits by method:
 Manifest entries are otherwise unchanged in shape — one file, one sha256, one `size` — so
 `Catalog` in the backend needs no changes at all.
 
-## Bundler: build every board target by default
+## Bundler: an `--all` flag to build every board target
 
 Separate from ESP32 support itself, but landing in the same pass because it touches the same
 `plan_entry()` code path: `method` needs to come from *somewhere* other than a hardcoded string,
-and once it does, defaulting the bundler to build every board follows almost for free.
+and once it does, a "build every board" flag follows almost for free.
 
 **Method is derived, not hardcoded.** `plan_entry()` currently writes `"method": "dfu"`
 unconditionally, for every env. It changes to read the env's `platformio.ini` block for
@@ -77,27 +77,26 @@ unconditionally, for every env. It changes to read the env's `platformio.ini` bl
 bodies) and set `"method": "esptool"` when present, `"dfu"` otherwise — one new `method_for(env)`
 helper, parsed the same way `board_header_path()` already parses that block.
 
-**`DEFAULT_ENV` becomes "every board env with a `BOARD_HEADER`".** A new `all_board_envs()`
-parses `platformio.ini` for every `[env:*]` section that defines `-D BOARD_HEADER=...` (reusing
-the regex `board_header_path()` already applies per-env), in file order. `native` has no
-`BOARD_HEADER` — it's the host-side unit-test env, not a shippable board — so it's excluded
-without a name-based blocklist that would itself go stale, which is exactly the kind of drift
-this script's docstring already says it exists to prevent.
+**`DEFAULT_ENV` stays `blackpill_f411ce`.** Bare `python3 app/tools/bundle_firmware.py` keeps
+today's behavior unchanged — one board, the primary target, no surprise multi-board build (and no
+surprise new `esptool`/pip dependency pulled in) for anyone still running the old command out of
+habit.
 
-Bare `python3 app/tools/bundle_firmware.py` now builds and bundles every discovered board target
-(today: `blackpill_f411ce`, `blackpill_f401ce`, `esp32_wroom32`) instead of just
-`blackpill_f411ce`. Naming envs explicitly still overrides this exactly as it does today —
-`bundle_firmware.py blackpill_f411ce` still builds only that one. A new `--all` flag is added as
-an explicit, documented synonym for "no envs given", mainly so a task definition or CI invocation
-can say `--all` and have its intent readable rather than leaning on an implicit default.
+**A new `--all` flag builds every board target.** `all_board_envs()` parses `platformio.ini` for
+every `[env:*]` section that defines `-D BOARD_HEADER=...` (reusing the regex
+`board_header_path()` already applies per-env), in file order. `native` has no `BOARD_HEADER` —
+it's the host-side unit-test env, not a shippable board — so it's excluded without a name-based
+blocklist that would itself go stale, which is exactly the kind of drift this script's docstring
+already says it exists to prevent. `--all` is mutually exclusive with naming envs explicitly
+(`bundle_firmware.py --all board_a` is an argument error, not a silent override).
 
 **VS Code task.** `silkscreen.code-workspace`'s existing "Build release firmware" task (prompts
 for space-separated env names, defaulting to `blackpill_f411ce`) is left as-is for selective
 builds. A new "Build ALL release firmware" task runs `bundle_firmware.py --all` directly with no
 prompt, so building the full release set is one Tasks: Run Task away.
 
-**Docs.** The `bundle-firmware` skill's usage block and this script's own module docstring are
-updated to show the new default and `--all`.
+**Docs.** The `bundle-firmware` skill's usage block and this script's own module docstring gain a
+line for `--all`.
 
 ## Backend: `EsptoolFlasher`
 
@@ -188,8 +187,8 @@ for the manual `pio` flow.
   work ("method != dfu has no dispatch behind it") was explicitly left untested until now.
 - `method_for()` and `all_board_envs()` get direct unit tests against a fixture `platformio.ini`
   (mixed DFU/esptool envs, plus a `native`-like env with no `BOARD_HEADER` to confirm it's
-  excluded), and a `release([])`-with-no-args test confirms every discovered board env is built
-  and bundled, not just the old single default.
+  excluded), plus a `--all`-vs-explicit-envs mutual-exclusion test and a check that bare
+  `release([])` still defaults to `[DEFAULT_ENV]` only, unchanged from today.
 - Manual verification on real hardware: bundle → app UI → pick port → flash → board reboots →
   reconnect, end to end. Per this repo's standing rule, green tests alone don't close this out.
 
