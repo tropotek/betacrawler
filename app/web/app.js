@@ -487,6 +487,11 @@ document.addEventListener('alpine:init', () => {
     scanning: false,
     deviceConnected: false,
     device: {},
+    // Firmware's wifi::STATUS_CONNECTED (wifi_params.h) -- the wire carries
+    // this telemetry field as a plain number with no schema-driven name
+    // (no `fmt` renderer), so 2 has to be hardcoded here same as it is
+    // wherever the raw value already renders as-is on the Telemetry page.
+    wifiStatus: null,
 
     syncDevice(isConnected, info) {
       this.deviceConnected = isConnected;
@@ -494,11 +499,25 @@ document.addEventListener('alpine:init', () => {
       if (!isConnected) {
         this.scanning = false;
         this.results = [];
+        this.wifiStatus = null;
       }
     },
 
+    // Real-hardware-verified: scanning while the radio is already
+    // associated to an AP (wifi.status telemetry == 2) doesn't cleanly
+    // fail or wedge -- it starves the device's main loop badly enough that
+    // telemetry drops from its configured rate to roughly one frame every
+    // few seconds, and the scan itself never completes. There's no
+    // legitimate reason to scan while already joined to a network anyway,
+    // so the button is simply unavailable rather than trying to make that
+    // combination work.
+    noteWifiStatus(status) {
+      this.wifiStatus = status;
+    },
+
     get canScan() {
-      return this.deviceConnected && (this.device.caps || []).includes('wifiscan');
+      return this.deviceConnected && (this.device.caps || []).includes('wifiscan')
+        && this.wifiStatus !== 2;
     },
 
     async scan() {
@@ -923,7 +942,12 @@ el('fw-upload-file').addEventListener('change', async (ev) => {
 // IPC without this function changing at all.
 function subscribeEvents() {
   Api.subscribe((msg) => {
-    if (msg.type === 'tlm') Alpine.store('telemetry').render(msg.data);
+    if (msg.type === 'tlm') {
+      Alpine.store('telemetry').render(msg.data);
+      // Not every board has a wifi module -- only update when the field
+      // is actually present in this frame.
+      if ('wifi.status' in msg.data) Alpine.store('wifi').noteWifiStatus(msg.data['wifi.status']);
+    }
     else if (msg.type === 'state') {
       const d = msg.data;
       setState(typeof d === 'string' ? d : d.state, typeof d === 'object' ? d : null);
