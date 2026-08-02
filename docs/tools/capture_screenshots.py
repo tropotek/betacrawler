@@ -36,7 +36,8 @@ PORT = 8099
 _SRC_CHANS = [f"ch{i}" for i in range(1, 13)]
 
 SCHEMA_PARAMS = [
-    {"key": "device.name", "type": "str", "label": "Device Name", "group": "Device"},
+    {"key": "device.name", "type": "str", "label": "Device Name", "def": "silkscreen",
+     "group": "Device"},
     {"key": "tlm.rate", "type": "u8", "label": "Rate", "unit": "Hz",
      "min": 1, "max": 50, "def": 10, "group": "Telemetry"},
     {"key": "led.mode", "type": "enum", "label": "LED Mode",
@@ -44,7 +45,7 @@ SCHEMA_PARAMS = [
     {"key": "led.blink_hz", "type": "u8", "label": "Rate", "unit": "Hz",
      "min": 1, "max": 20, "def": 2, "group": "LED"},
     {"key": "servo.mode", "type": "enum", "label": "Servo",
-     "options": ["off", "hold", "sweep", "input"], "def": "sweep", "group": "Servo"},
+     "options": ["off", "hold", "sweep", "input"], "def": "off", "group": "Servo"},
     {"key": "servo.angle", "type": "u8", "label": "Angle", "unit": "°",
      "min": 0, "max": 180, "def": 90, "group": "Servo"},
     {"key": "servo.sweep_s", "type": "u8", "label": "Sweep", "unit": "s",
@@ -58,7 +59,7 @@ SCHEMA_PARAMS = [
     {"key": "esc.direction", "type": "enum", "label": "Direction",
      "options": ["unidirectional", "bidirectional"], "def": "unidirectional", "group": "ESC"},
     {"key": "esc.mode", "type": "enum", "label": "ESC",
-     "options": ["off", "armed", "input"], "def": "armed", "group": "ESC"},
+     "options": ["off", "armed", "input"], "def": "off", "group": "ESC"},
     {"key": "esc.throttle_us", "type": "u8", "label": "Throttle", "unit": "µs",
      "min": 1000, "max": 2000, "def": 1000, "group": "ESC"},
     {"key": "esc.min_us", "type": "u8", "label": "Min", "unit": "µs",
@@ -80,7 +81,7 @@ SCHEMA_PARAMS = [
     {"key": "disp.mode", "type": "enum", "label": "Display",
      "options": ["off", "on"], "def": "on", "group": "Display"},
     {"key": "disp.page", "type": "enum", "label": "Page",
-     "options": ["info", "stats", "cycle"], "def": "stats", "group": "Display"},
+     "options": ["info", "stats", "cycle"], "def": "info", "group": "Display"},
     {"key": "disp.rate", "type": "u8", "label": "Refresh", "unit": "Hz",
      "min": 1, "max": 10, "def": 2, "group": "Display"},
     {"key": "wifi.ssid", "type": "str", "label": "SSID", "group": "WiFi"},
@@ -154,7 +155,7 @@ def push_telemetry(fake, stop_event):
     start = time.monotonic()
     while not stop_event.wait(0.2):
         t = time.monotonic() - start
-        frame = {"up": int(t * 1000), "clk": 96, "ram": 41.2, "temp": 34.5, "vdd": 3300,
+        frame = {"up": int(t * 1000), "clk": 96, "ram": 42189, "temp": 34.5, "vdd": 3300,
                  "btn": 0, "srv": 1500, "esc": 1500, "arm": 2,
                  "wifi.status": 1, "wifi.rssi": -52, "wifi.ip": 0xC0A80042,
                  "link": 1, "lq": 99, "rssi": -61, "rate": 150, "err": 0,
@@ -195,7 +196,14 @@ def main():
         for name in ("home", "config", "telemetry", "terminal", "firmware", "help"):
             page.click(f"[data-page='{name}']")
             page.wait_for_timeout(300)
-            page.screenshot(path=str(out_dir / f"{name}.png"))
+            # config.png feeds readme.md's hero gallery and needs to sell the
+            # project at a glance, so it captures the whole scrollable form
+            # (all 9 module groups) rather than just the first screenful.
+            # The other five fit their content within one 1280x900 viewport
+            # already, so leaving them viewport-only keeps the gallery's
+            # thumbnails a consistent size.
+            full_page = name == "config"
+            page.screenshot(path=str(out_dir / f"{name}.png"), full_page=full_page)
         browser.close()
 
     stop_event.set()
