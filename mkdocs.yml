@@ -1,0 +1,54 @@
+site_name: silkscreen
+site_description: A Betaflight-Configurator-style tool for small microcontroller boards, and a template to fork for your own.
+site_url: https://tropotek.github.io/silkscreen/
+repo_url: https://github.com/tropotek/silkscreen
+repo_name: tropotek/silkscreen
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Guides:
+      - Adding a Board: guides/adding-a-board.md
+      - Wiring the Display: guides/wiring-the-display.md
+      - Shipping a Release: guides/shipping-a-release.md
+  - Modules:
+      - Overview: modules/overview.md
+      - LED: modules/led.md
+      - Button: modules/button.md
+      - Servo: modules/servo.md
+      - ESC: modules/esc.md
+      - RX (Receiver): modules/rx.md
+      - Display (ST7789): modules/display.md
+      - WiFi: modules/wifi.md
+      - Adding Your Own Module: modules/adding-your-own-module.md
+  - Reference:
+      - Architecture: architecture.md
+      - API / Wire Protocol: api.md
+  - Troubleshooting: troubleshooting.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true

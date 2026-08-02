@@ -20,6 +20,10 @@ venv/
 .pytest_cache/
 .ruff_cache/
 
+# MkDocs docs site: local tool venv and build output, not source.
+docs/.venv/
+site/
+
 # KiCad (hardware/) local caches & backups -- not project source
 *.kicad_prl
 *-backups/
