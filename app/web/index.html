@@ -466,7 +466,7 @@
                              :id="'fw-' + img.id" :value="img.id" :disabled="!img.available"
                              x-model="$store.firmware.selected">
                       <label class="form-check-label w-100" :for="'fw-' + img.id">
-                        <span class="fw-semibold" x-text="`${img.name} ${img.version}`"></span>
+                        <span class="fw-semibold" x-text="img.board"></span>
                         <span x-show="img.id === $store.firmware.recommended"
                               class="badge text-bg-primary ms-1">recommended</span>
                         <span x-show="$store.firmware.isRunning(img)"
@@ -474,7 +474,7 @@
                         <span x-show="!img.available"
                               class="badge text-bg-danger ms-1">file missing</span>
                         <div class="text-secondary small">
-                          <div x-text="img.board"></div>
+                          <div x-text="`${img.name} ${img.version}`"></div>
                           <div x-text="`built ${img.built}`"></div>
                           <div x-text="img.notes"></div>
                         </div>
