@@ -111,7 +111,7 @@ in the docs for more.
 
 ## License
 
-Copyright (C) 2026 mick-shed
+Copyright (C) 2026 Micks Shed
 
 This program is free software: you can redistribute it and/or modify it under the terms of the
 **GNU General Public License, version 3** or (at your option) any later version, as published by
