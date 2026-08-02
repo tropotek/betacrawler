@@ -1,0 +1,30 @@
+# Servo
+
+**Type:** hardware module (`firmware/src/hardware/servo/`)
+
+Drives a hobby servo. On the reference board this is `TIM4_CH1` on `PB6`.
+
+## Board header
+
+```c
+#define SERVO_TIMER     TIM4
+#define SERVO_PIN       PB6      // TIM4_CH1
+```
+
+The timer instance is named explicitly rather than derived from the pin, so which timer a board
+claims for servo output is greppable across the codebase. The channel *is* derived from the pin —
+the two must agree, and nothing checks that for you at compile time.
+
+`SERVO_FRAME_US` is optional (defaults to 20000, i.e. 50Hz, in the driver); raise it only for a
+digital servo that documents a faster frame rate.
+
+## Power it separately
+
+**Power the servo from 5V (USB VBUS), never 3V3**, with a 470–1000µF bulk capacitor at the
+connector. A moving servo's current draw can droop VBUS far enough to reset the MCU and drop the
+USB CDC link — which shows up as a mysterious configurator disconnect, not as anything obviously
+electrical.
+
+## Turning it off
+
+Set `FEATURE_SERVO 0` in the board header and reflash.
