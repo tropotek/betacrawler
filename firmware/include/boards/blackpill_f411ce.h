@@ -15,16 +15,16 @@
 // --- features ---------------------------------------------------------------
 #define FEATURE_LED     1
 #define FEATURE_BUTTON  1
-#define FEATURE_ST7789_240X240 1
-#define FEATURE_SERVO   1
-#define FEATURE_RX      1
+#define FEATURE_ST7789_240X240 0
+#define FEATURE_SERVO   0
+#define FEATURE_RX      0
 #define FEATURE_ESC     0
-#define FEATURE_WIFI    1
+#define FEATURE_WIFI    0
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
 // bootloader in ROM, so this costs a magic word and a reset -- no bootloader
 // to flash, and nothing to erase it. Turning it off only removes the app's
 // one-click path; BOOT0 + NRST still reaches the same ROM code.
-#define FEATURE_DFU     1
+#define FEATURE_DFU     0
 
 // --- DFU --------------------------------------------------------------------
 // System-memory base, where the STM32 ROM bootloader lives. This is

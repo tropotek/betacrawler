@@ -37,20 +37,11 @@ def test_connect_then_schema_and_params(client):
 
     schema = client.get("/api/schema").json()
     assert {p["key"] for p in schema["params"]} == {
-        "led.mode", "led.blink_hz", "device.name", "tlm.rate",
-        "disp.mode", "disp.page", "disp.rate",
-        "servo.mode", "servo.angle", "servo.sweep_s",
-        "servo.min_us", "servo.max_us", "servo.src",
-        "rx.protocol", "rx.source", "crossfire.timeout_ms", "elrs.timeout_ms",
-        "wifi.ssid", "wifi.password"}
+        "led.mode", "led.blink_hz", "device.name", "tlm.rate"}
     # Telemetry descriptor rides along in the same response, so the UI renders
     # its cards from the device rather than a hardcoded field list.
     assert {t["key"] for t in schema["tlm"]} == {
-        "up", "clk", "ram", "temp", "vdd", "btn", "srv",
-        "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8",
-        "ch9", "ch10", "ch11", "ch12", "ch13", "ch14", "ch15", "ch16",
-        "link", "lq", "rssi", "rate", "err", "rfrate", "pwr",
-        "wifi.status", "wifi.rssi", "wifi.ip"}
+        "up", "clk", "ram", "temp", "vdd", "btn"}
     # Every item carries a group, so the form and the telemetry page can build
     # sections without inventing headings.
     assert all(p.get("group") for p in schema["params"])
@@ -65,17 +56,47 @@ def test_valid_set_returns_200_and_updates(client):
     assert client.get("/api/params").json()["led.blink_hz"] == 15
 
 
-def test_a_show_if_hidden_param_is_still_settable(client):
+def test_a_show_if_hidden_param_is_still_settable():
     """showIf is a display hint, not an access rule.
 
-    The board boots with servo.mode=off, so servo.src (showIf servo.mode ==
-    input) is not drawn. It must still be settable -- an INI restore writes
-    it regardless and a Terminal `set` knows nothing about what the browser
-    is rendering.
+    The real shipped schema (led + button only) has no showIf field left to
+    exercise this with, so this test wires its own minimal fake device with
+    one: mode boots at "off", so hidden (showIf mode == on) is not drawn. It
+    must still be settable -- an INI restore writes it regardless and a
+    Terminal `set` knows nothing about what the browser is rendering.
     """
-    client.post("/api/connect", json={"port": "/dev/fake"})
-    assert client.put("/api/params/servo.src", json={"val": "ch4"}).status_code == 200
-    assert client.get("/api/params").json()["servo.src"] == "ch4"
+    schema = [
+        {"key": "x.mode", "type": "enum", "options": ["off", "on"],
+         "def": "off", "label": "Mode", "group": "X"},
+        {"key": "x.hidden", "type": "u8", "min": 0, "max": 9, "def": 0,
+         "label": "Hidden", "group": "X",
+         "showIf": {"key": "x.mode", "val": "on"}},
+    ]
+    values = {"x.mode": "off", "x.hidden": 0}
+
+    def responder(req, emit):
+        op, rid = req["op"], req["id"]
+        if op == "hello":
+            emit({"id": rid, "ok": True, "fw": "silkscreen 1.0.0", "proto": 1,
+                  "board": "blackpill_f411ce"})
+        elif op == "schema":
+            emit({"id": rid, "ok": True, "params": schema, "tlm": []})
+        elif op == "getall":
+            emit({"id": rid, "ok": True, "vals": dict(values)})
+        elif op == "set":
+            values[req["key"]] = req["val"]
+            emit({"id": rid, "ok": True})
+        else:
+            emit({"id": rid, "ok": False, "err": "badop"})
+
+    fake = FakeSerial(responder=responder)
+    device = DeviceModel(SerialLink(open_port=lambda p: fake))
+    app = create_app(device)
+    with TestClient(app) as c:
+        c.post("/api/connect", json={"port": "/dev/fake"})
+        assert c.put("/api/params/x.hidden", json={"val": 4}).status_code == 200
+        assert c.get("/api/params").json()["x.hidden"] == 4
+    device.disconnect()
 
 
 def test_out_of_range_set_returns_400_with_code(client):
@@ -202,7 +223,7 @@ def test_restore_of_a_dump_round_trips_cleanly(client):
     body = client.post("/api/params/restore", json={"ini": dump}).json()
     assert body["ok"] is True
     assert body["skipped"] == []
-    assert len(body["applied"]) == 7
+    assert len(body["applied"]) == 4
 
 
 def test_restore_of_malformed_ini_returns_400(client):

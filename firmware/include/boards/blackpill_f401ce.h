@@ -23,13 +23,13 @@
 // --- features ---------------------------------------------------------------
 #define FEATURE_LED     1
 #define FEATURE_BUTTON  1
-#define FEATURE_ST7789_240X240 1
-#define FEATURE_SERVO   1
-#define FEATURE_RX      1
-#define FEATURE_ESC     1
+#define FEATURE_ST7789_240X240 0
+#define FEATURE_SERVO   0
+#define FEATURE_RX      0
+#define FEATURE_ESC     0
 // The F401 has the same USB DFU bootloader in ROM as the F411 -- same system
 // memory base, same AN2606 entry. See blackpill_f411ce.h for the rationale.
-#define FEATURE_DFU     1
+#define FEATURE_DFU     0
 
 // --- DFU --------------------------------------------------------------------
 // Same system-memory base as the F411; the F401/F411/F405/F407/F410/F412/F413
