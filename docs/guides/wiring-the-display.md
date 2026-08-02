@@ -1,5 +1,8 @@
 # Wiring the Display
 
+**The display module ships off by default on the reference board.** Set `FEATURE_ST7789_240X240 1`
+in the board header and reflash once it's wired, or the panel will sit connected but dark.
+
 Only the panel needs wiring on the reference board — the LED (PC13) and button (PA0) are already
 on the Black Pill. ST7789 240x240 on hardware SPI1:
 

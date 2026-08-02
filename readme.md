@@ -106,8 +106,8 @@ cd app && .venv/bin/pytest -q
 The native suite compiles the *real* board header, so it assembles the actual device's parameter
 and telemetry tables and diffs them against `firmware/test/golden/schema.json`. The Python suite
 runs against a fake serial port. See
-**[Running the tests](https://tropotek.github.io/silkscreen/getting-started/)** in the docs for
-more.
+**[Running the tests](https://tropotek.github.io/silkscreen/getting-started/#running-the-tests)**
+in the docs for more.
 
 ## License
 

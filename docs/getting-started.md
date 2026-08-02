@@ -101,8 +101,24 @@ the device's schema and builds itself.
 | **Telemetry** ![Telemetry page](assets/screenshots/telemetry.png) | live values pushed from the board |
 | **Terminal** ![Terminal page](assets/screenshots/terminal.png) | hand-typed commands, optionally showing raw JSON and background device traffic. Also where settings backup (`dump`) and **Restore from INI…** live |
 | **Firmware** ![Firmware page](assets/screenshots/firmware.png) | flash the bundled image over USB DFU (or `esptool` on ESP32) |
+| **Examples** ![Examples page](assets/screenshots/examples.png) | reference wiring diagrams for real hardware setups |
 | **Help** ![Help page](assets/screenshots/help.png) | in-app troubleshooting — port not appearing, stale badge, settings not surviving a restart |
 
 The connection badge and the firmware identity string sit in the top bar, visible from every
 page. Terminal and Firmware deliberately work while **disconnected** — gating the recovery tool
 on a working device would be exactly backwards.
+
+## Running the tests
+
+Neither suite needs a board attached.
+
+```bash
+cd firmware && ~/.platformio/penv/bin/pio test -e native
+cd app && .venv/bin/pytest -q
+```
+
+The native suite compiles the *real* board header, so it assembles the actual device's parameter
+and telemetry tables and diffs them against `firmware/test/golden/schema.json` — a firmware schema
+change that isn't reflected there fails a test instead of drifting quietly. The Python suite runs
+against a fake serial port. Only drivers, timing and boot ordering are outside both — that is the
+part you verify by flashing the board.

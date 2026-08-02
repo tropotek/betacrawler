@@ -5,6 +5,19 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Version 1.0.0 (2026-07-29)
 
+- **docs: a full MkDocs + Material documentation site, published to GitHub Pages.** New `docs/`
+  site (`mkdocs.yml`, `docs/index.md`, `getting-started.md`, `architecture.md`, `api.md`,
+  `troubleshooting.md`, per-module pages under `docs/modules/`, and guides under `docs/guides/`)
+  built with `docs/.venv` and deployed on push to `main` by a new
+  `.github/workflows/docs.yml` Pages-deploy workflow, `mkdocs build --strict` gating the deploy so
+  a broken link or nav entry fails CI instead of publishing. `readme.md` is trimmed to a landing
+  page that links out to the site rather than duplicating it. A new dev tool,
+  `docs/tools/capture_screenshots.py`, boots the real app against a fake, fully-populated device
+  (`app/tests/fake_serial.py`) and drives it with Playwright to regenerate every page's screenshot
+  under `docs/assets/screenshots/` on demand — including a fixed, fake STM32-labeled port list so
+  the captures never leak whatever serial hardware happens to be attached to the machine that ran
+  the tool.
+
 - **feat(app): the Firmware page can flash `esp32_wroom32` over `esptool`, not just STM32 boards
   over DFU.** The manifest's `method` field (`"dfu"`/`"esptool"`) now has a real dispatch behind
   it: a new `EsptoolFlasher` backend class alongside the existing `DfuFlasher`, a `bundle_firmware.py`

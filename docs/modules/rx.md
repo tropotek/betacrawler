@@ -5,6 +5,9 @@
 Decodes an RC receiver's serial link. On the reference board this is `USART1` — receiver TX into
 `PA10`.
 
+**Ships off by default on the reference board.** Set `FEATURE_RX 1` in the board header and
+reflash to use it.
+
 ## Board header
 
 ```c
@@ -17,10 +20,10 @@ Decodes an RC receiver's serial link. On the reference board this is `USART1` �
 flight mode) is the natural next use of this peripheral, and reserving the pin now is cheaper
 than discovering it's taken later.
 
-420000 baud is TBS's own spec value for the dual-wire vehicle-side link (Betaflight and most
-others use 420000 too — 416666 and 420000 are 0.8% apart, well inside UART tolerance, and either
-side talks to either). A board pairing with a straight 400k half-duplex link would change this in
-its own header rather than in any source file.
+TBS's own spec gives **416666** for the dual-wire vehicle-side link, but Betaflight and everyone
+else use **420000** instead — this board follows that convention. The two are 0.8% apart, well
+inside UART tolerance, so either side talks to either. A board pairing with a straight 400k
+half-duplex link would change this in its own header rather than in any source file.
 
 ## Protocol is a runtime setting, not a build flag
 

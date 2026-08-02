@@ -5,6 +5,9 @@
 Drives a brushless motor ESC. On the reference board this is `TIM3_CH1` on `PA6` — deliberately a
 **different timer** from the Servo module's `TIM4`.
 
+**Ships off by default on the reference board.** Set `FEATURE_ESC 1` in the board header and
+reflash to use it.
+
 ## Board header
 
 ```c

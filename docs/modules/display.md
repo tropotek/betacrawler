@@ -6,6 +6,9 @@ Drives an on-device dashboard on an ST7789 240x240 SPI panel. Full wiring table 
 notes are in [Wiring the Display](../guides/wiring-the-display.md) — this page covers the
 module's design, not its pinout.
 
+**Ships off by default on the reference board.** Set `FEATURE_ST7789_240X240 1` in the board
+header and reflash to use it.
+
 ## One module per panel, named for the part
 
 The module is named after its controller and resolution (`st7789_240x240`), not generically

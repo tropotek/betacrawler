@@ -24,10 +24,23 @@ sys.path.insert(0, str(APP_DIR / ".venv" / "lib" /
                        "site-packages"))
 
 import uvicorn  # noqa: E402  (path setup above must run first)
+import backend.main as backend_main  # noqa: E402
 from backend.device import DeviceModel  # noqa: E402
 from backend.link import SerialLink  # noqa: E402
 from backend.main import create_app  # noqa: E402
 from tests.fake_serial import FakeSerial  # noqa: E402
+
+# The real /api/ports route enumerates whatever serial devices are physically
+# attached to the machine running this script -- not anything from the fake
+# device fixture below. Left alone, that leaks the capture machine's real
+# hardware into the navbar's port picker (seen once as a stray "(ESP32)"
+# entry, contradicting every other part of this demo, which is all
+# blackpill_f411ce / "(STM32)"). Pin it to one fixed, fake STM32-labeled port
+# so screenshots are identical and reproducible on any machine.
+backend_main.list_candidate_ports = lambda: [
+    {"port": "/dev/ttyACM0", "desc": "STM32 Virtual COM Port", "vid": "0483",
+     "pid": "5740", "match": True, "board": "STM32"}
+]
 
 PORT = 8099
 
@@ -84,8 +97,9 @@ SCHEMA_PARAMS = [
      "options": ["info", "stats", "cycle"], "def": "info", "group": "Display"},
     {"key": "disp.rate", "type": "u8", "label": "Refresh", "unit": "Hz",
      "min": 1, "max": 10, "def": 2, "group": "Display"},
-    {"key": "wifi.ssid", "type": "str", "label": "SSID", "group": "WiFi"},
-    {"key": "wifi.password", "type": "str", "label": "Password", "group": "WiFi", "secret": True},
+    {"key": "wifi.ssid", "type": "str", "label": "SSID", "maxlen": 31, "group": "WiFi"},
+    {"key": "wifi.password", "type": "str", "label": "Password", "maxlen": 31, "group": "WiFi",
+     "secret": True},
 ]
 
 SCHEMA_TLM = [
@@ -193,16 +207,27 @@ def main():
         time.sleep(1.5)  # let at least one telemetry frame land
 
         # data-page values straight from app/web/index.html's nav buttons.
-        for name in ("home", "config", "telemetry", "terminal", "firmware", "help"):
+        for name in ("home", "config", "telemetry", "terminal", "firmware", "help", "examples"):
             page.click(f"[data-page='{name}']")
             page.wait_for_timeout(300)
+
+            if name == "terminal":
+                # An empty terminal makes for a useless screenshot -- type a
+                # real command and submit it so the capture shows actual
+                # command/response content. The fake device's responder()
+                # answers `get` requests directly.
+                page.fill("#term-input", "get device.name")
+                page.click("#term-send")
+                page.wait_for_timeout(300)
+
             # config.png feeds readme.md's hero gallery and needs to sell the
             # project at a glance, so it captures the whole scrollable form
             # (all 9 module groups) rather than just the first screenful.
-            # The other five fit their content within one 1280x900 viewport
-            # already, so leaving them viewport-only keeps the gallery's
-            # thumbnails a consistent size.
-            full_page = name == "config"
+            # telemetry.png and help.png also use full_page so cards/bullets
+            # aren't cut off mid-content. The remaining pages fit their
+            # content within one 1280x900 viewport already, so leaving them
+            # viewport-only keeps the gallery's thumbnails a consistent size.
+            full_page = name in ("config", "telemetry", "help")
             page.screenshot(path=str(out_dir / f"{name}.png"), full_page=full_page)
         browser.close()
 

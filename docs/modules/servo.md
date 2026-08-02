@@ -4,6 +4,9 @@
 
 Drives a hobby servo. On the reference board this is `TIM4_CH1` on `PB6`.
 
+**Ships off by default on the reference board.** Set `FEATURE_SERVO 1` in the board header and
+reflash to use it.
+
 ## Board header
 
 ```c

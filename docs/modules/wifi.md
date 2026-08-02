@@ -5,6 +5,9 @@
 Network connectivity. How this module reaches WiFi depends on the MCU family — the STM32
 reference board needs a companion chip; an ESP32 board has WiFi on-die.
 
+**Ships off by default on the reference board.** Set `FEATURE_WIFI 1` in the board header and
+reflash to use it.
+
 ## STM32 boards: ESP-01 companion chip (default / reference)
 
 On `blackpill_f411ce`, WiFi is an ESP-01 (ESP8266) module running its stock AT firmware, talking

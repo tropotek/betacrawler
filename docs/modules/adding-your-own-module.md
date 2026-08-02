@@ -2,7 +2,7 @@
 
 A worked walkthrough of adding a new module, using a minimal example: a module called `beeper`
 that drives a piezo buzzer with one on/off parameter. Substitute your own hardware and
-parameters — the *shape* of the five steps below is what matters, not this specific example.
+parameters — the *shape* of the seven steps below is what matters, not this specific example.
 
 ## 1. Choose the folder
 
@@ -176,5 +176,6 @@ not a bug to work around.
 Connect with the backend running — `beeper.enabled` should now appear on the Configuration page
 with **no `app.js` changes**. If you find yourself needing to touch `app.js` to make a new
 parameter show up correctly, something about the module's declaration has drifted from the
-schema-driven design — see [The `Api` seam and schema-driven UI](../architecture.md) in the
-architecture reference before working around it.
+schema-driven design — see
+[Wire protocol and the schema-driven UI](../architecture.md#wire-protocol-and-the-schema-driven-ui)
+in the architecture reference before working around it.
