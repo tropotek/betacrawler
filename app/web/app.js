@@ -646,7 +646,14 @@ async function refreshPorts() {
   const stillPresent = ports.some((p) => p.port === prevValue);
   let matched = null;
   sel.innerHTML = '';
-  for (const p of ports) {
+  // Recognized boards float to the top -- the port list is a pyserial
+  // enumeration order, which has nothing to do with which entries are
+  // actually worth looking at first. A disabled option separates them from
+  // the unrecognized comports below, only when both groups are non-empty:
+  // nothing to separate from if every port matched, or none did.
+  const known = ports.filter((p) => p.match);
+  const other = ports.filter((p) => !p.match);
+  for (const p of known) {
     const o = document.createElement('option');
     o.value = p.port;
     o.textContent = portOptionLabel(p);
@@ -655,7 +662,19 @@ async function refreshPorts() {
     // selection take priority over this, so this only matters on first
     // load / after everything disconnects, and "first" should mean the
     // first one actually found, not whichever matched last.
-    if (p.match && !matched) matched = p.port;
+    if (!matched) matched = p.port;
+  }
+  if (known.length && other.length) {
+    const sep = document.createElement('option');
+    sep.disabled = true;
+    sep.textContent = '──────────';
+    sel.appendChild(sep);
+  }
+  for (const p of other) {
+    const o = document.createElement('option');
+    o.value = p.port;
+    o.textContent = portOptionLabel(p);
+    sel.appendChild(o);
   }
   if (stillPresent) sel.value = prevValue;
   else if (matched) sel.value = matched;

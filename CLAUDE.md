@@ -21,6 +21,10 @@ Read it for the *reasoning* behind a past decision — those specs are approved 
 relitigate them without a real reason — but **never update anything in it**, and don't read it as
 a description of the code today. Where it and the code disagree, the code is right.
 
+**Specs and plans (brainstorming/writing-plans skill output) are never committed.** `_notes/` is
+gitignored; write new specs/plans under it (e.g. `_notes/_archive/superpowers/`), not `docs/` —
+`docs/` is user-facing project documentation only, and anything placed there gets committed.
+
 ## Commands
 
 `pio` is **not on PATH** — always invoke it as `~/.platformio/penv/bin/pio`.
