@@ -35,6 +35,13 @@ optional ST7789 240x240 panel.
 - **Settings backup/restore** as INI files.
 - **An on-device dashboard** on the optional SPI panel.
 
+## See it in action
+
+| | |
+|---|---|
+| ![Configuration page](docs/assets/screenshots/config.png) | ![Telemetry page](docs/assets/screenshots/telemetry.png) |
+| Configuration — every parameter across every module, built from the firmware schema alone | Telemetry — live values pushed from the board |
+
 ## Quickstart
 
 ```bash

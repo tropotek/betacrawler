@@ -96,12 +96,12 @@ the device's schema and builds itself.
 
 | Page | What it does |
 |---|---|
-| **Home** | how to connect, and what the other pages are for |
-| **Configuration** | every parameter, grouped by module. **Save to flash** persists; **Load defaults** resets |
-| **Telemetry** | live values pushed from the board |
-| **Terminal** | hand-typed commands, optionally showing raw JSON and background device traffic. Also where settings backup (`dump`) and **Restore from INI…** live |
-| **Firmware** | flash the bundled image over USB DFU (or `esptool` on ESP32) |
-| **Help** | in-app troubleshooting — port not appearing, stale badge, settings not surviving a restart |
+| **Home** ![Home page](assets/screenshots/home.png) | how to connect, and what the other pages are for |
+| **Configuration** ![Configuration page](assets/screenshots/config.png) | every parameter, grouped by module. **Save to flash** persists; **Load defaults** resets |
+| **Telemetry** ![Telemetry page](assets/screenshots/telemetry.png) | live values pushed from the board |
+| **Terminal** ![Terminal page](assets/screenshots/terminal.png) | hand-typed commands, optionally showing raw JSON and background device traffic. Also where settings backup (`dump`) and **Restore from INI…** live |
+| **Firmware** ![Firmware page](assets/screenshots/firmware.png) | flash the bundled image over USB DFU (or `esptool` on ESP32) |
+| **Help** ![Help page](assets/screenshots/help.png) | in-app troubleshooting — port not appearing, stale badge, settings not surviving a restart |
 
 The connection badge and the firmware identity string sit in the top bar, visible from every
 page. Terminal and Firmware deliberately work while **disconnected** — gating the recovery tool
