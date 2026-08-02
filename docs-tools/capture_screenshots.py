@@ -3,7 +3,7 @@
 Dev tool, not part of the published site or its build. Run by hand to
 (re)generate docs/assets/screenshots/*.png after a UI change:
 
-    ~/.pwvenv/bin/python3 docs/tools/capture_screenshots.py
+    ~/.pwvenv/bin/python3 docs-tools/capture_screenshots.py
 
 Requires ~/.pwvenv (Playwright + Chromium, see CLAUDE.md) AND app/'s own deps
 (uvicorn, fastapi, ...) importable -- run against app/.venv's site-packages,
@@ -16,7 +16,7 @@ import threading
 import time
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 APP_DIR = REPO_ROOT / "app"
 sys.path.insert(0, str(APP_DIR))
 sys.path.insert(0, str(APP_DIR / ".venv" / "lib" /

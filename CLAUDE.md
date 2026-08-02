@@ -91,6 +91,8 @@ firmware/src/hardware/ device drivers, one folder per module (system/, button/, 
                         st7789_240x240/; WiFi and other peripherals go here)
 firmware/src/modules.cpp  THE wiring file — one #if block per module. Compiled by BOTH envs.
 firmware/src/          Arduino glue: main.cpp, storage.cpp (flash), dfu.cpp
+firmware/docs/          placeholder templates (BOM.md, ASSEMBLY.md) for a fork's own bill of
+                        materials and assembly instructions
 
 app/backend/           protocol.py (codec) -> link.py (threaded serial, id correlation) ->
                         device.py (schema cache + validation) -> main.py (FastAPI routes/WS).
@@ -106,6 +108,7 @@ app/tools/             bundle_firmware.py, run by hand at release time to produc
 app/web/                static HTML/JS only, talks to the backend exclusively through the
                         `Api` object in app.js — that object is the ENTIRE porting surface
                         for a hypothetical future Electron rewrite.
+app/docs/               placeholder template (USER_GUIDE.md) for a fork's own user guide
 ```
 
 **`hardware/`** sits outside those three tiers — KiCad schematic/PCB source for the wiring

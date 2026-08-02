@@ -85,7 +85,7 @@ app/firmware/           the images this app ships with, plus manifest.json. Giti
                         built by a script, not committed
 app/tools/              bundle_firmware.py, run by hand at release time
 app/web/                static HTML/JS, no build step
-app/docs/               placeholder templates for your fork's own user guide
+app/docs/               placeholder template for your fork's own user guide
 
 docs/                   full documentation site — architecture, API, guides, module reference
 CLAUDE.md               architecture notes and the reasoning behind the design

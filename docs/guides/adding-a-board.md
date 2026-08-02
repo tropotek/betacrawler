@@ -70,3 +70,9 @@ cd firmware
 
 A compile error naming a missing macro means a driver needs a pin definition your header didn't
 provide — that's the intended failure mode, not a bug.
+
+## Documenting your own build
+
+Once your board is up, `firmware/docs/` (`BOM.md`, `ASSEMBLY.md`) and `app/docs/`
+(`USER_GUIDE.md`) are placeholder templates for your fork's own bill of materials, assembly
+instructions and user guide — fill them in rather than writing from scratch.

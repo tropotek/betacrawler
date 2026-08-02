@@ -12,11 +12,13 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   `.github/workflows/docs.yml` Pages-deploy workflow, `mkdocs build --strict` gating the deploy so
   a broken link or nav entry fails CI instead of publishing. `readme.md` is trimmed to a landing
   page that links out to the site rather than duplicating it. A new dev tool,
-  `docs/tools/capture_screenshots.py`, boots the real app against a fake, fully-populated device
+  `docs-tools/capture_screenshots.py`, boots the real app against a fake, fully-populated device
   (`app/tests/fake_serial.py`) and drives it with Playwright to regenerate every page's screenshot
   under `docs/assets/screenshots/` on demand — including a fixed, fake STM32-labeled port list so
   the captures never leak whatever serial hardware happens to be attached to the machine that ran
-  the tool.
+  the tool. Also adds `firmware/docs/` (`BOM.md`, `ASSEMBLY.md`) and `app/docs/` (`USER_GUIDE.md`)
+  — placeholder skeletons for a fork's own bill of materials, assembly instructions and user
+  guide, called out in `readme.md`'s "Making it yours" section as part of the same fork on-ramp.
 
 - **feat(app): the Firmware page can flash `esp32_wroom32` over `esptool`, not just STM32 boards
   over DFU.** The manifest's `method` field (`"dfu"`/`"esptool"`) now has a real dispatch behind
@@ -27,8 +29,9 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   Pill in DFU mode does, so the port has to be chosen by hand rather than detected. A new `--all`
   bundler flag builds every board target in one run (opt-in; the bare command's single-board
   default is unchanged). Full design in
-  `docs/superpowers/specs/2026-08-02-esp32-esptool-flashing-design.md`, implementation record in
-  `docs/superpowers/plans/2026-08-02-esp32-esptool-flashing.md`. **Hardware-verified 2026-08-02**
+  `_notes/_archive/superpowers/specs/2026-08-02-esp32-esptool-flashing-design.md`, implementation
+  record in `_notes/_archive/superpowers/plans/2026-08-02-esp32-esptool-flashing.md`.
+  **Hardware-verified 2026-08-02**
   — see `_notes/todo.md`'s "Second board target" entry for the real-board flash record and the one
   real bug (`esptool` never resolving under the documented `.venv/bin/uvicorn` run command) that
   verification caught and fixed.
@@ -43,8 +46,8 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   than being excluded by a per-environment `build_src_filter`. Side effect: adding those guards
   fixed a latent `blackpill_f401ce` build break (`wifi_driver.cpp`'s body previously compiled
   unconditionally and demanded `WIFI_RX_PIN`/`WIFI_TX_PIN`/`WIFI_BAUD`, which that board's header
-  never defined). See `docs/superpowers/specs/2026-08-01-esp32-wroom-target-design.md` /
-  `docs/superpowers/plans/2026-08-01-esp32-wroom-target.md` for the full design.
+  never defined). See `_notes/_archive/superpowers/specs/2026-08-01-esp32-wroom-target-design.md` /
+  `_notes/_archive/superpowers/plans/2026-08-01-esp32-wroom-target.md` for the full design.
 
 - **feat(hardware): WiFi module for the ESP-01.** New `wifi` module on `blackpill_f411ce`'s
   USART2 (`PA2`/`PA3`), independent of `rx`/`esc`'s pins. Exposes `wifi.ssid`/`wifi.password`
