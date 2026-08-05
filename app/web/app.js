@@ -630,54 +630,163 @@ function portOptionLabel(p) {
     : p.port;
 }
 
+// Some USB devices genuinely blip out of the OS's port enumeration for a
+// poll or two at a time -- confirmed on an ESP32-C3's CDC descriptor, which
+// /api/ports drops for exactly one 1s watchdog tick before it's back.
+// Reacting to that as a real disappearance is what made the picker itself
+// flicker: the port's <option> got removed and recreated, and the selection
+// bounced to a fallback and back. A port that goes missing is kept in the
+// effective list for a few missed polls before being treated as actually
+// gone -- the same "don't trust a single miss" principle the telemetry
+// disconnect watchdog already uses (see startWatchdog()'s three-interval
+// rule).
+const PORT_MISS_GRACE_MS = 3000;
+const portSeenAt = new Map(); // port -> { data, lastSeenAt }
+
+function stabilizePorts(rawPorts) {
+  const now = Date.now();
+  for (const p of rawPorts) portSeenAt.set(p.port, { data: p, lastSeenAt: now });
+  for (const [port, rec] of portSeenAt) {
+    if (now - rec.lastSeenAt > PORT_MISS_GRACE_MS) portSeenAt.delete(port);
+  }
+  // Sorted here, once, before anything downstream sees the list -- known
+  // boards and any port with a real USB descriptor first, then
+  // alphabetically within each group -- so the change-detection compare
+  // below and the render diff both work off one canonical order instead of
+  // whatever order the OS/pyserial happened to enumerate in this poll.
+  return Array.from(portSeenAt.values())
+    .map((r) => r.data)
+    .sort((a, b) => {
+      const rank = (p) => (p.match || p.vid ? 0 : 1);
+      const d = rank(a) - rank(b);
+      // {numeric: true} makes this a natural sort -- ttyS2 before ttyS10,
+      // not the lexicographic "ttyS10" < "ttyS2" plain string comparison
+      // gives.
+      return d !== 0 ? d : a.port.localeCompare(b.port, undefined, { numeric: true });
+    });
+}
+
+// Compared against on every refreshPorts() call so an unchanged list is a
+// no-op -- see the comment inside for why rebuilding unconditionally broke
+// the picker.
+let lastPortsJSON = null;
+
+// The port the user actually wants selected -- deliberately NOT read back
+// from sel.value at the top of each refresh. Some USB devices (an ESP32-C3's
+// CDC descriptor, for one) briefly drop out of the OS's port enumeration and
+// reappear a tick later; when that happens mid-selection, refreshPorts falls
+// back to some other port for that one tick. Reading sel.value as "the
+// previous selection" on the NEXT tick would then latch onto that fallback
+// permanently, because the fallback port (unlike the flaky device) is never
+// itself missing. Tracking intent separately, updated only by an explicit
+// user pick, means a forced fallback tick never overwrites it, so the real
+// port reappearing is recognized and restored instead of staying stuck.
+let desiredPort = null;
+el('port').addEventListener('change', () => {
+  desiredPort = el('port').value || null;
+});
+
 async function refreshPorts() {
-  const ports = await Api.ports();
-  const sel = el('port');
+  const ports = stabilizePorts(await Api.ports());
+  const portsJSON = JSON.stringify(ports);
   // The watchdog calls this every second while disconnected so a replugged
-  // board reappears -- but rebuilding the <option> list from scratch used to
-  // discard whatever the user had picked, snapping back to the browser's own
-  // "nothing selected -> pick the first option" default before they could
-  // even click Connect. Preserve the current selection across the rebuild
-  // whenever the port it names still exists; only fall back to
-  // auto-selecting a recognized board (or the browser's own default) when
-  // there is nothing to preserve, e.g. first load or the previous port was
-  // unplugged.
-  const prevValue = sel.value;
-  const stillPresent = ports.some((p) => p.port === prevValue);
+  // board reappears -- but destroying and recreating every <option> on a
+  // timer, even when nothing changed, fights the browser's native dropdown:
+  // opening it, then losing it to a same-second rebuild mid-click, reads as
+  // "won't let me select a port". Skip the work entirely when the list is
+  // byte-for-byte the same as last time.
+  if (portsJSON === lastPortsJSON) return;
+  lastPortsJSON = portsJSON;
+
+  const sel = el('port');
+  // Recognized boards AND any port with a real USB descriptor float to the
+  // top -- the port list is a pyserial enumeration order, which has nothing
+  // to do with which entries are actually worth looking at first, and on
+  // Linux it is dominated by dozens of vid-less /dev/ttySN platform ports
+  // that are never a real device. A disabled option separates the top group
+  // from genuinely bare ports below, only when both groups are non-empty:
+  // nothing to separate from if every port qualifies, or none did.
+  const known = ports.filter((p) => p.match || p.vid);
+  const other = ports.filter((p) => !p.match && !p.vid);
+
+  // Reuse each port's existing <option> element rather than tearing every
+  // one down and recreating it -- an option's selectedness is a property of
+  // the element itself, so one that survives this diff keeps its selected
+  // state automatically (appendChild() on a node already in the DOM MOVES
+  // it, it doesn't reset it), and a port whose label didn't change never
+  // touches the DOM at all. Only ports that actually appeared or vanished
+  // since last time cause any mutation.
+  const existing = new Map(
+    Array.from(sel.options).filter((o) => !o.disabled).map((o) => [o.value, o])
+  );
+  const touched = new Set();
   let matched = null;
-  sel.innerHTML = '';
-  // Recognized boards float to the top -- the port list is a pyserial
-  // enumeration order, which has nothing to do with which entries are
-  // actually worth looking at first. A disabled option separates them from
-  // the unrecognized comports below, only when both groups are non-empty:
-  // nothing to separate from if every port matched, or none did.
-  const known = ports.filter((p) => p.match);
-  const other = ports.filter((p) => !p.match);
-  for (const p of known) {
-    const o = document.createElement('option');
-    o.value = p.port;
-    o.textContent = portOptionLabel(p);
+
+  const place = (p) => {
+    let o = existing.get(p.port);
+    const label = portOptionLabel(p);
+    if (o) {
+      if (o.textContent !== label) o.textContent = label;
+    } else {
+      o = document.createElement('option');
+      o.value = p.port;
+      o.textContent = label;
+    }
     sel.appendChild(o);
-    // First match wins -- ports.some() below already lets an existing
-    // selection take priority over this, so this only matters on first
-    // load / after everything disconnects, and "first" should mean the
-    // first one actually found, not whichever matched last.
-    if (!matched) matched = p.port;
+    touched.add(o);
+  };
+
+  for (const p of known) {
+    place(p);
+    // First recognized-board match wins -- not just the first port with a
+    // vid, so an unrecognized-but-real device never outranks an actual known
+    // board for auto-select. "first" should mean the first one actually
+    // found, not whichever matched last.
+    if (!matched && p.match) matched = p.port;
   }
   if (known.length && other.length) {
+    // Stateless (never selected, always disabled) -- cheaper to recreate
+    // than to track across a diff.
     const sep = document.createElement('option');
     sep.disabled = true;
     sep.textContent = '──────────';
     sel.appendChild(sep);
+    touched.add(sep);
   }
-  for (const p of other) {
-    const o = document.createElement('option');
-    o.value = p.port;
-    o.textContent = portOptionLabel(p);
-    sel.appendChild(o);
+  for (const p of other) place(p);
+
+  // Whatever wasn't placed this round belonged to a port that dropped out
+  // of the list.
+  for (const o of Array.from(sel.options)) {
+    if (!touched.has(o)) sel.removeChild(o);
   }
-  if (stillPresent) sel.value = prevValue;
+
+  // First load / nothing picked yet: adopt the recognized-board guess as the
+  // desired port too, so it's what a later flicker-and-recover restores.
+  if (!desiredPort && matched) desiredPort = matched;
+  const desiredPresent = ports.some((p) => p.port === desiredPort);
+  // Desired port missing this tick (e.g. mid-flicker) with no recognized
+  // board to fall back to either: leave whatever the browser just picked as
+  // its own default among the surviving options.
+  if (desiredPresent) sel.value = desiredPort;
   else if (matched) sel.value = matched;
+  growPortSelectWidth(sel);
+}
+
+// #port is `w-auto`, so its rendered width tracks whatever option is
+// currently showing -- a rebuild that swaps in a longer or shorter label
+// (e.g. a device with a long "(USB vvvv:pppp)" suffix appearing or
+// disappearing) visibly resizes the control and shifts the Connect button
+// next to it. Only ever grow the floor, never shrink it, so the width
+// settles at the widest label seen this session instead of jittering on
+// every plug/unplug.
+let portSelectMinWidth = 0;
+
+function growPortSelectWidth(sel) {
+  sel.style.minWidth = '';
+  const natural = sel.getBoundingClientRect().width;
+  if (natural > portSelectMinWidth) portSelectMinWidth = natural;
+  sel.style.minWidth = `${portSelectMinWidth}px`;
 }
 
 async function loadDevice() {
