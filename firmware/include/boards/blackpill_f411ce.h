@@ -24,7 +24,7 @@
 // bootloader in ROM, so this costs a magic word and a reset -- no bootloader
 // to flash, and nothing to erase it. Turning it off only removes the app's
 // one-click path; BOOT0 + NRST still reaches the same ROM code.
-#define FEATURE_DFU     0
+#define FEATURE_DFU     1
 
 // --- DFU --------------------------------------------------------------------
 // System-memory base, where the STM32 ROM bootloader lives. This is
