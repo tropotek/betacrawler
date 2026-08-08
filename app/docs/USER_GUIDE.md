@@ -1,5 +1,5 @@
 <!-- Replace this with your own project's end-user manual. This is a starting skeleton, not
-     silkscreen's own documentation. The page list below matches silkscreen's own six-page UI
+     betacrawler's own documentation. The page list below matches betacrawler's own six-page UI
      structure as a starting point -- delete or add pages to match what your fork actually
      ships. -->
 
@@ -30,6 +30,6 @@
 
 ## Troubleshooting
 
-<!-- Product-specific problems and fixes. General silkscreen platform troubleshooting (port not
-     appearing, DFU recovery, etc.) is already covered on the silkscreen docs site -- link to it
+<!-- Product-specific problems and fixes. General betacrawler platform troubleshooting (port not
+     appearing, DFU recovery, etc.) is already covered on the betacrawler docs site -- link to it
      rather than duplicating it here, unless your fork has changed that behavior. -->

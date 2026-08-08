@@ -33,7 +33,7 @@
 // this MCU.
 
 // --- pin map ----------------------------------------------------------------
-// GPIO2 is the onboard LED on most WROOM-32 devkit clones (silkscreened
+// GPIO2 is the onboard LED on most WROOM-32 devkit clones (betacrawlered
 // "LED" or "D2" next to it) -- verify against your specific board once
 // flashed; cheaper clones sometimes omit it or use a different pin.
 #define LED_PIN         2

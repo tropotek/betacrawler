@@ -120,7 +120,7 @@ def tree(tmp_path, monkeypatch):
     (root / "app" / "web").mkdir(parents=True)
 
     (fw / "include" / "config.h").write_text(
-        '#define FW_PROJECT_NAME "silkscreen"\n'
+        '#define FW_PROJECT_NAME "betacrawler"\n'
         '#define FW_VERSION "1.0.0"\n')
     (fw / "src" / "core" / "types.h").write_text(
         "constexpr int kProtoVersion = 1;\n")
@@ -179,7 +179,7 @@ def build_esp32_parts_into(mod, env: str, stamp: str = STAMP_A, board: str | Non
     (build_dir / "bootloader.bin").write_bytes(b"\xe9" + b"\x11" * 256)
     (build_dir / "partitions.bin").write_bytes(b"\x00" * 128)
     (build_dir / "firmware.bin").write_bytes(
-        fake_bin("silkscreen", "1.0.0", board or env, stamp))
+        fake_bin("betacrawler", "1.0.0", board or env, stamp))
     return build_dir
 
 
@@ -264,7 +264,7 @@ def test_merge_esp32_image_requires_all_four_inputs(esp32_tree):
     # bootloader.bin/partitions.bin never written -- only firmware.bin exists.
     build_dir = mod.FIRMWARE / ".pio" / "build" / "board_c"
     build_dir.mkdir(parents=True)
-    (build_dir / "firmware.bin").write_bytes(fake_bin("silkscreen", "1.0.0", "board_c", STAMP_A))
+    (build_dir / "firmware.bin").write_bytes(fake_bin("betacrawler", "1.0.0", "board_c", STAMP_A))
 
     with pytest.raises(mod.BundleError, match="bootloader.bin"):
         mod.merge_esp32_image("board_c", runner=lambda argv: 0)
@@ -392,7 +392,7 @@ def build_into(mod, env: str, stamp: str = STAMP_A, board: str | None = None):
     """Put a plausible firmware.bin where a `pio run` would have left one."""
     path = mod.bin_path_for(env)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(fake_bin("silkscreen", "1.0.0", board or env, stamp))
+    path.write_bytes(fake_bin("betacrawler", "1.0.0", board or env, stamp))
     return path
 
 
@@ -421,9 +421,9 @@ def test_releases_every_named_env_into_one_manifest(tree):
                                   builder=builder_for(mod, stamps={"board_b": STAMP_B}))
 
     assert [e["id"] for e in entries] == [
-        "board_a-silkscreen-1.0.0", "board_b-silkscreen-1.0.0"]
+        "board_a-betacrawler-1.0.0", "board_b-betacrawler-1.0.0"]
     assert pruned == []
-    assert ids(mod) == ["board_a-silkscreen-1.0.0", "board_b-silkscreen-1.0.0"]
+    assert ids(mod) == ["board_a-betacrawler-1.0.0", "board_b-betacrawler-1.0.0"]
     assert manifest(mod)["app_version"] == "1.0.0"
 
     for img in manifest(mod)["images"]:
@@ -483,17 +483,17 @@ def test_dry_run_writes_nothing(tree):
 def test_rebuild_prunes_an_image_the_previous_release_shipped(tree):
     mod = tree
     mod.release(["board_a", "board_b"], builder=builder_for(mod))
-    assert (mod.BUNDLE / "board_b" / "silkscreen-1.0.0.bin").is_file()
+    assert (mod.BUNDLE / "board_b" / "betacrawler-1.0.0.bin").is_file()
 
     _, pruned = mod.release(["board_a"], builder=builder_for(mod))
 
-    assert ids(mod) == ["board_a-silkscreen-1.0.0"]
-    assert [p.name for p in pruned] == ["silkscreen-1.0.0.bin"]
-    assert not (mod.BUNDLE / "board_b" / "silkscreen-1.0.0.bin").exists()
+    assert ids(mod) == ["board_a-betacrawler-1.0.0"]
+    assert [p.name for p in pruned] == ["betacrawler-1.0.0.bin"]
+    assert not (mod.BUNDLE / "board_b" / "betacrawler-1.0.0.bin").exists()
     # the board directory it emptied goes too
     assert not (mod.BUNDLE / "board_b").exists()
     # ...while the board still shipping is untouched
-    assert (mod.BUNDLE / "board_a" / "silkscreen-1.0.0.bin").is_file()
+    assert (mod.BUNDLE / "board_a" / "betacrawler-1.0.0.bin").is_file()
 
 
 def test_add_keeps_the_previous_release(tree):
@@ -502,9 +502,9 @@ def test_add_keeps_the_previous_release(tree):
     _, pruned = mod.release(["board_b"], add=True, builder=builder_for(mod))
 
     assert pruned == []
-    assert ids(mod) == ["board_a-silkscreen-1.0.0", "board_b-silkscreen-1.0.0"]
-    assert (mod.BUNDLE / "board_a" / "silkscreen-1.0.0.bin").is_file()
-    assert (mod.BUNDLE / "board_b" / "silkscreen-1.0.0.bin").is_file()
+    assert ids(mod) == ["board_a-betacrawler-1.0.0", "board_b-betacrawler-1.0.0"]
+    assert (mod.BUNDLE / "board_a" / "betacrawler-1.0.0.bin").is_file()
+    assert (mod.BUNDLE / "board_b" / "betacrawler-1.0.0.bin").is_file()
 
 
 def test_re_releasing_the_same_env_replaces_its_entry_in_place(tree):
@@ -512,11 +512,11 @@ def test_re_releasing_the_same_env_replaces_its_entry_in_place(tree):
     mod.release(["board_a"], builder=builder_for(mod))
     mod.release(["board_a"], builder=builder_for(mod, stamps={"board_a": STAMP_B}))
 
-    assert ids(mod) == ["board_a-silkscreen-1.0.0"]
+    assert ids(mod) == ["board_a-betacrawler-1.0.0"]
     assert manifest(mod)["images"][0]["built"] == STAMP_B
     # Rewritten, not pruned: the file is a keeper because the new manifest
     # names it too.
-    assert (mod.BUNDLE / "board_a" / "silkscreen-1.0.0.bin").is_file()
+    assert (mod.BUNDLE / "board_a" / "betacrawler-1.0.0.bin").is_file()
 
 
 def test_pruning_never_touches_a_file_no_manifest_listed(tree):
@@ -559,7 +559,7 @@ def test_one_failed_env_leaves_the_previous_release_intact(tree):
                     builder=builder_for(mod, fails={"board_b"}))
 
     assert mod.manifest_path().read_text() == before
-    assert (mod.BUNDLE / "board_a" / "silkscreen-1.0.0.bin").is_file()
+    assert (mod.BUNDLE / "board_a" / "betacrawler-1.0.0.bin").is_file()
     assert not (mod.BUNDLE / "board_b").exists()
 
 
@@ -587,7 +587,7 @@ def test_identity_mismatch_is_caught_before_anything_is_written(tree):
         path = mod.bin_path_for(env)
         path.parent.mkdir(parents=True, exist_ok=True)
         # Built from a different board header than the env claims.
-        path.write_bytes(fake_bin("silkscreen", "1.0.0", "some_other_board", STAMP_A))
+        path.write_bytes(fake_bin("betacrawler", "1.0.0", "some_other_board", STAMP_A))
 
     with pytest.raises(mod.BundleError, match="BOARD_ID"):
         mod.release(["board_a"], builder=stale_builder)
@@ -703,8 +703,8 @@ def test_main_all_flag_builds_every_board(tree, monkeypatch, capsys):
     rc = mod.main()
     assert rc == 0
     out = capsys.readouterr().out
-    assert "board_a-silkscreen-1.0.0" in out
-    assert "board_b-silkscreen-1.0.0" in out
+    assert "board_a-betacrawler-1.0.0" in out
+    assert "board_b-betacrawler-1.0.0" in out
 
 
 def test_all_flag_rejects_explicit_envs_too(tree, monkeypatch, capsys):

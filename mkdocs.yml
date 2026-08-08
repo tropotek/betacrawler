@@ -1,8 +1,8 @@
-site_name: silkscreen
+site_name: betacrawler
 site_description: A Betaflight-Configurator-style tool for small microcontroller boards, and a template to fork for your own.
-site_url: https://tropotek.github.io/silkscreen/
-repo_url: https://github.com/tropotek/silkscreen
-repo_name: tropotek/silkscreen
+site_url: https://tropotek.github.io/betacrawler/
+repo_url: https://github.com/tropotek/betacrawler
+repo_name: tropotek/betacrawler
 docs_dir: docs
 
 theme:

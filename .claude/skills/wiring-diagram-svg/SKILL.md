@@ -1,13 +1,13 @@
 ---
 name: wiring-diagram-svg
-description: Use when creating or extending a hardware wiring diagram for silkscreen's Examples page — a new board, or a new peripheral card on an existing board's SVG diagram.
+description: Use when creating or extending a hardware wiring diagram for betacrawler's Examples page — a new board, or a new peripheral card on an existing board's SVG diagram.
 ---
 
 # Wiring Diagram SVG
 
 ## Overview
 
-Silkscreen's Examples page uses one hand-authored schematic SVG format for every board-wiring
+Betacrawler's Examples page uses one hand-authored schematic SVG format for every board-wiring
 diagram — a wiring map grouped by peripheral, not a photorealistic/Fritzing-style render (no such
 tool is available). It was converged on over several iterative rounds; reuse it exactly rather
 than re-deriving a layout.

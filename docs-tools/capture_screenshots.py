@@ -49,7 +49,7 @@ PORT = 8099
 _SRC_CHANS = [f"ch{i}" for i in range(1, 13)]
 
 SCHEMA_PARAMS = [
-    {"key": "device.name", "type": "str", "label": "Device Name", "def": "silkscreen",
+    {"key": "device.name", "type": "str", "label": "Device Name", "def": "betacrawler",
      "group": "Device"},
     {"key": "tlm.rate", "type": "u8", "label": "Rate", "unit": "Hz",
      "min": 1, "max": 50, "def": 10, "group": "Telemetry"},
@@ -134,8 +134,8 @@ VALUES = {p["key"]: p.get("def", p.get("defStr", "")) for p in SCHEMA_PARAMS}
 def responder(req, emit):
     op, rid = req["op"], req["id"]
     if op == "hello":
-        emit({"id": rid, "ok": True, "fw": "silkscreen 1.0.0", "proto": 1,
-              "board": "blackpill_f411ce", "name": "silkscreen", "ver": "1.0.0",
+        emit({"id": rid, "ok": True, "fw": "betacrawler 1.0.0", "proto": 1,
+              "board": "blackpill_f411ce", "name": "betacrawler", "ver": "1.0.0",
               "built": "Aug  2 2026 12:00:00",
               "mods": ["device", "system", "button", "led", "servo", "esc", "rx",
                        "st7789_240x240", "wifi"],

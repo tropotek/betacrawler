@@ -77,7 +77,7 @@ def test_a_show_if_hidden_param_is_still_settable():
     def responder(req, emit):
         op, rid = req["op"], req["id"]
         if op == "hello":
-            emit({"id": rid, "ok": True, "fw": "silkscreen 1.0.0", "proto": 1,
+            emit({"id": rid, "ok": True, "fw": "betacrawler 1.0.0", "proto": 1,
                   "board": "blackpill_f411ce"})
         elif op == "schema":
             emit({"id": rid, "ok": True, "params": schema, "tlm": []})
@@ -327,7 +327,7 @@ def test_device_log_line_reaches_the_websocket_as_a_log_frame(client):
 
     with client.websocket_connect("/ws") as ws:
         assert ws.receive_json()["type"] == "state"
-        fake.emit({"log": "boot: silkscreen 1.0.0 (blackpill_f411ce)"})
+        fake.emit({"log": "boot: betacrawler 1.0.0 (blackpill_f411ce)"})
 
         # Same bounded-wait pattern as the broadcaster test above: a dropped
         # message must fail in 2s rather than hang the run.
@@ -347,7 +347,7 @@ def test_device_log_line_reaches_the_websocket_as_a_log_frame(client):
         assert kind == "ok", f"receive_json raised: {payload!r}"
         assert payload == {
             "type": "log",
-            "data": "boot: silkscreen 1.0.0 (blackpill_f411ce)",
+            "data": "boot: betacrawler 1.0.0 (blackpill_f411ce)",
         }
 
 

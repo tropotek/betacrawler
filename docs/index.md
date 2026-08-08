@@ -1,9 +1,9 @@
-# silkscreen
+# betacrawler
 
 A Betaflight-Configurator-style tool for small microcontroller boards, and a template to fork
 for your own.
 
-The silkscreen on a PCB is the printed layer that tells you what every pad and pin actually is.
+The betacrawler on a PCB is the printed layer that tells you what every pad and pin actually is.
 This does the same for firmware: the board declares its parameters and telemetry, and a browser
 UI builds itself from that declaration. Adding a setting to the firmware makes a control appear
 in the app. There is no second list to keep in sync.

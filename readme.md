@@ -1,4 +1,4 @@
-# silkscreen
+# betacrawler
 
 **This project is currently under construction. If you want to contribute hit up our disscussion forum and get involved.**
 
@@ -7,9 +7,9 @@
 A Betaflight-Configurator-style tool for small microcontroller boards, and a template to fork
 for your own.
 
-**[Read the full docs →](https://tropotek.github.io/silkscreen/)**
+**[Read the full docs →](https://tropotek.github.io/betacrawler/)**
 
-The silkscreen on a PCB is the printed layer that tells you what every pad and pin actually is.
+The betacrawler on a PCB is the printed layer that tells you what every pad and pin actually is.
 This does the same for firmware: the board declares its parameters and telemetry, and a browser
 UI builds itself from that declaration. Adding a setting to the firmware makes a control appear
 in the app. There is no second list to keep in sync.
@@ -45,22 +45,22 @@ optional ST7789 240x240 panel.
 ## Quickstart
 
 ```bash
-git clone <your-repo-url> silkscreen
-cd silkscreen
-code silkscreen.code-workspace
+git clone <your-repo-url> betacrawler
+cd betacrawler
+code betacrawler.code-workspace
 ```
 
 Open the workspace file, install the recommended PlatformIO extension when VS Code offers it, and
-follow **[Getting Started](https://tropotek.github.io/silkscreen/getting-started/)** in the docs
+follow **[Getting Started](https://tropotek.github.io/betacrawler/getting-started/)** in the docs
 for the full walkthrough — building/flashing the firmware, starting the backend, and connecting.
 
 ## Making it yours
 
-Forking silkscreen for your own board? Start with:
+Forking betacrawler for your own board? Start with:
 
-- **[Adding a Board](https://tropotek.github.io/silkscreen/guides/adding-a-board/)** — port to
+- **[Adding a Board](https://tropotek.github.io/betacrawler/guides/adding-a-board/)** — port to
   different hardware, no source file changes for an STM32 board.
-- **[Adding Your Own Module](https://tropotek.github.io/silkscreen/modules/adding-your-own-module/)**
+- **[Adding Your Own Module](https://tropotek.github.io/betacrawler/modules/adding-your-own-module/)**
   — add a new behavior or peripheral driver.
 - `firmware/docs/` and `app/docs/` — placeholder templates for *your* project's own bill of
   materials, assembly instructions and user guide, ready to fill in.
@@ -106,7 +106,7 @@ cd app && .venv/bin/pytest -q
 The native suite compiles the *real* board header, so it assembles the actual device's parameter
 and telemetry tables and diffs them against `firmware/test/golden/schema.json`. The Python suite
 runs against a fake serial port. See
-**[Running the tests](https://tropotek.github.io/silkscreen/getting-started/#running-the-tests)**
+**[Running the tests](https://tropotek.github.io/betacrawler/getting-started/#running-the-tests)**
 in the docs for more.
 
 ## License

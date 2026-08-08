@@ -36,7 +36,7 @@ It isn't — BOOT0 + NRST reaches the ROM bootloader regardless of what is in fl
 
 ### First flash without an ST-Link
 
-A board with no silkscreen firmware on it can't be asked to reboot into DFU over USB, so do it by
+A board with no betacrawler firmware on it can't be asked to reboot into DFU over USB, so do it by
 hand — the same procedure rescues a board whose firmware is broken:
 
 1. Make sure there is an image to flash: `python3 app/tools/bundle_firmware.py blackpill_f411ce`

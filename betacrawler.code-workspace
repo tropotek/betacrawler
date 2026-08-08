@@ -1,7 +1,7 @@
 {
     "folders": [
         {
-            "name": "silkscreen",
+            "name": "betacrawler",
             "path": "."
         },
         {
@@ -31,7 +31,7 @@
             {
                 "label": "Run backend server",
                 "type": "shell",
-                "command": "${workspaceFolder:silkscreen}/run-server.sh",
+                "command": "${workspaceFolder:betacrawler}/run-server.sh",
                 "problemMatcher": [],
                 "presentation": {
                     "panel": "dedicated",
@@ -42,7 +42,7 @@
             {
                 "label": "Build release firmware",
                 "type": "shell",
-                "command": "python3 ${workspaceFolder:silkscreen}/app/tools/bundle_firmware.py ${input:releaseBoards}",
+                "command": "python3 ${workspaceFolder:betacrawler}/app/tools/bundle_firmware.py ${input:releaseBoards}",
                 "problemMatcher": [],
                 "presentation": {
                     "panel": "dedicated",
@@ -53,7 +53,7 @@
             {
                 "label": "Build ALL release firmware",
                 "type": "shell",
-                "command": "python3 ${workspaceFolder:silkscreen}/app/tools/bundle_firmware.py --all",
+                "command": "python3 ${workspaceFolder:betacrawler}/app/tools/bundle_firmware.py --all",
                 "problemMatcher": [],
                 "presentation": {
                     "panel": "dedicated",

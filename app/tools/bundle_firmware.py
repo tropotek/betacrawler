@@ -412,7 +412,7 @@ def sources_newer_than(bin_path: Path) -> list[Path]:
 # here too means a bundled image can never be the thing that trips it at flash
 # time, when the board is already in DFU and the user is committed.
 SRAM_LO, SRAM_HI = 0x2000_0000, 0x2002_0000   # HI is INCLUSIVE: a real
-# silkscreen build has MSP exactly 0x20020000, the top of the F411's 128KB SRAM.
+# betacrawler build has MSP exactly 0x20020000, the top of the F411's 128KB SRAM.
 FLASH_LO, FLASH_HI = 0x0800_0000, 0x0808_0000
 
 

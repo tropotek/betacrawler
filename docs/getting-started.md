@@ -29,9 +29,9 @@ ModemManager to keep its hands off. Replug the board afterwards.
 ## 1. Clone and open the workspace
 
 ```bash
-git clone <your-repo-url> silkscreen
-cd silkscreen
-code silkscreen.code-workspace
+git clone <your-repo-url> betacrawler
+cd betacrawler
+code betacrawler.code-workspace
 ```
 
 Open the **workspace file**, not the folder. It lists the repo root and `firmware/` as two

@@ -1,5 +1,5 @@
 <!-- Replace this with your own project's bill of materials. This is a starting skeleton, not
-     silkscreen's own documentation. -->
+     betacrawler's own documentation. -->
 
 # Bill of Materials
 

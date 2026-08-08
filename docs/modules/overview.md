@@ -1,6 +1,6 @@
 # Modules — Overview
 
-Every piece of behavior or hardware in silkscreen is a **module**: LED, Button, Servo, ESC, RX,
+Every piece of behavior or hardware in betacrawler is a **module**: LED, Button, Servo, ESC, RX,
 Display, WiFi. Modules are the unit a board turns on or off with one `FEATURE_*` flag, and the
 unit whose parameters and telemetry flow automatically into the app with zero UI code.
 

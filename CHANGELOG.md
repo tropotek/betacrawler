@@ -103,7 +103,7 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 - **Board support: STM32F401CE (WeAct Black Pill V3.0).** New `[env:blackpill_f401ce]` and
   `boards/blackpill_f401ce.h` — same pinout as the F411 board (WeAct kept the layout identical
   across revisions), just the F401's 96KB RAM and 84MHz clock instead of 128KB/100MHz. Traced back
-  to two "defected" spare boards that silkscreen as F411CE but read back a `DEV_ID` of `0x433` and
+  to two "defected" spare boards that betacrawler as F411CE but read back a `DEV_ID` of `0x433` and
   only 96KB of readable SRAM over SWD: a real STM32F401CEU6 under an F411 label, confirmed against
   the physical chip marking. The F411 env's linker script puts the initial stack pointer past a
   real 96KB part's actual RAM, HardFaulting before USB ever comes up — every symptom a "dead

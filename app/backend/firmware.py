@@ -40,7 +40,7 @@ DFU_VID, DFU_PID = 0x0483, 0xDF11
 FLASH_ORIGIN = 0x0800_0000
 
 # Bounds for the sanity check on an uploaded image. SRAM_HI is INCLUSIVE: a
-# real silkscreen build has its initial stack pointer at exactly 0x20020000, the
+# real betacrawler build has its initial stack pointer at exactly 0x20020000, the
 # top of the F411's 128KB SRAM, so an exclusive bound rejects every genuine
 # image. (Measured, not assumed -- see the spec.)
 SRAM_LO, SRAM_HI = 0x2000_0000, 0x2002_0000

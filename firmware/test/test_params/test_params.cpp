@@ -16,7 +16,7 @@ enum : uint8_t { P_LEVEL = 0, P_MODE, P_NAME };
 static const ParamDef kParams[] = {
   {"t.level", ParamType::U8,   "Level", "Hz",    1, 20, nullptr, 0, 0, 2, nullptr,  nullptr},
   {"t.mode",  ParamType::Enum, "Mode",  nullptr, 0, 0,  kModes,  3, 0, 2, nullptr,  nullptr},
-  {"t.name",  ParamType::Str,  "Name",  nullptr, 0, 0,  nullptr, 0, kMaxStrLen, 0, "silkscreen", nullptr},
+  {"t.name",  ParamType::Str,  "Name",  nullptr, 0, 0,  nullptr, 0, kMaxStrLen, 0, "betacrawler", nullptr},
 };
 static const ModuleDesc kDesc = {"t", "Test", kParams, 3, nullptr, 0};
 
@@ -26,7 +26,7 @@ void test_defaults_come_from_the_descriptor() {
   Params p(reg);
   TEST_ASSERT_EQUAL_INT32(2, p.num(P_LEVEL));
   TEST_ASSERT_EQUAL_STRING("blink", p.str(P_MODE));
-  TEST_ASSERT_EQUAL_STRING("silkscreen", p.str(P_NAME));
+  TEST_ASSERT_EQUAL_STRING("betacrawler", p.str(P_NAME));
 }
 
 void test_numeric_range_rejected_not_clamped() {
@@ -54,7 +54,7 @@ void test_string_too_long_rejected_not_truncated() {
   memset(long_name, 'x', sizeof(long_name));
   long_name[40] = '\0';
   TEST_ASSERT_EQUAL(SetResult::TooLong, p.setStr(P_NAME, long_name));
-  TEST_ASSERT_EQUAL_STRING("silkscreen", p.str(P_NAME));
+  TEST_ASSERT_EQUAL_STRING("betacrawler", p.str(P_NAME));
 
   char exact[kMaxStrLen + 1];
   memset(exact, 'y', kMaxStrLen);
@@ -75,7 +75,7 @@ void test_load_defaults_restores_after_changes() {
   p.setStr(P_NAME, "changed");
   p.loadDefaults();
   TEST_ASSERT_EQUAL_INT32(2, p.num(P_LEVEL));
-  TEST_ASSERT_EQUAL_STRING("silkscreen", p.str(P_NAME));
+  TEST_ASSERT_EQUAL_STRING("betacrawler", p.str(P_NAME));
 }
 
 void setUp() {}

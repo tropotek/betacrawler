@@ -12,5 +12,5 @@ python3 app/tools/bundle_firmware.py --all              # every board target in 
 python3 app/tools/bundle_firmware.py --add other_board  # merge, don't prune the rest
 python3 app/tools/bundle_firmware.py --dry-run          # report only
 ```
-Also the **Build release firmware** task in `silkscreen.code-workspace`.
+Also the **Build release firmware** task in `betacrawler.code-workspace`.
 There is also a no-prompt **Build ALL release firmware** task for `--all`.

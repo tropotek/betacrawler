@@ -119,7 +119,7 @@ app/docs/               placeholder template (USER_GUIDE.md) for a fork's own us
 diagrams shown on the Examples page (`app/web/index.html`'s inline SVGs, format documented in the
 `wiring-diagram-svg` skill). Reference material only: nothing in `firmware/`, `app/`, or the build
 reads it, and it is opened directly in KiCad, not through either tested tier. Registered as its own
-folder in `silkscreen.code-workspace`, same pattern as `firmware/`.
+folder in `betacrawler.code-workspace`, same pattern as `firmware/`.
 
 ## Rules that must not be undone
 

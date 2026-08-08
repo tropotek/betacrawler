@@ -4,7 +4,7 @@
 // Same WeActStudio.MiniSTM32F4x1 board footprint as blackpill_f411ce.h, just a
 // different MCU on it: 96KB RAM instead of 128KB, 84MHz max instead of 100MHz.
 // Confirmed here because one unit from a batch of spare boards turned out to
-// be silkscreened/sold as an F411CE but actually populated with a genuine
+// be betacrawlered/sold as an F411CE but actually populated with a genuine
 // STM32F401CEU6 -- the F411 env's linker script assumes 128KB RAM and puts
 // the initial stack pointer past the real 96KB this chip has, so it
 // HardFaults on every boot before USB even comes up. This env exists so that

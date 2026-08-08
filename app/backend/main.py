@@ -134,7 +134,7 @@ def create_app(device: DeviceModel | None = None,
     # Uploaded images land here. One directory per app instance, so parallel
     # test runs (and two servers on one machine) cannot scribble on each
     # other's scratch file.
-    upload_dir = Path(tempfile.mkdtemp(prefix="silkscreen-fw-"))
+    upload_dir = Path(tempfile.mkdtemp(prefix="betacrawler-fw-"))
     # Last successful DFU enumeration, served while a flash holds the device.
     last_devices: list[dict] = []
 
@@ -145,7 +145,7 @@ def create_app(device: DeviceModel | None = None,
         yield
         device.disconnect()
 
-    app = FastAPI(title="silkscreen configurator", lifespan=lifespan)
+    app = FastAPI(title="betacrawler configurator", lifespan=lifespan)
 
     @app.exception_handler(DeviceError)
     async def _device_error(_request, exc: DeviceError):

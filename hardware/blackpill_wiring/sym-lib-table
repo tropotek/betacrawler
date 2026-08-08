@@ -1,4 +1,0 @@
-(sym_lib_table
-  (version 7)
-  (lib (name "blackpill_wiring")(type "KiCad")(uri "/home/godar/Projects/silkscreen/hardware/blackpill_wiring/blackpill_wiring.kicad_sym")(options "")(descr ""))
-)
