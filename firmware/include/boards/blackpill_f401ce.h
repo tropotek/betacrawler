@@ -76,9 +76,10 @@
 #define SERVO_TIMER     TIM4
 #define SERVO_PIN       PB6
 
-// Brushless ESC on TIM3_CH1. Same pins and reasoning as blackpill_f411ce.h.
-#define ESC_TIMER       TIM3
-#define ESC_PIN         PA6
+// Brushless ESC on TIM3_CH1 (esc0 -- this board has only one ESC instance,
+// no esc1). Same pins and reasoning as blackpill_f411ce.h's esc0.
+#define ESC0_TIMER      TIM3
+#define ESC0_PIN        PA6
 
 // CRSF receiver on USART1. Same pins as blackpill_f411ce.h; see that header
 // for why PA9/PA10 and not the ALTERNATE PB6/PB7 mapping.

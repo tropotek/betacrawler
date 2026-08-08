@@ -21,19 +21,20 @@ static const char* const kSrcNames[] = {
 
 static const char* const kDirections[] = {"unidirectional", "bidirectional"};
 
+// Per-field reasoning: see esc0_params.cpp -- identical here, just esc1's keys.
 static const ParamDef kParams[] = {
   // key                type             label       unit  min   max   opts     n  maxlen def       defStr group
   {"esc1.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_UNIDIRECTIONAL, nullptr, nullptr},
   {"esc1.mode",         ParamType::Enum, "ESC",      nullptr, 0,    0,    kModes, 3, 0, esc::MODE_OFF, nullptr, nullptr},
-  {"esc1.throttle_us",  ParamType::U8,   "Throttle", "\xc2\xb5s",    1000, 2000, nullptr, 0, 0, 1000,     nullptr, nullptr},
-  {"esc1.min_us",       ParamType::U8,   "Min",      "\xc2\xb5s",    500,  1500, nullptr, 0, 0, 1000,     nullptr, nullptr},
-  {"esc1.max_us",       ParamType::U8,   "Max",      "\xc2\xb5s",    1500, 2500, nullptr, 0, 0, 2000,     nullptr, nullptr},
+  {"esc1.throttle_us",  ParamType::U8,   "Throttle", "µs",    1000, 2000, nullptr, 0, 0, 1000,     nullptr, nullptr},
+  {"esc1.min_us",       ParamType::U8,   "Min",      "µs",    500,  1500, nullptr, 0, 0, 1000,     nullptr, nullptr},
+  {"esc1.max_us",       ParamType::U8,   "Max",      "µs",    1500, 2500, nullptr, 0, 0, 2000,     nullptr, nullptr},
   {"esc1.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 12, 0, 0, nullptr, nullptr, "esc1.mode", "off"},
 };
 
 static const TlmDef kTlm[T_COUNT] = {
   // key     label     unit  type          div  dec  fmt      group
-  {"esc1",  "ESC 1",  "\xc2\xb5s",    TlmType::U32,  0,   0,  nullptr, nullptr},
+  {"esc1",  "ESC 1",  "µs",    TlmType::U32,  0,   0,  nullptr, nullptr},
   {"arm1",  "Armed",  nullptr, TlmType::U32,  0,   0,  nullptr, nullptr},
 };
 

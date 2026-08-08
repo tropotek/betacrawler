@@ -69,18 +69,30 @@ SCHEMA_PARAMS = [
      "min": 1500, "max": 2500, "def": 2000, "group": "Servo"},
     {"key": "servo.src", "type": "enum", "label": "Source", "options": _SRC_CHANS,
      "def": "ch2", "group": "Servo", "showIf": {"key": "servo.mode", "val": "input"}},
-    {"key": "esc.direction", "type": "enum", "label": "Direction",
-     "options": ["unidirectional", "bidirectional"], "def": "unidirectional", "group": "ESC"},
-    {"key": "esc.mode", "type": "enum", "label": "ESC",
-     "options": ["off", "armed", "input"], "def": "off", "group": "ESC"},
-    {"key": "esc.throttle_us", "type": "u8", "label": "Throttle", "unit": "µs",
-     "min": 1000, "max": 2000, "def": 1000, "group": "ESC"},
-    {"key": "esc.min_us", "type": "u8", "label": "Min", "unit": "µs",
-     "min": 500, "max": 1500, "def": 1000, "group": "ESC"},
-    {"key": "esc.max_us", "type": "u8", "label": "Max", "unit": "µs",
-     "min": 1500, "max": 2500, "def": 2000, "group": "ESC"},
-    {"key": "esc.src", "type": "enum", "label": "Source", "options": _SRC_CHANS,
-     "def": "ch1", "group": "ESC", "showIf": {"key": "esc.mode", "val": "off"}},
+    {"key": "esc0.direction", "type": "enum", "label": "Direction",
+     "options": ["unidirectional", "bidirectional"], "def": "unidirectional", "group": "ESC 0"},
+    {"key": "esc0.mode", "type": "enum", "label": "ESC",
+     "options": ["off", "armed", "input"], "def": "off", "group": "ESC 0"},
+    {"key": "esc0.throttle_us", "type": "u8", "label": "Throttle", "unit": "µs",
+     "min": 1000, "max": 2000, "def": 1000, "group": "ESC 0"},
+    {"key": "esc0.min_us", "type": "u8", "label": "Min", "unit": "µs",
+     "min": 500, "max": 1500, "def": 1000, "group": "ESC 0"},
+    {"key": "esc0.max_us", "type": "u8", "label": "Max", "unit": "µs",
+     "min": 1500, "max": 2500, "def": 2000, "group": "ESC 0"},
+    {"key": "esc0.src", "type": "enum", "label": "Source", "options": _SRC_CHANS,
+     "def": "ch1", "group": "ESC 0", "showIf": {"key": "esc0.mode", "val": "off"}},
+    {"key": "esc1.direction", "type": "enum", "label": "Direction",
+     "options": ["unidirectional", "bidirectional"], "def": "unidirectional", "group": "ESC 1"},
+    {"key": "esc1.mode", "type": "enum", "label": "ESC",
+     "options": ["off", "armed", "input"], "def": "off", "group": "ESC 1"},
+    {"key": "esc1.throttle_us", "type": "u8", "label": "Throttle", "unit": "µs",
+     "min": 1000, "max": 2000, "def": 1000, "group": "ESC 1"},
+    {"key": "esc1.min_us", "type": "u8", "label": "Min", "unit": "µs",
+     "min": 500, "max": 1500, "def": 1000, "group": "ESC 1"},
+    {"key": "esc1.max_us", "type": "u8", "label": "Max", "unit": "µs",
+     "min": 1500, "max": 2500, "def": 2000, "group": "ESC 1"},
+    {"key": "esc1.src", "type": "enum", "label": "Source", "options": _SRC_CHANS,
+     "def": "ch1", "group": "ESC 1", "showIf": {"key": "esc1.mode", "val": "off"}},
     {"key": "rx.protocol", "type": "enum", "label": "Protocol",
      "options": ["crossfire", "elrs"], "def": "crossfire", "group": "RX"},
     {"key": "rx.source", "type": "enum", "label": "Source",
@@ -110,8 +122,10 @@ SCHEMA_TLM = [
     {"key": "vdd", "label": "VDD", "unit": "V", "div": 1000, "dec": 2, "group": "System"},
     {"key": "btn", "label": "Button", "group": "Button"},
     {"key": "srv", "label": "Servo", "unit": "µs", "group": "Servo"},
-    {"key": "esc", "label": "ESC", "unit": "µs", "group": "ESC"},
-    {"key": "arm", "label": "Armed", "group": "ESC"},
+    {"key": "esc0", "label": "ESC 0", "unit": "µs", "group": "ESC 0"},
+    {"key": "arm0", "label": "Armed", "group": "ESC 0"},
+    {"key": "esc1", "label": "ESC 1", "unit": "µs", "group": "ESC 1"},
+    {"key": "arm1", "label": "Armed", "group": "ESC 1"},
     {"key": "wifi.status", "label": "Status", "group": "WiFi"},
     {"key": "wifi.rssi", "label": "RSSI", "unit": "dBm", "group": "WiFi"},
     {"key": "wifi.ip", "label": "IP", "fmt": "ip", "group": "WiFi"},
@@ -137,7 +151,7 @@ def responder(req, emit):
         emit({"id": rid, "ok": True, "fw": "betacrawler 1.0.0", "proto": 1,
               "board": "blackpill_f411ce", "name": "betacrawler", "ver": "1.0.0",
               "built": "Aug  2 2026 12:00:00",
-              "mods": ["device", "system", "button", "led", "servo", "esc", "rx",
+              "mods": ["device", "system", "button", "led", "servo", "esc0", "esc1", "rx",
                        "st7789_240x240", "wifi"],
               "caps": ["dfu", "wifiscan"]})
     elif op == "schema":
@@ -170,7 +184,7 @@ def push_telemetry(fake, stop_event):
     while not stop_event.wait(0.2):
         t = time.monotonic() - start
         frame = {"up": int(t * 1000), "clk": 96, "ram": 42189, "temp": 34.5, "vdd": 3300,
-                 "btn": 0, "srv": 1500, "esc": 1500, "arm": 2,
+                 "btn": 0, "srv": 1500, "esc0": 1500, "arm0": 2, "esc1": 1500, "arm1": 2,
                  "wifi.status": 1, "wifi.rssi": -52, "wifi.ip": 0xC0A80042,
                  "link": 1, "lq": 99, "rssi": -61, "rate": 150, "err": 0,
                  "rfrate": 150, "pwr": 100}
@@ -222,7 +236,8 @@ def main():
 
             # config.png feeds readme.md's hero gallery and needs to sell the
             # project at a glance, so it captures the whole scrollable form
-            # (all 9 module groups) rather than just the first screenful.
+            # (every module group, including ESC 0 and ESC 1 as separate groups)
+            # rather than just the first screenful.
             # telemetry.png and help.png also use full_page so cards/bullets
             # aren't cut off mid-content. The remaining pages fit their
             # content within one 1280x900 viewport already, so leaving them

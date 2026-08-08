@@ -90,7 +90,7 @@ The bus also carries one piece of state beyond the channel values themselves: `m
 frame (real or simulated). It exists for the same reason the channel values do — a consumer that
 needs to know whether the link is actually alive cannot infer that from a channel value holding
 steady, since a real stick at its mechanical endpoint is indistinguishable from a dead link by
-value alone. `esc`'s `mode=input` failsafe is the first consumer of this signal; `servo` does not
+value alone. `esc0`/`esc1`'s `mode=input` failsafe is the first consumer of this signal; `servo` does not
 need it (position-hold-on-dropout is its own correct, deliberate design, not a gap).
 
 ## Boot health
