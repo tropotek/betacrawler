@@ -2,6 +2,7 @@
 .pio/
 .pioenvs/
 .piolibdeps/
+.idea/
 
 # Firmware the app ships with: build output, not source. Produced by
 # `python3 app/tools/bundle_firmware.py <board>` at release time, and by
