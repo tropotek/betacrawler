@@ -80,14 +80,14 @@ server**. It restarts cleanly over any instance it already left running. Or by h
 ```bash
 python3 -m venv app/.venv
 app/.venv/bin/pip install -r app/requirements.txt
-./run-server.sh                      # http://127.0.0.1:8080
+./run-server.sh                      # http://127.0.0.1:9090
 ```
 
 `run-server.sh` takes `PORT=9000` and passes extra arguments straight to uvicorn (`--reload`).
 
 ## 5. Connect
 
-Open <http://127.0.0.1:8080>, pick the port and press Connect. The board appears as
+Open <http://127.0.0.1:9090>, pick the port and press Connect. The board appears as
 `/dev/ttyACM0` on Linux, `COMx` on Windows, `/dev/cu.usbmodem*` on macOS; the picker marks ports
 with ST's USB vendor id `0483` as **(STM32)**, so the right one is obvious. The UI then reads
 the device's schema and builds itself.

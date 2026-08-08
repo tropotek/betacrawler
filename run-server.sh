@@ -2,7 +2,7 @@
 # Start the configurator backend (FastAPI + static web UI), replacing any
 # instance of *this* project's server that is already running.
 #
-#   ./run-server.sh                 # http://127.0.0.1:8080
+#   ./run-server.sh                 # http://127.0.0.1:9090
 #   PORT=9000 ./run-server.sh       # different port
 #   ./run-server.sh --reload        # extra args go straight to uvicorn
 #
@@ -10,7 +10,7 @@
 set -euo pipefail
 
 HOST="${HOST:-127.0.0.1}"
-PORT="${PORT:-8080}"
+PORT="${PORT:-9090}"
 
 REPO_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$REPO_DIR/app"
