@@ -71,6 +71,17 @@ static core::Inputs g_inputs;
 #  endif
 #endif
 
+#if FEATURE_ESC0
+#  include "hardware/esc0/esc0_params.h"
+#  if FW_TARGET_ARDUINO
+#    include "hardware/esc0/esc0_driver.h"
+     static esc0::EscDriver g_esc0;
+#    define ESC0_DRV (&g_esc0)
+#  else
+#    define ESC0_DRV nullptr
+#  endif
+#endif
+
 #if FEATURE_RX
 #  include "hardware/rx/rx_params.h"
 #  if FW_TARGET_ARDUINO
@@ -126,6 +137,9 @@ void registerModules(Registry& reg) {
 #endif
 #if FEATURE_SERVO
   reg.add(servo::kDesc, SERVO_DRV);
+#endif
+#if FEATURE_ESC0
+  reg.add(esc0::kDesc, ESC0_DRV);
 #endif
 #if FEATURE_RX
   reg.add(rx::kDesc, RX_DRV);

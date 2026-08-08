@@ -74,6 +74,9 @@
 #ifndef FEATURE_SERVO
 #define FEATURE_SERVO 0
 #endif
+#ifndef FEATURE_ESC0
+#define FEATURE_ESC0 0
+#endif
 #ifndef FEATURE_DFU
 #define FEATURE_DFU 0
 #endif
