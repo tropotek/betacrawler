@@ -15,8 +15,10 @@
 //
 // NOTE: the native test environment builds against the F411 header, not this
 // one -- see platformio.ini's [env:native]. Only one header can back
-// test/golden/schema.json, and the parameter/telemetry set is identical
-// either way (this header changes clocks and RAM, not features or pins).
+// test/golden/schema.json, and the parameter/telemetry set was identical
+// when this note was written; blackpill_f411ce.h has since enabled
+// rx/esc0/esc1 that this header has not -- check both headers' feature
+// blocks before assuming parity.
 
 #define BOARD_ID "blackpill_f401ce"
 
@@ -26,7 +28,8 @@
 #define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0
 #define FEATURE_RX      0
-#define FEATURE_ESC     0
+#define FEATURE_ESC0    0
+#define FEATURE_ESC1    0
 // The F401 has the same USB DFU bootloader in ROM as the F411 -- same system
 // memory base, same AN2606 entry. See blackpill_f411ce.h for the rationale.
 #define FEATURE_DFU     1
@@ -73,9 +76,10 @@
 #define SERVO_TIMER     TIM4
 #define SERVO_PIN       PB6
 
-// Brushless ESC on TIM3_CH1. Same pins and reasoning as blackpill_f411ce.h.
-#define ESC_TIMER       TIM3
-#define ESC_PIN         PA6
+// Brushless ESC on TIM3_CH1 (esc0 -- this board has only one ESC instance,
+// no esc1). Same pins and reasoning as blackpill_f411ce.h's esc0.
+#define ESC0_TIMER      TIM3
+#define ESC0_PIN        PA6
 
 // CRSF receiver on USART1. Same pins as blackpill_f411ce.h; see that header
 // for why PA9/PA10 and not the ALTERNATE PB6/PB7 mapping.

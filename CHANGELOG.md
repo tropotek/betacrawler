@@ -5,6 +5,22 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Version 1.0.0 (2026-07-29)
 
+- **feat(firmware): split the single-instance `esc` module into shared math plus two independent
+  `esc0`/`esc1` modules, and enable `rx`, `esc0` and `esc1` by default on `blackpill_f411ce.h`.**
+  The pulse-width clamping, arm-state transitions and input-staleness logic that used to live
+  inside `esc_driver.cpp` moved to a pure, native-tested `esc::` library
+  (`firmware/src/hardware/esc/esc_math.h`/`.cpp`, no Arduino includes); the old `hardware/esc/`
+  module is gone, replaced by two near-identical instances, `hardware/esc0/` and `hardware/esc1/`,
+  each with its own `FEATURE_ESC0`/`FEATURE_ESC1` flag, its own `esc0.*`/`esc1.*` wire keys, and its
+  own arm state, so enabling or disabling one never affects the other. Two ESC instances must claim
+  different physical timer peripherals — `blackpill_f411ce.h` carries a compile-time `#error` guard
+  that fires if a fork ever turns `FEATURE_SERVO` on there too, since `esc1` and Servo both claim
+  `TIM4`/`PB6` on that board. **Breaking rename for any fork's board header:** `FEATURE_ESC`,
+  `ESC_PIN`, `ESC_TIMER`, `ESC_FRAME_US`, `ESC_ARM_HOLD_MS`, `ESC_INPUT_STALE_MS` and
+  `ESC_ARM_LOW_MARGIN_US` no longer exist — rename to `FEATURE_ESC0`/`ESC0_PIN`/`ESC0_TIMER`/etc.
+  (or the `ESC1_*` equivalents for a second instance). `blackpill_f411ce.h` — the tank build — now
+  ships `rx`, `esc0` and `esc1` enabled by default, alongside the pre-existing `button` and `led`.
+
 - **docs: a full MkDocs + Material documentation site, published to GitHub Pages.** New `docs/`
   site (`mkdocs.yml`, `docs/index.md`, `getting-started.md`, `architecture.md`, `api.md`,
   `troubleshooting.md`, per-module pages under `docs/modules/`, and guides under `docs/guides/`)

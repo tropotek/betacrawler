@@ -2,10 +2,14 @@
 
 **Type:** hardware module (`firmware/src/hardware/servo/`)
 
-Drives a hobby servo. On the reference board this is `TIM4_CH1` on `PB6`.
+Drives a hobby servo. On the reference board (`blackpill_f411ce.h`) this is `TIM4_CH1` on `PB6`.
 
-**Ships off by default on the reference board.** Set `FEATURE_SERVO 1` in the board header and
-reflash to use it.
+**Ships off by default on the reference board — and on that board, cannot simply be turned on.**
+The tank build enables `esc1` (see [ESC](esc.md)) on that same `TIM4_CH1`/`PB6`, so the header
+carries a compile-time `#error` guard that fires if `FEATURE_SERVO` and `FEATURE_ESC1` are both set
+to `1` there. Setting `FEATURE_SERVO 1` on `blackpill_f411ce.h` requires first moving one of the
+two to a different timer/pin — see the guard and its comment in the board header for the exact
+condition.
 
 ## Board header
 

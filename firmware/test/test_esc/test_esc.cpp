@@ -1,5 +1,5 @@
 #include <unity.h>
-#include "hardware/esc/esc_params.h"
+#include "hardware/esc/esc_math.h"
 
 using namespace esc;
 

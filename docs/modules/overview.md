@@ -44,7 +44,8 @@ the way it is.
 - [LED](led.md) — status indication
 - [Button](button.md) — user input
 - [Servo](servo.md) — hobby servo output
-- [ESC](esc.md) — brushless motor ESC output
+- [ESC](esc.md) — brushless motor ESC output (two independent instances, `esc0`/`esc1`, sharing
+  one math library)
 - [RX](rx.md) — RC receiver input (CRSF / ExpressLRS)
 - [Display](display.md) — ST7789 240x240 on-device dashboard
 - [WiFi](wifi.md) — network connectivity (ESP-01 AT companion chip on STM32 boards, native WiFi

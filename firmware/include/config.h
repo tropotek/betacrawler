@@ -25,15 +25,24 @@
 // (FW_MAX_PARAMS * sizeof(core::Value) is the big one, 36 bytes per slot),
 // which is cheap on a 128KB part. Registry::add() refuses to exceed them
 // rather than overflowing, and a native test covers that path.
-// blackpill_f411ce is at its cap: device, system, button, led, servo, esc, rx
-// and st7789_240x240 is exactly 8 modules. Raising this is required before a
-// 9th module (e.g. a second esc/servo instance, see esc's own spec) can be
-// registered on a board that also has all of this board's other features on.
+// blackpill_f411ce ships device, system, button, led, esc0, esc1 and rx today
+// -- 7 modules, one under the cap. A board that also turns on servo and
+// st7789_240x240 (both off here) would be at device, system, button, led,
+// servo, esc0, esc1, rx, st7789_240x240 -- 9 modules, one OVER
+// FW_MAX_MODULES. (esc0+esc1 already count as two of those nine; they are
+// what pushed this board's own "everything on" total past 8, not a
+// hypothetical 9th module still to come.) Raising this cap is required
+// before such a board can register everything at once -- Registry::add()
+// silently refuses the module that doesn't fit rather than overflowing, and
+// a native test covers that path, but nothing today surfaces the refusal to
+// a person, so don't rely on it as a warning.
 #define FW_MAX_MODULES  8
 #define FW_MAX_PARAMS   32
-// 32 fields on this board: rx publishes 16 channels and 7 link readings, esc
-// adds 2 more (esc, arm), the rest split across the other modules. 40 rather
-// than a bare 32 leaves a little headroom for the next module or field;
+// This board's current build (led, button, esc0, esc1, rx enabled; servo and
+// st7789_240x240 off) exposes 33 telemetry fields: rx alone publishes 16
+// channels plus 7 link readings, esc0 and esc1 add 2 each (its pulse width
+// and arm state), and the rest split across system/button. 40 rather than a
+// bare fit leaves a little headroom for the next module or field;
 // TlmValue is 4 bytes, so the headroom costs 32 bytes of RAM in one place --
 // but there are two FW_MAX_TLM-sized arrays, not one: main.cpp's
 // `static TlmValue g_tlm[FW_MAX_TLM]` (+32 bytes static) and
@@ -74,14 +83,17 @@
 #ifndef FEATURE_SERVO
 #define FEATURE_SERVO 0
 #endif
+#ifndef FEATURE_ESC0
+#define FEATURE_ESC0 0
+#endif
+#ifndef FEATURE_ESC1
+#define FEATURE_ESC1 0
+#endif
 #ifndef FEATURE_DFU
 #define FEATURE_DFU 0
 #endif
 #ifndef FEATURE_RX
 #define FEATURE_RX 0
-#endif
-#ifndef FEATURE_ESC
-#define FEATURE_ESC 0
 #endif
 #ifndef FEATURE_WIFI
 #define FEATURE_WIFI 0

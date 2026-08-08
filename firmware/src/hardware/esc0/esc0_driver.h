@@ -1,14 +1,14 @@
 #pragma once
-#include "hardware/esc/esc_params.h"
+#include "hardware/esc0/esc0_params.h"
 #include "core/inputs.h"
 
 // Forward-declared rather than including <HardwareTimer.h>: this header is
 // pulled in by modules.cpp, and the Arduino timer header is heavy.
 class HardwareTimer;
 
-namespace esc {
+namespace esc0 {
 
-// Requires ESC_TIMER and ESC_PIN from the board header.
+// Requires ESC0_PIN and ESC0_TIMER from the board header.
 class EscDriver : public core::Module {
  public:
   void attach(const core::Registry& reg, const core::Params& p) override;
@@ -26,15 +26,15 @@ class EscDriver : public core::Module {
   const core::Inputs* inputs_ = nullptr;
   HardwareTimer* timer_ = nullptr;
   uint32_t ch_         = 0;
-  int32_t  mode_       = MODE_OFF;
+  int32_t  mode_       = esc::MODE_OFF;
   uint16_t throttleUs_ = 1000;
   uint8_t  srcIdx_     = 0;
   uint16_t minUs_      = 1000;
   uint16_t maxUs_      = 2000;
-  int32_t  direction_  = DIR_UNIDIRECTIONAL;
-  uint32_t armState_   = ARM_OFF;
+  int32_t  direction_  = esc::DIR_UNIDIRECTIONAL;
+  uint32_t armState_   = esc::ARM_OFF;
   uint32_t armT0_      = 0;
   uint16_t lastUs_     = 0;
 };
 
-}  // namespace esc
+}  // namespace esc0

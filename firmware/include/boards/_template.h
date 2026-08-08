@@ -108,17 +108,23 @@
 // #define SERVO_TIMER  TIM4
 // #define SERVO_PIN    PB6      // TIM4_CH1
 
-// Required when FEATURE_ESC is 1: a brushless ESC on its own timer channel,
+// Required when FEATURE_ESC0 is 1: a brushless ESC on its own timer channel,
 // separate from FEATURE_SERVO's timer -- see the note in blackpill_f411ce.h
 // for why sharing one is unsafe. The channel IS derived from the pin, so the
 // two must agree; nothing checks that at compile time.
-// ESC_FRAME_US (optional, 20000/50Hz), ESC_ARM_HOLD_MS (optional, 2000),
-// ESC_INPUT_STALE_MS (optional, 500) and ESC_ARM_LOW_MARGIN_US (optional, 50)
-// are all defaulted in esc_driver.cpp.
+// ESC0_FRAME_US (optional, 20000/50Hz), ESC0_ARM_HOLD_MS (optional, 2000),
+// ESC0_INPUT_STALE_MS (optional, 500) and ESC0_ARM_LOW_MARGIN_US (optional,
+// 50) are all defaulted in esc0_driver.cpp.
+//
+// A second ESC (FEATURE_ESC1 with ESC1_PIN/ESC1_TIMER, same shape) needs a
+// DIFFERENT PHYSICAL TIMER PERIPHERAL from the first, not just a different
+// channel of the same one -- two independently-constructed HardwareTimer
+// objects sharing one peripheral fight over its shared overflow/period
+// register.
 //
 // Power the motor/ESC from its own supply, never this board's 5V/VBUS pin.
-// #define ESC_TIMER  TIM3
-// #define ESC_PIN    PA6      // TIM3_CH1
+// #define ESC0_TIMER  TIM3
+// #define ESC0_PIN    PA6      // TIM3_CH1
 
 // Required when FEATURE_RX is 1: an RC receiver on its own hardware serial
 // port, decoded by the protocol-agnostic rx module.
