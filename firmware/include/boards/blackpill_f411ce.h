@@ -17,8 +17,9 @@
 #define FEATURE_BUTTON  1
 #define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0
-#define FEATURE_RX      0
-#define FEATURE_ESC     0
+#define FEATURE_RX      1
+#define FEATURE_ESC0    1
+#define FEATURE_ESC1    1
 #define FEATURE_WIFI    0
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
 // bootloader in ROM, so this costs a magic word and a reset -- no bootloader
@@ -84,23 +85,36 @@
 #define SERVO_TIMER     TIM4
 #define SERVO_PIN       PB6
 
-// Brushless ESC on TIM3_CH1. A separate timer from servo's TIM4, on purpose
-// -- two independently-constructed HardwareTimer objects sharing one
-// physical peripheral would each fight over its shared overflow/period
-// register. PA6 is confirmed free against this part's own PeripheralPins.c
+// Brushless ESCs on TIM3_CH1 and TIM4_CH1. Each is a separate timer
+// peripheral, on purpose -- two independently-constructed HardwareTimer
+// objects sharing one physical peripheral would each fight over its shared
+// overflow/period register. PA6 is confirmed free against this part's own
+// PeripheralPins.c
 // (framework-arduinoststm32/variants/STM32F4xx/F411C(C-E)(U-Y)/PeripheralPins.c):
-// nothing else here claims it. TIM3_CH2 (PB5) stays free for a second ESC --
-// see _notes/spec-esc.md, "Future fork".
+// nothing else here claims it. FEATURE_SERVO, the only other module that
+// claims TIM4 (PB6/TIM4_CH1), is off on this board, so esc1 takes it.
 //
 // ESC_FRAME_US (20000, i.e. 50Hz), ESC_ARM_HOLD_MS (2000), ESC_INPUT_STALE_MS
 // (500) and ESC_ARM_LOW_MARGIN_US (50) are all optional, defaulted in
-// esc_driver.cpp.
+// esc0_driver.cpp/esc1_driver.cpp.
 //
 // Power the motor/ESC from its own supply, never the board's 5V/VBUS pin --
 // an ESC under load draws far more than the servo's own VBUS warning already
 // covers.
-#define ESC_TIMER       TIM3
-#define ESC_PIN         PA6
+//
+// esc0 on TIM3_CH1 -- the pin already wired and documented on every unit
+// shipped so far, unchanged from the single-ESC configuration this board
+// used to have.
+#define ESC0_TIMER      TIM3
+#define ESC0_PIN        PA6
+
+// esc1 on TIM4_CH1 -- a DIFFERENT physical timer peripheral from esc0's
+// TIM3, not a second channel of the same one (two independently-constructed
+// HardwareTimer objects sharing one peripheral fight over its shared
+// overflow/period register). TIM4 is free on this board: FEATURE_SERVO,
+// the only other module that claims it (PB6/TIM4_CH1), is off here.
+#define ESC1_TIMER      TIM4
+#define ESC1_PIN        PB6
 
 // CRSF receiver on USART1. PA9/PA10 are the only unclaimed peripheral pins on
 // this board and nothing else here references them: the LED is PC13, the
@@ -127,8 +141,9 @@
 // CRSF in the TBS menu before anything appears on the wire at all.
 
 // ESP-01 (ESP8266) WiFi module, stock AT firmware, on USART2. PA2/PA3 are
-// free on this board regardless of FEATURE_RX/FEATURE_ESC -- deliberately
-// not reusing RX's USART1 pins, so a future board can enable both at once.
+// free on this board regardless of FEATURE_RX/FEATURE_ESC0/FEATURE_ESC1 --
+// deliberately not reusing RX's USART1 pins, so a future board can enable
+// both at once.
 // CH_PD, GPIO0, GPIO2 and RST are pulled high locally on the module side
 // (10k to 3V3) and do not connect to any STM32 pin -- see the wiring
 // diagram referenced from _notes/spec-wifi.md.
