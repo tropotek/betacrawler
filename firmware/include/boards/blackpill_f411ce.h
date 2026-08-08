@@ -68,13 +68,17 @@
 // Lower it here if a long or noisy ribbon shows artifacts.
 #define DISPLAY_SPI_HZ  24000000
 
-// Hobby servo on TIM4_CH1. TIM4 is chosen because all four of its channels
-// (PB6/PB7/PB8/PB9, AF2) are free on this board and contiguous on the header,
-// so a multi-channel fork is additive -- CH2-4 stay unclaimed. Nothing else
-// here touches them: the LED is PC13, the button PA0, the panel PA5/PA7 +
-// PB0/PB1, USB PA11/PA12 and SWD PA13/PA14. Note this part is LQFP48, so port
-// C is only PC13/14/15 and PB11 is not bonded out -- most of the timer maps a
-// generic F4 pinout table offers do not exist here.
+// Hobby servo on TIM4_CH1 -- but TIM4 is now claimed by esc1 (below), which
+// also drives PB6/TIM4_CH1. This board does not ship FEATURE_SERVO on, so the
+// conflict is latent, not live; the #error guard just past ESC1's block below
+// catches the case where someone flips FEATURE_SERVO on here without also
+// reconsidering esc1. A servo fork on this board needs a different timer,
+// not TIM4 -- CH2-4 (PB7/PB8/PB9) of the SAME peripheral don't help, since
+// esc1 already owns the peripheral's shared overflow/period register.
+// Nothing else here touches PB6/7/8/9: the LED is PC13, the button PA0, the
+// panel PA5/PA7 + PB0/PB1, USB PA11/PA12 and SWD PA13/PA14. Note this part is
+// LQFP48, so port C is only PC13/14/15 and PB11 is not bonded out -- most of
+// the timer maps a generic F4 pinout table offers do not exist here.
 //
 // SERVO_FRAME_US (20000, i.e. 50Hz) is optional, defaulted in the driver.
 //
@@ -94,9 +98,10 @@
 // nothing else here claims it. FEATURE_SERVO, the only other module that
 // claims TIM4 (PB6/TIM4_CH1), is off on this board, so esc1 takes it.
 //
-// ESC_FRAME_US (20000, i.e. 50Hz), ESC_ARM_HOLD_MS (2000), ESC_INPUT_STALE_MS
-// (500) and ESC_ARM_LOW_MARGIN_US (50) are all optional, defaulted in
-// esc0_driver.cpp/esc1_driver.cpp.
+// ESC0_FRAME_US/ESC1_FRAME_US (20000, i.e. 50Hz), ESC0_ARM_HOLD_MS/
+// ESC1_ARM_HOLD_MS (2000), ESC0_INPUT_STALE_MS/ESC1_INPUT_STALE_MS (500) and
+// ESC0_ARM_LOW_MARGIN_US/ESC1_ARM_LOW_MARGIN_US (50) are all optional per
+// instance, defaulted in esc0_driver.cpp/esc1_driver.cpp respectively.
 //
 // Power the motor/ESC from its own supply, never the board's 5V/VBUS pin --
 // an ESC under load draws far more than the servo's own VBUS warning already
@@ -116,11 +121,22 @@
 #define ESC1_TIMER      TIM4
 #define ESC1_PIN        PB6
 
+// Both esc1 and (if ever enabled) servo drive TIM4/PB6. FEATURE_SERVO ships
+// 0 on this board today, so nothing conflicts yet -- but if someone flips it
+// on here without also reconsidering esc1, both servo::ServoDriver and
+// esc1::EscDriver would construct their own HardwareTimer(TIM4) and fight
+// over PB6, with the servo's writes landing on the ESC output behind esc1's
+// arm-hold safety gate, silently. Catch that at compile time instead.
+#if FEATURE_SERVO && FEATURE_ESC1
+#error "servo and esc1 both claim TIM4/PB6 on this board -- move one to another timer/pin before enabling both"
+#endif
+
 // CRSF receiver on USART1. PA9/PA10 are the only unclaimed peripheral pins on
 // this board and nothing else here references them: the LED is PC13, the
-// button PA0, the panel PA5/PA7 + PB0/PB1, the servo PB6, USB PA11/PA12 and
-// SWD PA13/PA14. USART1's ALTERNATE mapping is PB6/PB7, which would collide
-// with the servo output -- so this mapping, not that one.
+// button PA0, the panel PA5/PA7 + PB0/PB1, the servo and esc1 both on PB6,
+// USB PA11/PA12 and SWD PA13/PA14. USART1's ALTERNATE mapping is PB6/PB7,
+// which would collide with the servo/esc1 output -- so this mapping, not
+// that one.
 //
 // The driver constructs its own HardwareSerial from these pins rather than
 // using a global Serial1, which the STM32 core only defines when the variant
