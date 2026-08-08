@@ -15,8 +15,10 @@
 //
 // NOTE: the native test environment builds against the F411 header, not this
 // one -- see platformio.ini's [env:native]. Only one header can back
-// test/golden/schema.json, and the parameter/telemetry set is identical
-// either way (this header changes clocks and RAM, not features or pins).
+// test/golden/schema.json, and the parameter/telemetry set was identical
+// when this note was written; blackpill_f411ce.h has since enabled
+// rx/esc0/esc1 that this header has not -- check both headers' feature
+// blocks before assuming parity.
 
 #define BOARD_ID "blackpill_f401ce"
 
@@ -26,7 +28,8 @@
 #define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0
 #define FEATURE_RX      0
-#define FEATURE_ESC     0
+#define FEATURE_ESC0    0
+#define FEATURE_ESC1    0
 // The F401 has the same USB DFU bootloader in ROM as the F411 -- same system
 // memory base, same AN2606 entry. See blackpill_f411ce.h for the rationale.
 #define FEATURE_DFU     1
