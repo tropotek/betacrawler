@@ -91,8 +91,8 @@ def test_connect_caches_schema_and_values():
     try:
         assert dev.status()["state"] == "connected"
         assert dev.status()["proto"] == 1
-        assert len(dev.schema()["params"]) == 4
-        assert len(dev.schema()["tlm"]) == 6
+        assert len(dev.schema()["params"]) == 20
+        assert len(dev.schema()["tlm"]) == 33
         assert dev.values()["led.blink_hz"] == 2
     finally:
         dev.disconnect()

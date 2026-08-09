@@ -37,11 +37,18 @@ def test_connect_then_schema_and_params(client):
 
     schema = client.get("/api/schema").json()
     assert {p["key"] for p in schema["params"]} == {
-        "led.mode", "led.blink_hz", "device.name", "tlm.rate"}
+        "led.mode", "led.blink_hz", "device.name", "tlm.rate",
+        "esc0.direction", "esc0.mode", "esc0.throttle_us", "esc0.min_us", "esc0.max_us", "esc0.src",
+        "esc1.direction", "esc1.mode", "esc1.throttle_us", "esc1.min_us", "esc1.max_us", "esc1.src",
+        "rx.protocol", "rx.source", "crossfire.timeout_ms", "elrs.timeout_ms"}
     # Telemetry descriptor rides along in the same response, so the UI renders
     # its cards from the device rather than a hardcoded field list.
     assert {t["key"] for t in schema["tlm"]} == {
-        "up", "clk", "ram", "temp", "vdd", "btn"}
+        "up", "clk", "ram", "temp", "vdd", "btn",
+        "esc0", "arm0", "esc1", "arm1",
+        "link", "lq", "rssi", "rate", "err", "rfrate", "pwr",
+        "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8",
+        "ch9", "ch10", "ch11", "ch12", "ch13", "ch14", "ch15", "ch16"}
     # Every item carries a group, so the form and the telemetry page can build
     # sections without inventing headings.
     assert all(p.get("group") for p in schema["params"])

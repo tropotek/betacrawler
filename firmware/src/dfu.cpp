@@ -8,6 +8,13 @@
 #error "FEATURE_DFU is on but the board header defines no DFU_SYSMEM_ADDR"
 #endif
 
+#if defined(USBCON) && defined(USBD_USE_CDC)
+// The Arduino core's own USB device handle (libraries/USBDevice/src/usbd_conf.c),
+// global but declared in no header. initVariant() below needs it to properly
+// tear the USB peripheral down before jumping -- see the comment there for why.
+extern PCD_HandleTypeDef g_hpcd;
+#endif
+
 namespace {
 
 // Arbitrary, but deliberately not 0 and not 0xFFFFFFFF: those are the values a
@@ -52,13 +59,40 @@ void DfuTrigger::reboot() {
 }  // namespace dfu
 
 // Called by the Arduino core's main() before setup() -- and therefore before
-// Serial.begin() initialises USB. Declared weak in the core's Arduino.h, so
-// simply defining it here overrides it.
+// Serial.begin() runs. Declared weak in the core's Arduino.h, so simply
+// defining it here overrides it.
 //
-// Jumping from a *fresh* boot with the USB peripheral untouched is the whole
-// point. Jumping out of a running application with an active USB stack is the
-// approach that famously costs days: the host still holds an open CDC device,
-// the peripheral is mid-transaction, and the bootloader inherits the mess.
+// NOT called before USB itself comes up, though -- that was this function's
+// original assumption, and it was wrong. The core's premain() (a
+// constructor-priority hook that runs before main(), see
+// cores/arduino/main.cpp) already calls init() -> hw_config_init() ->
+// USBD_CDC_init() by the time initVariant() gets a chance to run. So the USB
+// peripheral is already live, enumerated, and mid-flight as a CDC device
+// here -- not "fresh and untouched" as the comment used to claim. Jumping
+// into the ROM bootloader on top of that half-alive peripheral left it stuck
+// in a state where neither the CDC descriptor nor a DFU one would ever
+// enumerate again: confirmed on real hardware by halting the core over SWD
+// after the jump -- the CPU was genuinely running inside the ROM bootloader's
+// own poll loop (PC sitting in the 0x1FFFxxxx system memory region, moving
+// normally between halts), yet the board never reappeared on the USB bus in
+// EITHER mode, even left running undisturbed for several seconds. The
+// bootloader was alive and waiting; USB just never came back.
+//
+// The fix is to properly tear the USB peripheral down first, the same way
+// the framework's own USBD_reenumerate() forces a fresh re-enumeration at
+// normal startup: HAL_PCD_DeInit() calls HAL_PCD_Stop() internally, which
+// sets the peripheral's soft-disconnect bit and releases the D+ pull-up so
+// the host actually sees a disconnect, then disables the USB clock via
+// HAL_PCD_MspDeInit(). Only after that does the ROM bootloader get a clean
+// peripheral to bring its own USB stack up on.
+#if defined(USBCON) && defined(USBD_USE_CDC)
+static void teardownUsb() {
+  HAL_PCD_DeInit(&g_hpcd);
+}
+#else
+static void teardownUsb() {}
+#endif
+
 void initVariant() {
   unlockBackupDomain();
   if (RTC->BKP0R != kDfuMagic) return;
@@ -70,6 +104,10 @@ void initVariant() {
   RTC->BKP0R = 0;
 
   __disable_irq();
+
+  // Must happen before HAL_RCC_DeInit()/HAL_DeInit() below: HAL_PCD_DeInit()
+  // still needs a live peripheral clock to touch the USB registers safely.
+  teardownUsb();
 
   // Undo everything premain()'s init() set up. The ROM bootloader expects
   // reset-state peripherals and the HSI clock; leaving the PLL running or a

@@ -15,10 +15,10 @@
 //
 // NOTE: the native test environment builds against the F411 header, not this
 // one -- see platformio.ini's [env:native]. Only one header can back
-// test/golden/schema.json, and the parameter/telemetry set was identical
-// when this note was written; blackpill_f411ce.h has since enabled
-// rx/esc0/esc1 that this header has not -- check both headers' feature
-// blocks before assuming parity.
+// test/golden/schema.json. This header's feature block is kept in step with
+// blackpill_f411ce.h's by hand (button/led/rx/esc0/esc1 all on here too) --
+// check both headers' feature blocks before assuming parity still holds, since
+// nothing enforces it automatically.
 
 #define BOARD_ID "blackpill_f401ce"
 
@@ -27,9 +27,9 @@
 #define FEATURE_BUTTON  1
 #define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0
-#define FEATURE_RX      0
-#define FEATURE_ESC0    0
-#define FEATURE_ESC1    0
+#define FEATURE_RX      1
+#define FEATURE_ESC0    1
+#define FEATURE_ESC1    1
 // The F401 has the same USB DFU bootloader in ROM as the F411 -- same system
 // memory base, same AN2606 entry. See blackpill_f411ce.h for the rationale.
 #define FEATURE_DFU     1
@@ -67,19 +67,31 @@
 // it here if a long or noisy ribbon shows artifacts.
 #define DISPLAY_SPI_HZ  24000000
 
-// Hobby servo on TIM4_CH1. Same reasoning as blackpill_f411ce.h: all four of
-// TIM4's channels (PB6/PB7/PB8/PB9, AF2) are free and contiguous on the
-// header, and this is LQFP48 so port C is only PC13/14/15.
+// Hobby servo on TIM4_CH1 -- but TIM4 is now claimed by esc1 (below), which
+// also drives PB6/TIM4_CH1. Same latent conflict as blackpill_f411ce.h: this
+// board does not ship FEATURE_SERVO on, so the #error guard just past esc1's
+// block below only fires if someone flips FEATURE_SERVO on here without also
+// reconsidering esc1.
 //
 // Power the servo from the 5V pin (USB VBUS), never 3V3, with a 470-1000uF
 // bulk cap at the connector -- see the note in blackpill_f411ce.h.
 #define SERVO_TIMER     TIM4
 #define SERVO_PIN       PB6
 
-// Brushless ESC on TIM3_CH1 (esc0 -- this board has only one ESC instance,
-// no esc1). Same pins and reasoning as blackpill_f411ce.h's esc0.
+// Brushless ESCs on TIM3_CH1 and TIM4_CH1, same pins and reasoning as
+// blackpill_f411ce.h's esc0/esc1: two separate timer peripherals, not two
+// channels of the same one. FEATURE_SERVO, the only other module that claims
+// TIM4 (PB6/TIM4_CH1), is off on this board, so esc1 takes it.
 #define ESC0_TIMER      TIM3
 #define ESC0_PIN        PA6
+#define ESC1_TIMER      TIM4
+#define ESC1_PIN        PB6
+
+// Both esc1 and (if ever enabled) servo drive TIM4/PB6 -- see
+// blackpill_f411ce.h's identical guard for the full hazard explanation.
+#if FEATURE_SERVO && FEATURE_ESC1
+#error "servo and esc1 both claim TIM4/PB6 on this board -- move one to another timer/pin before enabling both"
+#endif
 
 // CRSF receiver on USART1. Same pins as blackpill_f411ce.h; see that header
 // for why PA9/PA10 and not the ALTERNATE PB6/PB7 mapping.
