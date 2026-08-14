@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img"
+     aria-label="Comic-style arcade poster of a camouflaged tank flying over a tree stump, cannon firing, in a jungle setting">
+  <defs>
+    <clipPath id="canvas"><rect x="0" y="0" width="1200" height="500"/></clipPath>
+    <pattern id="dots" width="10" height="10" patternUnits="userSpaceOnUse">
+      <circle cx="2.5" cy="2.5" r="1.6" fill="#0d1a08" opacity="0.55"/>
+    </pattern>
+    <radialGradient id="flash" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff6cf"/>
+      <stop offset="35%" stop-color="#ffcf3f"/>
+      <stop offset="70%" stop-color="#f57b1f"/>
+      <stop offset="100%" stop-color="#f57b1f" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="skyfade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0c1608" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#0c1608" stop-opacity="0.65"/>
+    </linearGradient>
+  </defs>
+
+  <g clip-path="url(#canvas)">
+    <!-- ===== Stage ===== -->
+    <rect x="0" y="0" width="1200" height="500" fill="#13230f"/>
+
+    <!-- Sunburst rays -->
+    <g transform="translate(650,210)">
+      <polygon points="0,0 650,210 563,535" fill="#f5b942"/>
+      <polygon points="0,0 563,535 325,773" fill="#e8531f"/>
+      <polygon points="0,0 325,773 0,860" fill="#f5b942"/>
+      <polygon points="0,0 0,860 -325,773" fill="#e8531f"/>
+      <polygon points="0,0 -325,773 -563,535" fill="#f5b942"/>
+      <polygon points="0,0 -563,535 -650,210" fill="#e8531f"/>
+      <polygon points="0,0 -650,210 -563,-115" fill="#f5b942"/>
+      <polygon points="0,0 -563,-115 -325,-353" fill="#e8531f"/>
+      <polygon points="0,0 -325,-353 0,-440" fill="#f5b942"/>
+      <polygon points="0,0 0,-440 325,-353" fill="#e8531f"/>
+      <polygon points="0,0 325,-353 563,-115" fill="#f5b942"/>
+      <polygon points="0,0 563,-115 650,210" fill="#e8531f"/>
+    </g>
+    <rect x="0" y="0" width="1200" height="500" fill="url(#dots)" opacity="0.5"/>
+    <rect x="0" y="0" width="1200" height="500" fill="url(#skyfade)"/>
+
+    <!-- Jungle vignette frame -->
+    <path d="M0,500 L0,340 Q90,300 170,360 Q230,300 300,350 Q360,280 430,345
+             Q470,300 520,350 L520,500 Z" fill="#0c1608"/>
+    <path d="M1200,500 L1200,320 Q1120,270 1050,340 Q980,290 910,350 Q850,290 790,350
+             Q740,310 690,355 L690,500 Z" fill="#0c1608"/>
+    <path d="M0,0 L230,0 Q210,50 160,40 Q140,80 90,55 Q60,90 0,70 Z" fill="#0c1608"/>
+    <path d="M1200,0 L980,0 Q1000,55 1050,42 Q1070,85 1120,58 Q1150,90 1200,72 Z" fill="#0c1608"/>
+
+    <!-- ===== Tree stump obstacle ===== -->
+    <g transform="translate(300,430)">
+      <ellipse cx="0" cy="18" rx="120" ry="22" fill="#0c1608" opacity="0.45"/>
+      <path d="M-95,10 L-88,-70 Q-90,-92 -60,-98 L58,-96 Q90,-90 88,-66 L94,10 Z"
+            fill="#5a3a20" stroke="#1a0f06" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M-88,-70 Q-90,-92 -60,-98 L-30,-97 L-32,-68 Z" fill="#4a2f19"/>
+      <path d="M40,-97 L58,-96 Q90,-90 88,-66 L70,-64 Z" fill="#422915"/>
+      <ellipse cx="0" cy="-90" rx="82" ry="26" fill="#8a5f34" stroke="#1a0f06" stroke-width="6"/>
+      <ellipse cx="0" cy="-90" rx="60" ry="18" fill="none" stroke="#6b4526" stroke-width="4"/>
+      <ellipse cx="0" cy="-90" rx="36" ry="10" fill="none" stroke="#6b4526" stroke-width="3.5"/>
+      <ellipse cx="0" cy="-90" rx="14" ry="4" fill="none" stroke="#6b4526" stroke-width="3"/>
+      <!-- splinters flying off from the impact -->
+      <path d="M75,-60 L150,-110 L128,-70 L165,-95 L118,-40 Z" fill="#8a5f34" stroke="#1a0f06" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M-70,-55 L-140,-95 L-105,-60 L-150,-70 L-95,-25 Z" fill="#6b4526" stroke="#1a0f06" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+
+    <!-- ===== Ground foliage silhouettes ===== -->
+    <g fill="#0c1608">
+      <path d="M0,500 L0,410 Q40,370 80,400 Q120,360 165,395 Q210,355 250,400
+               Q300,370 340,410 L340,500 Z"/>
+      <path d="M840,500 L840,420 Q890,380 930,415 Q975,375 1015,410
+               Q1060,375 1105,415 Q1150,390 1200,420 L1200,500 Z"/>
+    </g>
+
+    <!-- ===== Motion / speed lines trailing the tank ===== -->
+    <g stroke="#0c1608" stroke-width="7" stroke-linecap="round" opacity="0.75" fill="none">
+      <path d="M170,360 Q260,335 340,300"/>
+      <path d="M150,315 Q245,295 360,255"/>
+    </g>
+
+    <!-- ===== TANK ===== -->
+    <g transform="translate(660,290) rotate(-16)">
+
+      <!-- dust cloud kicked up behind/below -->
+      <g transform="translate(-260,70)" opacity="0.9">
+        <ellipse cx="0" cy="0" rx="95" ry="46" fill="#c9b98c"/>
+        <ellipse cx="-70" cy="20" rx="60" ry="34" fill="#c9b98c"/>
+        <ellipse cx="55" cy="30" rx="55" ry="30" fill="#b3a274"/>
+        <ellipse cx="0" cy="0" rx="95" ry="46" fill="url(#dots)" opacity="0.4"/>
+      </g>
+
+      <!-- track / running gear (side profile) -->
+      <g>
+        <rect x="-205" y="35" width="400" height="52" rx="26" fill="#171713" stroke="#000" stroke-width="6"/>
+        <g fill="#2c2c26">
+          <circle cx="-165" cy="61" r="20"/>
+          <circle cx="-95" cy="61" r="20"/>
+          <circle cx="-25" cy="61" r="20"/>
+          <circle cx="45" cy="61" r="20"/>
+          <circle cx="115" cy="61" r="20"/>
+          <circle cx="175" cy="61" r="20"/>
+        </g>
+        <g fill="#54544a">
+          <circle cx="-165" cy="61" r="8"/>
+          <circle cx="-95" cy="61" r="8"/>
+          <circle cx="-25" cy="61" r="8"/>
+          <circle cx="45" cy="61" r="8"/>
+          <circle cx="115" cy="61" r="8"/>
+          <circle cx="175" cy="61" r="8"/>
+        </g>
+      </g>
+
+      <!-- hull -->
+      <polygon points="-190,-42 110,-42 172,-8 172,26 138,46 -168,46 -196,10"
+               fill="#5c6b3b" stroke="#12190a" stroke-width="7" stroke-linejoin="round"/>
+      <!-- hull top deck (lighter) -->
+      <polygon points="-190,-42 110,-42 90,-18 -170,-18" fill="#79895a" stroke="#12190a" stroke-width="6" stroke-linejoin="round"/>
+      <!-- front glacis highlight -->
+      <polygon points="110,-42 172,-8 172,26 150,-4" fill="#8a9a68"/>
+
+      <!-- camo blotches -->
+      <g stroke="#12190a" stroke-width="4" stroke-linejoin="round">
+        <path d="M-150,-34 Q-120,-46 -85,-32 Q-95,-14 -125,-16 Q-155,-18 -150,-34Z" fill="#3c4a24"/>
+        <path d="M-40,-36 Q0,-48 35,-30 Q30,-16 -5,-18 Q-35,-20 -40,-36Z" fill="#6b4a28"/>
+        <path d="M40,-8 Q75,-20 105,-4 Q100,14 65,14 Q35,10 40,-8Z" fill="#3c4a24"/>
+        <path d="M-140,4 Q-105,-6 -75,10 Q-85,26 -115,26 Q-145,20 -140,4Z" fill="#6b4a28"/>
+        <path d="M-20,10 Q20,0 50,16 Q42,32 5,30 Q-25,26 -20,10Z" fill="#3c4a24"/>
+      </g>
+
+      <!-- vision slit + hatch detail -->
+      <rect x="60" y="-32" width="26" height="7" fill="#12190a"/>
+      <circle cx="-60" cy="-30" r="12" fill="none" stroke="#12190a" stroke-width="4"/>
+
+      <!-- turret -->
+      <path d="M-70,-42 Q-70,-90 -20,-92 L45,-90 Q75,-86 75,-58 L75,-42 Z"
+            fill="#6b7a48" stroke="#12190a" stroke-width="7" stroke-linejoin="round"/>
+      <path d="M-70,-42 Q-70,-90 -20,-92 L15,-91 L10,-46Z" fill="#89996a" opacity="0.8"/>
+      <path d="M-38,-88 Q-40,-98 -20,-99 Q10,-100 20,-92" fill="none" stroke="#12190a" stroke-width="5"/>
+
+      <!-- camo on turret -->
+      <path d="M-10,-88 Q20,-96 45,-84 Q40,-68 10,-70 Q-15,-72 -10,-88Z"
+            fill="#3c4a24" stroke="#12190a" stroke-width="4" stroke-linejoin="round"/>
+
+      <!-- barrel, angled up-forward, firing -->
+      <g transform="rotate(-22)">
+        <rect x="60" y="-108" width="230" height="22" rx="10"
+              fill="#454f3a" stroke="#12190a" stroke-width="6"/>
+        <rect x="60" y="-108" width="230" height="8" rx="4" fill="#5c6852" opacity="0.7"/>
+        <!-- muzzle brake -->
+        <rect x="272" y="-114" width="26" height="34" rx="4" fill="#2c3226" stroke="#12190a" stroke-width="5"/>
+      </g>
+
+      <!-- antenna -->
+      <path d="M40,-90 Q55,-140 75,-170" fill="none" stroke="#12190a" stroke-width="5" stroke-linecap="round"/>
+    </g>
+
+    <!-- muzzle flash burst, positioned at the rotated barrel tip -->
+    <g transform="translate(855,15)">
+      <circle r="86" fill="url(#flash)"/>
+      <g fill="#fff6cf" stroke="#f57b1f" stroke-width="4" stroke-linejoin="round">
+        <polygon points="0,-78 14,-18 78,-30 24,10 46,70 0,28 -46,70 -24,10 -78,-30 -14,-18"/>
+      </g>
+      <circle r="26" fill="#fff8de"/>
+    </g>
+
+    <!-- foreground foliage silhouettes overlapping the scene for depth -->
+    <g fill="#0a1406">
+      <path d="M0,500 L0,455 Q60,430 120,460 Q170,430 220,462 L220,500 Z"/>
+      <path d="M980,500 L980,460 Q1040,430 1090,458 Q1140,425 1200,455 L1200,500 Z"/>
+    </g>
+  </g>
+</svg>
