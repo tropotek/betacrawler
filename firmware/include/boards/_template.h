@@ -53,7 +53,7 @@
 // Any FEATURE_* left out here defaults to 0 in config.h, so listing only what
 // the board actually has is fine. Listing them explicitly (with 0) is clearer
 // when the board *could* support something that is deliberately off.
-#define FEATURE_LED     1
+#define FEATURE_STATUS_LED  1
 #define FEATURE_BUTTON  0
 #define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0

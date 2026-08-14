@@ -1,5 +1,5 @@
 #include "hardware/servo/servo_params.h"
-#include "core/led_curve.h"
+#include "core/triangle.h"
 
 namespace servo {
 
@@ -32,7 +32,7 @@ static const ParamDef kParams[] = {
   {"servo.angle",   ParamType::U8,   "Angle", "°",     0,    180,  nullptr, 0, 0, 90,      nullptr, nullptr},
   // Seconds per FULL cycle, not Hz: a 1Hz sweep is 0->180->0 in one second,
   // which an SG90 cannot physically track, so an Hz range would have been
-  // unusable end to end. Maps straight onto breathingDuty's periodMs.
+  // unusable end to end. Maps straight onto trianglePercent's periodMs.
   {"servo.sweep_s", ParamType::U8,   "Sweep", "s",     1,    30,   nullptr, 0, 0, 4,       nullptr, nullptr},
   // Calibration ends. The bounds deliberately CANNOT cross -- min tops out
   // where max starts -- because core/ has no cross-parameter constraint
@@ -84,10 +84,10 @@ uint16_t angleToUs(uint8_t angle, uint16_t minUs, uint16_t maxUs) {
 }
 
 uint8_t sweepAngle(uint32_t phaseMs, uint32_t periodMs) {
-  // breathingDuty is already the symmetric triangle wave a sweep needs, and
+  // trianglePercent is already the symmetric triangle wave a sweep needs, and
   // it is already natively tested -- a second implementation here would be
   // pure duplication.
-  return (uint8_t)((uint32_t)core::breathingDuty(phaseMs, periodMs) * 180u / 100u);
+  return (uint8_t)((uint32_t)core::trianglePercent(phaseMs, periodMs) * 180u / 100u);
 }
 
 uint32_t rephase(uint32_t elapsedMs, uint32_t oldPeriodMs, uint32_t newPeriodMs) {

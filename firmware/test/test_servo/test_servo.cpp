@@ -87,7 +87,7 @@ void test_sweep_phase_wraps_around_period() {
 }
 
 void test_sweep_degenerate_period_is_safe() {
-  // breathingDuty returns 0 when the period leaves no room for a ramp.
+  // trianglePercent returns 0 when the period leaves no room for a ramp.
   TEST_ASSERT_EQUAL_UINT8(0, sweepAngle(0, 1));
 }
 

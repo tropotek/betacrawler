@@ -1,5 +1,5 @@
 // Registry tests use only fake modules on purpose: core/ must work for any
-// module set, so proving it against the LED would prove the wrong thing (and
+// module set, so proving it against one real module would prove the wrong thing (and
 // would break every time the board config changed). The real modules are
 // covered where they matter -- through the schema golden fixture in
 // test_dispatch.

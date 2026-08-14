@@ -7,7 +7,7 @@ namespace core {
 
 // Renders telemetry as text, for renderers that have no JavaScript to lean on
 // (the on-device display). Pure: no Arduino, no I/O, so the native suite owns
-// it -- same bargain led_curve.cpp struck for the LED fade.
+// it -- the same bargain triangle.cpp strikes for its curve.
 //
 // The rules are app.js's formatTelemetryValue(), on purpose: divide by the
 // descriptor's `div` when it is non-zero, round to `dec` places, append the

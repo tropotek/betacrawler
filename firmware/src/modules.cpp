@@ -54,17 +54,6 @@ static core::Inputs g_driveOutputs;
 #  endif
 #endif
 
-#if FEATURE_LED
-#  include "features/led/led_params.h"
-#  if FW_TARGET_ARDUINO
-#    include "features/led/led_driver.h"
-     static led::LedDriver g_led;
-#    define LED_DRV (&g_led)
-#  else
-#    define LED_DRV nullptr
-#  endif
-#endif
-
 #if FEATURE_SERVO
 #  include "hardware/servo/servo_params.h"
 #  if FW_TARGET_ARDUINO
@@ -159,9 +148,6 @@ void registerModules(Registry& reg) {
   reg.add(sys::kDesc, SYSTEM_DRV);   // always: uptime/clock/ram/temp/vdd
 #if FEATURE_BUTTON
   reg.add(button::kDesc, BUTTON_DRV);
-#endif
-#if FEATURE_LED
-  reg.add(led::kDesc, LED_DRV);
 #endif
 #if FEATURE_SERVO
   reg.add(servo::kDesc, SERVO_DRV);

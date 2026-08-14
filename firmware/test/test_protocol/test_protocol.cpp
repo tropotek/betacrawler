@@ -46,21 +46,21 @@ void test_parse_hello() {
 }
 
 void test_parse_set_numeric() {
-  Request q = parseRequest("{\"id\":3,\"op\":\"set\",\"key\":\"led.blink_hz\",\"val\":5}");
+  Request q = parseRequest("{\"id\":3,\"op\":\"set\",\"key\":\"rx.deadband_us\",\"val\":5}");
   TEST_ASSERT_TRUE(q.ok);
   TEST_ASSERT_EQUAL(Op::Set, q.op);
-  TEST_ASSERT_EQUAL_STRING("led.blink_hz", q.key);
+  TEST_ASSERT_EQUAL_STRING("rx.deadband_us", q.key);
   TEST_ASSERT_TRUE(q.hasNum);
   TEST_ASSERT_FALSE(q.hasStr);
   TEST_ASSERT_EQUAL_INT32(5, q.num);
 }
 
 void test_parse_set_string() {
-  Request q = parseRequest("{\"id\":4,\"op\":\"set\",\"key\":\"led.mode\",\"val\":\"off\"}");
+  Request q = parseRequest("{\"id\":4,\"op\":\"set\",\"key\":\"rx.protocol\",\"val\":\"elrs\"}");
   TEST_ASSERT_TRUE(q.ok);
   TEST_ASSERT_TRUE(q.hasStr);
   TEST_ASSERT_FALSE(q.hasNum);
-  TEST_ASSERT_EQUAL_STRING("off", q.str);
+  TEST_ASSERT_EQUAL_STRING("elrs", q.str);
 }
 
 void test_parse_set_string_too_long_rejected() {

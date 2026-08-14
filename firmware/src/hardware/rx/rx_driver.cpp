@@ -1,6 +1,6 @@
 #include "hardware/rx/rx_driver.h"
 #include "core/boot_log.h"
-#include "core/led_curve.h"
+#include "core/triangle.h"
 #include "config.h"
 
 // The body (not just the class) must be guarded: PlatformIO compiles every
@@ -211,11 +211,11 @@ void RxDriver::runSim(uint32_t nowMs) {
   if (simT0_ == 0) simT0_ = nowMs;
   const uint32_t t = nowMs - simT0_;
 
-  // breathingDuty is the same symmetric triangle the servo sweep uses: 0..100
+  // trianglePercent is the same symmetric triangle the servo sweep uses: 0..100
   // over the period. Reusing it keeps one curve in the firmware, tested once.
   const uint16_t span = 2012 - 988;
-  us_[0] = (uint16_t)(988 + (uint32_t)core::breathingDuty(t % 4000, 4000) * span / 100);
-  us_[1] = (uint16_t)(988 + (uint32_t)core::breathingDuty(t % 8000, 8000) * span / 100);
+  us_[0] = (uint16_t)(988 + (uint32_t)core::trianglePercent(t % 4000, 4000) * span / 100);
+  us_[1] = (uint16_t)(988 + (uint32_t)core::trianglePercent(t % 8000, 8000) * span / 100);
   us_[2] = ((t / 2000) % 2) ? 2012 : 988;          // switch-like input
   const uint8_t n = proto().channels;
   for (uint8_t i = 3; i < n; ++i)

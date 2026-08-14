@@ -13,7 +13,7 @@
 #define BOARD_ID "esp32_wroom32"
 
 // --- features ---------------------------------------------------------------
-#define FEATURE_LED     1
+#define FEATURE_STATUS_LED  1
 #define FEATURE_BUTTON  0
 #define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0
