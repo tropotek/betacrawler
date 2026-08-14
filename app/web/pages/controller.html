@@ -11,11 +11,11 @@
                     <template x-if="$store.telemetry.field('ch' + n).def">
                       <div class="list-group-item border-0 d-flex align-items-center gap-2 py-1">
                         <div class="text-secondary small text-nowrap" style="width: 2.5rem;" x-text="`CH${n}`"></div>
-                        <div class="progress flex-grow-1" style="height: 20px;">
-                          <div class="progress-bar d-flex align-items-center justify-content-end pe-2" role="progressbar"
-                               :style="`width: ${$store.telemetry.barPct($store.telemetry.field('ch' + n).def)}%`">
-                            <span class="text-white small" x-text="$store.telemetry.field('ch' + n).value ?? '–'"></span>
-                          </div>
+                        <div class="progress flex-grow-1 position-relative" style="height: 20px;">
+                          <div class="progress-bar ch-bar" role="progressbar"
+                               :style="`width: ${$store.telemetry.barPct($store.telemetry.field('ch' + n).def)}%`"></div>
+                          <span class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fw-bold text-dark small"
+                                x-text="$store.telemetry.field('ch' + n).value ?? '–'"></span>
                         </div>
                       </div>
                     </template>
