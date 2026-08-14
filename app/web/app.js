@@ -935,6 +935,7 @@ const PAGE_INIT = {
   home:      null,
   config:    initConfigPage,
   telemetry: null,
+  device:    null,
   terminal:  initTerminalPage,
   firmware:  initFirmwarePage,
   examples:  null,
@@ -962,7 +963,7 @@ document.querySelectorAll('[data-page]').forEach((btn) => {
 // board that needs re-flashing is frequently a board that cannot be talked
 // to, and gating the recovery tool on a working device would be exactly
 // backwards.
-const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry']);
+const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry', 'device']);
 
 // Bumped on every call, checked after the (possibly slow, first-visit-only)
 // fragment fetch below -- two overlapping navigations otherwise let whichever

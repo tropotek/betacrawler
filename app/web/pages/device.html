@@ -1,0 +1,39 @@
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Device</h1>
+          </div>
+          <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>
+            <legend class="card-header h6 text-secondary mb-0 py-2">Identity</legend>
+            <div class="card-body row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="f-device-name">Device Name</label>
+                <input type="text" class="form-control" id="f-device-name"
+                       :maxlength="$store.config.field('device.name').def?.maxlen"
+                       :class="{ 'is-invalid': $store.config.invalid['device.name'] }"
+                       x-model="$store.config.values['device.name']"
+                       @change="$store.config.commit($store.config.field('device.name').def)">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="f-tlm-rate">Telemetry Rate (Hz)</label>
+                <input type="number" class="form-control" id="f-tlm-rate"
+                       :min="$store.config.field('tlm.rate').def?.min" :max="$store.config.field('tlm.rate').def?.max"
+                       :class="{ 'is-invalid': $store.config.invalid['tlm.rate'] }"
+                       x-model="$store.config.values['tlm.rate']"
+                       @change="$store.config.commit($store.config.field('tlm.rate').def)">
+              </div>
+            </div>
+          </fieldset>
+          <div class="card mb-3" x-data>
+            <div class="card-header h6 text-secondary mb-0 py-2">System</div>
+            <div class="card-body row g-3">
+              <template x-for="key in ['up', 'clk', 'ram', 'temp', 'vdd']" :key="key">
+                <div class="col-6 col-md-4">
+                  <div class="text-secondary small"
+                       x-text="$store.telemetry.field(key).def?.unit
+                         ? `${$store.telemetry.field(key).def.label} (${$store.telemetry.field(key).def.unit})`
+                         : $store.telemetry.field(key).def?.label"></div>
+                  <div class="fs-4" x-text="$store.telemetry.field(key).value ?? '–'"></div>
+                </div>
+              </template>
+            </div>
+          </div>
+          <p>&nbsp;</p>
