@@ -344,6 +344,28 @@ document.addEventListener('alpine:init', () => {
         showError(`${field.label}: ${e.message}`);
       }
     },
+
+    // Throttle's row alone dual-writes esc0.direction/esc1.direction together
+    // -- a frontend convenience the Modes page uses, not a new firmware param.
+    // esc0/esc1 keep their own independent .direction params exactly as
+    // designed; nothing stops them being set differently via the Controller
+    // page, this is just the one control meant to keep them in sync in the
+    // common case.
+    async setBothDirections(v) {
+      this.values['esc0.direction'] = v;
+      this.values['esc1.direction'] = v;
+      try {
+        await Api.setParam('esc0.direction', v);
+        await Api.setParam('esc1.direction', v);
+        this.invalid['esc0.direction'] = false;
+        this.invalid['esc1.direction'] = false;
+        setDirty(true);
+      } catch (e) {
+        this.invalid['esc0.direction'] = true;
+        this.invalid['esc1.direction'] = true;
+        showError(`Direction: ${e.message}`);
+      }
+    },
   });
 
   Alpine.store('telemetry', {
@@ -935,6 +957,7 @@ const PAGE_INIT = {
   home:       null,
   config:     initConfigPage,
   telemetry:  null,
+  modes:      null,
   controller: null,
   device:     null,
   terminal:   initTerminalPage,
@@ -964,7 +987,7 @@ document.querySelectorAll('[data-page]').forEach((btn) => {
 // board that needs re-flashing is frequently a board that cannot be talked
 // to, and gating the recovery tool on a working device would be exactly
 // backwards.
-const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry', 'controller', 'device']);
+const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry', 'modes', 'controller', 'device']);
 
 // Bumped on every call, checked after the (possibly slow, first-visit-only)
 // fragment fetch below -- two overlapping navigations otherwise let whichever

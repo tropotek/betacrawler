@@ -1,0 +1,59 @@
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Modes</h1>
+          </div>
+          <div x-data="{
+            rows: [
+              { title: 'Arm',       channelKey: 'tank_drive.arm_src',      rangeKeys: ['tank_drive.arm_min', 'tank_drive.arm_max'], directionSelect: false },
+              { title: 'Throttle',  channelKey: 'tank_drive.throttle_src', rangeKeys: null, directionSelect: true },
+              { title: 'Direction', channelKey: 'tank_drive.steer_src',    rangeKeys: null, directionSelect: false },
+            ],
+          }">
+            <template x-for="row in rows" :key="row.channelKey">
+              <fieldset class="card mb-3" :disabled="!$store.app.connected">
+                <legend class="card-header h6 text-secondary mb-0 py-2" x-text="row.title"></legend>
+                <div class="card-body row g-3 align-items-center">
+                  <div class="col-md-4">
+                    <label class="form-label" :for="'f-' + row.channelKey">Channel</label>
+                    <select class="form-select" :id="'f-' + row.channelKey"
+                            :class="{ 'is-invalid': $store.config.invalid[row.channelKey] }"
+                            x-model="$store.config.values[row.channelKey]"
+                            @change="$store.config.commit($store.config.field(row.channelKey).def)">
+                      <template x-for="opt in $store.config.field(row.channelKey).def?.options ?? []" :key="opt">
+                        <option :value="opt" :selected="opt === $store.config.values[row.channelKey]" x-text="opt"></option>
+                      </template>
+                    </select>
+                  </div>
+                  <div class="col-md-5">
+                    <div class="mode-slider">
+                      <input type="range" class="form-range" min="1000" max="2000" step="1"
+                             :disabled="!row.rangeKeys"
+                             :value="row.rangeKeys ? $store.config.values[row.rangeKeys[0]] : 1000"
+                             @input="row.rangeKeys && ($store.config.values[row.rangeKeys[0]] =
+                               Math.min(Number($event.target.value), Number($store.config.values[row.rangeKeys[1]])))"
+                             @change="row.rangeKeys && $store.config.commit($store.config.field(row.rangeKeys[0]).def)">
+                      <input type="range" class="form-range" min="1000" max="2000" step="1"
+                             :disabled="!row.rangeKeys"
+                             :value="row.rangeKeys ? $store.config.values[row.rangeKeys[1]] : 2000"
+                             @input="row.rangeKeys && ($store.config.values[row.rangeKeys[1]] =
+                               Math.max(Number($event.target.value), Number($store.config.values[row.rangeKeys[0]])))"
+                             @change="row.rangeKeys && $store.config.commit($store.config.field(row.rangeKeys[1]).def)">
+                    </div>
+                    <div class="text-secondary small mt-1" x-show="row.rangeKeys">
+                      <span x-text="row.rangeKeys ? $store.config.values[row.rangeKeys[0]] : ''"></span>–<span x-text="row.rangeKeys ? $store.config.values[row.rangeKeys[1]] : ''"></span> µs
+                    </div>
+                  </div>
+                  <div class="col-md-3" x-show="row.directionSelect">
+                    <label class="form-label" for="f-esc-direction">Direction</label>
+                    <select class="form-select" id="f-esc-direction"
+                            x-model="$store.config.values['esc0.direction']"
+                            @change="$store.config.setBothDirections($event.target.value)">
+                      <template x-for="opt in $store.config.field('esc0.direction').def?.options ?? []" :key="opt">
+                        <option :value="opt" :selected="opt === $store.config.values['esc0.direction']" x-text="opt"></option>
+                      </template>
+                    </select>
+                  </div>
+                </div>
+              </fieldset>
+            </template>
+          </div>
+          <p>&nbsp;</p>
