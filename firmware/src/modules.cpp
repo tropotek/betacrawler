@@ -30,6 +30,11 @@
 // other modules are enabled.
 static core::Inputs g_inputs;
 
+// tank_drive's own bus (core/inputs.h) -- a second, parallel application of
+// the same one-producer pattern g_inputs/rx already establishes above, not
+// a fact specific to rx. See docs/architecture.md's "Inputs bus" section.
+static core::Inputs g_driveOutputs;
+
 #if FW_TARGET_ARDUINO
 #  include "hardware/system/system_driver.h"
    static sys::SystemDriver g_system;
@@ -104,6 +109,17 @@ static core::Inputs g_inputs;
 #  endif
 #endif
 
+#if FEATURE_TANK_DRIVE
+#  include "features/tank_drive/tank_drive_params.h"
+#  if FW_TARGET_ARDUINO
+#    include "features/tank_drive/tank_drive_driver.h"
+     static tank_drive::TankDriveDriver g_tankDrive(g_driveOutputs);
+#    define TANK_DRIVE_DRV (&g_tankDrive)
+#  else
+#    define TANK_DRIVE_DRV nullptr
+#  endif
+#endif
+
 #if FEATURE_WIFI
 #  include "hardware/wifi/wifi_params.h"
 #  if FW_TARGET_ARDUINO
@@ -157,6 +173,10 @@ void registerModules(Registry& reg) {
 #endif
 #if FEATURE_RX
   reg.add(rx::kDesc, RX_DRV);
+#endif
+#if FEATURE_TANK_DRIVE
+  reg.setDriveOutputs(g_driveOutputs);
+  reg.add(tank_drive::kDesc, TANK_DRIVE_DRV);
 #endif
 #if FEATURE_WIFI
   reg.add(wifi::kDesc, WIFI_DRV);

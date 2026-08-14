@@ -89,6 +89,9 @@
 #ifndef FEATURE_ESC1
 #define FEATURE_ESC1 0
 #endif
+#ifndef FEATURE_TANK_DRIVE
+#define FEATURE_TANK_DRIVE 0
+#endif
 #ifndef FEATURE_DFU
 #define FEATURE_DFU 0
 #endif
