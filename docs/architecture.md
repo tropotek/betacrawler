@@ -164,8 +164,8 @@ bounds, options — everywhere a value crosses into the device: `DeviceModel` (b
 touching the wire, and Terminal `set`/INI restore go through the same path regardless of what any
 page shows.
 
-What the UI *displays* is not generated from the descriptor. `app/web/pages/{config,modes,
-controller}.html` are hand-curated: each names the specific keys it shows, in whatever order and
+What the UI *displays* is not generated from the descriptor. `app/web/pages/{config,controller,
+modes}.html` are hand-curated: each names the specific keys it shows, in whatever order and
 grouping reads best for that page, via `Alpine.store('config').field(key)` /
 `Alpine.store('telemetry').field(key)` — a lookup by key, not an iteration. Adding a firmware
 parameter needs an explicit page decision and a hand-written label before it appears anywhere. A

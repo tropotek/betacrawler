@@ -894,8 +894,8 @@ const pageCache = new Map();   // page name -> fetched fragment HTML text, cache
 const PAGE_INIT = {
   home:       null,
   config:     null,
-  modes:      null,
   controller: null,
+  modes:      null,
   terminal:   initTerminalPage,
   firmware:   initFirmwarePage,
   wiring:     null,
@@ -923,7 +923,7 @@ document.querySelectorAll('[data-page]').forEach((btn) => {
 // board that needs re-flashing is frequently a board that cannot be talked
 // to, and gating the recovery tool on a working device would be exactly
 // backwards.
-const CONNECTION_REQUIRED_PAGES = new Set(['config', 'modes', 'controller']);
+const CONNECTION_REQUIRED_PAGES = new Set(['config', 'controller', 'modes']);
 
 // Bumped on every call, checked after the (possibly slow, first-visit-only)
 // fragment fetch below -- two overlapping navigations otherwise let whichever

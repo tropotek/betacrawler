@@ -173,7 +173,7 @@ Any fetch that *does* talk to the device or backend has no excuse to live outsid
 **Validation stays schema-driven, curation doesn't** — `div`/`dec`/`showIf` are **display hints
 only**: the wire always carries native units, and firmware/backend still validate a hidden
 parameter so Terminal `set` and INI restore keep working, regardless of whether any page shows that
-parameter at all. Beyond that, `app/web/pages/{config,modes,controller}.html` hand-pick which keys
+parameter at all. Beyond that, `app/web/pages/{config,controller,modes}.html` hand-pick which keys
 they show, their label, their order and their page placement via `Alpine.store('config').field(key)`
 /`Alpine.store('telemetry').field(key)` (a per-key lookup, not an iteration). Adding a firmware
 parameter needs a page decision and a written label before it appears anywhere in the UI. A curated
