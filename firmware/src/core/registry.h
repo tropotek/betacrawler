@@ -50,6 +50,13 @@ class Registry {
   void          setInputs(const Inputs& in) { inputs_ = &in; }
   const Inputs& inputs() const;
 
+  // The vehicle-level computed-signals bus (tank_drive's mixed left/right
+  // output). Same one-producer pattern as inputs() above -- a second
+  // application of it, not a fact specific to rx. See docs/architecture.md's
+  // "Inputs bus" section.
+  void          setDriveOutputs(const Inputs& in) { driveOutputs_ = &in; }
+  const Inputs& driveOutputs() const;
+
   // --- lifecycle ------------------------------------------------------------
   // Attaches every driver, then begins every driver -- two passes, so a
   // begin() can rely on all modules having been attached. Params is passed
@@ -88,6 +95,7 @@ class Registry {
   uint8_t paramCount_ = 0;
   uint8_t tlmCount_   = 0;
   const Inputs* inputs_ = nullptr;
+  const Inputs* driveOutputs_ = nullptr;
 };
 
 // Defined in src/modules.cpp -- the single wiring point where board #defines

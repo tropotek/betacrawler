@@ -230,6 +230,21 @@ void test_set_inputs_is_what_attach_sees() {
   TEST_ASSERT_EQUAL_INT16(1500, reg.inputs().get(5));
 }
 
+void test_drive_outputs_defaults_to_a_valid_empty_bus_when_unset() {
+  Registry reg;
+  reg.add(kAlphaDesc);
+  TEST_ASSERT_EQUAL_INT16(0, reg.driveOutputs().get(0));
+}
+
+void test_set_drive_outputs_is_what_attach_sees() {
+  Registry reg;
+  reg.add(kAlphaDesc);
+  Inputs real;
+  real.set(1, 1700);
+  reg.setDriveOutputs(real);
+  TEST_ASSERT_EQUAL_INT16(1700, reg.driveOutputs().get(1));
+}
+
 void test_driverless_module_is_not_attached() {
   Registry r;
   Params p(r);
@@ -404,6 +419,8 @@ int main() {
   RUN_TEST(test_attach_lets_a_module_read_another_modules_state);
   RUN_TEST(test_inputs_defaults_to_a_valid_empty_bus_when_unset);
   RUN_TEST(test_set_inputs_is_what_attach_sees);
+  RUN_TEST(test_drive_outputs_defaults_to_a_valid_empty_bus_when_unset);
+  RUN_TEST(test_set_drive_outputs_is_what_attach_sees);
   RUN_TEST(test_driverless_module_is_not_attached);
   RUN_TEST(test_begin_and_tick_reach_every_driver);
   RUN_TEST(test_collect_telemetry_writes_each_module_into_its_own_slice);
