@@ -8,15 +8,21 @@
 const APP_VERSION = '1.0.0';
 
 // The single seam between this UI and whatever is on the other end: every
-// request and every pushed frame goes through here, and there is no fetch, no
-// WebSocket and no URL anywhere else in this file. That is what makes an
-// Electron build a rewrite of this one object rather than of the app -- swap
-// these bodies for IPC calls and nothing below changes.
+// request and every pushed frame that talks to the device or backend goes
+// through here. That is what makes an Electron build a rewrite of this one
+// object rather than of the app -- swap these bodies for IPC calls and
+// nothing below changes.
 //
-// Two rules keep that true, and both have been broken before: nothing outside
-// here may construct a request, and nothing in here may take or return a
-// browser-only type (a File, a WebSocket) that an IPC transport could not
-// produce.
+// Two rules keep that true, and both have been broken before: nothing
+// outside here may construct a request TO THE DEVICE/BACKEND, and nothing in
+// here may take or return a browser-only type (a File, a WebSocket) that an
+// IPC transport could not produce.
+//
+// One documented exception: showPage()'s fetch('pages/<name>.html') below
+// loads this app's OWN static markup, not a device/backend request -- it
+// isn't part of the porting surface this seam exists to isolate, so it's
+// exempt (see CLAUDE.md's "The Api seam"). Any fetch that talks to the
+// device or backend still has no excuse to live outside Api.
 const Api = {
   // Prefixed onto every request path. '' is same-origin, which is the browser
   // build. A shell that loads this page from file:// -- where a leading '/'
@@ -136,19 +142,20 @@ function setState(state, info) {
   el('connect').textContent = connected ? 'Disconnect' : 'Connect';
   el('fw').textContent = connected && info && info.fw ? `${info.fw} · proto ${info.proto}` : '';
   el('fw').title = connected && info && info.built ? `built ${info.built}` : '';
-  el('help-fw').textContent = connected && info && info.fw
-    ? [info.fw, info.board, info.built && `built ${info.built}`,
-       info.mods && info.mods.length && `modules: ${info.mods.join(', ')}`]
-      .filter(Boolean).join(' · ')
-    : 'not connected';
-  el('form').querySelectorAll('input,select').forEach((i) => { i.disabled = !connected; });
   updateNavAvailability();
-  updateTerminalAvailability();
   // Optional-chained: setState can run before Alpine has initialised (this
   // script is not deferred, Alpine's is), and the Firmware page re-syncs on
   // entry anyway.
   window.Alpine?.store('firmware')?.syncDevice(connected, deviceInfo);
   window.Alpine?.store('wifi')?.syncDevice(connected, deviceInfo);
+  window.Alpine?.store('app') && Object.assign(window.Alpine.store('app'), {
+    connected,
+    fwSummary: connected && info && info.fw
+      ? [info.fw, info.board, info.built && `built ${info.built}`,
+         info.mods && info.mods.length && `modules: ${info.mods.join(', ')}`]
+        .filter(Boolean).join(' · ')
+      : 'not connected',
+  });
 }
 
 // Telemetry-staleness: distinct from a hard disconnect. The port is still
@@ -263,6 +270,20 @@ function formatTelemetryValue(def, value) {
 // push data in or read state back out: Alpine.store() is reachable from
 // anywhere with no element handle, unlike Alpine.$data()/refs.
 document.addEventListener('alpine:init', () => {
+  // Cross-page state that used to live as ad-hoc DOM writes, reachable only
+  // while the page holding that DOM happened to be mounted. showPage() (see
+  // below) now destroys and recreates each page's DOM on every navigation,
+  // so anything that must survive navigating away and back -- or be read by
+  // more than one page at once, like the Terminal Save button mirroring the
+  // Configuration page's dirty flag -- has to live here instead.
+  Alpine.store('app', {
+    version: APP_VERSION,
+    connected: false,
+    dirty: false,
+    revertNote: false,
+    fwSummary: 'not connected',
+  });
+
   Alpine.store('config', {
     schema: [],
     values: {},
@@ -535,7 +556,9 @@ document.addEventListener('alpine:init', () => {
       this.pct = 0;
       this.op = null;
       this.busy = true;
-      el('fw-log').value = '';
+      fwLog.clear();
+      const out = el('fw-log');
+      if (out) out.value = '';
     },
   });
 
@@ -819,12 +842,16 @@ el('connect').addEventListener('click', async () => {
 // -- a form field, a restore -- goes through here, so both pages agree about
 // whether there is something worth writing to flash.
 function setDirty(dirty) {
-  el('dirty').classList.toggle('d-none', !dirty);
-  el('term-save').disabled = !dirty;
+  // Optional-chained: setState() calls this unconditionally on every
+  // disconnect (see above), and setState() itself can run before Alpine has
+  // initialised (this script is not deferred, Alpine's is).
+  const app = window.Alpine?.store('app');
+  if (!app) return;
+  app.dirty = dirty;
   // Any subsequent action supersedes the fallback note, so it is cleared here
   // rather than tracked separately. The revert handler re-shows it after
   // calling setDirty().
-  el('revert-note').classList.add('d-none');
+  app.revertNote = false;
 }
 
 async function saveToFlash() {
@@ -833,57 +860,125 @@ async function saveToFlash() {
   setDirty(false);
 }
 
-el('save').addEventListener('click', async () => {
-  try {
-    await saveToFlash();
-  } catch (e) { showError(e.message); }
-});
+// --- page init functions -----------------------------------------------------
+function initConfigPage() {
+  el('save').addEventListener('click', async () => {
+    try {
+      await saveToFlash();
+    } catch (e) { showError(e.message); }
+  });
 
-el('defaults').addEventListener('click', async () => {
-  try {
-    await Api.defaults();
-    await loadDevice();
-    // deviceInfo, not nothing: setState() blanks the navbar identity and the
-    // Help page whenever `info` is falsy, and the device is still connected --
-    // reloading its parameters told us nothing new about who it is.
-    setState('connected', deviceInfo);
-    // The firmware's `defaults` op reloads RAM and re-notifies the modules but
-    // never touches flash (core/dispatch.cpp, Op::Defaults), so the device is
-    // now exactly as unsaved as after editing a field by hand.
-    setDirty(true);
-  } catch (e) { showError(e.message); }
-});
+  el('defaults').addEventListener('click', async () => {
+    try {
+      await Api.defaults();
+      await loadDevice();
+      // deviceInfo, not nothing: setState() blanks the navbar identity and the
+      // Help page whenever `info` is falsy, and the device is still connected --
+      // reloading its parameters told us nothing new about who it is.
+      setState('connected', deviceInfo);
+      // The firmware's `defaults` op reloads RAM and re-notifies the modules but
+      // never touches flash (core/dispatch.cpp, Op::Defaults), so the device is
+      // now exactly as unsaved as after editing a field by hand.
+      setDirty(true);
+    } catch (e) { showError(e.message); }
+  });
 
-el('revert').addEventListener('click', async () => {
-  try {
-    const res = await Api.revert();
-    await loadDevice();
-    setState('connected', deviceInfo);   // see the defaults handler above
-    // "flash" means RAM now matches what is stored, so there is nothing left
-    // to save -- this is the ONLY action that leaves the device clean.
-    // "defaults" means the board had nothing valid stored and the firmware
-    // fell back, which is both worth saving and worth saying out loud.
-    setDirty(res.src !== 'flash');
-    if (res.src !== 'flash') el('revert-note').classList.remove('d-none');
-  } catch (e) { showError(e.message); }
+  el('revert').addEventListener('click', async () => {
+    try {
+      const res = await Api.revert();
+      await loadDevice();
+      setState('connected', deviceInfo);   // see the defaults handler above
+      // "flash" means RAM now matches what is stored, so there is nothing left
+      // to save -- this is the ONLY action that leaves the device clean.
+      // "defaults" means the board had nothing valid stored and the firmware
+      // fell back, which is both worth saving and worth saying out loud.
+      setDirty(res.src !== 'flash');
+      if (res.src !== 'flash') Alpine.store('app').revertNote = true;
+    } catch (e) { showError(e.message); }
+  });
+}
+
+// --- page fragments -----------------------------------------------------------
+const pageCache = new Map();   // page name -> fetched fragment HTML text, cached after first use
+
+// One-time (per page) DOM wiring, run in full on EVERY mount of that page --
+// see "Correction to the design doc" at the top of this plan for why a
+// once-only guard would be wrong here: #page-mount's innerHTML is replaced on
+// every navigation (below), which destroys the previous mount's nodes and
+// every listener attached to them, so there is nothing to "double-attach" by
+// re-running this every time.
+// Every page gets an explicit entry -- `null` for "pure Alpine-driven
+// content, nothing here needs imperative wiring beyond what Alpine.initTree
+// already does when the fragment mounts" -- rather than an omission, so a
+// missing entry is distinguishable from an intentional no-op. The check
+// right below turns "forgot to add a page here" into a loud console error
+// instead of a page with silently dead buttons.
+const PAGE_INIT = {
+  home:      null,
+  config:    initConfigPage,
+  telemetry: null,
+  terminal:  initTerminalPage,
+  firmware:  initFirmwarePage,
+  examples:  null,
+  help:      null,
+};
+
+// app.js is a plain (non-deferred) trailing <script>, so the DOM -- and with
+// it every [data-page] nav button, which live in the shell, not a fragment
+// -- is already fully parsed by the time this runs.
+document.querySelectorAll('[data-page]').forEach((btn) => {
+  if (!(btn.dataset.page in PAGE_INIT)) {
+    console.error(`PAGE_INIT is missing an entry for page "${btn.dataset.page}"`);
+  }
 });
 
 // --- side-menu navigation ---------------------------------------------------
-const PAGES = ['home', 'config', 'telemetry', 'terminal', 'firmware', 'examples', 'help'];
-// Terminal is deliberately NOT here. It is readable while disconnected so you
-// can sit on it and watch the device's boot record arrive when you connect --
-// the firmware replays that after `hello`, and being forced to connect first
-// and navigate second is exactly the moment you would miss it. Its controls
-// are disabled instead of the whole page (updateTerminalAvailability).
+// Terminal is deliberately not connection-gated. It is readable while
+// disconnected so you can sit on it and watch the device's boot record
+// arrive when you connect -- the firmware replays that after `hello`, and
+// being forced to connect first and navigate second is exactly the moment
+// you would miss it. Its controls are disabled instead (Alpine-bound to
+// $store.app.connected, see pages/terminal.html).
 //
-// Firmware is not here either, for a stronger version of the same reason: a
+// Firmware is not gated either, for a stronger version of the same reason: a
 // board that needs re-flashing is frequently a board that cannot be talked
 // to, and gating the recovery tool on a working device would be exactly
 // backwards.
 const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry']);
 
-function showPage(page) {
-  for (const p of PAGES) el(`page-${p}`).classList.toggle('d-none', p !== page);
+// Bumped on every call, checked after the (possibly slow, first-visit-only)
+// fragment fetch below -- two overlapping navigations otherwise let whichever
+// fetch resolves LAST win #page-mount and the nav highlight, regardless of
+// which page the user actually clicked last, and can leave e.g. DFU polling
+// running for a page that isn't even displayed any more.
+let showPageGeneration = 0;
+
+async function showPage(page) {
+  const generation = ++showPageGeneration;
+  let html = pageCache.get(page);
+  if (html === undefined) {
+    const r = await fetch(`pages/${page}.html`);
+    if (!r.ok) {
+      showError(`Failed to load the ${page} page (${r.status})`);
+      return;
+    }
+    html = await r.text();
+    // Only a successful fetch is cached -- a transient error must not poison
+    // every later visit to this page for the rest of the session.
+    pageCache.set(page, html);
+  }
+  // A newer navigation started (and, on a slow connection, may already have
+  // finished) while this fetch was in flight -- drop this stale result
+  // rather than clobbering whatever the user actually navigated to since.
+  if (generation !== showPageGeneration) return;
+  el('page-mount').innerHTML = html;
+  // Safe unguarded: this always runs after an awaited fetch, and even a
+  // same-origin static-file fetch resolves as a browser task, never
+  // synchronously -- by the time it does, Alpine's own deferred script has
+  // long since run and registered every store, the same guarantee
+  // loadDevice() already relies on for its own direct Alpine.store() calls.
+  Alpine.initTree(el('page-mount'));
+  PAGE_INIT[page]?.();
   // Polling for a DFU device costs a `dfu-util -l` subprocess per tick, so it
   // runs only while the page that displays it is actually on screen.
   setDfuPolling(page === 'firmware');
@@ -898,18 +993,6 @@ function showPage(page) {
   // widths, or the offcanvas was never opened).
   const sidebar = document.getElementById('sidebarMenu');
   window.bootstrap?.Offcanvas.getInstance(sidebar)?.hide();
-}
-
-// Only the controls that actually talk to the device. Clear stays live -- it
-// edits the local output buffer -- and Save is governed by setDirty(), which a
-// disconnect already resets.
-function updateTerminalAvailability() {
-  el('term-input').disabled = !connected;
-  el('term-send').disabled = !connected;
-  el('term-restore').disabled = !connected;
-  el('term-input').placeholder = connected
-    ? 'type a command, e.g. get led.mode'
-    : 'connect a device to send commands';
 }
 
 function updateNavAvailability() {
@@ -928,16 +1011,43 @@ document.querySelectorAll('[data-page]').forEach((btn) => {
   });
 });
 
+// Shared by Terminal's #term-output and Firmware's #fw-log: both are a
+// bounded, newline-joined text buffer that must outlive the owning page's
+// DOM -- log lines (a device's replayed boot record, "show device traffic"
+// frames, a flash's WS progress events) can arrive while that page isn't
+// even the mounted one -- plus the trim/scroll logic for writing the
+// buffer into a <textarea> on the ticks where it IS mounted.
+function makeLogBuffer(maxLines) {
+  let text = '';
+  return {
+    append(line) {
+      const lines = (text ? text.split('\n') : []).concat(line.split('\n'));
+      text = lines.slice(-maxLines).join('\n');
+    },
+    clear() { text = ''; },
+    get value() { return text; },
+  };
+}
+
+// A no-op when `elId` isn't mounted -- see makeLogBuffer's comment above for
+// why that has to be silent rather than an error.
+function flushLogBuffer(buf, elId) {
+  const out = el(elId);
+  if (!out) return;
+  out.value = buf.value;
+  out.scrollTop = out.scrollHeight;
+}
+
 // --- terminal ----------------------------------------------------------------
 const TERM_MAX_LINES = 500;   // caps growth when "show device traffic" streams tlm at up to 50Hz
 const termHistory = [];
 let termHistoryIdx = 0;
 
+const termLog = makeLogBuffer(TERM_MAX_LINES);   // #term-output's content, kept alive across unmount/remount
+
 function termAppend(text) {
-  const out = el('term-output');
-  const lines = (out.value ? out.value.split('\n') : []).concat(text.split('\n'));
-  out.value = lines.slice(-TERM_MAX_LINES).join('\n');
-  out.scrollTop = out.scrollHeight;
+  termLog.append(text);
+  flushLogBuffer(termLog, 'term-output');
 }
 
 async function termRun(text) {
@@ -949,7 +1059,7 @@ async function termRun(text) {
   try {
     const r = await Api.sendTerminalCommand(text);
     termAppend(r.friendly);
-    if (el('term-raw').checked) {
+    if (el('term-raw')?.checked) {
       if (r.raw_sent) termAppend(`  >> ${r.raw_sent}`);
       if (r.raw_recv) termAppend(`  << ${r.raw_recv}`);
     }
@@ -966,7 +1076,7 @@ async function termRun(text) {
       if (r.dirty !== null) {
         setDirty(r.dirty);
         if (r.dirty && text.trim().split(/\s+/)[0].toLowerCase() === 'revert') {
-          el('revert-note').classList.remove('d-none');
+          Alpine.store('app').revertNote = true;
         }
       }
     }
@@ -974,88 +1084,107 @@ async function termRun(text) {
     termAppend(`ERROR: ${e.message}`);
   } finally {
     // Not an unconditional re-enable: the command may well have been what
-    // revealed the device is gone.
-    el('term-send').disabled = !connected;
+    // revealed the device is gone. Guarded: Terminal may no longer be the
+    // mounted page by the time a slow command's response comes back.
+    const sendBtn = el('term-send');
+    if (sendBtn) sendBtn.disabled = !connected;
   }
 }
 
-el('term-send').addEventListener('click', () => {
-  const input = el('term-input');
-  termRun(input.value);
-  input.value = '';
-});
+function initTerminalPage() {
+  // Replay whatever accumulated while Terminal wasn't mounted -- the
+  // textarea itself is brand new, termLog is not.
+  flushLogBuffer(termLog, 'term-output');
 
-el('term-input').addEventListener('keydown', (ev) => {
-  if (ev.key === 'Enter') {
-    el('term-send').click();
-  } else if (ev.key === 'ArrowUp') {
-    if (termHistoryIdx > 0) { termHistoryIdx--; el('term-input').value = termHistory[termHistoryIdx]; }
-    ev.preventDefault();
-  } else if (ev.key === 'ArrowDown') {
-    if (termHistoryIdx < termHistory.length - 1) {
-      termHistoryIdx++;
-      el('term-input').value = termHistory[termHistoryIdx];
-    } else {
-      termHistoryIdx = termHistory.length;
-      el('term-input').value = '';
+  el('term-send').addEventListener('click', () => {
+    const input = el('term-input');
+    termRun(input.value);
+    input.value = '';
+  });
+
+  el('term-input').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') {
+      el('term-send').click();
+    } else if (ev.key === 'ArrowUp') {
+      if (termHistoryIdx > 0) { termHistoryIdx--; el('term-input').value = termHistory[termHistoryIdx]; }
+      ev.preventDefault();
+    } else if (ev.key === 'ArrowDown') {
+      if (termHistoryIdx < termHistory.length - 1) {
+        termHistoryIdx++;
+        el('term-input').value = termHistory[termHistoryIdx];
+      } else {
+        termHistoryIdx = termHistory.length;
+        el('term-input').value = '';
+      }
+      ev.preventDefault();
     }
-    ev.preventDefault();
-  }
-});
+  });
 
-el('term-clear').addEventListener('click', () => { el('term-output').value = ''; });
+  el('term-clear').addEventListener('click', () => {
+    termLog.clear();
+    el('term-output').value = '';
+  });
 
-// --- restore from INI --------------------------------------------------------
-// The other half of `dump`. The report text is built here from the backend's
-// applied/skipped lists rather than sent as prose, so this stays the only
-// place that decides how the terminal reads.
-el('term-restore').addEventListener('click', () => el('term-restore-file').click());
+  // --- restore from INI -------------------------------------------------------
+  // The other half of `dump`. The report text is built here from the backend's
+  // applied/skipped lists rather than sent as prose, so this stays the only
+  // place that decides how the terminal reads.
+  el('term-restore').addEventListener('click', () => el('term-restore-file').click());
 
-el('term-restore-file').addEventListener('change', async (ev) => {
-  const file = ev.target.files[0];
-  // Reset immediately so re-picking the same file after an edit still fires
-  // a `change` event.
-  ev.target.value = '';
-  if (!file) return;
-  termAppend(`> restore from ${file.name}`);
-  try {
-    const r = await Api.restoreIni(await file.text());
-    termAppend(`applied ${r.applied.length} setting(s)`
-      + (r.applied.length ? `: ${r.applied.join(', ')}` : ''));
-    for (const s of r.skipped) termAppend(`  skipped ${s.key}: ${s.reason}`);
-    if (r.applied.length) {
-      // Values are live on the device but not in flash — same state as
-      // editing a field by hand, so surface the same reminder.
-      await loadDevice();
-      setDirty(true);
-      termAppend('Not saved to flash yet — click "Save to flash".');
+  el('term-restore-file').addEventListener('change', async (ev) => {
+    const file = ev.target.files[0];
+    // Reset immediately so re-picking the same file after an edit still fires
+    // a `change` event.
+    ev.target.value = '';
+    if (!file) return;
+    termAppend(`> restore from ${file.name}`);
+    try {
+      const r = await Api.restoreIni(await file.text());
+      termAppend(`applied ${r.applied.length} setting(s)`
+        + (r.applied.length ? `: ${r.applied.join(', ')}` : ''));
+      for (const s of r.skipped) termAppend(`  skipped ${s.key}: ${s.reason}`);
+      if (r.applied.length) {
+        // Values are live on the device but not in flash — same state as
+        // editing a field by hand, so surface the same reminder.
+        await loadDevice();
+        setDirty(true);
+        termAppend('Not saved to flash yet — click "Save to flash".');
+      }
+    } catch (e) {
+      termAppend(`ERROR: ${e.message}`);
     }
-  } catch (e) {
-    termAppend(`ERROR: ${e.message}`);
-  }
-});
+  });
 
-el('term-save').addEventListener('click', async () => {
-  termAppend('> save to flash');
-  el('term-save').disabled = true;      // the write stalls the board ~1s
-  try {
-    await saveToFlash();
-    termAppend('OK: saved to flash');
-  } catch (e) {
-    termAppend(`ERROR: ${e.message}`);
-    setDirty(true);                     // still unsaved — let them retry
-  }
-});
+  el('term-save').addEventListener('click', async () => {
+    termAppend('> save to flash');
+    el('term-save').disabled = true;      // the write stalls the board ~1s
+    try {
+      await saveToFlash();
+      termAppend('OK: saved to flash');
+    } catch (e) {
+      termAppend(`ERROR: ${e.message}`);
+      setDirty(true);                     // still unsaved — let them retry
+      // setDirty(true) above is a same-value write when dirty was already
+      // true (it was, or Save couldn't have been clicked) -- Alpine's
+      // :disabled="!$store.app.dirty" binding skips re-firing on an
+      // unchanged value, so the imperative disable set above has to be
+      // cleared by hand too. Guarded: Terminal may no longer be the mounted
+      // page by the time a save that stalls the board ~1s comes back.
+      const saveBtn = el('term-save');
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  });
+}
 
 // --- firmware page -----------------------------------------------------------
 const FW_MAX_LINES = 400;
 let dfuPollTimer = null;
 
+const fwLog = makeLogBuffer(FW_MAX_LINES);   // #fw-log's content, kept alive across unmount/remount
+
 function firmwareLog(text) {
-  const out = el('fw-log');
-  const lines = (out.value ? out.value.split('\n') : []).concat(text);
-  out.value = lines.slice(-FW_MAX_LINES).join('\n');
-  out.scrollTop = out.scrollHeight;
+  fwLog.append(text);
+  flushLogBuffer(fwLog, 'fw-log');
 }
 
 function setDfuPolling(on) {
@@ -1081,65 +1210,69 @@ function setDfuPolling(on) {
   }
 }
 
-el('fw-enter-dfu').addEventListener('click', async () => {
-  const store = Alpine.store('firmware');
-  try {
-    await Api.enterDfu();
-    // The device acked and is now resetting; its port is already gone, so
-    // reflect that immediately rather than waiting for the watchdog to
-    // notice and report it as a fault.
-    setState('disconnected');
-    firmwareLog('device acknowledged the DFU request and is rebooting');
-    // The ROM bootloader takes a moment to enumerate.
-    setTimeout(() => store.pollDfu(), 1200);
-  } catch (e) {
-    showError(e.message);
-    firmwareLog(`ERROR: ${e.message}`);
-  }
-});
+function initFirmwarePage() {
+  flushLogBuffer(fwLog, 'fw-log');
 
-el('fw-flash').addEventListener('click', async () => {
-  const store = Alpine.store('firmware');
-  const img = store.images.find((i) => i.id === store.selected);
-  if (!img) return;
-  if (!window.confirm(
-      `Flash ${img.name} ${img.version} (${img.board}) to the board?\n\n`
-      + 'This overwrites the firmware currently on it.')) return;
-  store.begin();
-  firmwareLog(`> flash ${img.id}`);
-  try {
-    await Api.flashBundled(img.id, img.method === 'esptool' ? store.selectedPort : undefined);
-  } catch (e) {
-    // Progress arrives over the WebSocket, but a request rejected outright
-    // (bad checksum, another flash already running) never gets that far.
-    store.onFlashEvent({ phase: 'error', line: e.message });
-    showError(e.message);
-  }
-});
+  el('fw-enter-dfu').addEventListener('click', async () => {
+    const store = Alpine.store('firmware');
+    try {
+      await Api.enterDfu();
+      // The device acked and is now resetting; its port is already gone, so
+      // reflect that immediately rather than waiting for the watchdog to
+      // notice and report it as a fault.
+      setState('disconnected');
+      firmwareLog('device acknowledged the DFU request and is rebooting');
+      // The ROM bootloader takes a moment to enumerate.
+      setTimeout(() => store.pollDfu(), 1200);
+    } catch (e) {
+      showError(e.message);
+      firmwareLog(`ERROR: ${e.message}`);
+    }
+  });
 
-el('fw-upload').addEventListener('click', () => el('fw-upload-file').click());
+  el('fw-flash').addEventListener('click', async () => {
+    const store = Alpine.store('firmware');
+    const img = store.images.find((i) => i.id === store.selected);
+    if (!img) return;
+    if (!window.confirm(
+        `Flash ${img.name} ${img.version} (${img.board}) to the board?\n\n`
+        + 'This overwrites the firmware currently on it.')) return;
+    store.begin();
+    firmwareLog(`> flash ${img.id}`);
+    try {
+      await Api.flashBundled(img.id, img.method === 'esptool' ? store.selectedPort : undefined);
+    } catch (e) {
+      // Progress arrives over the WebSocket, but a request rejected outright
+      // (bad checksum, another flash already running) never gets that far.
+      store.onFlashEvent({ phase: 'error', line: e.message });
+      showError(e.message);
+    }
+  });
 
-el('fw-upload-file').addEventListener('change', async (ev) => {
-  const file = ev.target.files[0];
-  ev.target.value = '';   // so re-picking the same file fires `change` again
-  if (!file) return;
-  const store = Alpine.store('firmware');
-  if (!window.confirm(
-      `Flash ${file.name} to the board?\n\n`
-      + 'Nothing verifies this file matches your board.')) return;
-  store.begin();
-  firmwareLog(`> flash ${file.name} (${file.size} bytes)`);
-  try {
-    // Read here rather than handing the File to Api: the transport seam takes
-    // bytes, so that it can be something other than fetch one day.
-    await Api.flashUpload(await file.arrayBuffer(), file.name,
-                          store.uploadTarget,
-                          store.uploadTarget === 'esptool' ? store.uploadPort : null);
-  } catch (e) {
-    store.onFlashEvent({ phase: 'error', line: e.message });
-    showError(e.message);
-  }
-});
+  el('fw-upload').addEventListener('click', () => el('fw-upload-file').click());
+
+  el('fw-upload-file').addEventListener('change', async (ev) => {
+    const file = ev.target.files[0];
+    ev.target.value = '';   // so re-picking the same file fires `change` again
+    if (!file) return;
+    const store = Alpine.store('firmware');
+    if (!window.confirm(
+        `Flash ${file.name} to the board?\n\n`
+        + 'Nothing verifies this file matches your board.')) return;
+    store.begin();
+    firmwareLog(`> flash ${file.name} (${file.size} bytes)`);
+    try {
+      // Read here rather than handing the File to Api: the transport seam takes
+      // bytes, so that it can be something other than fetch one day.
+      await Api.flashUpload(await file.arrayBuffer(), file.name,
+                            store.uploadTarget,
+                            store.uploadTarget === 'esptool' ? store.uploadPort : null);
+    } catch (e) {
+      store.onFlashEvent({ phase: 'error', line: e.message });
+      showError(e.message);
+    }
+  });
+}
 
 // One handler for every frame the backend pushes. Nothing here knows there is
 // a socket underneath -- Api.subscribe owns the transport and its reconnection
@@ -1172,7 +1305,7 @@ function subscribeEvents() {
       // among telemetry frames.
       termAppend(`[device] ${msg.data}`);
     }
-    if (el('term-traffic').checked) {
+    if (el('term-traffic')?.checked) {
       termAppend(`<< [${msg.type}] ${JSON.stringify(msg.data)}`);
     }
   });
@@ -1221,11 +1354,13 @@ function startWatchdog() {
 
 (async function init() {
   el('app-version').textContent = `v${APP_VERSION}`;
-  el('help-app-version').textContent = APP_VERSION;
   // Home is always the landing page, including on a reload while a device is
   // still connected server-side. Nothing navigates for you any more -- page
   // choice is the user's, and connecting only enables the gated nav items.
-  showPage('home');
+  // Not awaited (refreshPorts()/connect status shouldn't wait on it), but
+  // .catch()'d like every other async path in this file -- otherwise a
+  // failed fetch of pages/home.html surfaces only as an unhandled rejection.
+  showPage('home').catch((e) => showError(`Failed to load the app: ${e.message}`));
   await refreshPorts();
   const st = await Api.status();
   setState(st.state, st);

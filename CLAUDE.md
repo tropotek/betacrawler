@@ -1,6 +1,9 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+It documents development procedures and practices only — build/test commands, layout, and rules
+that must not be undone. It is not a memory file: decision history, rationale, and narrative belong
+in `docs/architecture.md`, `CHANGELOG.md`, or commit messages, not here. Keep this file minimal.
 
 ## What this is
 
@@ -82,6 +85,15 @@ protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer ma
 - System Python is 3.14.4 and all backend deps install and import cleanly on it.
 - Git commits use `feat:`/`fix:`/`docs:`/`chore:` prefixes.
 
+## Code style
+
+- Comments stay strictly minimal: 2-3 lines describing what the code does and, optionally, its
+  config options. No historic reasoning, no change explanations, no comments written to help a
+  future reader when the code itself is readable — the code is the source of truth.
+- Never reference a line number or a spec/design-doc file in a comment — both go stale the moment
+  either file changes. If the reasoning matters, it belongs in the commit message or PR
+  description, not inline.
+
 ## Layout
 
 **Three tiers, deliberately isolated so most of the stack tests without hardware:**
@@ -113,7 +125,11 @@ app/tools/             bundle_firmware.py, run by hand at release time to produc
 
 app/web/                static HTML/JS only, talks to the backend exclusively through the
                         `Api` object in app.js — that object is the ENTIRE porting surface
-                        for a hypothetical future Electron rewrite.
+                        for a hypothetical future Electron rewrite. `index.html` is a shell
+                        (header/sidebar/mount point); each page's markup is its own file
+                        under `pages/`, fetched and injected into the mount point on
+                        navigation — adding a page means adding one `pages/<name>.html` and
+                        a nav button, not editing every other page's markup.
 app/docs/               placeholder template (USER_GUIDE.md) for a fork's own user guide
 ```
 
@@ -141,9 +157,13 @@ with that module's own local index" is the invariant most worth preserving in `d
 **Observers are const** — `Module::attach()` hands out const access on purpose. A module must
 never reconfigure another behind `dispatch`'s back. Resolve keys once in `attach()`, never per tick.
 
-**The `Api` seam** — no `fetch`/`WebSocket` outside `Api`; no browser-only types (`File`, `Blob`,
-the socket itself) in or out; every path through `Api.base`; the push channel stays
-`Api.subscribe(handler) -> unsubscribe` and owns its own reconnection.
+**The `Api` seam** — no `fetch`/`WebSocket` outside `Api` for anything that talks to the device or
+backend; no browser-only types (`File`, `Blob`, the socket itself) in or out; every such path
+through `Api.base`; the push channel stays `Api.subscribe(handler) -> unsubscribe` and owns its own
+reconnection. One documented exception: `showPage()`'s `fetch('pages/<name>.html')` in `app.js`
+loads this app's own static page markup, not a device/backend request — it isn't part of the
+porting surface this seam exists to isolate for a hypothetical Electron rewrite, so it's exempt.
+Any fetch that *does* talk to the device or backend has no excuse to live outside `Api`.
 
 **Schema-driven UI** — descriptors are the single source of truth. Adding a firmware parameter or
 telemetry field must need zero changes in `app.js`; there is deliberately no field-label map and no
