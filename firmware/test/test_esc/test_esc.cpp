@@ -26,27 +26,13 @@ void test_clamp_degenerate_span_holds_one_pulse() {
 // --- nextArmState --------------------------------------------------------------
 
 void test_arm_off_mode_forces_off_from_any_state() {
-  TEST_ASSERT_EQUAL_UINT32(ARM_OFF, nextArmState(ARM_ARMED, true, false, false, 100, 0, 2000, true));
-  TEST_ASSERT_EQUAL_UINT32(ARM_OFF, nextArmState(ARM_ARMING, true, false, false, 100, 0, 2000, true));
-  TEST_ASSERT_EQUAL_UINT32(ARM_OFF, nextArmState(ARM_OFF, true, false, false, 100, 0, 2000, true));
-}
-
-void test_arm_switch_inactive_forces_off_from_any_state() {
-  // Symmetric with test_arm_off_mode_forces_off_from_any_state above --
-  // armSwitchInactive gets the exact same hard-reset treatment as modeIsOff.
-  TEST_ASSERT_EQUAL_UINT32(ARM_OFF, nextArmState(ARM_ARMED, false, true, false, 100, 0, 2000, true));
-  TEST_ASSERT_EQUAL_UINT32(ARM_OFF, nextArmState(ARM_ARMING, false, true, false, 100, 0, 2000, true));
-  TEST_ASSERT_EQUAL_UINT32(ARM_OFF, nextArmState(ARM_OFF, false, true, false, 100, 0, 2000, true));
-}
-
-void test_arm_switch_active_alone_does_not_promote_to_armed() {
-  // armSwitchInactive=false ("switch says armed") is not, by itself, enough
-  // to promote ARMING to ARMED -- commandedIsLow still gates that, unchanged.
-  TEST_ASSERT_EQUAL_UINT32(ARM_ARMING, nextArmState(ARM_ARMING, false, false, false, 5000, 0, 2000, false));
+  TEST_ASSERT_EQUAL_UINT32(ARM_OFF, nextArmState(ARM_ARMED, true, false, 100, 0, 2000, true));
+  TEST_ASSERT_EQUAL_UINT32(ARM_OFF, nextArmState(ARM_ARMING, true, false, 100, 0, 2000, true));
+  TEST_ASSERT_EQUAL_UINT32(ARM_OFF, nextArmState(ARM_OFF, true, false, 100, 0, 2000, true));
 }
 
 void test_arm_entering_from_off_starts_arming() {
-  TEST_ASSERT_EQUAL_UINT32(ARM_ARMING, nextArmState(ARM_OFF, false, false, true, 5000, 5000, 2000, true));
+  TEST_ASSERT_EQUAL_UINT32(ARM_ARMING, nextArmState(ARM_OFF, false, true, 5000, 5000, 2000, true));
 }
 
 void test_arm_entering_from_off_never_skips_straight_to_armed() {
@@ -54,26 +40,26 @@ void test_arm_entering_from_off_never_skips_straight_to_armed() {
   // hold, the transition call itself must still land on ARMING -- this is
   // the property that guarantees the very first pulse written is always
   // minUs, never a stale commanded value.
-  TEST_ASSERT_EQUAL_UINT32(ARM_ARMING, nextArmState(ARM_OFF, false, false, true, 100000, 0, 2000, true));
+  TEST_ASSERT_EQUAL_UINT32(ARM_ARMING, nextArmState(ARM_OFF, false, true, 100000, 0, 2000, true));
 }
 
 void test_arm_before_hold_elapsed_stays_arming() {
-  TEST_ASSERT_EQUAL_UINT32(ARM_ARMING, nextArmState(ARM_ARMING, false, false, false, 1000, 0, 2000, true));
+  TEST_ASSERT_EQUAL_UINT32(ARM_ARMING, nextArmState(ARM_ARMING, false, false, 1000, 0, 2000, true));
 }
 
 void test_arm_hold_boundary_is_inclusive() {
-  TEST_ASSERT_EQUAL_UINT32(ARM_ARMED, nextArmState(ARM_ARMING, false, false, false, 2000, 0, 2000, true));
+  TEST_ASSERT_EQUAL_UINT32(ARM_ARMED, nextArmState(ARM_ARMING, false, false, 2000, 0, 2000, true));
 }
 
 void test_arm_after_hold_elapsed_becomes_armed() {
-  TEST_ASSERT_EQUAL_UINT32(ARM_ARMED, nextArmState(ARM_ARMING, false, false, false, 5000, 0, 2000, true));
+  TEST_ASSERT_EQUAL_UINT32(ARM_ARMED, nextArmState(ARM_ARMING, false, false, 5000, 0, 2000, true));
 }
 
 void test_arm_switching_mode_while_armed_does_not_rearm() {
   // Large, stale-looking elapsed time deliberately: an already-ARMED state
   // must never fall back into a hold just because time has passed. Only
   // ARM_ARMING is subject to the elapsed-time check.
-  TEST_ASSERT_EQUAL_UINT32(ARM_ARMED, nextArmState(ARM_ARMED, false, false, false, 999999, 0, 2000, true));
+  TEST_ASSERT_EQUAL_UINT32(ARM_ARMED, nextArmState(ARM_ARMED, false, false, 999999, 0, 2000, true));
 }
 
 // --- nextPulseUs --------------------------------------------------------------
@@ -113,18 +99,18 @@ void test_arm_hold_elapsed_but_not_low_stays_arming() {
   // Time alone is not enough once commandedIsLow can be false: the hold has
   // fully elapsed here (5000ms >= 2000ms), but the operator has not brought
   // the throttle down, so promotion must not happen.
-  TEST_ASSERT_EQUAL_UINT32(ARM_ARMING, nextArmState(ARM_ARMING, false, false, false, 5000, 0, 2000, false));
+  TEST_ASSERT_EQUAL_UINT32(ARM_ARMING, nextArmState(ARM_ARMING, false, false, 5000, 0, 2000, false));
 }
 
 void test_arm_promotes_only_when_both_elapsed_and_low() {
-  TEST_ASSERT_EQUAL_UINT32(ARM_ARMED, nextArmState(ARM_ARMING, false, false, false, 2000, 0, 2000, true));
+  TEST_ASSERT_EQUAL_UINT32(ARM_ARMED, nextArmState(ARM_ARMING, false, false, 2000, 0, 2000, true));
 }
 
 void test_arm_already_armed_ignores_commanded_low() {
   // The precondition gates the INITIAL promotion only -- once ARMED, the
   // full commanded range is available, unchanged from before this
   // amendment. commandedIsLow=false here must not demote anything.
-  TEST_ASSERT_EQUAL_UINT32(ARM_ARMED, nextArmState(ARM_ARMED, false, false, false, 999999, 0, 2000, false));
+  TEST_ASSERT_EQUAL_UINT32(ARM_ARMED, nextArmState(ARM_ARMED, false, false, 999999, 0, 2000, false));
 }
 
 // --- isCommandedLow ------------------------------------------------------
@@ -335,8 +321,6 @@ int main() {
   RUN_TEST(test_clamp_above_max_clamps_to_max);
   RUN_TEST(test_clamp_degenerate_span_holds_one_pulse);
   RUN_TEST(test_arm_off_mode_forces_off_from_any_state);
-  RUN_TEST(test_arm_switch_inactive_forces_off_from_any_state);
-  RUN_TEST(test_arm_switch_active_alone_does_not_promote_to_armed);
   RUN_TEST(test_arm_entering_from_off_starts_arming);
   RUN_TEST(test_arm_entering_from_off_never_skips_straight_to_armed);
   RUN_TEST(test_arm_before_hold_elapsed_stays_arming);
