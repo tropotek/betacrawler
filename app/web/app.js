@@ -932,14 +932,15 @@ const pageCache = new Map();   // page name -> fetched fragment HTML text, cache
 // right below turns "forgot to add a page here" into a loud console error
 // instead of a page with silently dead buttons.
 const PAGE_INIT = {
-  home:      null,
-  config:    initConfigPage,
-  telemetry: null,
-  device:    null,
-  terminal:  initTerminalPage,
-  firmware:  initFirmwarePage,
-  examples:  null,
-  help:      null,
+  home:       null,
+  config:     initConfigPage,
+  telemetry:  null,
+  controller: null,
+  device:     null,
+  terminal:   initTerminalPage,
+  firmware:   initFirmwarePage,
+  examples:   null,
+  help:       null,
 };
 
 // app.js is a plain (non-deferred) trailing <script>, so the DOM -- and with
@@ -963,7 +964,7 @@ document.querySelectorAll('[data-page]').forEach((btn) => {
 // board that needs re-flashing is frequently a board that cannot be talked
 // to, and gating the recovery tool on a working device would be exactly
 // backwards.
-const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry', 'device']);
+const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry', 'controller', 'device']);
 
 // Bumped on every call, checked after the (possibly slow, first-visit-only)
 // fragment fetch below -- two overlapping navigations otherwise let whichever
