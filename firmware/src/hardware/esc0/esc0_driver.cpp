@@ -159,6 +159,15 @@ void EscDriver::apply(const core::Params& p) {
   // (gate) -- see Registry::driveOutputs()'s empty-bus fallback.
   const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;
   const bool armSwitchInactive = driveBusFresh && driveInputs_->get(kDriveArmSlot) == 0;
+  // The switch reactivating after being off must restart the arm-hold cycle
+  // exactly like mode leaving MODE_OFF does. nextArmState only clears the
+  // ARM_OFF floor while armSwitchInactive is true; something has to pull
+  // armState_ back out of ARM_OFF once it turns false again, or an ESC
+  // already in MODE_INPUT/MODE_ARMED before the switch first went active
+  // has no path to ever arm at all.
+  const bool armReactivated = armWasInactive_ && !armSwitchInactive;
+  armWasInactive_ = armSwitchInactive;
+  const bool startHold = enteringFromOff || armReactivated;
 
   if (esc::inputLossDemotesArmed(armState_, mode_, inputFresh) ||
       esc::srcChangeDemotesArmed(armState_, mode_, srcChanged)) {
@@ -166,11 +175,11 @@ void EscDriver::apply(const core::Params& p) {
     armT0_    = now;
   }
 
-  if (enteringFromOff) armT0_ = now;
+  if (startHold) armT0_ = now;
   const bool commandedLow = esc::isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, neutral,
                                                  ESC0_ARM_LOW_MARGIN_US, bidirectional);
   if (armState_ == esc::ARM_ARMING && !commandedLow) armT0_ = now;
-  armState_ = esc::nextArmState(armState_, mode_ == esc::MODE_OFF, armSwitchInactive, enteringFromOff,
+  armState_ = esc::nextArmState(armState_, mode_ == esc::MODE_OFF, armSwitchInactive, startHold,
                                  now, armT0_, ESC0_ARM_HOLD_MS, commandedLow);
 
   if (mode_ == esc::MODE_OFF) { detach(); return; }
@@ -203,16 +212,19 @@ void EscDriver::tick(uint32_t nowMs) {
 
   const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;
   const bool armSwitchInactive = driveBusFresh && driveInputs_->get(kDriveArmSlot) == 0;
+  const bool armReactivated = armWasInactive_ && !armSwitchInactive;
+  armWasInactive_ = armSwitchInactive;
 
   if (esc::inputLossDemotesArmed(armState_, mode_, inputFresh)) {
     armState_ = esc::ARM_ARMING;
     armT0_    = nowMs;
   }
 
+  if (armReactivated) armT0_ = nowMs;
   const bool commandedLow = esc::isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, neutral,
                                                  ESC0_ARM_LOW_MARGIN_US, bidirectional);
   if (armState_ == esc::ARM_ARMING && !commandedLow) armT0_ = nowMs;
-  armState_ = esc::nextArmState(armState_, false, armSwitchInactive, false, nowMs, armT0_,
+  armState_ = esc::nextArmState(armState_, false, armSwitchInactive, armReactivated, nowMs, armT0_,
                                  ESC0_ARM_HOLD_MS, commandedLow);
 
   const uint16_t us = esc::nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs,

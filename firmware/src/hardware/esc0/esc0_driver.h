@@ -36,6 +36,12 @@ class EscDriver : public core::Module {
   uint32_t armState_   = esc::ARM_OFF;
   uint32_t armT0_      = 0;
   uint16_t lastUs_     = 0;
+  // Was the shared ARM switch inactive as of the last apply()/tick() --
+  // lets both spot the true->false edge (switch just turned on) and treat
+  // it as a fresh arm-hold trigger, the same way mode leaving MODE_OFF is.
+  // Defaults true: safe until proven otherwise, matching every other
+  // "nothing arms until told to" default in this tree.
+  bool     armWasInactive_ = true;
 };
 
 }  // namespace esc0

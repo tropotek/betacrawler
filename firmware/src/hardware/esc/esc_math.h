@@ -26,9 +26,12 @@ enum : uint32_t { ARM_OFF = 0, ARM_ARMING = 1, ARM_ARMED = 2 };
 uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs);
 
 // One step of the arm-hold state machine. `enteringFromOff` is true exactly
-// on the onParamChanged() call where mode left MODE_OFF -- the only event
-// that (re)starts the hold, mirroring servo::apply()'s
-// `if (prevMode == MODE_OFF) attachOutput()`. `modeIsOff` always wins
+// on the onParamChanged() call where mode left MODE_OFF -- one event that
+// (re)starts the hold, mirroring servo::apply()'s
+// `if (prevMode == MODE_OFF) attachOutput()`. A caller may pass true here for
+// another analogous transition too (esc0/esc1 also do so when the shared ARM
+// switch goes from inactive to active -- see their own callers' comments);
+// this function does not care which. `modeIsOff` always wins
 // outright, from any state. armSwitchInactive gets the identical hard-reset
 // treatment -- a shared TX-switch ARM gate that lives above this function,
 // not inside it; see tank_drive's design doc for what sets it. Otherwise
