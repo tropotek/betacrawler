@@ -83,13 +83,23 @@
                            x-model="$store.config.values['elrs.timeout_ms']"
                            @change="$store.config.commit($store.config.field('elrs.timeout_ms').def)">
                   </div>
-                  <div class="col-md-6">
-                    <label class="form-label" for="f-rx-deadband">Channel Deadband (µs)</label>
-                    <input type="number" class="form-control" id="f-rx-deadband"
-                           :min="$store.config.field('rx.deadband_us').def?.min" :max="$store.config.field('rx.deadband_us').def?.max"
-                           :class="{ 'is-invalid': $store.config.invalid['rx.deadband_us'] }"
-                           x-model="$store.config.values['rx.deadband_us']"
-                           @change="$store.config.commit($store.config.field('rx.deadband_us').def)">
+                  <div class="col-md-6" x-data>
+                    <template x-if="$store.config.field('rx.deadband_us').def">
+                      <div>
+                        <label class="form-label" for="f-rx-deadband">Channel Deadband (µs)</label>
+                        <input type="number" class="form-control" id="f-rx-deadband"
+                               :min="$store.config.field('rx.deadband_us').def?.min" :max="$store.config.field('rx.deadband_us').def?.max"
+                               :class="{ 'is-invalid': $store.config.invalid['rx.deadband_us'] }"
+                               x-model="$store.config.values['rx.deadband_us']"
+                               @change="$store.config.commit($store.config.field('rx.deadband_us').def)">
+                      </div>
+                    </template>
+                    <template x-if="!$store.config.field('rx.deadband_us').def">
+                      <div class="text-secondary small">
+                        <div class="form-label d-block">Channel Deadband</div>
+                        Not available — reflash this board's firmware to add it.
+                      </div>
+                    </template>
                   </div>
                 </div>
               </fieldset>
