@@ -1,0 +1,36 @@
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Telemetry</h1>
+          </div>
+          <!-- Labels, units, grouping and decimal places all come from the
+               device's telemetry descriptor -- see the `tlm` array in the
+               schema response. Nothing here knows what a "vdd" is. -->
+          <div id="tlm" x-data>
+            <template x-for="group in $store.telemetry.groups" :key="group.name">
+              <div class="mb-4">
+                <div class="h6 text-secondary border-bottom pb-1 mb-3" x-text="group.name"></div>
+                <div class="row g-3">
+                  <template x-for="def in group.items" :key="def.key">
+                    <div class="col-6 col-md-4">
+                      <div class="card">
+                        <div class="card-body py-2">
+                          <div class="text-secondary small"
+                               x-text="def.unit ? `${def.label} (${def.unit})` : def.label"></div>
+                          <div class="fs-4" x-text="$store.telemetry.data[def.key] ?? '–'"></div>
+                          <!-- A descriptor that declares a range gets a bar
+                               under its number. The range is the firmware's;
+                               nothing here knows what is being measured. -->
+                          <template x-if="def.fmt === 'bar' && def.hi > def.lo">
+                            <div class="progress mt-1" style="height: 4px;">
+                              <div class="progress-bar" role="progressbar"
+                                   :style="`width: ${$store.telemetry.barPct(def)}%`"></div>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+          <p>&nbsp;</p>

@@ -550,7 +550,9 @@ document.addEventListener('alpine:init', () => {
       this.pct = 0;
       this.op = null;
       this.busy = true;
-      el('fw-log').value = '';
+      fwLogBuffer = '';
+      const out = el('fw-log');
+      if (out) out.value = '';
     },
   });
 
@@ -848,57 +850,90 @@ async function saveToFlash() {
   setDirty(false);
 }
 
-el('save').addEventListener('click', async () => {
-  try {
-    await saveToFlash();
-  } catch (e) { showError(e.message); }
-});
+// --- page init functions -----------------------------------------------------
+function initConfigPage() {
+  el('save').addEventListener('click', async () => {
+    try {
+      await saveToFlash();
+    } catch (e) { showError(e.message); }
+  });
 
-el('defaults').addEventListener('click', async () => {
-  try {
-    await Api.defaults();
-    await loadDevice();
-    // deviceInfo, not nothing: setState() blanks the navbar identity and the
-    // Help page whenever `info` is falsy, and the device is still connected --
-    // reloading its parameters told us nothing new about who it is.
-    setState('connected', deviceInfo);
-    // The firmware's `defaults` op reloads RAM and re-notifies the modules but
-    // never touches flash (core/dispatch.cpp, Op::Defaults), so the device is
-    // now exactly as unsaved as after editing a field by hand.
-    setDirty(true);
-  } catch (e) { showError(e.message); }
-});
+  el('defaults').addEventListener('click', async () => {
+    try {
+      await Api.defaults();
+      await loadDevice();
+      // deviceInfo, not nothing: setState() blanks the navbar identity and the
+      // Help page whenever `info` is falsy, and the device is still connected --
+      // reloading its parameters told us nothing new about who it is.
+      setState('connected', deviceInfo);
+      // The firmware's `defaults` op reloads RAM and re-notifies the modules but
+      // never touches flash (core/dispatch.cpp, Op::Defaults), so the device is
+      // now exactly as unsaved as after editing a field by hand.
+      setDirty(true);
+    } catch (e) { showError(e.message); }
+  });
 
-el('revert').addEventListener('click', async () => {
-  try {
-    const res = await Api.revert();
-    await loadDevice();
-    setState('connected', deviceInfo);   // see the defaults handler above
-    // "flash" means RAM now matches what is stored, so there is nothing left
-    // to save -- this is the ONLY action that leaves the device clean.
-    // "defaults" means the board had nothing valid stored and the firmware
-    // fell back, which is both worth saving and worth saying out loud.
-    setDirty(res.src !== 'flash');
-    if (res.src !== 'flash') Alpine.store('app').revertNote = true;
-  } catch (e) { showError(e.message); }
-});
+  el('revert').addEventListener('click', async () => {
+    try {
+      const res = await Api.revert();
+      await loadDevice();
+      setState('connected', deviceInfo);   // see the defaults handler above
+      // "flash" means RAM now matches what is stored, so there is nothing left
+      // to save -- this is the ONLY action that leaves the device clean.
+      // "defaults" means the board had nothing valid stored and the firmware
+      // fell back, which is both worth saving and worth saying out loud.
+      setDirty(res.src !== 'flash');
+      if (res.src !== 'flash') Alpine.store('app').revertNote = true;
+    } catch (e) { showError(e.message); }
+  });
+}
+
+// --- page fragments -----------------------------------------------------------
+const pageCache = new Map();   // page name -> fetched fragment HTML text, cached after first use
+
+// One-time (per page) DOM wiring, run in full on EVERY mount of that page --
+// see "Correction to the design doc" at the top of this plan for why a
+// once-only guard would be wrong here: #page-mount's innerHTML is replaced on
+// every navigation (below), which destroys the previous mount's nodes and
+// every listener attached to them, so there is nothing to "double-attach" by
+// re-running this every time.
+const PAGE_INIT = {
+  config:   initConfigPage,
+  terminal: initTerminalPage,
+  firmware: initFirmwarePage,
+  // home, telemetry, examples, help: no entry -- pure Alpine-driven content,
+  // nothing here needs imperative wiring beyond what Alpine.initTree already
+  // does when the fragment mounts.
+};
 
 // --- side-menu navigation ---------------------------------------------------
-const PAGES = ['home', 'config', 'telemetry', 'terminal', 'firmware', 'examples', 'help'];
-// Terminal is deliberately NOT here. It is readable while disconnected so you
-// can sit on it and watch the device's boot record arrive when you connect --
-// the firmware replays that after `hello`, and being forced to connect first
-// and navigate second is exactly the moment you would miss it. Its controls
-// are disabled instead of the whole page (updateTerminalAvailability).
+// Terminal is deliberately not connection-gated. It is readable while
+// disconnected so you can sit on it and watch the device's boot record
+// arrive when you connect -- the firmware replays that after `hello`, and
+// being forced to connect first and navigate second is exactly the moment
+// you would miss it. Its controls are disabled instead (Alpine-bound to
+// $store.app.connected, see pages/terminal.html).
 //
-// Firmware is not here either, for a stronger version of the same reason: a
+// Firmware is not gated either, for a stronger version of the same reason: a
 // board that needs re-flashing is frequently a board that cannot be talked
 // to, and gating the recovery tool on a working device would be exactly
 // backwards.
 const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry']);
 
-function showPage(page) {
-  for (const p of PAGES) el(`page-${p}`).classList.toggle('d-none', p !== page);
+async function showPage(page) {
+  let html = pageCache.get(page);
+  if (html === undefined) {
+    html = await (await fetch(`pages/${page}.html`)).text();
+    pageCache.set(page, html);
+  }
+  el('page-mount').innerHTML = html;
+  // Safe unguarded: this always runs after an awaited fetch, and even a
+  // same-origin static-file fetch resolves as a browser task, never
+  // synchronously -- by the time it does, Alpine's own deferred script has
+  // long since run and registered every store, the same guarantee
+  // loadDevice() already relies on for its own direct Alpine.store() calls.
+  Alpine.initTree(el('page-mount'));
+  PAGE_INIT[page]?.();
   // Polling for a DFU device costs a `dfu-util -l` subprocess per tick, so it
   // runs only while the page that displays it is actually on screen.
   setDfuPolling(page === 'firmware');
@@ -936,10 +971,18 @@ const TERM_MAX_LINES = 500;   // caps growth when "show device traffic" streams 
 const termHistory = [];
 let termHistoryIdx = 0;
 
+let termOutputBuffer = '';   // #term-output's content, kept alive across unmount/remount
+
 function termAppend(text) {
+  const lines = (termOutputBuffer ? termOutputBuffer.split('\n') : []).concat(text.split('\n'));
+  termOutputBuffer = lines.slice(-TERM_MAX_LINES).join('\n');
+  // Guarded: log lines can arrive (e.g. the device's replayed boot record,
+  // or "show device traffic" tlm frames) while Terminal isn't the mounted
+  // page at all -- the buffer above is what makes that not a crash AND not
+  // a loss, it's just replayed into the textarea on the next mount.
   const out = el('term-output');
-  const lines = (out.value ? out.value.split('\n') : []).concat(text.split('\n'));
-  out.value = lines.slice(-TERM_MAX_LINES).join('\n');
+  if (!out) return;
+  out.value = termOutputBuffer;
   out.scrollTop = out.scrollHeight;
 }
 
@@ -952,7 +995,7 @@ async function termRun(text) {
   try {
     const r = await Api.sendTerminalCommand(text);
     termAppend(r.friendly);
-    if (el('term-raw').checked) {
+    if (el('term-raw')?.checked) {
       if (r.raw_sent) termAppend(`  >> ${r.raw_sent}`);
       if (r.raw_recv) termAppend(`  << ${r.raw_recv}`);
     }
@@ -977,87 +1020,106 @@ async function termRun(text) {
     termAppend(`ERROR: ${e.message}`);
   } finally {
     // Not an unconditional re-enable: the command may well have been what
-    // revealed the device is gone.
-    el('term-send').disabled = !connected;
+    // revealed the device is gone. Guarded: Terminal may no longer be the
+    // mounted page by the time a slow command's response comes back.
+    const sendBtn = el('term-send');
+    if (sendBtn) sendBtn.disabled = !connected;
   }
 }
 
-el('term-send').addEventListener('click', () => {
-  const input = el('term-input');
-  termRun(input.value);
-  input.value = '';
-});
+function initTerminalPage() {
+  // Replay whatever accumulated while Terminal wasn't mounted -- the
+  // textarea itself is brand new, termOutputBuffer is not.
+  el('term-output').value = termOutputBuffer;
+  el('term-output').scrollTop = el('term-output').scrollHeight;
 
-el('term-input').addEventListener('keydown', (ev) => {
-  if (ev.key === 'Enter') {
-    el('term-send').click();
-  } else if (ev.key === 'ArrowUp') {
-    if (termHistoryIdx > 0) { termHistoryIdx--; el('term-input').value = termHistory[termHistoryIdx]; }
-    ev.preventDefault();
-  } else if (ev.key === 'ArrowDown') {
-    if (termHistoryIdx < termHistory.length - 1) {
-      termHistoryIdx++;
-      el('term-input').value = termHistory[termHistoryIdx];
-    } else {
-      termHistoryIdx = termHistory.length;
-      el('term-input').value = '';
+  el('term-send').addEventListener('click', () => {
+    const input = el('term-input');
+    termRun(input.value);
+    input.value = '';
+  });
+
+  el('term-input').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') {
+      el('term-send').click();
+    } else if (ev.key === 'ArrowUp') {
+      if (termHistoryIdx > 0) { termHistoryIdx--; el('term-input').value = termHistory[termHistoryIdx]; }
+      ev.preventDefault();
+    } else if (ev.key === 'ArrowDown') {
+      if (termHistoryIdx < termHistory.length - 1) {
+        termHistoryIdx++;
+        el('term-input').value = termHistory[termHistoryIdx];
+      } else {
+        termHistoryIdx = termHistory.length;
+        el('term-input').value = '';
+      }
+      ev.preventDefault();
     }
-    ev.preventDefault();
-  }
-});
+  });
 
-el('term-clear').addEventListener('click', () => { el('term-output').value = ''; });
+  el('term-clear').addEventListener('click', () => {
+    termOutputBuffer = '';
+    el('term-output').value = '';
+  });
 
-// --- restore from INI --------------------------------------------------------
-// The other half of `dump`. The report text is built here from the backend's
-// applied/skipped lists rather than sent as prose, so this stays the only
-// place that decides how the terminal reads.
-el('term-restore').addEventListener('click', () => el('term-restore-file').click());
+  // --- restore from INI -------------------------------------------------------
+  // The other half of `dump`. The report text is built here from the backend's
+  // applied/skipped lists rather than sent as prose, so this stays the only
+  // place that decides how the terminal reads.
+  el('term-restore').addEventListener('click', () => el('term-restore-file').click());
 
-el('term-restore-file').addEventListener('change', async (ev) => {
-  const file = ev.target.files[0];
-  // Reset immediately so re-picking the same file after an edit still fires
-  // a `change` event.
-  ev.target.value = '';
-  if (!file) return;
-  termAppend(`> restore from ${file.name}`);
-  try {
-    const r = await Api.restoreIni(await file.text());
-    termAppend(`applied ${r.applied.length} setting(s)`
-      + (r.applied.length ? `: ${r.applied.join(', ')}` : ''));
-    for (const s of r.skipped) termAppend(`  skipped ${s.key}: ${s.reason}`);
-    if (r.applied.length) {
-      // Values are live on the device but not in flash — same state as
-      // editing a field by hand, so surface the same reminder.
-      await loadDevice();
-      setDirty(true);
-      termAppend('Not saved to flash yet — click "Save to flash".');
+  el('term-restore-file').addEventListener('change', async (ev) => {
+    const file = ev.target.files[0];
+    // Reset immediately so re-picking the same file after an edit still fires
+    // a `change` event.
+    ev.target.value = '';
+    if (!file) return;
+    termAppend(`> restore from ${file.name}`);
+    try {
+      const r = await Api.restoreIni(await file.text());
+      termAppend(`applied ${r.applied.length} setting(s)`
+        + (r.applied.length ? `: ${r.applied.join(', ')}` : ''));
+      for (const s of r.skipped) termAppend(`  skipped ${s.key}: ${s.reason}`);
+      if (r.applied.length) {
+        // Values are live on the device but not in flash — same state as
+        // editing a field by hand, so surface the same reminder.
+        await loadDevice();
+        setDirty(true);
+        termAppend('Not saved to flash yet — click "Save to flash".');
+      }
+    } catch (e) {
+      termAppend(`ERROR: ${e.message}`);
     }
-  } catch (e) {
-    termAppend(`ERROR: ${e.message}`);
-  }
-});
+  });
 
-el('term-save').addEventListener('click', async () => {
-  termAppend('> save to flash');
-  el('term-save').disabled = true;      // the write stalls the board ~1s
-  try {
-    await saveToFlash();
-    termAppend('OK: saved to flash');
-  } catch (e) {
-    termAppend(`ERROR: ${e.message}`);
-    setDirty(true);                     // still unsaved — let them retry
-  }
-});
+  el('term-save').addEventListener('click', async () => {
+    termAppend('> save to flash');
+    el('term-save').disabled = true;      // the write stalls the board ~1s
+    try {
+      await saveToFlash();
+      termAppend('OK: saved to flash');
+    } catch (e) {
+      termAppend(`ERROR: ${e.message}`);
+      setDirty(true);                     // still unsaved — let them retry
+    }
+  });
+}
 
 // --- firmware page -----------------------------------------------------------
 const FW_MAX_LINES = 400;
 let dfuPollTimer = null;
 
+let fwLogBuffer = '';   // #fw-log's content, kept alive across unmount/remount
+
 function firmwareLog(text) {
+  const lines = (fwLogBuffer ? fwLogBuffer.split('\n') : []).concat(text);
+  fwLogBuffer = lines.slice(-FW_MAX_LINES).join('\n');
+  // Guarded: a flash's WS progress events keep arriving even if the user
+  // navigates away from Firmware mid-flash -- the buffer above is what
+  // makes that not a crash and not a loss, replayed on the next mount.
   const out = el('fw-log');
-  const lines = (out.value ? out.value.split('\n') : []).concat(text);
-  out.value = lines.slice(-FW_MAX_LINES).join('\n');
+  if (!out) return;
+  out.value = fwLogBuffer;
   out.scrollTop = out.scrollHeight;
 }
 
@@ -1084,65 +1146,70 @@ function setDfuPolling(on) {
   }
 }
 
-el('fw-enter-dfu').addEventListener('click', async () => {
-  const store = Alpine.store('firmware');
-  try {
-    await Api.enterDfu();
-    // The device acked and is now resetting; its port is already gone, so
-    // reflect that immediately rather than waiting for the watchdog to
-    // notice and report it as a fault.
-    setState('disconnected');
-    firmwareLog('device acknowledged the DFU request and is rebooting');
-    // The ROM bootloader takes a moment to enumerate.
-    setTimeout(() => store.pollDfu(), 1200);
-  } catch (e) {
-    showError(e.message);
-    firmwareLog(`ERROR: ${e.message}`);
-  }
-});
+function initFirmwarePage() {
+  el('fw-log').value = fwLogBuffer;
+  el('fw-log').scrollTop = el('fw-log').scrollHeight;
 
-el('fw-flash').addEventListener('click', async () => {
-  const store = Alpine.store('firmware');
-  const img = store.images.find((i) => i.id === store.selected);
-  if (!img) return;
-  if (!window.confirm(
-      `Flash ${img.name} ${img.version} (${img.board}) to the board?\n\n`
-      + 'This overwrites the firmware currently on it.')) return;
-  store.begin();
-  firmwareLog(`> flash ${img.id}`);
-  try {
-    await Api.flashBundled(img.id, img.method === 'esptool' ? store.selectedPort : undefined);
-  } catch (e) {
-    // Progress arrives over the WebSocket, but a request rejected outright
-    // (bad checksum, another flash already running) never gets that far.
-    store.onFlashEvent({ phase: 'error', line: e.message });
-    showError(e.message);
-  }
-});
+  el('fw-enter-dfu').addEventListener('click', async () => {
+    const store = Alpine.store('firmware');
+    try {
+      await Api.enterDfu();
+      // The device acked and is now resetting; its port is already gone, so
+      // reflect that immediately rather than waiting for the watchdog to
+      // notice and report it as a fault.
+      setState('disconnected');
+      firmwareLog('device acknowledged the DFU request and is rebooting');
+      // The ROM bootloader takes a moment to enumerate.
+      setTimeout(() => store.pollDfu(), 1200);
+    } catch (e) {
+      showError(e.message);
+      firmwareLog(`ERROR: ${e.message}`);
+    }
+  });
 
-el('fw-upload').addEventListener('click', () => el('fw-upload-file').click());
+  el('fw-flash').addEventListener('click', async () => {
+    const store = Alpine.store('firmware');
+    const img = store.images.find((i) => i.id === store.selected);
+    if (!img) return;
+    if (!window.confirm(
+        `Flash ${img.name} ${img.version} (${img.board}) to the board?\n\n`
+        + 'This overwrites the firmware currently on it.')) return;
+    store.begin();
+    firmwareLog(`> flash ${img.id}`);
+    try {
+      await Api.flashBundled(img.id, img.method === 'esptool' ? store.selectedPort : undefined);
+    } catch (e) {
+      // Progress arrives over the WebSocket, but a request rejected outright
+      // (bad checksum, another flash already running) never gets that far.
+      store.onFlashEvent({ phase: 'error', line: e.message });
+      showError(e.message);
+    }
+  });
 
-el('fw-upload-file').addEventListener('change', async (ev) => {
-  const file = ev.target.files[0];
-  ev.target.value = '';   // so re-picking the same file fires `change` again
-  if (!file) return;
-  const store = Alpine.store('firmware');
-  if (!window.confirm(
-      `Flash ${file.name} to the board?\n\n`
-      + 'Nothing verifies this file matches your board.')) return;
-  store.begin();
-  firmwareLog(`> flash ${file.name} (${file.size} bytes)`);
-  try {
-    // Read here rather than handing the File to Api: the transport seam takes
-    // bytes, so that it can be something other than fetch one day.
-    await Api.flashUpload(await file.arrayBuffer(), file.name,
-                          store.uploadTarget,
-                          store.uploadTarget === 'esptool' ? store.uploadPort : null);
-  } catch (e) {
-    store.onFlashEvent({ phase: 'error', line: e.message });
-    showError(e.message);
-  }
-});
+  el('fw-upload').addEventListener('click', () => el('fw-upload-file').click());
+
+  el('fw-upload-file').addEventListener('change', async (ev) => {
+    const file = ev.target.files[0];
+    ev.target.value = '';   // so re-picking the same file fires `change` again
+    if (!file) return;
+    const store = Alpine.store('firmware');
+    if (!window.confirm(
+        `Flash ${file.name} to the board?\n\n`
+        + 'Nothing verifies this file matches your board.')) return;
+    store.begin();
+    firmwareLog(`> flash ${file.name} (${file.size} bytes)`);
+    try {
+      // Read here rather than handing the File to Api: the transport seam takes
+      // bytes, so that it can be something other than fetch one day.
+      await Api.flashUpload(await file.arrayBuffer(), file.name,
+                            store.uploadTarget,
+                            store.uploadTarget === 'esptool' ? store.uploadPort : null);
+    } catch (e) {
+      store.onFlashEvent({ phase: 'error', line: e.message });
+      showError(e.message);
+    }
+  });
+}
 
 // One handler for every frame the backend pushes. Nothing here knows there is
 // a socket underneath -- Api.subscribe owns the transport and its reconnection
@@ -1175,7 +1242,7 @@ function subscribeEvents() {
       // among telemetry frames.
       termAppend(`[device] ${msg.data}`);
     }
-    if (el('term-traffic').checked) {
+    if (el('term-traffic')?.checked) {
       termAppend(`<< [${msg.type}] ${JSON.stringify(msg.data)}`);
     }
   });

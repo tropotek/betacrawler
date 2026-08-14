@@ -1,0 +1,29 @@
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Terminal</h1>
+          </div>
+          <div class="form-check form-switch form-check-inline">
+            <input class="form-check-input" type="checkbox" id="term-raw">
+            <label class="form-check-label" for="term-raw">Show raw JSON</label>
+          </div>
+          <div class="form-check form-switch form-check-inline mb-2">
+            <input class="form-check-input" type="checkbox" id="term-traffic">
+            <label class="form-check-label" for="term-traffic">Show device traffic</label>
+          </div>
+          <textarea id="term-output" class="form-control font-monospace mb-2" rows="20" readonly></textarea>
+          <div id="term-command-row" class="d-flex gap-2">
+            <input id="term-input" type="text" class="form-control font-monospace"
+                   :placeholder="$store.app.connected ? 'type a command, e.g. get led.mode' : 'connect a device to send commands'"
+                   autocomplete="off" :disabled="!$store.app.connected">
+            <button id="term-send" class="btn btn-primary" :disabled="!$store.app.connected">Send</button>
+            <button id="term-clear" class="btn btn-outline-secondary">Clear</button>
+            <!-- Counterpart to the `dump` command: dump prints INI you paste
+                 into a file, this reads such a file back. The file is read in
+                 the browser and POSTed as text; the backend never sees a path. -->
+            <button id="term-restore" class="btn btn-outline-secondary text-nowrap" :disabled="!$store.app.connected">Restore from INI…</button>
+            <input id="term-restore-file" type="file" accept=".ini,.txt,text/plain" class="d-none">
+            <!-- Same flash write as the Configuration page's button, driven by
+                 the same dirty flag: enabled only once something has been
+                 applied to RAM and not yet persisted. -->
+            <button id="term-save" class="btn btn-success text-nowrap" :disabled="!$store.app.dirty">Save to flash</button>
+          </div>
+          <p>&nbsp;</p>

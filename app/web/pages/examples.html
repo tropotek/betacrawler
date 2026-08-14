@@ -1,0 +1,159 @@
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Examples</h1>
+          </div>
+          <p>Reference diagrams for using betacrawler with real hardware. This page grows over time
+             as new boards and setups get documented.</p>
+
+          <h2 class="h5 mt-4">Wiring a Black Pill</h2>
+          <p class="text-secondary">
+            WeAct STM32F411CE Black Pill wired for the tank build's dual-ESC / receiver stack.
+            Pin names come straight from <code>boards/blackpill_f411ce.h</code> &mdash; this is a
+            schematic wiring map, not the board's physical betacrawler layout, so match
+            connections by label, not by position.
+          </p>
+
+          <div class="wiring-diagram">
+            <div class="diagram-card">
+              <svg viewBox="0 0 1200 860" xmlns="http://www.w3.org/2000/svg" role="img"
+                   aria-label="Wiring diagram connecting a Black Pill STM32F411CE board to two brushless ESCs, a CRSF receiver, and a USB host">
+
+                <!-- ===== Board ===== -->
+                <rect x="490" y="90" width="220" height="540" rx="20" class="fill-surface2 stroke-border" stroke-width="1.5" />
+                <text x="600" y="128" text-anchor="middle" class="lbl-heading fill-ink" font-size="16">STM32F411CE</text>
+                <text x="600" y="146" text-anchor="middle" class="lbl-mono fill-muted" font-size="10.5" letter-spacing="0.05em">WEACT BLACK PILL</text>
+                <line x1="522" y1="160" x2="678" y2="160" class="stroke-border" stroke-width="1" />
+
+                <!-- onboard badges -->
+                <text x="524" y="420" class="lbl-mono fill-muted" font-size="9">PC13 · LED (LOW=on, onboard)</text>
+                <text x="524" y="445" class="lbl-mono fill-muted" font-size="9">PA0 · KEY button (onboard)</text>
+                <text x="524" y="470" class="lbl-mono fill-muted" font-size="9">PA13/PA14 · SWD (alt. flash)</text>
+
+                <!-- USB-C nub + lead -->
+                <rect x="575" y="620" width="50" height="20" rx="3" class="fill-copper" />
+                <line x1="600" y1="640" x2="600" y2="680" class="wire-copper" />
+
+                <!-- ===== Left stubs: ESC 0 group ===== -->
+                <g class="wire-esc">
+                  <line x1="490" y1="222" x2="350" y2="222" />
+                  <line x1="490" y1="246" x2="350" y2="246" />
+                </g>
+                <g class="fill-esc">
+                  <circle cx="490" cy="222" r="3" /><circle cx="490" cy="246" r="3" />
+                </g>
+                <!-- STM pin names, inside the board's own border -->
+                <g class="lbl-mono fill-esc" font-size="10.5" font-weight="600">
+                  <text x="497" y="221">PA6</text>
+                  <text x="497" y="245">GND</text>
+                </g>
+
+                <!-- ===== Right stubs: Receiver group ===== -->
+                <g class="wire-receiver">
+                  <line x1="710" y1="222" x2="850" y2="222" />
+                  <line x1="710" y1="246" x2="850" y2="246" class="wire-reserved" />
+                  <line x1="710" y1="270" x2="850" y2="270" />
+                  <line x1="710" y1="294" x2="850" y2="294" />
+                </g>
+                <g class="fill-receiver">
+                  <circle cx="710" cy="222" r="3" /><circle cx="710" cy="246" r="3" opacity="0.55" />
+                  <circle cx="710" cy="270" r="3" /><circle cx="710" cy="294" r="3" />
+                </g>
+                <!-- STM pin names, inside the board's own border -->
+                <g class="lbl-mono fill-receiver" font-size="10.5" font-weight="600" text-anchor="end">
+                  <text x="703" y="221">PA10</text>
+                  <text x="703" y="245" opacity="0.6">PA9</text>
+                  <text x="703" y="269">5V</text>
+                  <text x="703" y="293">GND</text>
+                </g>
+
+                <!-- ===== Right stubs: ESC 1 group ===== -->
+                <g class="wire-esc">
+                  <line x1="710" y1="482" x2="850" y2="482" />
+                  <line x1="710" y1="506" x2="850" y2="506" />
+                </g>
+                <g class="fill-esc">
+                  <circle cx="710" cy="482" r="3" /><circle cx="710" cy="506" r="3" />
+                </g>
+                <g class="lbl-mono fill-esc" font-size="10.5" font-weight="600" text-anchor="end">
+                  <text x="703" y="481">PB6</text>
+                  <text x="703" y="505">GND</text>
+                </g>
+
+                <!-- ===== ESC 0 card ===== -->
+                <rect x="90" y="140" width="260" height="198" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="105" y="154" width="12" height="12" rx="2" class="fill-esc" />
+                <text x="125" y="164" class="lbl-heading fill-ink" font-size="13">Brushless ESC 0</text>
+                <text x="105" y="182" class="lbl-mono fill-muted" font-size="9.5">TIM3 CH1 · PWM out · module pins</text>
+                <line x1="105" y1="196" x2="335" y2="196" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="335" y="222">SIGNAL</text>
+                  <text x="335" y="246">GND</text>
+                </g>
+                <line x1="105" y1="266" x2="335" y2="266" class="stroke-border" stroke-width="1" />
+                <text x="105" y="288" class="lbl-mono fill-power" font-size="10">Own supply only — never board 5V.</text>
+                <text x="105" y="304" class="lbl-mono fill-power" font-size="10">Common ground with the board is</text>
+                <text x="105" y="320" class="lbl-mono fill-power" font-size="10">still required, even so.</text>
+                <g class="fill-esc">
+                  <circle cx="350" cy="222" r="3" /><circle cx="350" cy="246" r="3" />
+                </g>
+
+                <!-- ===== Receiver card ===== -->
+                <rect x="850" y="140" width="260" height="230" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="865" y="154" width="12" height="12" rx="2" class="fill-receiver" />
+                <text x="885" y="164" class="lbl-heading fill-ink" font-size="13">CRSF receiver</text>
+                <text x="865" y="182" class="lbl-mono fill-muted" font-size="9.5">TBS / ELRS · module pins</text>
+                <line x1="865" y1="196" x2="1095" y2="196" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="865" y="222">TX (out to STM)</text>
+                  <text x="865" y="246" opacity="0.6">RX (reserved)</text>
+                  <text x="865" y="270">+</text>
+                  <text x="865" y="294">GND</text>
+                </g>
+                <line x1="865" y1="314" x2="1095" y2="314" class="stroke-border" stroke-width="1" />
+                <text x="865" y="336" class="lbl-mono fill-muted" font-size="10">Nano-RX pads default to PWM out —</text>
+                <text x="865" y="352" class="lbl-mono fill-muted" font-size="10">switch to CRSF in its own menu first.</text>
+                <g class="fill-receiver">
+                  <circle cx="850" cy="222" r="3" /><circle cx="850" cy="246" r="3" opacity="0.55" />
+                  <circle cx="850" cy="270" r="3" /><circle cx="850" cy="294" r="3" />
+                </g>
+
+                <!-- ===== ESC 1 card ===== -->
+                <rect x="850" y="400" width="260" height="198" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="865" y="414" width="12" height="12" rx="2" class="fill-esc" />
+                <text x="885" y="424" class="lbl-heading fill-ink" font-size="13">Brushless ESC 1</text>
+                <text x="865" y="442" class="lbl-mono fill-muted" font-size="9.5">TIM4 CH1 · PWM out · module pins</text>
+                <line x1="865" y1="456" x2="1095" y2="456" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="865" y="482">SIGNAL</text>
+                  <text x="865" y="506">GND</text>
+                </g>
+                <line x1="865" y1="526" x2="1095" y2="526" class="stroke-border" stroke-width="1" />
+                <text x="865" y="548" class="lbl-mono fill-power" font-size="10">Own supply only — never board 5V.</text>
+                <text x="865" y="564" class="lbl-mono fill-power" font-size="10">Common ground with the board is</text>
+                <text x="865" y="580" class="lbl-mono fill-power" font-size="10">still required, even so.</text>
+                <g class="fill-esc">
+                  <circle cx="850" cy="482" r="3" /><circle cx="850" cy="506" r="3" />
+                </g>
+
+                <!-- ===== USB card ===== -->
+                <rect x="430" y="680" width="340" height="140" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="446" y="696" width="12" height="12" rx="2" class="fill-copper" />
+                <text x="466" y="706" class="lbl-heading fill-ink" font-size="13">USB-C · to host PC</text>
+                <text x="446" y="730" class="lbl-mono fill-muted" font-size="10.5">One cable carries the Configurator link,</text>
+                <text x="446" y="746" class="lbl-mono fill-muted" font-size="10.5">the serial console, and one-click DFU</text>
+                <text x="446" y="762" class="lbl-mono fill-muted" font-size="10.5">updates (PA11/PA12, built in).</text>
+                <text x="446" y="784" class="lbl-mono fill-muted" font-size="10.5">No cable? BOOT0+NRST by hand, or SWD</text>
+                <text x="446" y="800" class="lbl-mono fill-muted" font-size="10.5">(PA13/PA14), reach the same bootloader.</text>
+              </svg>
+            </div>
+          </div>
+          <p class="text-secondary small mt-2">
+            Dashed violet lead = wired but not required today (CRSF telemetry back-channel,
+            reserved for a future use of PA9). Every other lead shown is load-bearing for the
+            firmware as it stands. ESC 0 and ESC 1 are independently commanded today &mdash; no
+            throttle/steering mixing yet.
+          </p>
+
+          <p>&nbsp;</p>

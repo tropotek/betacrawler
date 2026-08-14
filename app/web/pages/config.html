@@ -1,0 +1,115 @@
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Configuration</h1>
+          </div>
+          <!-- One section per group. Groups, their order and their headings
+               all come from the firmware's schema, so enabling a module adds
+               a section here with no change to this file. -->
+          <form id="form" x-data>
+            <template x-for="group in $store.config.groups" :key="group.name">
+              <!-- A card per group: on the tertiary page background the card's
+                   own surface + border is what separates one module from the
+                   next. The heading is still the <legend>, so the fieldset
+                   keeps its accessible grouping -- and .card makes this a flex
+                   column, which is what lets a legend sit here as the header:
+                   flex items ignore the float/clear reboot puts on <legend>,
+                   so it simply stacks above .card-body.
+                   .card-body doubles as the .row -- its 1rem padding and the
+                   row's -0.5rem gutter margins land on an even 1rem inset once
+                   the columns' own padding is added back. -->
+              <fieldset class="card mb-3">
+                <legend class="card-header h6 text-secondary mb-0 py-2" x-text="group.name"></legend>
+                <div class="card-body row g-3">
+                  <template x-for="field in group.items" :key="field.key">
+                    <div class="col-md-6">
+                      <label class="form-label" :for="'f-' + field.key"
+                             :class="{ 'd-flex justify-content-between': field.isSlider }">
+                        <span x-text="field.unit ? `${field.label} (${field.unit})` : field.label"></span>
+                        <span x-show="field.isSlider" class="text-secondary"
+                              x-text="$store.config.values[field.key]"></span>
+                      </label>
+
+                      <template x-if="field.type === 'enum'">
+                        <select class="form-select" :id="'f-' + field.key" :aria-describedby="'h-' + field.key"
+                                :class="{ 'is-invalid': $store.config.invalid[field.key] }"
+                                :disabled="!$store.app.connected"
+                                x-model="$store.config.values[field.key]"
+                                @change="$store.config.commit(field)">
+                          <template x-for="opt in field.options" :key="opt">
+                            <option :value="opt" :selected="opt === $store.config.values[field.key]"
+                                    x-text="opt"></option>
+                          </template>
+                        </select>
+                      </template>
+
+                      <template x-if="field.type === 'str' && !field.secret">
+                        <input type="text" class="form-control" :id="'f-' + field.key" :maxlength="field.maxlen"
+                               :aria-describedby="'h-' + field.key"
+                               :class="{ 'is-invalid': $store.config.invalid[field.key] }"
+                               :disabled="!$store.app.connected"
+                               x-model="$store.config.values[field.key]"
+                               @change="$store.config.commit(field)">
+                      </template>
+
+                      <template x-if="field.type === 'str' && field.secret">
+                        <div class="input-group" x-data="{ revealed: false }">
+                          <input :type="revealed ? 'text' : 'password'" class="form-control" :id="'f-' + field.key"
+                                 :maxlength="field.maxlen" :aria-describedby="'h-' + field.key"
+                                 :class="{ 'is-invalid': $store.config.invalid[field.key] }"
+                                 :disabled="!$store.app.connected"
+                                 x-model="$store.config.values[field.key]"
+                                 @change="$store.config.commit(field)">
+                          <button type="button" class="btn btn-outline-secondary" @click="revealed = !revealed"
+                                  :aria-label="revealed ? 'Hide password' : 'Show password'">
+                            <svg class="bi"><use :href="revealed ? '#eye-slash' : '#eye'"/></svg>
+                          </button>
+                        </div>
+                      </template>
+
+                      <template x-if="field.type === 'u8' && field.isSlider">
+                        <input type="range" class="form-range" :id="'f-' + field.key" :min="field.min" :max="field.max"
+                               :aria-describedby="'h-' + field.key"
+                               :class="{ 'is-invalid': $store.config.invalid[field.key] }"
+                               :disabled="!$store.app.connected"
+                               x-model="$store.config.values[field.key]"
+                               @change="$store.config.commit(field)">
+                      </template>
+
+                      <template x-if="field.type === 'u8' && !field.isSlider">
+                        <input type="number" class="form-control" :id="'f-' + field.key" :min="field.min" :max="field.max"
+                               :aria-describedby="'h-' + field.key"
+                               :class="{ 'is-invalid': $store.config.invalid[field.key] }"
+                               :disabled="!$store.app.connected"
+                               x-model="$store.config.values[field.key]"
+                               @change="$store.config.commit(field)">
+                      </template>
+
+                      <div class="form-text" :id="'h-' + field.key" x-text="field.help"></div>
+                    </div>
+                  </template>
+                </div>
+              </fieldset>
+            </template>
+          </form>
+          <div x-show="$store.wifi.canScan" class="mb-3" x-data>
+            <button id="wifi-scan" class="btn btn-outline-primary btn-sm" @click="$store.wifi.scan()"
+                    :disabled="$store.wifi.scanning">
+              <span x-text="$store.wifi.scanning ? 'Scanning…' : 'Scan for networks'"></span>
+            </button>
+            <ul class="list-group mt-2" x-show="$store.wifi.results.length">
+              <template x-for="(net, i) in $store.wifi.results" :key="i">
+                <li class="list-group-item d-flex justify-content-between align-items-center"
+                    role="button" @click="$store.wifi.pick(net)">
+                  <span x-text="net.ssid"></span>
+                  <span class="text-secondary small" x-text="net.rssi + ' dBm'"></span>
+                </li>
+              </template>
+            </ul>
+          </div>
+          <div class="mt-3 d-flex gap-2 align-items-center" x-data>
+            <button id="save" class="btn btn-success btn-sm">Save to flash</button>
+            <button id="revert" class="btn btn-outline-secondary btn-sm">Discard changes</button>
+            <button id="defaults" class="btn btn-outline-secondary btn-sm">Load defaults</button>
+            <span class="text-warning-emphasis small" x-show="$store.app.dirty">applied — not saved to flash</span>
+            <span class="text-warning-emphasis small" x-show="$store.app.revertNote">no saved settings on this board — loaded defaults instead</span>
+          </div>
+          <p>&nbsp;</p>
