@@ -165,13 +165,16 @@ loads this app's own static page markup, not a device/backend request — it isn
 porting surface this seam exists to isolate for a hypothetical Electron rewrite, so it's exempt.
 Any fetch that *does* talk to the device or backend has no excuse to live outside `Api`.
 
-**Schema-driven UI** — descriptors are the single source of truth. Adding a firmware parameter or
-telemetry field must need zero changes in `app.js`; there is deliberately no field-label map and no
-field-order table (order is module registration order). `div`/`dec`/`showIf` are **display hints
-only** — the wire always carries native units, and firmware/backend still validate a hidden
-parameter so Terminal `set` and INI restore keep working. `app/web/field_help.js` is the one
-sanctioned exception: optional, supplementary prose only, with a graceful fallback when a key is
-missing — never a source of labels or order.
+**Validation stays schema-driven, curation doesn't** — `div`/`dec`/`showIf` are **display hints
+only**: the wire always carries native units, and firmware/backend still validate a hidden
+parameter so Terminal `set` and INI restore keep working, regardless of whether any page shows that
+parameter at all. Beyond that, `app/web/pages/{modes,controller,device}.html` hand-pick which keys
+they show, their label, their order and their page placement via `Alpine.store('config').field(key)`
+/`Alpine.store('telemetry').field(key)` (a per-key lookup, not an iteration) — adding a firmware
+parameter does **not** automatically appear anywhere in the UI any more; it needs a page decision
+and a written label, same as any other UI change. `field_help.js` no longer exists. A curated page
+must handle a key its own board doesn't publish (`field(key).def === null`) explicitly rather than
+assume every named key exists.
 
 **`config_hash.py` stays in `extra_scripts`** — board-header edits don't trigger rebuilds without
 it (`#include BOARD_HEADER` is invisible to SCons), and removing it silently reintroduces
