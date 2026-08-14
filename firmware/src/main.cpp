@@ -27,6 +27,44 @@ static TlmValue g_tlm[FW_MAX_TLM];
 static uint32_t g_lastTlm = 0;
 static ParamId  g_tlmRateId = kNoParam;
 
+// Longest a single write() call is allowed to make zero progress before
+// writeLine() gives up on the rest of a line -- see writeLine()'s own
+// comment for why this exists at all. Real disconnects (unplugged, app
+// closed) stay unwritable far longer than this; a still-connected host that
+// was merely slow to drain one USB packet recovers within it.
+constexpr uint32_t kWriteStallTimeoutMs = 200;
+
+// USBSerial::write() (libraries/USBDevice/src/USBSerial.cpp, this board's
+// Serial) can return fewer bytes than requested: its own retry loop bails
+// the instant CDC_connected() reads false even once -- which usbd_cdc_if.c's
+// CDC_connected() does whenever a single in-flight USB packet hasn't
+// completed within USB_CDC_TRANSMIT_TIMEOUT (a handful of ms) of starting,
+// a momentary host-side stall rather than a real disconnect -- and it never
+// resumes on its own. For a short line this is harmless (the odds of a
+// stall landing inside one write() call are low); for the schema response,
+// by far the largest and slowest-to-transmit line this firmware sends,
+// hitting that window even once used to silently truncate it -- observed on
+// real hardware, not theoretical. Retrying the remainder here is what a
+// blocking write is supposed to do; USBSerial::write() just doesn't.
+static void writeLine(const char* buf, size_t len) {
+  size_t sent = 0;
+  uint32_t stallStart = 0;
+  while (sent < len) {
+    size_t n = Serial.write(reinterpret_cast<const uint8_t*>(buf) + sent, len - sent);
+    sent += n;
+    if (sent >= len) break;
+    if (n == 0) {
+      uint32_t now = millis();
+      if (stallStart == 0) stallStart = now;
+      if (now - stallStart > kWriteStallTimeoutMs) return;   // host genuinely gone
+      delay(1);
+    } else {
+      stallStart = 0;
+    }
+  }
+  Serial.write(reinterpret_cast<const uint8_t*>("\r\n"), 2);
+}
+
 // Space between the heap top and the current stack -- the cheapest "is this
 // build about to run out of RAM" signal there is, and worth capturing at boot
 // before anything has had a chance to grow.
@@ -63,11 +101,11 @@ static void emitBootLog() {
   BootLog& b = bootLog();
   for (uint8_t i = 0; i < b.count(); ++i) {
     size_t n = writeLog(g_out, sizeof(g_out), b.line(i));
-    if (n > 0) Serial.println(g_out);
+    if (n > 0) writeLine(g_out, n);
   }
   if (b.dropped()) {
     size_t n = writeLog(g_out, sizeof(g_out), "boot: log full, lines dropped");
-    if (n > 0) Serial.println(g_out);
+    if (n > 0) writeLine(g_out, n);
   }
 }
 
@@ -116,11 +154,12 @@ void loop() {
   while (Serial.available()) {
     if (g_reader.feed((char)Serial.read())) {
       if (g_reader.overflowed()) {
-        Serial.println("{\"ok\":false,\"err\":\"overflow\"}");
+        static const char kOverflowMsg[] = "{\"ok\":false,\"err\":\"overflow\"}";
+        writeLine(kOverflowMsg, sizeof(kOverflowMsg) - 1);
       } else if (g_reader.line()[0] != '\0') {
         Request q = parseRequest(g_reader.line());
         size_t n = g_dispatch.handle(q, g_out, sizeof(g_out));
-        if (n > 0) Serial.println(g_out);
+        if (n > 0) writeLine(g_out, n);
         // Follow a handshake with the boot record. Deliberately after the
         // response and as separate unsolicited lines, so `hello`'s shape is
         // unchanged and every existing consumer keeps working.
@@ -145,7 +184,7 @@ void loop() {
   // that needs one composes for free.
   {
     size_t n = g_reg.pollPush(g_out, sizeof(g_out));
-    if (n > 0) Serial.println(g_out);
+    if (n > 0) writeLine(g_out, n);
   }
 
   if (g_dispatch.telemetryEnabled() && g_tlmRateId != kNoParam) {
@@ -155,7 +194,7 @@ void loop() {
       g_lastTlm = now;
       g_reg.collectTelemetry(g_tlm);
       size_t n = writeTelemetry(g_out, sizeof(g_out), g_reg, g_tlm);
-      if (n > 0) Serial.println(g_out);
+      if (n > 0) writeLine(g_out, n);
     }
   }
 }
