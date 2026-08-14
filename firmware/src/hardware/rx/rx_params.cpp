@@ -98,6 +98,11 @@ static const ParamDef kParams[] = {
   // ELRS's slowest 50Hz and 100 at 500Hz. The industry's 1000ms is a
   // failsafe-ACTUATION figure and belongs to phase 2 on its own terms.
   {"elrs.timeout_ms",       ParamType::U8,   "Timeout",  "ms",    50,   2000, nullptr,        0,              0, 200,             nullptr, "ELRS",      "rx.protocol", "elrs"},
+  // Applied once at the source, in syncInputs(), before a channel value ever
+  // reaches core::Inputs -- every consumer (tank_drive's mixer today, any
+  // future direct chN mapping) benefits with no per-consumer duplication.
+  // Default 0: feature off, zero behavior change for anyone not using it.
+  {"rx.deadband_us",        ParamType::U8,   "Deadband", "\xC2\xB5s", 0, 200,  nullptr,        0,              0, 0,               nullptr, nullptr,     nullptr,       nullptr},
 };
 
 // Sixteen channels in one group, link health in another: twenty-one fields in

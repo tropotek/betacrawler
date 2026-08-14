@@ -44,6 +44,7 @@ enum : uint8_t {
   P_SOURCE            = 1,
   P_CROSSFIRE_TIMEOUT = 2,
   P_ELRS_TIMEOUT      = 3,
+  P_DEADBAND          = 4,
 };
 
 // Sixteen channels then seven link fields. T_CH1 + n indexes channel n+1,
