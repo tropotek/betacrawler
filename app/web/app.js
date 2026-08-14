@@ -307,6 +307,101 @@ document.addEventListener('alpine:init', () => {
     },
   });
 
+  // Dual-handle range slider over two config keys, built from plain elements
+  // so the track, the selected-range fill and the ruler are all styleable.
+  // Args: the µs bounds, the [minKey, maxKey] pair it edits (null for a
+  // function that has no range), and the config key naming its RC channel.
+  Alpine.data('rangeSlider', (min, max, keys, channelKey) => ({
+    min,
+    max,
+    keys,
+    channelKey,
+    dragging: null,
+
+    // A row with no range still draws its track, ruler and live marker --
+    // only the fill and the two handles need a range to exist.
+    get hasRange() {
+      return !!this.keys;
+    },
+    get enabled() {
+      return this.hasRange && this.$store.app.connected;
+    },
+    get lo() {
+      return this.hasRange ? Number(this.$store.config.values[this.keys[0]]) : this.min;
+    },
+    get hi() {
+      return this.hasRange ? Number(this.$store.config.values[this.keys[1]]) : this.max;
+    },
+    pct(v) {
+      return ((v - this.min) / (this.max - this.min)) * 100;
+    },
+
+    // Where the RC stick currently sits, so the marker tracks the radio. The
+    // channel may be unset ("none") or the board may be sending nothing yet;
+    // mid-stick is the neutral standing in for "no reading".
+    get live() {
+      const v = this.$store.telemetry.raw[this.$store.config.values[this.channelKey]];
+      return typeof v === 'number' ? v : 1500;
+    },
+    // Clamped: a receiver may legally read outside the slider's own bounds.
+    get livePct() {
+      return Math.min(Math.max(this.pct(this.live), 0), 100);
+    },
+
+    // A labelled tick every tenth, drawn taller at both ends and the midpoint.
+    get ticks() {
+      const span = this.max - this.min;
+      const out = [];
+      for (let v = this.min; v <= this.max; v += span / 10) {
+        out.push({ v: Math.round(v), major: (v - this.min) % (span / 2) === 0 });
+      }
+      return out;
+    },
+
+    valueAt(clientX) {
+      const r = this.$refs.track.getBoundingClientRect();
+      const t = Math.min(Math.max((clientX - r.left) / r.width, 0), 1);
+      return Math.round(this.min + t * (this.max - this.min));
+    },
+
+    // The thumb keeps pointer capture for the whole drag, so move/up keep
+    // firing on it after the pointer has left its 1rem box.
+    down(e, which) {
+      if (!this.enabled) return;
+      this.dragging = which;
+      e.target.setPointerCapture(e.pointerId);
+    },
+    move(e) {
+      if (this.dragging === null) return;
+      this.apply(this.dragging, this.valueAt(e.clientX));
+    },
+    up() {
+      if (this.dragging === null) return;
+      const which = this.dragging;
+      this.dragging = null;
+      this.push(which);
+    },
+
+    // Held inside the µs bounds first (a keyboard nudge has no track to clamp
+    // it against), then against the other handle: the two may meet, never cross.
+    apply(which, v) {
+      const inRange = Math.min(Math.max(v, this.min), this.max);
+      const bounded = which === 0
+        ? Math.min(inRange, this.hi)
+        : Math.max(inRange, this.lo);
+      this.$store.config.values[this.keys[which]] = bounded;
+    },
+    push(which) {
+      const def = this.$store.config.field(this.keys[which]).def;
+      if (def) this.$store.config.commit(def);
+    },
+    nudge(which, delta) {
+      if (!this.enabled) return;
+      this.apply(which, (which === 0 ? this.lo : this.hi) + delta);
+      this.push(which);
+    },
+  }));
+
   Alpine.store('telemetry', {
     schema: [],
     data: {},
@@ -936,7 +1031,10 @@ async function showPage(page) {
   const generation = ++showPageGeneration;
   let html = pageCache.get(page);
   if (html === undefined) {
-    const r = await fetch(`pages/${page}.html`);
+    // 'no-cache' revalidates rather than serving from the HTTP cache: a
+    // fragment held there while index.html/app.js reload is markup skewed
+    // against the CSS and components it relies on. A 304 costs nothing here.
+    const r = await fetch(`pages/${page}.html`, { cache: 'no-cache' });
     if (!r.ok) {
       showError(`Failed to load the ${page} page (${r.status})`);
       return;
