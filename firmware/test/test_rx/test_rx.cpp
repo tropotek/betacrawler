@@ -541,6 +541,35 @@ void test_the_two_new_link_fields_are_declared_last() {
   TEST_ASSERT_EQUAL_STRING("mW", kDesc.tlm[T_PWR].unit);
 }
 
+// --- deadbanded --------------------------------------------------------------
+
+void test_deadbanded_passes_through_a_value_outside_the_band() {
+  TEST_ASSERT_EQUAL_INT16(1900, deadbanded(1900, 1500, 50));
+}
+
+void test_deadbanded_snaps_a_value_inside_the_band_to_center() {
+  TEST_ASSERT_EQUAL_INT16(1500, deadbanded(1520, 1500, 50));
+}
+
+void test_deadbanded_boundary_is_inclusive() {
+  TEST_ASSERT_EQUAL_INT16(1500, deadbanded(1550, 1500, 50));
+  TEST_ASSERT_EQUAL_INT16(1500, deadbanded(1450, 1500, 50));
+}
+
+void test_deadbanded_just_outside_the_boundary_passes_through() {
+  TEST_ASSERT_EQUAL_INT16(1551, deadbanded(1551, 1500, 50));
+  TEST_ASSERT_EQUAL_INT16(1449, deadbanded(1449, 1500, 50));
+}
+
+void test_deadbanded_zero_deadband_is_a_passthrough_except_at_exact_center() {
+  TEST_ASSERT_EQUAL_INT16(1501, deadbanded(1501, 1500, 0));
+  TEST_ASSERT_EQUAL_INT16(1500, deadbanded(1500, 1500, 0));
+}
+
+void test_deadbanded_handles_a_value_below_center_symmetrically() {
+  TEST_ASSERT_EQUAL_INT16(988, deadbanded(988, 1500, 50));
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_crc8_of_empty_is_zero);
@@ -589,5 +618,11 @@ int main(int, char**) {
   RUN_TEST(test_decode_link_stats_extracts_the_rf_mode_and_tx_power_indices);
   RUN_TEST(test_the_same_indices_decode_differently_per_protocol);
   RUN_TEST(test_the_two_new_link_fields_are_declared_last);
+  RUN_TEST(test_deadbanded_passes_through_a_value_outside_the_band);
+  RUN_TEST(test_deadbanded_snaps_a_value_inside_the_band_to_center);
+  RUN_TEST(test_deadbanded_boundary_is_inclusive);
+  RUN_TEST(test_deadbanded_just_outside_the_boundary_passes_through);
+  RUN_TEST(test_deadbanded_zero_deadband_is_a_passthrough_except_at_exact_center);
+  RUN_TEST(test_deadbanded_handles_a_value_below_center_symmetrically);
   return UNITY_END();
 }

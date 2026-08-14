@@ -40,6 +40,13 @@ uint8_t crc8(const uint8_t* data, size_t n);
 // browser clamps its own bar drawing instead.
 uint16_t ticksToUs(uint16_t ticks);
 
+// Snaps a channel reading to exactly centerUs when it's within deadbandUs of
+// center, otherwise passes it through unchanged. Duplicated from
+// features/tank_drive/tank_drive_math.cpp's own deadbanded() rather than
+// shared -- same self-containment precedent this module's other small pure
+// helpers already follow.
+int16_t deadbanded(int16_t us, int16_t centerUs, uint16_t deadbandUs);
+
 // 22 payload bytes -> 16 channels. `out` must have kWireChannels entries.
 void unpackChannels(const uint8_t* payload, uint16_t* out);
 
