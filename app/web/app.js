@@ -255,11 +255,10 @@ document.addEventListener('alpine:init', () => {
     values: {},
     invalid: {},
 
-    // Looked up by key rather than iterated -- what the hand-curated pages use
-    // instead of `groups`. `def: null` when the connected board's schema
-    // doesn't carry this key at all (e.g. esc1.* on a board with FEATURE_ESC1
-    // 0): a curated page names specific keys instead of only ever seeing keys
-    // that happen to exist, so it must handle this case explicitly.
+    // Looked up by key, for the hand-curated pages -- `def: null` when the
+    // connected board's schema doesn't carry this key at all (e.g. esc1.* on
+    // a board with FEATURE_ESC1 0). A curated page names specific keys, so it
+    // must handle a missing one explicitly.
     field(key) {
       const def = this.schema.find((p) => p.key === key);
       return { def: def || null, value: def ? this.values[key] : undefined };

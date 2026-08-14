@@ -83,14 +83,13 @@
     .tank-hero img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
     /* Modes page: a dual-handle range built from TWO overlapping native
-       .form-range inputs (the same template led.blink_hz/servo.angle already
-       use) rather than a hand-rolled widget. pointer-events: none on both,
-       restored to auto only on each one's own thumb pseudo-element, is what
-       lets each thumb be dragged independently despite sharing the same
-       screen space -- the standard technique for a two-handle range slider
-       built from native inputs. Only the FIRST input's track stays visible;
-       the second's is made transparent so the two don't visually double up
-       into two overlapping bars. */
+       .form-range inputs (the same template led.blink_hz/servo.angle use).
+       pointer-events: none on both, restored to auto only on each one's own
+       thumb pseudo-element, is what lets each thumb be dragged independently
+       despite sharing the same screen space -- the standard technique for a
+       two-handle range slider built from native inputs. Only the FIRST
+       input's track stays visible; the second's is made transparent so the
+       two don't visually double up into two overlapping bars. */
     .mode-slider { position: relative; height: 1.5rem; }
     .mode-slider input[type="range"] {
       position: absolute; left: 0; top: 0; width: 100%; margin: 0; pointer-events: none;
