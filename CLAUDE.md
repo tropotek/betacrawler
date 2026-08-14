@@ -113,7 +113,11 @@ app/tools/             bundle_firmware.py, run by hand at release time to produc
 
 app/web/                static HTML/JS only, talks to the backend exclusively through the
                         `Api` object in app.js — that object is the ENTIRE porting surface
-                        for a hypothetical future Electron rewrite.
+                        for a hypothetical future Electron rewrite. `index.html` is a shell
+                        (header/sidebar/mount point); each page's markup is its own file
+                        under `pages/`, fetched and injected into the mount point on
+                        navigation — adding a page means adding one `pages/<name>.html` and
+                        a nav button, not editing every other page's markup.
 app/docs/               placeholder template (USER_GUIDE.md) for a fork's own user guide
 ```
 
