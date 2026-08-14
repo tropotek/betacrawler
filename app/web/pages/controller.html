@@ -2,205 +2,217 @@
             <h1 class="h2">Controller</h1>
           </div>
 
-          <div class="card mb-3" x-data>
-            <div class="card-header h6 text-secondary mb-0 py-2">RC Link</div>
-            <div class="card-body row g-3">
-              <template x-for="key in ['link', 'lq', 'rssi', 'rate', 'err', 'rfrate', 'pwr']" :key="key">
-                <template x-if="$store.telemetry.field(key).def">
-                  <div class="col-6 col-md-3">
-                    <div class="text-secondary small"
-                         x-text="$store.telemetry.field(key).def.unit
-                           ? `${$store.telemetry.field(key).def.label} (${$store.telemetry.field(key).def.unit})`
-                           : $store.telemetry.field(key).def.label"></div>
-                    <div class="fs-6" x-text="$store.telemetry.field(key).value ?? '–'"></div>
-                  </div>
-                </template>
-              </template>
-            </div>
-          </div>
-
-          <div class="card mb-3" x-data>
-            <div class="card-header h6 text-secondary mb-0 py-2">RC Channels</div>
-            <div class="list-group list-group-flush">
-              <template x-for="n in 16" :key="n">
-                <template x-if="$store.telemetry.field('ch' + n).def">
-                  <div class="list-group-item d-flex align-items-center gap-3 py-2">
-                    <div class="text-secondary small text-nowrap" style="width: 3.5rem;" x-text="`CH${n}`"></div>
-                    <div class="progress flex-grow-1" style="height: 16px;">
-                      <div class="progress-bar" role="progressbar"
-                           :style="`width: ${$store.telemetry.barPct($store.telemetry.field('ch' + n).def)}%`"></div>
-                    </div>
-                    <div class="text-end font-monospace small text-nowrap" style="width: 3.5rem;"
-                         x-text="$store.telemetry.field('ch' + n).value ?? '–'"></div>
-                  </div>
-                </template>
-              </template>
-            </div>
-          </div>
-
-          <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>
-            <legend class="card-header h6 text-secondary mb-0 py-2">Receiver</legend>
-            <div class="card-body row g-3">
-              <div class="col-md-6">
-                <label class="form-label" for="f-rx-protocol">Protocol</label>
-                <select class="form-select" id="f-rx-protocol"
-                        :class="{ 'is-invalid': $store.config.invalid['rx.protocol'] }"
-                        x-model="$store.config.values['rx.protocol']"
-                        @change="$store.config.commit($store.config.field('rx.protocol').def)">
-                  <template x-for="opt in $store.config.field('rx.protocol').def?.options ?? []" :key="opt">
-                    <option :value="opt" :selected="opt === $store.config.values['rx.protocol']" x-text="opt"></option>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="card mb-3" x-data>
+                <div class="card-header h6 text-secondary mb-0 py-2">RC Channels</div>
+                <div class="list-group list-group-flush">
+                  <template x-for="n in 16" :key="n">
+                    <template x-if="$store.telemetry.field('ch' + n).def">
+                      <div class="list-group-item border-0 d-flex align-items-center gap-2 py-1">
+                        <div class="text-secondary small text-nowrap" style="width: 2.5rem;" x-text="`CH${n}`"></div>
+                        <div class="progress flex-grow-1" style="height: 20px;">
+                          <div class="progress-bar d-flex align-items-center justify-content-end pe-2" role="progressbar"
+                               :style="`width: ${$store.telemetry.barPct($store.telemetry.field('ch' + n).def)}%`">
+                            <span class="text-white small" x-text="$store.telemetry.field('ch' + n).value ?? '–'"></span>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
                   </template>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="f-rx-source">Source</label>
-                <select class="form-select" id="f-rx-source"
-                        :class="{ 'is-invalid': $store.config.invalid['rx.source'] }"
-                        x-model="$store.config.values['rx.source']"
-                        @change="$store.config.commit($store.config.field('rx.source').def)">
-                  <template x-for="opt in $store.config.field('rx.source').def?.options ?? []" :key="opt">
-                    <option :value="opt" :selected="opt === $store.config.values['rx.source']" x-text="opt"></option>
-                  </template>
-                </select>
-              </div>
-              <div class="col-md-6" x-show="$store.config.values['rx.protocol'] === 'crossfire'">
-                <label class="form-label" for="f-crossfire-timeout">Crossfire Timeout (ms)</label>
-                <input type="number" class="form-control" id="f-crossfire-timeout"
-                       :min="$store.config.field('crossfire.timeout_ms').def?.min" :max="$store.config.field('crossfire.timeout_ms').def?.max"
-                       :class="{ 'is-invalid': $store.config.invalid['crossfire.timeout_ms'] }"
-                       x-model="$store.config.values['crossfire.timeout_ms']"
-                       @change="$store.config.commit($store.config.field('crossfire.timeout_ms').def)">
-              </div>
-              <div class="col-md-6" x-show="$store.config.values['rx.protocol'] === 'elrs'">
-                <label class="form-label" for="f-elrs-timeout">ELRS Timeout (ms)</label>
-                <input type="number" class="form-control" id="f-elrs-timeout"
-                       :min="$store.config.field('elrs.timeout_ms').def?.min" :max="$store.config.field('elrs.timeout_ms').def?.max"
-                       :class="{ 'is-invalid': $store.config.invalid['elrs.timeout_ms'] }"
-                       x-model="$store.config.values['elrs.timeout_ms']"
-                       @change="$store.config.commit($store.config.field('elrs.timeout_ms').def)">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="f-rx-deadband">Channel Deadband (µs)</label>
-                <input type="number" class="form-control" id="f-rx-deadband"
-                       :min="$store.config.field('rx.deadband_us').def?.min" :max="$store.config.field('rx.deadband_us').def?.max"
-                       :class="{ 'is-invalid': $store.config.invalid['rx.deadband_us'] }"
-                       x-model="$store.config.values['rx.deadband_us']"
-                       @change="$store.config.commit($store.config.field('rx.deadband_us').def)">
+                </div>
               </div>
             </div>
-          </fieldset>
 
-          <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>
-            <legend class="card-header h6 text-secondary mb-0 py-2">Drive Mixer</legend>
-            <div class="card-body row g-3 align-items-end">
-              <div class="col-md-6">
-                <label class="form-label" for="f-reverse-ratio">Reverse Ratio (%)</label>
-                <input type="number" class="form-control" id="f-reverse-ratio"
-                       :min="$store.config.field('tank_drive.reverse_ratio').def?.min" :max="$store.config.field('tank_drive.reverse_ratio').def?.max"
-                       :class="{ 'is-invalid': $store.config.invalid['tank_drive.reverse_ratio'] }"
-                       x-model="$store.config.values['tank_drive.reverse_ratio']"
-                       @change="$store.config.commit($store.config.field('tank_drive.reverse_ratio').def)">
-              </div>
-              <div class="col-6 col-md-3">
-                <div class="text-secondary small">Left Output (µs)</div>
-                <div class="fs-4" x-text="$store.telemetry.field('drv_l').value ?? '–'"></div>
-              </div>
-              <div class="col-6 col-md-3">
-                <div class="text-secondary small">Right Output (µs)</div>
-                <div class="fs-4" x-text="$store.telemetry.field('drv_r').value ?? '–'"></div>
-              </div>
-            </div>
-          </fieldset>
-
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <fieldset class="card h-100" :disabled="!$store.app.connected" x-data>
-                <legend class="card-header h6 text-secondary mb-0 py-2">ESC Left (esc0)</legend>
-                <div class="card-body row g-3">
-                  <div class="col-12">
-                    <label class="form-label" for="f-esc0-mode">Mode</label>
-                    <select class="form-select" id="f-esc0-mode"
-                            :class="{ 'is-invalid': $store.config.invalid['esc0.mode'] }"
-                            x-model="$store.config.values['esc0.mode']"
-                            @change="$store.config.commit($store.config.field('esc0.mode').def)">
-                      <template x-for="opt in $store.config.field('esc0.mode').def?.options ?? []" :key="opt">
-                        <option :value="opt" :selected="opt === $store.config.values['esc0.mode']" x-text="opt"></option>
+            <div class="col-md-8">
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <div class="card h-100" x-data>
+                    <div class="card-header h6 text-secondary mb-0 py-2">RC Link</div>
+                    <div class="card-body row g-3">
+                      <template x-for="key in ['link', 'lq', 'rssi', 'rate', 'err', 'rfrate', 'pwr']" :key="key">
+                        <template x-if="$store.telemetry.field(key).def">
+                          <div class="col-6">
+                            <div class="text-secondary small"
+                                 x-text="$store.telemetry.field(key).def.unit
+                                   ? `${$store.telemetry.field(key).def.label} (${$store.telemetry.field(key).def.unit})`
+                                   : $store.telemetry.field(key).def.label"></div>
+                            <div class="fs-6" x-text="$store.telemetry.field(key).value ?? '–'"></div>
+                          </div>
+                        </template>
                       </template>
-                    </select>
+                    </div>
                   </div>
-                  <div class="col-6">
-                    <label class="form-label" for="f-esc0-min">Min (µs)</label>
-                    <input type="number" class="form-control" id="f-esc0-min"
-                           :min="$store.config.field('esc0.min_us').def?.min" :max="$store.config.field('esc0.min_us').def?.max"
-                           :class="{ 'is-invalid': $store.config.invalid['esc0.min_us'] }"
-                           x-model="$store.config.values['esc0.min_us']"
-                           @change="$store.config.commit($store.config.field('esc0.min_us').def)">
+                </div>
+
+                <div class="col-md-6">
+                  <fieldset class="card h-100" :disabled="!$store.app.connected" x-data>
+                    <legend class="card-header h6 text-secondary mb-0 py-2">Receiver</legend>
+                    <div class="card-body row g-3">
+                      <div class="col-12">
+                        <label class="form-label" for="f-rx-protocol">Protocol</label>
+                        <select class="form-select" id="f-rx-protocol"
+                                :class="{ 'is-invalid': $store.config.invalid['rx.protocol'] }"
+                                x-model="$store.config.values['rx.protocol']"
+                                @change="$store.config.commit($store.config.field('rx.protocol').def)">
+                          <template x-for="opt in $store.config.field('rx.protocol').def?.options ?? []" :key="opt">
+                            <option :value="opt" :selected="opt === $store.config.values['rx.protocol']" x-text="opt"></option>
+                          </template>
+                        </select>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label" for="f-rx-source">Source</label>
+                        <select class="form-select" id="f-rx-source"
+                                :class="{ 'is-invalid': $store.config.invalid['rx.source'] }"
+                                x-model="$store.config.values['rx.source']"
+                                @change="$store.config.commit($store.config.field('rx.source').def)">
+                          <template x-for="opt in $store.config.field('rx.source').def?.options ?? []" :key="opt">
+                            <option :value="opt" :selected="opt === $store.config.values['rx.source']" x-text="opt"></option>
+                          </template>
+                        </select>
+                      </div>
+                      <div class="col-12" x-show="$store.config.values['rx.protocol'] === 'crossfire'">
+                        <label class="form-label" for="f-crossfire-timeout">Crossfire Timeout (ms)</label>
+                        <input type="number" class="form-control" id="f-crossfire-timeout"
+                               :min="$store.config.field('crossfire.timeout_ms').def?.min" :max="$store.config.field('crossfire.timeout_ms').def?.max"
+                               :class="{ 'is-invalid': $store.config.invalid['crossfire.timeout_ms'] }"
+                               x-model="$store.config.values['crossfire.timeout_ms']"
+                               @change="$store.config.commit($store.config.field('crossfire.timeout_ms').def)">
+                      </div>
+                      <div class="col-12" x-show="$store.config.values['rx.protocol'] === 'elrs'">
+                        <label class="form-label" for="f-elrs-timeout">ELRS Timeout (ms)</label>
+                        <input type="number" class="form-control" id="f-elrs-timeout"
+                               :min="$store.config.field('elrs.timeout_ms').def?.min" :max="$store.config.field('elrs.timeout_ms').def?.max"
+                               :class="{ 'is-invalid': $store.config.invalid['elrs.timeout_ms'] }"
+                               x-model="$store.config.values['elrs.timeout_ms']"
+                               @change="$store.config.commit($store.config.field('elrs.timeout_ms').def)">
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label" for="f-rx-deadband">Channel Deadband (µs)</label>
+                        <input type="number" class="form-control" id="f-rx-deadband"
+                               :min="$store.config.field('rx.deadband_us').def?.min" :max="$store.config.field('rx.deadband_us').def?.max"
+                               :class="{ 'is-invalid': $store.config.invalid['rx.deadband_us'] }"
+                               x-model="$store.config.values['rx.deadband_us']"
+                               @change="$store.config.commit($store.config.field('rx.deadband_us').def)">
+                      </div>
+                    </div>
+                  </fieldset>
+                </div>
+              </div>
+
+              <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>
+                <legend class="card-header h6 text-secondary mb-0 py-2">Drive Mixer</legend>
+                <div class="card-body row g-3 align-items-end">
+                  <div class="col-md-6">
+                    <label class="form-label" for="f-reverse-ratio">Reverse Ratio (%)</label>
+                    <input type="number" class="form-control" id="f-reverse-ratio"
+                           :min="$store.config.field('tank_drive.reverse_ratio').def?.min" :max="$store.config.field('tank_drive.reverse_ratio').def?.max"
+                           :class="{ 'is-invalid': $store.config.invalid['tank_drive.reverse_ratio'] }"
+                           x-model="$store.config.values['tank_drive.reverse_ratio']"
+                           @change="$store.config.commit($store.config.field('tank_drive.reverse_ratio').def)">
                   </div>
-                  <div class="col-6">
-                    <label class="form-label" for="f-esc0-max">Max (µs)</label>
-                    <input type="number" class="form-control" id="f-esc0-max"
-                           :min="$store.config.field('esc0.max_us').def?.min" :max="$store.config.field('esc0.max_us').def?.max"
-                           :class="{ 'is-invalid': $store.config.invalid['esc0.max_us'] }"
-                           x-model="$store.config.values['esc0.max_us']"
-                           @change="$store.config.commit($store.config.field('esc0.max_us').def)">
+                  <div class="col-6 col-md-3">
+                    <div class="text-secondary small">Left Output (µs)</div>
+                    <div class="fs-4" x-text="$store.telemetry.field('drv_l').value ?? '–'"></div>
                   </div>
-                  <div class="col-6">
-                    <div class="text-secondary small">Pulse (µs)</div>
-                    <div class="fs-5" x-text="$store.telemetry.field('esc0').value ?? '–'"></div>
-                  </div>
-                  <div class="col-6">
-                    <div class="text-secondary small">Arm State</div>
-                    <div class="fs-5" x-text="$store.telemetry.field('arm0').value ?? '–'"></div>
+                  <div class="col-6 col-md-3">
+                    <div class="text-secondary small">Right Output (µs)</div>
+                    <div class="fs-4" x-text="$store.telemetry.field('drv_r').value ?? '–'"></div>
                   </div>
                 </div>
               </fieldset>
-            </div>
-            <div class="col-md-6" x-data>
-              <template x-if="$store.config.field('esc1.mode').def">
-                <fieldset class="card h-100" :disabled="!$store.app.connected" x-data>
-                  <legend class="card-header h6 text-secondary mb-0 py-2">ESC Right (esc1)</legend>
-                  <div class="card-body row g-3">
-                    <div class="col-12">
-                      <label class="form-label" for="f-esc1-mode">Mode</label>
-                      <select class="form-select" id="f-esc1-mode"
-                              :class="{ 'is-invalid': $store.config.invalid['esc1.mode'] }"
-                              x-model="$store.config.values['esc1.mode']"
-                              @change="$store.config.commit($store.config.field('esc1.mode').def)">
-                        <template x-for="opt in $store.config.field('esc1.mode').def?.options ?? []" :key="opt">
-                          <option :value="opt" :selected="opt === $store.config.values['esc1.mode']" x-text="opt"></option>
-                        </template>
-                      </select>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <fieldset class="card h-100" :disabled="!$store.app.connected" x-data>
+                    <legend class="card-header h6 text-secondary mb-0 py-2">ESC Left (esc0)</legend>
+                    <div class="card-body row g-3">
+                      <div class="col-12">
+                        <label class="form-label" for="f-esc0-mode">Mode</label>
+                        <select class="form-select" id="f-esc0-mode"
+                                :class="{ 'is-invalid': $store.config.invalid['esc0.mode'] }"
+                                x-model="$store.config.values['esc0.mode']"
+                                @change="$store.config.commit($store.config.field('esc0.mode').def)">
+                          <template x-for="opt in $store.config.field('esc0.mode').def?.options ?? []" :key="opt">
+                            <option :value="opt" :selected="opt === $store.config.values['esc0.mode']" x-text="opt"></option>
+                          </template>
+                        </select>
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label" for="f-esc0-min">Min (µs)</label>
+                        <input type="number" class="form-control" id="f-esc0-min"
+                               :min="$store.config.field('esc0.min_us').def?.min" :max="$store.config.field('esc0.min_us').def?.max"
+                               :class="{ 'is-invalid': $store.config.invalid['esc0.min_us'] }"
+                               x-model="$store.config.values['esc0.min_us']"
+                               @change="$store.config.commit($store.config.field('esc0.min_us').def)">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label" for="f-esc0-max">Max (µs)</label>
+                        <input type="number" class="form-control" id="f-esc0-max"
+                               :min="$store.config.field('esc0.max_us').def?.min" :max="$store.config.field('esc0.max_us').def?.max"
+                               :class="{ 'is-invalid': $store.config.invalid['esc0.max_us'] }"
+                               x-model="$store.config.values['esc0.max_us']"
+                               @change="$store.config.commit($store.config.field('esc0.max_us').def)">
+                      </div>
+                      <div class="col-6">
+                        <div class="text-secondary small">Pulse (µs)</div>
+                        <div class="fs-5" x-text="$store.telemetry.field('esc0').value ?? '–'"></div>
+                      </div>
+                      <div class="col-6">
+                        <div class="text-secondary small">Arm State</div>
+                        <div class="fs-5" x-text="$store.telemetry.field('arm0').value ?? '–'"></div>
+                      </div>
                     </div>
-                    <div class="col-6">
-                      <label class="form-label" for="f-esc1-min">Min (µs)</label>
-                      <input type="number" class="form-control" id="f-esc1-min"
-                             :min="$store.config.field('esc1.min_us').def?.min" :max="$store.config.field('esc1.min_us').def?.max"
-                             :class="{ 'is-invalid': $store.config.invalid['esc1.min_us'] }"
-                             x-model="$store.config.values['esc1.min_us']"
-                             @change="$store.config.commit($store.config.field('esc1.min_us').def)">
-                    </div>
-                    <div class="col-6">
-                      <label class="form-label" for="f-esc1-max">Max (µs)</label>
-                      <input type="number" class="form-control" id="f-esc1-max"
-                             :min="$store.config.field('esc1.max_us').def?.min" :max="$store.config.field('esc1.max_us').def?.max"
-                             :class="{ 'is-invalid': $store.config.invalid['esc1.max_us'] }"
-                             x-model="$store.config.values['esc1.max_us']"
-                             @change="$store.config.commit($store.config.field('esc1.max_us').def)">
-                    </div>
-                    <div class="col-6">
-                      <div class="text-secondary small">Pulse (µs)</div>
-                      <div class="fs-5" x-text="$store.telemetry.field('esc1').value ?? '–'"></div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-secondary small">Arm State</div>
-                      <div class="fs-5" x-text="$store.telemetry.field('arm1').value ?? '–'"></div>
-                    </div>
-                  </div>
-                </fieldset>
-              </template>
-              <template x-if="!$store.config.field('esc1.mode').def">
-                <div class="text-secondary small p-3">ESC 1 is not enabled on this board.</div>
-              </template>
+                  </fieldset>
+                </div>
+                <div class="col-md-6" x-data>
+                  <template x-if="$store.config.field('esc1.mode').def">
+                    <fieldset class="card h-100" :disabled="!$store.app.connected" x-data>
+                      <legend class="card-header h6 text-secondary mb-0 py-2">ESC Right (esc1)</legend>
+                      <div class="card-body row g-3">
+                        <div class="col-12">
+                          <label class="form-label" for="f-esc1-mode">Mode</label>
+                          <select class="form-select" id="f-esc1-mode"
+                                  :class="{ 'is-invalid': $store.config.invalid['esc1.mode'] }"
+                                  x-model="$store.config.values['esc1.mode']"
+                                  @change="$store.config.commit($store.config.field('esc1.mode').def)">
+                            <template x-for="opt in $store.config.field('esc1.mode').def?.options ?? []" :key="opt">
+                              <option :value="opt" :selected="opt === $store.config.values['esc1.mode']" x-text="opt"></option>
+                            </template>
+                          </select>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label" for="f-esc1-min">Min (µs)</label>
+                          <input type="number" class="form-control" id="f-esc1-min"
+                                 :min="$store.config.field('esc1.min_us').def?.min" :max="$store.config.field('esc1.min_us').def?.max"
+                                 :class="{ 'is-invalid': $store.config.invalid['esc1.min_us'] }"
+                                 x-model="$store.config.values['esc1.min_us']"
+                                 @change="$store.config.commit($store.config.field('esc1.min_us').def)">
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label" for="f-esc1-max">Max (µs)</label>
+                          <input type="number" class="form-control" id="f-esc1-max"
+                                 :min="$store.config.field('esc1.max_us').def?.min" :max="$store.config.field('esc1.max_us').def?.max"
+                                 :class="{ 'is-invalid': $store.config.invalid['esc1.max_us'] }"
+                                 x-model="$store.config.values['esc1.max_us']"
+                                 @change="$store.config.commit($store.config.field('esc1.max_us').def)">
+                        </div>
+                        <div class="col-6">
+                          <div class="text-secondary small">Pulse (µs)</div>
+                          <div class="fs-5" x-text="$store.telemetry.field('esc1').value ?? '–'"></div>
+                        </div>
+                        <div class="col-6">
+                          <div class="text-secondary small">Arm State</div>
+                          <div class="fs-5" x-text="$store.telemetry.field('arm1').value ?? '–'"></div>
+                        </div>
+                      </div>
+                    </fieldset>
+                  </template>
+                  <template x-if="!$store.config.field('esc1.mode').def">
+                    <div class="text-secondary small p-3">ESC 1 is not enabled on this board.</div>
+                  </template>
+                </div>
+              </div>
             </div>
           </div>
           <p>&nbsp;</p>
