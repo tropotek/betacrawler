@@ -79,7 +79,14 @@ itself gets one only because `modules.cpp` chose to wire it that way, not becaus
 grants it. It doesn't violate the spirit of "observers are const" because that rule protects
 *param* state — validated, dispatch-owned, and meaningless to mutate outside a `set`. `core::Inputs`
 is not param state; it's a purpose-built, one-way signal bus with exactly one writer decided by
-construction, not by convention a second module could quietly bend. Three shapes for carrying
+construction, not by convention a second module could quietly bend.
+
+`tank_drive` (added later) uses the identical pattern for a second, independent bus
+(`Registry::driveOutputs()`) rather than a second writer sharing `rx`'s own -- each bus still has
+exactly one constructor-wired producer, the pattern is just applied twice. `esc0`/`esc1` read
+whichever bus their own `.src` selection points at.
+
+Three shapes for carrying
 `rx`'s channels to `servo` were weighed before settling on this bus, and the full reasoning —
 including why the other two were rejected — lives in `_notes/spec-rx-mapping.md`. That file is
 gitignored and local-only, so it won't follow a fresh clone, but it's there for anyone working in

@@ -359,7 +359,7 @@ void test_hello_lists_the_enabled_modules() {
   d.handle(q, out, sizeof(out));
   TEST_ASSERT_NOT_NULL(strstr(
       out,
-      "\"mods\":[\"device\",\"system\",\"button\",\"led\",\"esc0\",\"esc1\",\"rx\"]"));
+      "\"mods\":[\"device\",\"system\",\"button\",\"led\",\"rx\",\"tank_drive\",\"esc0\",\"esc1\"]"));
 }
 
 void test_schema_lists_all_params_and_fits_buffer() {

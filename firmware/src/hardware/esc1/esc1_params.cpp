@@ -33,7 +33,7 @@ static const ParamDef kParams[] = {
   {"esc1.throttle_us",  ParamType::U8,   "Throttle", "µs",    1000, 2000, nullptr, 0, 0, 1000,     nullptr, nullptr},
   {"esc1.min_us",       ParamType::U8,   "Min",      "µs",    500,  1500, nullptr, 0, 0, 1000,     nullptr, nullptr},
   {"esc1.max_us",       ParamType::U8,   "Max",      "µs",    1500, 2500, nullptr, 0, 0, 2000,     nullptr, nullptr},
-  {"esc1.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 0, nullptr, nullptr, "esc1.mode", "off"},
+  {"esc1.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 13, nullptr, nullptr, "esc1.mode", "off"},
 };
 
 static const TlmDef kTlm[T_COUNT] = {

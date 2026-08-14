@@ -27,9 +27,10 @@
 #define FEATURE_BUTTON  1
 #define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0
-#define FEATURE_RX      1
-#define FEATURE_ESC0    1
-#define FEATURE_ESC1    1
+#define FEATURE_RX         1
+#define FEATURE_TANK_DRIVE 0
+#define FEATURE_ESC0       1
+#define FEATURE_ESC1       1
 // The F401 has the same USB DFU bootloader in ROM as the F411 -- same system
 // memory base, same AN2606 entry. See blackpill_f411ce.h for the rationale.
 #define FEATURE_DFU     1

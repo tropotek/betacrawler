@@ -17,9 +17,10 @@
 #define FEATURE_BUTTON  1
 #define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0
-#define FEATURE_RX      1
-#define FEATURE_ESC0    1
-#define FEATURE_ESC1    1
+#define FEATURE_RX         1
+#define FEATURE_TANK_DRIVE 1
+#define FEATURE_ESC0       1
+#define FEATURE_ESC1       1
 #define FEATURE_WIFI    0
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
 // bootloader in ROM, so this costs a magic word and a reset -- no bootloader

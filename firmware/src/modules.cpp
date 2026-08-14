@@ -76,28 +76,6 @@ static core::Inputs g_driveOutputs;
 #  endif
 #endif
 
-#if FEATURE_ESC0
-#  include "hardware/esc0/esc0_params.h"
-#  if FW_TARGET_ARDUINO
-#    include "hardware/esc0/esc0_driver.h"
-     static esc0::EscDriver g_esc0;
-#    define ESC0_DRV (&g_esc0)
-#  else
-#    define ESC0_DRV nullptr
-#  endif
-#endif
-
-#if FEATURE_ESC1
-#  include "hardware/esc1/esc1_params.h"
-#  if FW_TARGET_ARDUINO
-#    include "hardware/esc1/esc1_driver.h"
-     static esc1::EscDriver g_esc1;
-#    define ESC1_DRV (&g_esc1)
-#  else
-#    define ESC1_DRV nullptr
-#  endif
-#endif
-
 #if FEATURE_RX
 #  include "hardware/rx/rx_params.h"
 #  if FW_TARGET_ARDUINO
@@ -117,6 +95,28 @@ static core::Inputs g_driveOutputs;
 #    define TANK_DRIVE_DRV (&g_tankDrive)
 #  else
 #    define TANK_DRIVE_DRV nullptr
+#  endif
+#endif
+
+#if FEATURE_ESC0
+#  include "hardware/esc0/esc0_params.h"
+#  if FW_TARGET_ARDUINO
+#    include "hardware/esc0/esc0_driver.h"
+     static esc0::EscDriver g_esc0;
+#    define ESC0_DRV (&g_esc0)
+#  else
+#    define ESC0_DRV nullptr
+#  endif
+#endif
+
+#if FEATURE_ESC1
+#  include "hardware/esc1/esc1_params.h"
+#  if FW_TARGET_ARDUINO
+#    include "hardware/esc1/esc1_driver.h"
+     static esc1::EscDriver g_esc1;
+#    define ESC1_DRV (&g_esc1)
+#  else
+#    define ESC1_DRV nullptr
 #  endif
 #endif
 
@@ -154,6 +154,7 @@ namespace core {
 // invalidates saved settings -- by design, not by accident.
 void registerModules(Registry& reg) {
   reg.setInputs(g_inputs);
+  reg.setDriveOutputs(g_driveOutputs);
   reg.add(device::kDesc);            // always: device.name, tlm.rate
   reg.add(sys::kDesc, SYSTEM_DRV);   // always: uptime/clock/ram/temp/vdd
 #if FEATURE_BUTTON
@@ -165,18 +166,25 @@ void registerModules(Registry& reg) {
 #if FEATURE_SERVO
   reg.add(servo::kDesc, SERVO_DRV);
 #endif
+#if FEATURE_RX
+  reg.add(rx::kDesc, RX_DRV);
+#endif
+  // tank_drive must register after rx and before esc0/esc1: Registry::tick()
+  // walks modules in registration order, and tank_drive must mix each
+  // loop's freshly-decoded rx frame before either ESC reads it that same
+  // loop. This is the first place in this codebase where registration order
+  // is a correctness requirement, not just a schema/telemetry/flash-layout
+  // ordering choice -- do not reorder these three without re-reading
+  // _notes/docs/plans/2026-08-14-tank-drive-mixer-design.md's "Firmware
+  // source changes" section first.
+#if FEATURE_TANK_DRIVE
+  reg.add(tank_drive::kDesc, TANK_DRIVE_DRV);
+#endif
 #if FEATURE_ESC0
   reg.add(esc0::kDesc, ESC0_DRV);
 #endif
 #if FEATURE_ESC1
   reg.add(esc1::kDesc, ESC1_DRV);
-#endif
-#if FEATURE_RX
-  reg.add(rx::kDesc, RX_DRV);
-#endif
-#if FEATURE_TANK_DRIVE
-  reg.setDriveOutputs(g_driveOutputs);
-  reg.add(tank_drive::kDesc, TANK_DRIVE_DRV);
 #endif
 #if FEATURE_WIFI
   reg.add(wifi::kDesc, WIFI_DRV);

@@ -126,6 +126,13 @@
 // #define ESC0_TIMER  TIM3
 // #define ESC0_PIN    PA6      // TIM3_CH1
 
+// Required when FEATURE_TANK_DRIVE is 1: no pins, no macros -- this module
+// touches no hardware, only rx's bus and its own. The one thing that DOES
+// matter: in src/modules.cpp's registerModules(), it must register after rx
+// and before esc0/esc1, or esc0/esc1 will mix stale (one-loop-old) throttle/
+// steer data. See tank_drive_driver.cpp's own comment at the registration
+// site before reordering anything.
+
 // Required when FEATURE_RX is 1: an RC receiver on its own hardware serial
 // port, decoded by the protocol-agnostic rx module.
 // #define FEATURE_RX      1

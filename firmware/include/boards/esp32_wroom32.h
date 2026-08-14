@@ -17,9 +17,10 @@
 #define FEATURE_BUTTON  0
 #define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0
-#define FEATURE_ESC0    0
-#define FEATURE_ESC1    0
-#define FEATURE_RX      0
+#define FEATURE_ESC0       0
+#define FEATURE_ESC1       0
+#define FEATURE_RX         0
+#define FEATURE_TANK_DRIVE 0
 #define FEATURE_WIFI    1
 // No STM32-style ROM DFU on this part; esptool over USB is the flash path
 // instead. dfu.cpp's existing FEATURE_DFU-off stub (already exercised by

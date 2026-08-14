@@ -58,7 +58,7 @@ static const ParamDef kParams[] = {
   // an accidental change is easy to make. Terminal `set` and INI restore
   // still accept it regardless of mode (showIf is display-only, never an
   // access rule). Defaults to ch1, the conventional throttle channel.
-  {"esc0.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 0, nullptr, nullptr, "esc0.mode", "off"},
+  {"esc0.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 12, nullptr, nullptr, "esc0.mode", "off"},
 };
 
 // The commanded pulse width, or 0 when off -- including neutralUs during the
