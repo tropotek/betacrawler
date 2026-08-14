@@ -82,22 +82,63 @@
     .tank-hero { height: 340px; overflow: hidden; border-radius: .5rem; margin-bottom: 1rem; background: #13230f; }
     .tank-hero img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
-    /* Modes page: a dual-handle range built from TWO overlapping native
-       .form-range inputs (the same template led.blink_hz/servo.angle use).
-       pointer-events: none on both, restored to auto only on each one's own
-       thumb pseudo-element, is what lets each thumb be dragged independently
-       despite sharing the same screen space -- the standard technique for a
-       two-handle range slider built from native inputs. Only the FIRST
-       input's track stays visible; the second's is made transparent so the
-       two don't visually double up into two overlapping bars. */
-    .mode-slider { position: relative; height: 1.5rem; }
-    .mode-slider input[type="range"] {
-      position: absolute; left: 0; top: 0; width: 100%; margin: 0; pointer-events: none;
+    /* Modes page: one row per function -- a name plate, its channel select,
+       then the slider. Rows sit in a single panel, split only by margin. */
+    .mode-row + .mode-row { margin-top: 1.75rem; }
+    .mode-name {
+      flex: 0 0 11rem; padding: .5rem;
+      border: 1px solid var(--bs-border-color); border-radius: .375rem;
+      background: var(--bs-tertiary-bg);
     }
-    .mode-slider input[type="range"]::-webkit-slider-thumb { pointer-events: auto; }
-    .mode-slider input[type="range"]::-moz-range-thumb { pointer-events: auto; }
-    .mode-slider input[type="range"]:nth-of-type(2)::-webkit-slider-runnable-track { background: transparent; }
-    .mode-slider input[type="range"]:nth-of-type(2)::-moz-range-track { background: transparent; }
+    .mode-title {
+      font-size: .8125rem; font-weight: 700; text-align: center;
+      letter-spacing: .04em; text-transform: uppercase;
+    }
+    .mode-channel { flex: 0 0 8rem; }
+
+    /* Dual-handle range slider (the `rangeSlider` Alpine component). Built
+       from plain elements rather than native range inputs, whose track can
+       only be reached through vendor pseudo-elements -- --range-accent colors
+       the fill and both handles as one. The side padding is what lets the end
+       labels centre on their own ticks rather than tuck inside the track. */
+    .range-slider { --range-accent: #0d6efd; min-width: 0; padding: 0 1.5rem; }
+    .range-slider-disabled { --range-accent: var(--bs-secondary-color); }
+    .range-track {
+      position: relative; height: .5rem; margin-top: .75rem;
+      background: var(--bs-secondary-bg); border-radius: 1rem;
+    }
+    .range-fill {
+      position: absolute; top: 0; height: 100%;
+      background: var(--range-accent); border-radius: 1rem;
+    }
+    .range-thumb {
+      position: absolute; top: 50%; width: 1.25rem; height: 1.25rem;
+      margin: -.625rem 0 0 -.625rem; background: var(--bs-body-bg);
+      border: 3px solid var(--range-accent); border-radius: 50%;
+      cursor: grab; touch-action: none;
+    }
+    .range-thumb:active { cursor: grabbing; }
+    .range-thumb:focus-visible { outline: 0; box-shadow: 0 0 0 .25rem rgba(13, 110, 253, .25); }
+    .range-slider-disabled .range-thumb { cursor: default; }
+
+    /* Ruler under the track: a tick every tenth, each labelled, with the ends
+       and midpoint drawn taller. Labels centre on their own tick. */
+    .range-ruler { position: relative; height: 1.75rem; margin-top: .5rem; }
+    .range-tick { position: absolute; top: 0; width: 1px; height: .3125rem; background: var(--bs-border-color); }
+    .range-tick-major { height: .5rem; }
+    .range-tick span {
+      position: absolute; top: .625rem; left: 50%; transform: translateX(-50%);
+      font-size: .6875rem; color: var(--bs-secondary-color);
+    }
+
+    /* Live RC position for this function's channel, sitting on the ruler.
+       Keeps its own color so it stays readable on a row with no range. */
+    .range-live {
+      position: absolute; top: -.1875rem; width: .3125rem; height: .875rem;
+      margin-left: -.15625rem; border-radius: .1875rem;
+      background: #0d6efd;
+    }
+    .range-slider-disabled .range-live { background: var(--bs-secondary-color); }
 
     /* Controller page's RC Channel bars: a lighter blue than Bootstrap's
        default .progress-bar so the centered bold-black value stays legible
