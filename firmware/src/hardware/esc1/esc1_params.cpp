@@ -17,6 +17,10 @@ static const char* const kModes[] = {"off", "armed", "input"};
 static const char* const kSrcNames[] = {
   "ch1", "ch2", "ch3", "ch4", "ch5", "ch6",
   "ch7", "ch8", "ch9", "ch10", "ch11", "ch12",
+  // Indices 12/13: tank_drive's own bus (see core::Registry::driveOutputs()),
+  // not a raw rx channel. esc1 doesn't otherwise know tank_drive exists --
+  // this is the one place that convention is spelled out.
+  "drive_left", "drive_right",
 };
 
 static const char* const kDirections[] = {"unidirectional", "bidirectional"};
@@ -29,7 +33,7 @@ static const ParamDef kParams[] = {
   {"esc1.throttle_us",  ParamType::U8,   "Throttle", "µs",    1000, 2000, nullptr, 0, 0, 1000,     nullptr, nullptr},
   {"esc1.min_us",       ParamType::U8,   "Min",      "µs",    500,  1500, nullptr, 0, 0, 1000,     nullptr, nullptr},
   {"esc1.max_us",       ParamType::U8,   "Max",      "µs",    1500, 2500, nullptr, 0, 0, 2000,     nullptr, nullptr},
-  {"esc1.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 12, 0, 0, nullptr, nullptr, "esc1.mode", "off"},
+  {"esc1.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 0, nullptr, nullptr, "esc1.mode", "off"},
 };
 
 static const TlmDef kTlm[T_COUNT] = {

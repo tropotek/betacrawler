@@ -44,6 +44,12 @@
 #define ESC1_ARM_LOW_MARGIN_US 50
 #endif
 
+// "drive_left"/"drive_right" are appended after the 12 raw ch1..ch12
+// options in esc1_params.cpp's kSrcNames -- index 12 is the first one. This
+// is the one place esc1 knows anything about tank_drive's existence, and
+// even this is just a slot-index convention, not a header dependency.
+constexpr uint8_t kDriveSrcBase = 12;
+
 namespace esc1 {
 
 // Storage for the one HardwareTimer, placement-new'd in begin(). Each
@@ -81,7 +87,8 @@ void EscDriver::writeUs(uint16_t us) {
 
 void EscDriver::attach(const core::Registry& reg, const core::Params& p) {
   (void)p;
-  inputs_ = &reg.inputs();
+  inputs_      = &reg.inputs();
+  driveInputs_ = &reg.driveOutputs();
 }
 
 void EscDriver::apply(const core::Params& p) {
@@ -100,9 +107,13 @@ void EscDriver::apply(const core::Params& p) {
   const bool bidirectional = (direction_ == esc::DIR_BIDIRECTIONAL);
   const uint16_t neutral   = esc::neutralUs(minUs_, maxUs_, bidirectional);
 
-  const int16_t inputUs = (mode_ == esc::MODE_INPUT) ? inputs_->get(srcIdx_) : (int16_t)0;
+  const bool usesDriveBus = (srcIdx_ >= kDriveSrcBase);
+  const core::Inputs* src = usesDriveBus ? driveInputs_ : inputs_;
+  const uint8_t srcSlot   = usesDriveBus ? (uint8_t)(srcIdx_ - kDriveSrcBase) : srcIdx_;
+
+  const int16_t inputUs = (mode_ == esc::MODE_INPUT) ? src->get(srcSlot) : (int16_t)0;
   const bool inputFresh = (mode_ == esc::MODE_INPUT) &&
-                           esc::isLinkFresh(inputs_->lastFreshMs(), now, ESC1_INPUT_STALE_MS);
+                           esc::isLinkFresh(src->lastFreshMs(), now, ESC1_INPUT_STALE_MS);
   const bool inputStale = (mode_ == esc::MODE_INPUT) && !inputFresh;
 
   if (esc::inputLossDemotesArmed(armState_, mode_, inputFresh) ||
@@ -137,9 +148,13 @@ void EscDriver::tick(uint32_t nowMs) {
   const bool bidirectional = (direction_ == esc::DIR_BIDIRECTIONAL);
   const uint16_t neutral   = esc::neutralUs(minUs_, maxUs_, bidirectional);
 
-  const int16_t inputUs = (mode_ == esc::MODE_INPUT) ? inputs_->get(srcIdx_) : (int16_t)0;
+  const bool usesDriveBus = (srcIdx_ >= kDriveSrcBase);
+  const core::Inputs* src = usesDriveBus ? driveInputs_ : inputs_;
+  const uint8_t srcSlot   = usesDriveBus ? (uint8_t)(srcIdx_ - kDriveSrcBase) : srcIdx_;
+
+  const int16_t inputUs = (mode_ == esc::MODE_INPUT) ? src->get(srcSlot) : (int16_t)0;
   const bool inputFresh = (mode_ == esc::MODE_INPUT) &&
-                           esc::isLinkFresh(inputs_->lastFreshMs(), nowMs, ESC1_INPUT_STALE_MS);
+                           esc::isLinkFresh(src->lastFreshMs(), nowMs, ESC1_INPUT_STALE_MS);
   const bool inputStale = (mode_ == esc::MODE_INPUT) && !inputFresh;
 
   if (esc::inputLossDemotesArmed(armState_, mode_, inputFresh)) {

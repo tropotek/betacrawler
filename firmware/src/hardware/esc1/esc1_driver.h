@@ -24,6 +24,7 @@ class EscDriver : public core::Module {
   void writeUs(uint16_t us);
 
   const core::Inputs* inputs_ = nullptr;
+  const core::Inputs* driveInputs_ = nullptr;
   HardwareTimer* timer_ = nullptr;
   uint32_t ch_         = 0;
   int32_t  mode_       = esc::MODE_OFF;
