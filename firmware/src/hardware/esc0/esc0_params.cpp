@@ -36,7 +36,7 @@ static const ParamDef kParams[] = {
   // value -- by the time esc0.mode or esc0.throttle_us can cause a pulse to
   // be computed and armed against. Defaults to unidirectional: nothing
   // already deployed changes behaviour unless explicitly switched over.
-  {"esc0.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_UNIDIRECTIONAL, nullptr, nullptr},
+  {"esc0.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_BIDIRECTIONAL, nullptr, nullptr},
   // Defaults to off: the board resets on every DFU flash, and nothing should
   // be commanded to an ESC until asked, same reasoning as servo.mode's
   // default. Saved settings ARE re-applied at boot by main.cpp's notify
@@ -44,7 +44,7 @@ static const ParamDef kParams[] = {
   {"esc0.mode",         ParamType::Enum, "ESC",      nullptr, 0,    0,    kModes, 3, 0, esc::MODE_OFF, nullptr, nullptr},
   // Direct microseconds, not a percentage: the wire and the param are the
   // same unit, so esc::clampUs alone maps it.
-  {"esc0.throttle_us",  ParamType::U8,   "Throttle", "µs",    1000, 2000, nullptr, 0, 0, 1000,     nullptr, nullptr},
+  {"esc0.throttle_us",  ParamType::U8,   "Throttle", "µs",    1000, 2000, nullptr, 0, 0, 1500,     nullptr, nullptr},
   // Calibration ends. The bounds deliberately CANNOT cross -- min tops out
   // where max starts -- because core/ has no cross-parameter constraint
   // mechanism: ParamDef bounds are static and setNum validates one value in

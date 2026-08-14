@@ -28,9 +28,9 @@ static const char* const kDirections[] = {"unidirectional", "bidirectional"};
 // Per-field reasoning: see esc0_params.cpp -- identical here, just esc1's keys.
 static const ParamDef kParams[] = {
   // key                type             label       unit  min   max   opts     n  maxlen def       defStr group
-  {"esc1.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_UNIDIRECTIONAL, nullptr, nullptr},
+  {"esc1.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_BIDIRECTIONAL, nullptr, nullptr},
   {"esc1.mode",         ParamType::Enum, "ESC",      nullptr, 0,    0,    kModes, 3, 0, esc::MODE_OFF, nullptr, nullptr},
-  {"esc1.throttle_us",  ParamType::U8,   "Throttle", "µs",    1000, 2000, nullptr, 0, 0, 1000,     nullptr, nullptr},
+  {"esc1.throttle_us",  ParamType::U8,   "Throttle", "µs",    1000, 2000, nullptr, 0, 0, 1500,     nullptr, nullptr},
   {"esc1.min_us",       ParamType::U8,   "Min",      "µs",    500,  1500, nullptr, 0, 0, 1000,     nullptr, nullptr},
   {"esc1.max_us",       ParamType::U8,   "Max",      "µs",    1500, 2500, nullptr, 0, 0, 2000,     nullptr, nullptr},
   {"esc1.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 13, nullptr, nullptr, "esc1.mode", "off"},
