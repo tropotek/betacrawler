@@ -11,7 +11,7 @@ static const char* const kModes[] = {"off", "on", "blink", "fade"};
 
 static const ParamDef kParams[] = {
   // key            type             label       unit  min max opts    n  maxlen def defStr group
-  {"led.mode",      ParamType::Enum, "LED Mode", nullptr, 0, 0, kModes, 4, 0, MODE_BLINK, nullptr, nullptr},
+  {"led.mode",      ParamType::Enum, "LED Mode", nullptr, 0, 0, kModes, 4, 0, MODE_ON, nullptr, nullptr},
   // Shared by blink and fade: cycles per second in both cases. Labelled
   // "Rate" rather than "Blink Rate" because it drives the breathing speed in
   // fade mode too.

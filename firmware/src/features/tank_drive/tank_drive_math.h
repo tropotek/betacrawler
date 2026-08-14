@@ -35,4 +35,12 @@ MixResult mix(int16_t throttleUs, int16_t steerUs, int16_t centerUs,
               uint16_t minUs, uint16_t maxUs,
               uint8_t reverseRatioPct, uint16_t deadbandUs);
 
+// True when the vehicle is armed: the rx link is fresh, and either no arm
+// switch is configured (armSrcIsNone) or the selected channel's raw value
+// falls within [armMinUs, armMaxUs] inclusive. armSrcUs is ignored when
+// armSrcIsNone. A stale link (rxFresh=false) always forces unarmed, the same
+// failsafe reasoning left/right already get from linkFresh() above.
+bool computeArmed(bool rxFresh, bool armSrcIsNone, int16_t armSrcUs, int16_t armMinUs,
+                   int16_t armMaxUs);
+
 }  // namespace tank_drive

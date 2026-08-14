@@ -25,9 +25,15 @@ enum : uint32_t { ARM_OFF = 0, ARM_ARMING = 1, ARM_ARMED = 2 };
 // into the calibrated range.
 uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs);
 
-// One step of the arm-hold state machine. `enteringFromOff` is true exactly
-// on the onParamChanged() call where mode left MODE_OFF -- the only event
-// that (re)starts the hold, mirroring servo::apply()'s
+// One step of the arm-hold state machine -- deliberately independent of the
+// shared TX ARM switch (see tank_drive's design doc): that switch gates the
+// OUTPUT pulse (esc0/esc1's callers clamp to neutralUs() when it's inactive,
+// after this state machine has already run), not this state machine, so an
+// ESC that has already completed its hold stays ARM_ARMED across the switch
+// being flipped off and on -- no re-hold needed, matching a real ESC's own
+// arm-once-then-just-follow-commands behavior. `enteringFromOff` is true
+// exactly on the onParamChanged() call where mode left MODE_OFF -- the only
+// event that (re)starts the hold, mirroring servo::apply()'s
 // `if (prevMode == MODE_OFF) attachOutput()`. `modeIsOff` always wins
 // outright, from any state. Otherwise ARMING holds until BOTH armHoldMs has
 // elapsed since armT0Ms AND commandedIsLow is true, then becomes ARMED and

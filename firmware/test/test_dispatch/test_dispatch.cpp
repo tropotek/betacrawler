@@ -359,7 +359,7 @@ void test_hello_lists_the_enabled_modules() {
   d.handle(q, out, sizeof(out));
   TEST_ASSERT_NOT_NULL(strstr(
       out,
-      "\"mods\":[\"device\",\"system\",\"button\",\"led\",\"rx\",\"tank_drive\",\"esc0\",\"esc1\"]"));
+      "\"mods\":[\"device\",\"system\",\"led\",\"rx\",\"tank_drive\",\"esc0\",\"esc1\"]"));
 }
 
 void test_schema_lists_all_params_and_fits_buffer() {
@@ -397,7 +397,7 @@ void test_schema_carries_groups_and_the_telemetry_descriptor() {
   TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"Device\""));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"Telemetry\""));   // tlm.rate's override
   TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"System\""));
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"Button\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"ESC 0\""));
   // vdd is the field that proves display hints survive: millivolts on the
   // wire, volts in the browser.
   TEST_ASSERT_NOT_NULL(strstr(out, "\"key\":\"vdd\""));

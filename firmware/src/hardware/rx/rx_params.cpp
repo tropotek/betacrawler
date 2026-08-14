@@ -85,7 +85,7 @@ static_assert(sizeof(kProtocolNames) / sizeof(kProtocolNames[0]) == kProtocolCou
 
 static const ParamDef kParams[] = {
   // key                    type             label       unit  min   max   opts             n               maxlen def              defStr group        showIfKey      showIfVal
-  {"rx.protocol",           ParamType::Enum, "Protocol", nullptr, 0,    0,    kProtocolNames, kProtocolCount, 0, PROTO_CROSSFIRE, nullptr, nullptr,     nullptr,       nullptr},
+  {"rx.protocol",           ParamType::Enum, "Protocol", nullptr, 0,    0,    kProtocolNames, kProtocolCount, 0, PROTO_ELRS,      nullptr, nullptr,     nullptr,       nullptr},
   // Defaults to uart, not sim: a board with no receiver wired must report a
   // link that is genuinely down rather than data that was invented. sim is
   // opt-in, and begin() says so in the boot log when it is on. Kept
