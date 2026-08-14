@@ -136,19 +136,20 @@ function setState(state, info) {
   el('connect').textContent = connected ? 'Disconnect' : 'Connect';
   el('fw').textContent = connected && info && info.fw ? `${info.fw} · proto ${info.proto}` : '';
   el('fw').title = connected && info && info.built ? `built ${info.built}` : '';
-  el('help-fw').textContent = connected && info && info.fw
-    ? [info.fw, info.board, info.built && `built ${info.built}`,
-       info.mods && info.mods.length && `modules: ${info.mods.join(', ')}`]
-      .filter(Boolean).join(' · ')
-    : 'not connected';
-  el('form').querySelectorAll('input,select').forEach((i) => { i.disabled = !connected; });
   updateNavAvailability();
-  updateTerminalAvailability();
   // Optional-chained: setState can run before Alpine has initialised (this
   // script is not deferred, Alpine's is), and the Firmware page re-syncs on
   // entry anyway.
   window.Alpine?.store('firmware')?.syncDevice(connected, deviceInfo);
   window.Alpine?.store('wifi')?.syncDevice(connected, deviceInfo);
+  window.Alpine?.store('app') && Object.assign(window.Alpine.store('app'), {
+    connected,
+    fwSummary: connected && info && info.fw
+      ? [info.fw, info.board, info.built && `built ${info.built}`,
+         info.mods && info.mods.length && `modules: ${info.mods.join(', ')}`]
+        .filter(Boolean).join(' · ')
+      : 'not connected',
+  });
 }
 
 // Telemetry-staleness: distinct from a hard disconnect. The port is still
@@ -263,6 +264,20 @@ function formatTelemetryValue(def, value) {
 // push data in or read state back out: Alpine.store() is reachable from
 // anywhere with no element handle, unlike Alpine.$data()/refs.
 document.addEventListener('alpine:init', () => {
+  // Cross-page state that used to live as ad-hoc DOM writes, reachable only
+  // while the page holding that DOM happened to be mounted. showPage() (see
+  // below) now destroys and recreates each page's DOM on every navigation,
+  // so anything that must survive navigating away and back -- or be read by
+  // more than one page at once, like the Terminal Save button mirroring the
+  // Configuration page's dirty flag -- has to live here instead.
+  Alpine.store('app', {
+    version: APP_VERSION,
+    connected: false,
+    dirty: false,
+    revertNote: false,
+    fwSummary: 'not connected',
+  });
+
   Alpine.store('config', {
     schema: [],
     values: {},
@@ -819,12 +834,12 @@ el('connect').addEventListener('click', async () => {
 // -- a form field, a restore -- goes through here, so both pages agree about
 // whether there is something worth writing to flash.
 function setDirty(dirty) {
-  el('dirty').classList.toggle('d-none', !dirty);
-  el('term-save').disabled = !dirty;
+  const app = Alpine.store('app');
+  app.dirty = dirty;
   // Any subsequent action supersedes the fallback note, so it is cleared here
   // rather than tracked separately. The revert handler re-shows it after
   // calling setDirty().
-  el('revert-note').classList.add('d-none');
+  app.revertNote = false;
 }
 
 async function saveToFlash() {
@@ -864,7 +879,7 @@ el('revert').addEventListener('click', async () => {
     // "defaults" means the board had nothing valid stored and the firmware
     // fell back, which is both worth saving and worth saying out loud.
     setDirty(res.src !== 'flash');
-    if (res.src !== 'flash') el('revert-note').classList.remove('d-none');
+    if (res.src !== 'flash') Alpine.store('app').revertNote = true;
   } catch (e) { showError(e.message); }
 });
 
@@ -898,18 +913,6 @@ function showPage(page) {
   // widths, or the offcanvas was never opened).
   const sidebar = document.getElementById('sidebarMenu');
   window.bootstrap?.Offcanvas.getInstance(sidebar)?.hide();
-}
-
-// Only the controls that actually talk to the device. Clear stays live -- it
-// edits the local output buffer -- and Save is governed by setDirty(), which a
-// disconnect already resets.
-function updateTerminalAvailability() {
-  el('term-input').disabled = !connected;
-  el('term-send').disabled = !connected;
-  el('term-restore').disabled = !connected;
-  el('term-input').placeholder = connected
-    ? 'type a command, e.g. get led.mode'
-    : 'connect a device to send commands';
 }
 
 function updateNavAvailability() {
@@ -966,7 +969,7 @@ async function termRun(text) {
       if (r.dirty !== null) {
         setDirty(r.dirty);
         if (r.dirty && text.trim().split(/\s+/)[0].toLowerCase() === 'revert') {
-          el('revert-note').classList.remove('d-none');
+          Alpine.store('app').revertNote = true;
         }
       }
     }
@@ -1221,7 +1224,6 @@ function startWatchdog() {
 
 (async function init() {
   el('app-version').textContent = `v${APP_VERSION}`;
-  el('help-app-version').textContent = APP_VERSION;
   // Home is always the landing page, including on a reload while a device is
   // still connected server-side. Nothing navigates for you any more -- page
   // choice is the user's, and connecting only enables the gated nav items.

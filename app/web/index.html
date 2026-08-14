@@ -268,6 +268,7 @@
                       <template x-if="field.type === 'enum'">
                         <select class="form-select" :id="'f-' + field.key" :aria-describedby="'h-' + field.key"
                                 :class="{ 'is-invalid': $store.config.invalid[field.key] }"
+                                :disabled="!$store.app.connected"
                                 x-model="$store.config.values[field.key]"
                                 @change="$store.config.commit(field)">
                           <template x-for="opt in field.options" :key="opt">
@@ -281,6 +282,7 @@
                         <input type="text" class="form-control" :id="'f-' + field.key" :maxlength="field.maxlen"
                                :aria-describedby="'h-' + field.key"
                                :class="{ 'is-invalid': $store.config.invalid[field.key] }"
+                               :disabled="!$store.app.connected"
                                x-model="$store.config.values[field.key]"
                                @change="$store.config.commit(field)">
                       </template>
@@ -290,6 +292,7 @@
                           <input :type="revealed ? 'text' : 'password'" class="form-control" :id="'f-' + field.key"
                                  :maxlength="field.maxlen" :aria-describedby="'h-' + field.key"
                                  :class="{ 'is-invalid': $store.config.invalid[field.key] }"
+                                 :disabled="!$store.app.connected"
                                  x-model="$store.config.values[field.key]"
                                  @change="$store.config.commit(field)">
                           <button type="button" class="btn btn-outline-secondary" @click="revealed = !revealed"
@@ -303,6 +306,7 @@
                         <input type="range" class="form-range" :id="'f-' + field.key" :min="field.min" :max="field.max"
                                :aria-describedby="'h-' + field.key"
                                :class="{ 'is-invalid': $store.config.invalid[field.key] }"
+                               :disabled="!$store.app.connected"
                                x-model="$store.config.values[field.key]"
                                @change="$store.config.commit(field)">
                       </template>
@@ -311,6 +315,7 @@
                         <input type="number" class="form-control" :id="'f-' + field.key" :min="field.min" :max="field.max"
                                :aria-describedby="'h-' + field.key"
                                :class="{ 'is-invalid': $store.config.invalid[field.key] }"
+                               :disabled="!$store.app.connected"
                                x-model="$store.config.values[field.key]"
                                @change="$store.config.commit(field)">
                       </template>
@@ -337,12 +342,12 @@
               </template>
             </ul>
           </div>
-          <div class="mt-3 d-flex gap-2 align-items-center">
+          <div class="mt-3 d-flex gap-2 align-items-center" x-data>
             <button id="save" class="btn btn-success btn-sm">Save to flash</button>
             <button id="revert" class="btn btn-outline-secondary btn-sm">Discard changes</button>
             <button id="defaults" class="btn btn-outline-secondary btn-sm">Load defaults</button>
-            <span id="dirty" class="text-warning-emphasis small d-none">applied — not saved to flash</span>
-            <span id="revert-note" class="text-warning-emphasis small d-none">no saved settings on this board — loaded defaults instead</span>
+            <span class="text-warning-emphasis small" x-show="$store.app.dirty">applied — not saved to flash</span>
+            <span class="text-warning-emphasis small" x-show="$store.app.revertNote">no saved settings on this board — loaded defaults instead</span>
           </div>
           <p>&nbsp;</p>
         </div>
@@ -386,7 +391,7 @@
           <p>&nbsp;</p>
         </div>
 
-        <div id="page-terminal" class="d-none">
+        <div id="page-terminal" class="d-none" x-data>
           <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
             <h1 class="h2">Terminal</h1>
           </div>
@@ -401,19 +406,19 @@
           <textarea id="term-output" class="form-control font-monospace mb-2" rows="20" readonly></textarea>
           <div id="term-command-row" class="d-flex gap-2">
             <input id="term-input" type="text" class="form-control font-monospace"
-                   placeholder="connect a device to send commands"
-                   autocomplete="off" disabled>
-            <button id="term-send" class="btn btn-primary" disabled>Send</button>
+                   :placeholder="$store.app.connected ? 'type a command, e.g. get led.mode' : 'connect a device to send commands'"
+                   autocomplete="off" :disabled="!$store.app.connected">
+            <button id="term-send" class="btn btn-primary" :disabled="!$store.app.connected">Send</button>
             <button id="term-clear" class="btn btn-outline-secondary">Clear</button>
             <!-- Counterpart to the `dump` command: dump prints INI you paste
                  into a file, this reads such a file back. The file is read in
                  the browser and POSTed as text; the backend never sees a path. -->
-            <button id="term-restore" class="btn btn-outline-secondary text-nowrap" disabled>Restore from INI…</button>
+            <button id="term-restore" class="btn btn-outline-secondary text-nowrap" :disabled="!$store.app.connected">Restore from INI…</button>
             <input id="term-restore-file" type="file" accept=".ini,.txt,text/plain" class="d-none">
             <!-- Same flash write as the Configuration page's button, driven by
                  the same dirty flag: enabled only once something has been
                  applied to RAM and not yet persisted. -->
-            <button id="term-save" class="btn btn-success text-nowrap" disabled>Save to flash</button>
+            <button id="term-save" class="btn btn-success text-nowrap" :disabled="!$store.app.dirty">Save to flash</button>
           </div>
           <p>&nbsp;</p>
         </div>
@@ -787,7 +792,7 @@
           <p>&nbsp;</p>
         </div>
 
-        <div id="page-help" class="d-none">
+        <div id="page-help" class="d-none" x-data>
           <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
             <h1 class="h2">Help</h1>
           </div>
@@ -797,9 +802,9 @@
                which half is stale when something misbehaves. -->
           <dl class="row mb-4">
             <dt class="col-sm-3">App version</dt>
-            <dd class="col-sm-9"><span id="help-app-version"></span></dd>
+            <dd class="col-sm-9"><span x-text="$store.app.version"></span></dd>
             <dt class="col-sm-3">Firmware</dt>
-            <dd class="col-sm-9"><span id="help-fw">not connected</span></dd>
+            <dd class="col-sm-9"><span x-text="$store.app.fwSummary"></span></dd>
           </dl>
 
           <p><strong>The board doesn't appear in the port dropdown</strong></p>
