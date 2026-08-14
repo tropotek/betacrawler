@@ -35,17 +35,19 @@ static const ParamDef kParams[] = {
   // Percent of full reverse power. Defaults to 100 (unscaled reverse) --
   // nothing already deployed changes behavior unless explicitly lowered.
   {"tank_drive.reverse_ratio", ParamType::U8,   "Reverse Ratio", "%",    0, 100, nullptr, 0, 0, 100, nullptr, nullptr, nullptr, nullptr},
-  // Shared ARM switch, default none -- feature off, zero behavior change for
-  // anyone not using it. arm_min/arm_max default to a high-side band
+  // Shared ARM switch, default ch5 -- kArmSrcNames index 5 (none=0, ch1=1,
+  // ..., ch5=5), the conventional switch channel on this build's TX. Still
+  // reassignable to any other channel, or to "none" to turn the feature off,
+  // once connected. arm_min/arm_max default to a high-side band
   // (1700-2000us), the conventional "switch flipped up" position on a
-  // two-position TX switch; inert until arm_src selects a channel.
+  // two-position TX switch.
   //
   // No showIf here: showIf is a strict-equality display hint (see
   // core/params.h) and cannot express "shown when arm_src != none" -- these
-  // two always render on the generic Configuration page. The Modes page
-  // (a separate, later piece) hides/shows the range via its own widget
-  // logic instead, not through this mechanism.
-  {"tank_drive.arm_src", ParamType::Enum, "Arm Src", nullptr, 0, 0, kArmSrcNames, 13, 0, ARM_SRC_NONE, nullptr, nullptr, nullptr, nullptr},
+  // two always render on the Controller/Modes pages. The Modes page hides/
+  // shows the range via its own widget logic instead, not through this
+  // mechanism.
+  {"tank_drive.arm_src", ParamType::Enum, "Arm Src", nullptr, 0, 0, kArmSrcNames, 13, 0, 5, nullptr, nullptr, nullptr, nullptr},
   {"tank_drive.arm_min", ParamType::U8,   "Arm Min", "µs",    1000, 2000, nullptr, 0, 0, 1700, nullptr, nullptr, nullptr, nullptr},
   {"tank_drive.arm_max", ParamType::U8,   "Arm Max", "µs",    1000, 2000, nullptr, 0, 0, 2000, nullptr, nullptr, nullptr, nullptr},
 };

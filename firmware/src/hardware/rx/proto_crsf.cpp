@@ -30,6 +30,12 @@ uint16_t ticksToUs(uint16_t ticks) {
   return (uint16_t)(1500 + q);
 }
 
+int16_t deadbanded(int16_t us, int16_t centerUs, uint16_t deadbandUs) {
+  int32_t d = (int32_t)us - centerUs;
+  if (d < 0) d = -d;
+  return (d <= (int32_t)deadbandUs) ? centerUs : us;
+}
+
 void unpackChannels(const uint8_t* payload, uint16_t* out) {
   // 11-bit fields, LSB-first, little endian. `acc` never holds more than
   // 10 + 8 = 18 bits, so 32 is ample.

@@ -49,9 +49,10 @@ void RxDriver::attach(const core::Registry& reg, const core::Params& p) {
   // LATER change, never for the initial load -- without this, a saved
   // rx.protocol=elrs would sit unread behind the member default until the
   // user happened to touch the control.
-  protocol_  = p.num(globalParam(P_PROTOCOL));
-  source_    = p.num(globalParam(P_SOURCE));
-  timeoutMs_ = (uint32_t)p.num(globalParam(proto().timeoutParam));
+  protocol_   = p.num(globalParam(P_PROTOCOL));
+  source_     = p.num(globalParam(P_SOURCE));
+  timeoutMs_  = (uint32_t)p.num(globalParam(proto().timeoutParam));
+  deadbandUs_ = (uint16_t)p.num(globalParam(P_DEADBAND));
 }
 
 void RxDriver::begin() {
@@ -132,6 +133,9 @@ void RxDriver::onParamChanged(uint8_t local, const core::Params& p) {
       // restore sets both, and neither may be refused.
       timeoutMs_ = (uint32_t)p.num(globalParam(proto().timeoutParam));
       break;
+    case P_DEADBAND:
+      deadbandUs_ = (uint16_t)p.num(globalParam(P_DEADBAND));
+      break;
     default:
       break;
   }
@@ -195,7 +199,8 @@ void RxDriver::applyRcFrame(uint32_t nowMs) {
 // (onParamChanged already zeroes us_ there). No separate failsafe behaviour
 // is invented for the bus -- see _notes/spec-rx-mapping.md.
 void RxDriver::syncInputs() {
-  for (uint8_t i = 0; i < kWireChannels; ++i) inputs_.set(i, (int16_t)us_[i]);
+  for (uint8_t i = 0; i < kWireChannels; ++i)
+    inputs_.set(i, deadbanded((int16_t)us_[i], 1500, deadbandUs_));
 }
 
 void RxDriver::runSim(uint32_t nowMs) {

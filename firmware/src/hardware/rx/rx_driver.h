@@ -64,6 +64,7 @@ class RxDriver : public core::Module {
   // Mirrors the ACTIVE protocol's timeout param. Re-read whenever either the
   // protocol or that protocol's own timeout changes.
   uint32_t        timeoutMs_ = 1000;
+  uint16_t        deadbandUs_ = 0;
   uint32_t        simT0_     = 0;
   // Last simulated-frame timestamp, gating runSim()'s link_.onFrame() to a
   // realistic ~150fps cadence (see runSim). Zero-initialized on purpose: a

@@ -37,11 +37,15 @@ static const ParamDef kParams[] = {
   // be computed and armed against. Defaults to unidirectional: nothing
   // already deployed changes behaviour unless explicitly switched over.
   {"esc0.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_BIDIRECTIONAL, nullptr, nullptr},
-  // Defaults to off: the board resets on every DFU flash, and nothing should
-  // be commanded to an ESC until asked, same reasoning as servo.mode's
-  // default. Saved settings ARE re-applied at boot by main.cpp's notify
-  // pass, which is exactly where the arm-hold gate matters most.
-  {"esc0.mode",         ParamType::Enum, "ESC",      nullptr, 0,    0,    kModes, 3, 0, esc::MODE_OFF, nullptr, nullptr},
+  // Defaults to input: the shared ARM switch (tank_drive.arm_src, itself
+  // defaulting to a real channel) clamps the output to neutral whenever the
+  // link is stale or the switch is inactive, and the arm-hold state machine
+  // below still requires a held commanded-low before promoting to armed --
+  // both gates apply regardless of this default, so nothing moves on boot
+  // just because mode is already input. Saved settings ARE re-applied at
+  // boot by main.cpp's notify pass, which is exactly where those gates
+  // matter most.
+  {"esc0.mode",         ParamType::Enum, "ESC",      nullptr, 0,    0,    kModes, 3, 0, esc::MODE_INPUT, nullptr, nullptr},
   // Direct microseconds, not a percentage: the wire and the param are the
   // same unit, so esc::clampUs alone maps it.
   {"esc0.throttle_us",  ParamType::U8,   "Throttle", "µs",    1000, 2000, nullptr, 0, 0, 1500,     nullptr, nullptr},

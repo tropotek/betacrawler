@@ -81,6 +81,28 @@
        on ultra-wide screens is invisible instead of showing bars. */
     .tank-hero { height: 340px; overflow: hidden; border-radius: .5rem; margin-bottom: 1rem; background: #13230f; }
     .tank-hero img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+    /* Modes page: a dual-handle range built from TWO overlapping native
+       .form-range inputs (the same template led.blink_hz/servo.angle use).
+       pointer-events: none on both, restored to auto only on each one's own
+       thumb pseudo-element, is what lets each thumb be dragged independently
+       despite sharing the same screen space -- the standard technique for a
+       two-handle range slider built from native inputs. Only the FIRST
+       input's track stays visible; the second's is made transparent so the
+       two don't visually double up into two overlapping bars. */
+    .mode-slider { position: relative; height: 1.5rem; }
+    .mode-slider input[type="range"] {
+      position: absolute; left: 0; top: 0; width: 100%; margin: 0; pointer-events: none;
+    }
+    .mode-slider input[type="range"]::-webkit-slider-thumb { pointer-events: auto; }
+    .mode-slider input[type="range"]::-moz-range-thumb { pointer-events: auto; }
+    .mode-slider input[type="range"]:nth-of-type(2)::-webkit-slider-runnable-track { background: transparent; }
+    .mode-slider input[type="range"]:nth-of-type(2)::-moz-range-track { background: transparent; }
+
+    /* Controller page's RC Channel bars: a lighter blue than Bootstrap's
+       default .progress-bar so the centered bold-black value stays legible
+       against the fill, not just the empty track. */
+    .ch-bar { background-color: #6ea8fe; }
   </style>
 </head>
 <body class="bg-body-tertiary">
@@ -116,6 +138,9 @@
     <symbol id="eye-slash" viewBox="0 0 16 16">
       <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-1.66.205l1.144 1.143a6 6 0 0 1 .516-.022c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486zM11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/>
       <path d="M3.35 5.47q-.27.24-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.77A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12z"/>
+    </symbol>
+    <symbol id="sliders" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3h9.05zM4.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM2.05 8a2.5 2.5 0 0 1 4.9 0H16v1H6.95a2.5 2.5 0 0 1-4.9 0H0V8h2.05zm9.45 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-2.45 1a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0v-1h9.05z"/>
     </symbol>
   </svg>
 
@@ -168,14 +193,20 @@
               </li>
               <li class="nav-item">
                 <button class="nav-link d-flex align-items-center gap-2" data-page="config">
-                  <svg class="bi"><use href="#gear-wide-connected"/></svg>
+                  <svg class="bi"><use href="#cpu"/></svg>
                   Configuration
                 </button>
               </li>
               <li class="nav-item">
-                <button class="nav-link d-flex align-items-center gap-2" data-page="telemetry">
-                  <svg class="bi"><use href="#graph-up"/></svg>
-                  Telemetry
+                <button class="nav-link d-flex align-items-center gap-2" data-page="controller">
+                  <svg class="bi"><use href="#gear-wide-connected"/></svg>
+                  Controller
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="modes">
+                  <svg class="bi"><use href="#sliders"/></svg>
+                  Modes
                 </button>
               </li>
               <li class="nav-item">
@@ -196,9 +227,9 @@
             <hr class="my-3">
             <ul class="nav flex-column mb-auto">
               <li class="nav-item">
-                <button class="nav-link d-flex align-items-center gap-2" data-page="examples">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="wiring">
                   <svg class="bi"><use href="#image-fill"/></svg>
-                  Examples
+                  Wiring
                 </button>
               </li>
               <li class="nav-item">
@@ -215,6 +246,14 @@
       <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
         <div id="alert" class="alert alert-danger d-none mt-3" role="alert"></div>
 
+        <div id="save-bar" class="d-flex gap-2 align-items-center mt-3" x-show="$store.app.connected" x-data>
+          <button id="save" class="btn btn-success btn-sm">Save to flash</button>
+          <button id="revert" class="btn btn-outline-secondary btn-sm">Discard changes</button>
+          <button id="defaults" class="btn btn-outline-secondary btn-sm">Load defaults</button>
+          <span class="text-warning-emphasis small" x-show="$store.app.dirty">applied — not saved to flash</span>
+          <span class="text-warning-emphasis small" x-show="$store.app.revertNote">no saved settings on this board — loaded defaults instead</span>
+        </div>
+
         <div id="page-mount" x-data></div>
       </main>
     </div>
@@ -222,7 +261,6 @@
 
   <script src="vendor/bootstrap.bundle.min.js"></script>
   <script defer src="vendor/alpine.min.js"></script> <!-- Alpine.js v3.15.12, MIT, alpinejs.dev -->
-  <script src="field_help.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

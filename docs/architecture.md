@@ -158,18 +158,19 @@ telemetry interleave safely with request/response on one connection. Firmware va
 input independently of the backend and never trusts the host. Full spec in
 `_notes/_archive/spec-configurator-core.md`; live contract in `docs/api.md`.
 
-The registered modules' descriptors are the single source of truth for the config form *and* the
-telemetry page. The `schema` wire op serializes both (`{params, tlm}`); `DeviceModel` (backend)
-caches that response and validates `set()` calls against it before ever touching the wire;
-`app.js` builds the config controls and the telemetry cards from it at runtime, grouped by each
-item's `group` (defaulting to the owning module's label).
+The registered modules' descriptors are the single source of truth for **validation** — type,
+bounds, options — everywhere a value crosses into the device: `DeviceModel` (backend) caches the
+`schema` wire op's response (`{params, tlm}`) and validates `set()` calls against it before ever
+touching the wire, and Terminal `set`/INI restore go through the same path regardless of what any
+page shows.
 
-Adding a firmware parameter or telemetry field should need zero changes in `app.js` — if it
-doesn't, something has drifted from that design. There is deliberately **no** field-label map or
-field-order table left in `app.js`; display order is the firmware's module registration order.
-`app/web/field_help.js` is the one deliberate exception — optional supplementary prose keyed by
-schema key, with a graceful fallback when a key is absent; it must never become a source of labels
-or display order.
+What the UI *displays* is not generated from the descriptor. `app/web/pages/{config,controller,
+modes}.html` are hand-curated: each names the specific keys it shows, in whatever order and
+grouping reads best for that page, via `Alpine.store('config').field(key)` /
+`Alpine.store('telemetry').field(key)` — a lookup by key, not an iteration. Adding a firmware
+parameter needs an explicit page decision and a hand-written label before it appears anywhere. A
+curated page must degrade a key its connected board doesn't publish (`field(key).def === null`,
+e.g. `esc1.*` on a board with `FEATURE_ESC1 0`) to an absent/disabled slot rather than crash.
 
 Display hints never change what goes over the wire:
 
