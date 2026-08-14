@@ -164,17 +164,13 @@ bounds, options — everywhere a value crosses into the device: `DeviceModel` (b
 touching the wire, and Terminal `set`/INI restore go through the same path regardless of what any
 page shows.
 
-What the UI *displays* is no longer generated from the descriptor. `app/web/pages/{modes,
-controller,device}.html` are hand-curated: each names the specific keys it shows, in whatever order
-and grouping reads best for that page, via `Alpine.store('config').field(key)` /
-`Alpine.store('telemetry').field(key)` — a lookup by key, not an iteration over `groups` (that
-mechanism, and the `field_help.js` supplementary-prose file it used to pair with, were both retired
-along with the old groups-iterating Configuration/Telemetry pages). Adding a firmware parameter no
-longer surfaces anywhere automatically; it needs an explicit page decision and a hand-written label.
-A curated page must degrade a key its connected board doesn't publish (`field(key).def === null`,
-e.g. `esc1.*` on a board with `FEATURE_ESC1 0`) to an absent/disabled slot rather than crash — this
-situation didn't exist under the old generic-iteration design, since that loop only ever showed
-keys that were actually present.
+What the UI *displays* is not generated from the descriptor. `app/web/pages/{modes,controller,
+device}.html` are hand-curated: each names the specific keys it shows, in whatever order and
+grouping reads best for that page, via `Alpine.store('config').field(key)` /
+`Alpine.store('telemetry').field(key)` — a lookup by key, not an iteration. Adding a firmware
+parameter needs an explicit page decision and a hand-written label before it appears anywhere. A
+curated page must degrade a key its connected board doesn't publish (`field(key).def === null`,
+e.g. `esc1.*` on a board with `FEATURE_ESC1 0`) to an absent/disabled slot rather than crash.
 
 Display hints never change what goes over the wire:
 
