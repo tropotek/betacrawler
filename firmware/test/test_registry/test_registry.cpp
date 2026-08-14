@@ -1,11 +1,13 @@
 // Registry tests use only fake modules on purpose: core/ must work for any
-// module set, so proving it against one real module would prove the wrong thing (and
-// would break every time the board config changed). The real modules are
-// covered where they matter -- through the schema golden fixture in
-// test_dispatch.
+// module set, so proving it against one real module would prove the wrong
+// thing (and would break every time the board config changed). The real
+// modules are covered where they matter -- through the schema golden fixture
+// in test_dispatch.
 #include <unity.h>
 #include <string.h>
 #include "core/registry.h"
+#include "core/health.h"
+#include "core/boot_log.h"
 
 using namespace core;
 
@@ -315,6 +317,33 @@ void test_add_refuses_to_exceed_capacity() {
   TEST_ASSERT_EQUAL_UINT8(FW_MAX_MODULES, r.moduleCount());
 }
 
+// A refused add drops a module from the schema entirely, so it is a fault
+// rather than a quiet false -- raised here so no call site can forget to check.
+void test_overflowing_the_module_table_raises_a_registry_fault() {
+  health().reset();
+  bootLog().clear();
+  Registry r;
+  for (uint8_t i = 0; i < FW_MAX_MODULES; ++i)
+    TEST_ASSERT_TRUE(r.add(kBetaDesc));
+  TEST_ASSERT_TRUE(health().ok());
+
+  TEST_ASSERT_FALSE(r.add(kBetaDesc));
+  TEST_ASSERT_FALSE(health().ok());
+  TEST_ASSERT_EQUAL_UINT8((uint8_t)Fault::Registry, (uint8_t)health().fault());
+
+  health().reset();
+  bootLog().clear();
+}
+
+void test_a_successful_add_leaves_health_alone() {
+  health().reset();
+  bootLog().clear();
+  Registry r;
+  TEST_ASSERT_TRUE(r.add(kBetaDesc));
+  TEST_ASSERT_TRUE(health().ok());
+  bootLog().clear();
+}
+
 // The flash header stores this; if it did not change with the layout, a build
 // with a different module set would happily load the previous build's values
 // into the wrong parameters.
@@ -426,6 +455,8 @@ int main() {
   RUN_TEST(test_collect_telemetry_writes_each_module_into_its_own_slice);
   RUN_TEST(test_driverless_module_zeroes_its_telemetry_slice);
   RUN_TEST(test_add_refuses_to_exceed_capacity);
+  RUN_TEST(test_overflowing_the_module_table_raises_a_registry_fault);
+  RUN_TEST(test_a_successful_add_leaves_health_alone);
   RUN_TEST(test_fingerprint_changes_with_the_module_set);
   RUN_TEST(test_fingerprint_changes_when_a_bound_changes);
   RUN_TEST(test_registry_pollPush_returns_zero_when_no_module_has_anything);
