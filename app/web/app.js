@@ -836,7 +836,11 @@ el('connect').addEventListener('click', async () => {
 // -- a form field, a restore -- goes through here, so both pages agree about
 // whether there is something worth writing to flash.
 function setDirty(dirty) {
-  const app = Alpine.store('app');
+  // Optional-chained: setState() calls this unconditionally on every
+  // disconnect (see above), and setState() itself can run before Alpine has
+  // initialised (this script is not deferred, Alpine's is).
+  const app = window.Alpine?.store('app');
+  if (!app) return;
   app.dirty = dirty;
   // Any subsequent action supersedes the fallback note, so it is cleared here
   // rather than tracked separately. The revert handler re-shows it after
@@ -920,12 +924,31 @@ const PAGE_INIT = {
 // backwards.
 const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry']);
 
+// Bumped on every call, checked after the (possibly slow, first-visit-only)
+// fragment fetch below -- two overlapping navigations otherwise let whichever
+// fetch resolves LAST win #page-mount and the nav highlight, regardless of
+// which page the user actually clicked last, and can leave e.g. DFU polling
+// running for a page that isn't even displayed any more.
+let showPageGeneration = 0;
+
 async function showPage(page) {
+  const generation = ++showPageGeneration;
   let html = pageCache.get(page);
   if (html === undefined) {
-    html = await (await fetch(`pages/${page}.html`)).text();
+    const r = await fetch(`pages/${page}.html`);
+    if (!r.ok) {
+      showError(`Failed to load the ${page} page (${r.status})`);
+      return;
+    }
+    html = await r.text();
+    // Only a successful fetch is cached -- a transient error must not poison
+    // every later visit to this page for the rest of the session.
     pageCache.set(page, html);
   }
+  // A newer navigation started (and, on a slow connection, may already have
+  // finished) while this fetch was in flight -- drop this stale result
+  // rather than clobbering whatever the user actually navigated to since.
+  if (generation !== showPageGeneration) return;
   el('page-mount').innerHTML = html;
   // Safe unguarded: this always runs after an awaited fetch, and even a
   // same-origin static-file fetch resolves as a browser task, never
@@ -1101,6 +1124,14 @@ function initTerminalPage() {
     } catch (e) {
       termAppend(`ERROR: ${e.message}`);
       setDirty(true);                     // still unsaved — let them retry
+      // setDirty(true) above is a same-value write when dirty was already
+      // true (it was, or Save couldn't have been clicked) -- Alpine's
+      // :disabled="!$store.app.dirty" binding skips re-firing on an
+      // unchanged value, so the imperative disable set above has to be
+      // cleared by hand too. Guarded: Terminal may no longer be the mounted
+      // page by the time a save that stalls the board ~1s comes back.
+      const saveBtn = el('term-save');
+      if (saveBtn) saveBtn.disabled = false;
     }
   });
 }
