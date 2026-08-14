@@ -1,6 +1,9 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+It documents development procedures and practices only — build/test commands, layout, and rules
+that must not be undone. It is not a memory file: decision history, rationale, and narrative belong
+in `docs/architecture.md`, `CHANGELOG.md`, or commit messages, not here. Keep this file minimal.
 
 ## What this is
 
@@ -81,6 +84,15 @@ protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer ma
   VCP/ST-Link/DFU and tells ModemManager to ignore them). No `dialout` group, no custom udev rules.
 - System Python is 3.14.4 and all backend deps install and import cleanly on it.
 - Git commits use `feat:`/`fix:`/`docs:`/`chore:` prefixes.
+
+## Code style
+
+- Comments stay strictly minimal: 2-3 lines describing what the code does and, optionally, its
+  config options. No historic reasoning, no change explanations, no comments written to help a
+  future reader when the code itself is readable — the code is the source of truth.
+- Never reference a line number or a spec/design-doc file in a comment — both go stale the moment
+  either file changes. If the reasoning matters, it belongs in the commit message or PR
+  description, not inline.
 
 ## Layout
 
