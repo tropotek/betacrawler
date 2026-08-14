@@ -186,40 +186,6 @@ function clearStale() {
 // the UI follows, so reordering modules in firmware/src/modules.cpp reorders
 // the form with no change on this side.
 
-// u8 fields rendered as a range slider instead of a plain number input. Purely
-// a presentation choice, so it is the one thing that stays keyed by name here.
-// servo.angle earns it more than anything else here: a 0-180 sweep is a
-// physical position, and dragging to it beats typing a number. Note the
-// commit is on `change`, not `input`, so a drag sends one `set` on release
-// rather than a stream of them -- which is also why the firmware carries a
-// sweep mode instead of expecting the UI to scrub.
-const SLIDER_FIELDS = new Set(['led.blink_hz', 'servo.angle']);
-
-// field_help.js defines the FIELD_HELP global; guarded so a fork that copies
-// app.js without its sibling data file degrades to no help text instead of a
-// dead Configuration page (Alpine's x-for would throw ReferenceError on every
-// render otherwise). NOTE: `typeof` is required here, not `window.FIELD_HELP`
-// or `globalThis.FIELD_HELP` -- a top-level `const` in a classic (non-module)
-// script lives in the global *lexical* scope, not on `window`/`globalThis`,
-// so those would silently disable all help text even when field_help.js
-// loaded fine. Verified in Chromium: typeof FIELD_HELP -> "object",
-// typeof globalThis.FIELD_HELP -> "undefined".
-const FIELD_HELP_MAP = (typeof FIELD_HELP !== 'undefined') ? FIELD_HELP : {};
-
-// Groups items that carry a `group` field into [{name, items}], preserving
-// the order each group first appears. Shared by the config form and the
-// telemetry page, which group identically.
-function groupItems(items, decorate = (x) => x) {
-  const order = [];
-  const byName = new Map();
-  for (const item of items) {
-    const name = item.group || '';
-    if (!byName.has(name)) { byName.set(name, []); order.push(name); }
-    byName.get(name).push(decorate(item));
-  }
-  return order.map((name) => ({ name, items: byName.get(name) }));
-}
-
 // --- telemetry ---------------------------------------------------------------
 // There is no hardcoded field list any more: labels, units and formatting all
 // arrive in the schema's `tlm` descriptor, so a firmware module that publishes
@@ -289,32 +255,6 @@ document.addEventListener('alpine:init', () => {
     values: {},
     invalid: {},
 
-    get groups() {
-      // showIf is a display hint (see core/params.h): a param whose condition
-      // is unmet is not drawn, but it is still in the schema, still validated
-      // by the device, and still settable from the Terminal or an INI
-      // restore. Filtering BEFORE groupItems is what makes a group that has
-      // been emptied disappear rather than render as a bare heading.
-      //
-      // Reading this.values[...] inside the getter is what makes Alpine
-      // re-run it when the controlling selector changes. Hoisting that lookup
-      // out breaks the reactivity while leaving the logic looking correct --
-      // the group would simply stop updating.
-      const visible = this.schema.filter(
-        (p) => !p.showIf || this.values[p.showIf.key] === p.showIf.val);
-      return groupItems(visible, (p) => ({
-        ...p,
-        isSlider: p.type === 'u8' && SLIDER_FIELDS.has(p.key),
-        // FIELD_HELP (field_help.js) fully replaces the auto-generated bound
-        // when a field has an entry -- copy is written to fold the bound back
-        // in where it matters. An unmapped key (a new firmware param nobody
-        // has written copy for yet) falls back to the bound alone, so this
-        // never needs to change when a param is added.
-        help: FIELD_HELP_MAP[p.key] ?? (p.type === 'u8' ? `${p.min}–${p.max}`
-            : p.type === 'str' ? `max ${p.maxlen} chars` : ''),
-      }));
-    },
-
     // Looked up by key rather than iterated -- what the hand-curated pages use
     // instead of `groups`. `def: null` when the connected board's schema
     // doesn't carry this key at all (e.g. esc1.* on a board with FEATURE_ESC1
@@ -375,8 +315,6 @@ document.addEventListener('alpine:init', () => {
     // needs the number, so both are kept rather than reparsing text that a
     // formatter may have made unparseable.
     raw: {},
-
-    get groups() { return groupItems(this.schema); },
 
     // Same lookup-by-key mechanism as $store.config.field() above. `value` is
     // the formatted string (what render() already put in `data`), matching
@@ -900,43 +838,44 @@ async function saveToFlash() {
   setDirty(false);
 }
 
+// --- global actions (shell-level: save/discard/defaults live in every page
+// once connected, not just one) --------------------------------------------
+el('save').addEventListener('click', async () => {
+  try {
+    await saveToFlash();
+  } catch (e) { showError(e.message); }
+});
+
+el('defaults').addEventListener('click', async () => {
+  try {
+    await Api.defaults();
+    await loadDevice();
+    // deviceInfo, not nothing: setState() blanks the navbar identity and the
+    // Help page whenever `info` is falsy, and the device is still connected --
+    // reloading its parameters told us nothing new about who it is.
+    setState('connected', deviceInfo);
+    // The firmware's `defaults` op reloads RAM and re-notifies the modules but
+    // never touches flash (core/dispatch.cpp, Op::Defaults), so the device is
+    // now exactly as unsaved as after editing a field by hand.
+    setDirty(true);
+  } catch (e) { showError(e.message); }
+});
+
+el('revert').addEventListener('click', async () => {
+  try {
+    const res = await Api.revert();
+    await loadDevice();
+    setState('connected', deviceInfo);   // see the defaults handler above
+    // "flash" means RAM now matches what is stored, so there is nothing left
+    // to save -- this is the ONLY action that leaves the device clean.
+    // "defaults" means the board had nothing valid stored and the firmware
+    // fell back, which is both worth saving and worth saying out loud.
+    setDirty(res.src !== 'flash');
+    if (res.src !== 'flash') Alpine.store('app').revertNote = true;
+  } catch (e) { showError(e.message); }
+});
+
 // --- page init functions -----------------------------------------------------
-function initConfigPage() {
-  el('save').addEventListener('click', async () => {
-    try {
-      await saveToFlash();
-    } catch (e) { showError(e.message); }
-  });
-
-  el('defaults').addEventListener('click', async () => {
-    try {
-      await Api.defaults();
-      await loadDevice();
-      // deviceInfo, not nothing: setState() blanks the navbar identity and the
-      // Help page whenever `info` is falsy, and the device is still connected --
-      // reloading its parameters told us nothing new about who it is.
-      setState('connected', deviceInfo);
-      // The firmware's `defaults` op reloads RAM and re-notifies the modules but
-      // never touches flash (core/dispatch.cpp, Op::Defaults), so the device is
-      // now exactly as unsaved as after editing a field by hand.
-      setDirty(true);
-    } catch (e) { showError(e.message); }
-  });
-
-  el('revert').addEventListener('click', async () => {
-    try {
-      const res = await Api.revert();
-      await loadDevice();
-      setState('connected', deviceInfo);   // see the defaults handler above
-      // "flash" means RAM now matches what is stored, so there is nothing left
-      // to save -- this is the ONLY action that leaves the device clean.
-      // "defaults" means the board had nothing valid stored and the firmware
-      // fell back, which is both worth saving and worth saying out loud.
-      setDirty(res.src !== 'flash');
-      if (res.src !== 'flash') Alpine.store('app').revertNote = true;
-    } catch (e) { showError(e.message); }
-  });
-}
 
 // --- page fragments -----------------------------------------------------------
 const pageCache = new Map();   // page name -> fetched fragment HTML text, cached after first use
@@ -955,14 +894,12 @@ const pageCache = new Map();   // page name -> fetched fragment HTML text, cache
 // instead of a page with silently dead buttons.
 const PAGE_INIT = {
   home:       null,
-  config:     initConfigPage,
-  telemetry:  null,
   modes:      null,
   controller: null,
   device:     null,
   terminal:   initTerminalPage,
   firmware:   initFirmwarePage,
-  examples:   null,
+  wiring:     null,
   help:       null,
 };
 
@@ -987,7 +924,7 @@ document.querySelectorAll('[data-page]').forEach((btn) => {
 // board that needs re-flashing is frequently a board that cannot be talked
 // to, and gating the recovery tool on a working device would be exactly
 // backwards.
-const CONNECTION_REQUIRED_PAGES = new Set(['config', 'telemetry', 'modes', 'controller', 'device']);
+const CONNECTION_REQUIRED_PAGES = new Set(['modes', 'controller', 'device']);
 
 // Bumped on every call, checked after the (possibly slow, first-visit-only)
 // fragment fetch below -- two overlapping navigations otherwise let whichever
