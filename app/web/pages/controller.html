@@ -21,23 +21,17 @@
 
           <div class="card mb-3" x-data>
             <div class="card-header h6 text-secondary mb-0 py-2">RC Channels</div>
-            <div class="card-body row g-3">
+            <div class="list-group list-group-flush">
               <template x-for="n in 16" :key="n">
                 <template x-if="$store.telemetry.field('ch' + n).def">
-                  <div class="col-6 col-md-3">
-                    <div class="card">
-                      <div class="card-body py-2">
-                        <div class="text-secondary small" x-text="`CH${n} (µs)`"></div>
-                        <div class="fs-6" x-text="$store.telemetry.field('ch' + n).value ?? '–'"></div>
-                        <template x-if="$store.telemetry.field('ch' + n).def.fmt === 'bar'
-                                        && $store.telemetry.field('ch' + n).def.hi > $store.telemetry.field('ch' + n).def.lo">
-                          <div class="progress mt-1" style="height: 4px;">
-                            <div class="progress-bar" role="progressbar"
-                                 :style="`width: ${$store.telemetry.barPct($store.telemetry.field('ch' + n).def)}%`"></div>
-                          </div>
-                        </template>
-                      </div>
+                  <div class="list-group-item d-flex align-items-center gap-3 py-2">
+                    <div class="text-secondary small text-nowrap" style="width: 3.5rem;" x-text="`CH${n}`"></div>
+                    <div class="progress flex-grow-1" style="height: 16px;">
+                      <div class="progress-bar" role="progressbar"
+                           :style="`width: ${$store.telemetry.barPct($store.telemetry.field('ch' + n).def)}%`"></div>
                     </div>
+                    <div class="text-end font-monospace small text-nowrap" style="width: 3.5rem;"
+                         x-text="$store.telemetry.field('ch' + n).value ?? '–'"></div>
                   </div>
                 </template>
               </template>
