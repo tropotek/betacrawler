@@ -315,6 +315,16 @@ document.addEventListener('alpine:init', () => {
       }));
     },
 
+    // Looked up by key rather than iterated -- what the hand-curated pages use
+    // instead of `groups`. `def: null` when the connected board's schema
+    // doesn't carry this key at all (e.g. esc1.* on a board with FEATURE_ESC1
+    // 0): a curated page names specific keys instead of only ever seeing keys
+    // that happen to exist, so it must handle this case explicitly.
+    field(key) {
+      const def = this.schema.find((p) => p.key === key);
+      return { def: def || null, value: def ? this.values[key] : undefined };
+    },
+
     load(schema, values) {
       this.schema = schema;
       this.values = { ...values };
@@ -345,6 +355,14 @@ document.addEventListener('alpine:init', () => {
     raw: {},
 
     get groups() { return groupItems(this.schema); },
+
+    // Same lookup-by-key mechanism as $store.config.field() above. `value` is
+    // the formatted string (what render() already put in `data`), matching
+    // what every existing x-text binding displays.
+    field(key) {
+      const def = this.schema.find((d) => d.key === key);
+      return { def: def || null, value: def ? this.data[key] : undefined };
+    },
 
     load(tlmSchema) {
       this.schema = tlmSchema;
