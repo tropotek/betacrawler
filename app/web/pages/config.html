@@ -16,7 +16,7 @@
                    .card-body doubles as the .row -- its 1rem padding and the
                    row's -0.5rem gutter margins land on an even 1rem inset once
                    the columns' own padding is added back. -->
-              <fieldset class="card mb-3">
+              <fieldset class="card mb-3" :disabled="!$store.app.connected">
                 <legend class="card-header h6 text-secondary mb-0 py-2" x-text="group.name"></legend>
                 <div class="card-body row g-3">
                   <template x-for="field in group.items" :key="field.key">
@@ -31,7 +31,6 @@
                       <template x-if="field.type === 'enum'">
                         <select class="form-select" :id="'f-' + field.key" :aria-describedby="'h-' + field.key"
                                 :class="{ 'is-invalid': $store.config.invalid[field.key] }"
-                                :disabled="!$store.app.connected"
                                 x-model="$store.config.values[field.key]"
                                 @change="$store.config.commit(field)">
                           <template x-for="opt in field.options" :key="opt">
@@ -45,7 +44,6 @@
                         <input type="text" class="form-control" :id="'f-' + field.key" :maxlength="field.maxlen"
                                :aria-describedby="'h-' + field.key"
                                :class="{ 'is-invalid': $store.config.invalid[field.key] }"
-                               :disabled="!$store.app.connected"
                                x-model="$store.config.values[field.key]"
                                @change="$store.config.commit(field)">
                       </template>
@@ -55,7 +53,6 @@
                           <input :type="revealed ? 'text' : 'password'" class="form-control" :id="'f-' + field.key"
                                  :maxlength="field.maxlen" :aria-describedby="'h-' + field.key"
                                  :class="{ 'is-invalid': $store.config.invalid[field.key] }"
-                                 :disabled="!$store.app.connected"
                                  x-model="$store.config.values[field.key]"
                                  @change="$store.config.commit(field)">
                           <button type="button" class="btn btn-outline-secondary" @click="revealed = !revealed"
@@ -69,7 +66,6 @@
                         <input type="range" class="form-range" :id="'f-' + field.key" :min="field.min" :max="field.max"
                                :aria-describedby="'h-' + field.key"
                                :class="{ 'is-invalid': $store.config.invalid[field.key] }"
-                               :disabled="!$store.app.connected"
                                x-model="$store.config.values[field.key]"
                                @change="$store.config.commit(field)">
                       </template>
@@ -78,7 +74,6 @@
                         <input type="number" class="form-control" :id="'f-' + field.key" :min="field.min" :max="field.max"
                                :aria-describedby="'h-' + field.key"
                                :class="{ 'is-invalid': $store.config.invalid[field.key] }"
-                               :disabled="!$store.app.connected"
                                x-model="$store.config.values[field.key]"
                                @change="$store.config.commit(field)">
                       </template>

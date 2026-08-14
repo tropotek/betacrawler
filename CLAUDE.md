@@ -145,9 +145,13 @@ with that module's own local index" is the invariant most worth preserving in `d
 **Observers are const** — `Module::attach()` hands out const access on purpose. A module must
 never reconfigure another behind `dispatch`'s back. Resolve keys once in `attach()`, never per tick.
 
-**The `Api` seam** — no `fetch`/`WebSocket` outside `Api`; no browser-only types (`File`, `Blob`,
-the socket itself) in or out; every path through `Api.base`; the push channel stays
-`Api.subscribe(handler) -> unsubscribe` and owns its own reconnection.
+**The `Api` seam** — no `fetch`/`WebSocket` outside `Api` for anything that talks to the device or
+backend; no browser-only types (`File`, `Blob`, the socket itself) in or out; every such path
+through `Api.base`; the push channel stays `Api.subscribe(handler) -> unsubscribe` and owns its own
+reconnection. One documented exception: `showPage()`'s `fetch('pages/<name>.html')` in `app.js`
+loads this app's own static page markup, not a device/backend request — it isn't part of the
+porting surface this seam exists to isolate for a hypothetical Electron rewrite, so it's exempt.
+Any fetch that *does* talk to the device or backend has no excuse to live outside `Api`.
 
 **Schema-driven UI** — descriptors are the single source of truth. Adding a firmware parameter or
 telemetry field must need zero changes in `app.js`; there is deliberately no field-label map and no

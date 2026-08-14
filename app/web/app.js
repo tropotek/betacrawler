@@ -8,15 +8,21 @@
 const APP_VERSION = '1.0.0';
 
 // The single seam between this UI and whatever is on the other end: every
-// request and every pushed frame goes through here, and there is no fetch, no
-// WebSocket and no URL anywhere else in this file. That is what makes an
-// Electron build a rewrite of this one object rather than of the app -- swap
-// these bodies for IPC calls and nothing below changes.
+// request and every pushed frame that talks to the device or backend goes
+// through here. That is what makes an Electron build a rewrite of this one
+// object rather than of the app -- swap these bodies for IPC calls and
+// nothing below changes.
 //
-// Two rules keep that true, and both have been broken before: nothing outside
-// here may construct a request, and nothing in here may take or return a
-// browser-only type (a File, a WebSocket) that an IPC transport could not
-// produce.
+// Two rules keep that true, and both have been broken before: nothing
+// outside here may construct a request TO THE DEVICE/BACKEND, and nothing in
+// here may take or return a browser-only type (a File, a WebSocket) that an
+// IPC transport could not produce.
+//
+// One documented exception: showPage()'s fetch('pages/<name>.html') below
+// loads this app's OWN static markup, not a device/backend request -- it
+// isn't part of the porting surface this seam exists to isolate, so it's
+// exempt (see CLAUDE.md's "The Api seam"). Any fetch that talks to the
+// device or backend still has no excuse to live outside Api.
 const Api = {
   // Prefixed onto every request path. '' is same-origin, which is the browser
   // build. A shell that loads this page from file:// -- where a leading '/'
@@ -550,7 +556,7 @@ document.addEventListener('alpine:init', () => {
       this.pct = 0;
       this.op = null;
       this.busy = true;
-      fwLogBuffer = '';
+      fwLog.clear();
       const out = el('fw-log');
       if (out) out.value = '';
     },
@@ -901,14 +907,30 @@ const pageCache = new Map();   // page name -> fetched fragment HTML text, cache
 // every navigation (below), which destroys the previous mount's nodes and
 // every listener attached to them, so there is nothing to "double-attach" by
 // re-running this every time.
+// Every page gets an explicit entry -- `null` for "pure Alpine-driven
+// content, nothing here needs imperative wiring beyond what Alpine.initTree
+// already does when the fragment mounts" -- rather than an omission, so a
+// missing entry is distinguishable from an intentional no-op. The check
+// right below turns "forgot to add a page here" into a loud console error
+// instead of a page with silently dead buttons.
 const PAGE_INIT = {
-  config:   initConfigPage,
-  terminal: initTerminalPage,
-  firmware: initFirmwarePage,
-  // home, telemetry, examples, help: no entry -- pure Alpine-driven content,
-  // nothing here needs imperative wiring beyond what Alpine.initTree already
-  // does when the fragment mounts.
+  home:      null,
+  config:    initConfigPage,
+  telemetry: null,
+  terminal:  initTerminalPage,
+  firmware:  initFirmwarePage,
+  examples:  null,
+  help:      null,
 };
+
+// app.js is a plain (non-deferred) trailing <script>, so the DOM -- and with
+// it every [data-page] nav button, which live in the shell, not a fragment
+// -- is already fully parsed by the time this runs.
+document.querySelectorAll('[data-page]').forEach((btn) => {
+  if (!(btn.dataset.page in PAGE_INIT)) {
+    console.error(`PAGE_INIT is missing an entry for page "${btn.dataset.page}"`);
+  }
+});
 
 // --- side-menu navigation ---------------------------------------------------
 // Terminal is deliberately not connection-gated. It is readable while
@@ -989,24 +1011,43 @@ document.querySelectorAll('[data-page]').forEach((btn) => {
   });
 });
 
+// Shared by Terminal's #term-output and Firmware's #fw-log: both are a
+// bounded, newline-joined text buffer that must outlive the owning page's
+// DOM -- log lines (a device's replayed boot record, "show device traffic"
+// frames, a flash's WS progress events) can arrive while that page isn't
+// even the mounted one -- plus the trim/scroll logic for writing the
+// buffer into a <textarea> on the ticks where it IS mounted.
+function makeLogBuffer(maxLines) {
+  let text = '';
+  return {
+    append(line) {
+      const lines = (text ? text.split('\n') : []).concat(line.split('\n'));
+      text = lines.slice(-maxLines).join('\n');
+    },
+    clear() { text = ''; },
+    get value() { return text; },
+  };
+}
+
+// A no-op when `elId` isn't mounted -- see makeLogBuffer's comment above for
+// why that has to be silent rather than an error.
+function flushLogBuffer(buf, elId) {
+  const out = el(elId);
+  if (!out) return;
+  out.value = buf.value;
+  out.scrollTop = out.scrollHeight;
+}
+
 // --- terminal ----------------------------------------------------------------
 const TERM_MAX_LINES = 500;   // caps growth when "show device traffic" streams tlm at up to 50Hz
 const termHistory = [];
 let termHistoryIdx = 0;
 
-let termOutputBuffer = '';   // #term-output's content, kept alive across unmount/remount
+const termLog = makeLogBuffer(TERM_MAX_LINES);   // #term-output's content, kept alive across unmount/remount
 
 function termAppend(text) {
-  const lines = (termOutputBuffer ? termOutputBuffer.split('\n') : []).concat(text.split('\n'));
-  termOutputBuffer = lines.slice(-TERM_MAX_LINES).join('\n');
-  // Guarded: log lines can arrive (e.g. the device's replayed boot record,
-  // or "show device traffic" tlm frames) while Terminal isn't the mounted
-  // page at all -- the buffer above is what makes that not a crash AND not
-  // a loss, it's just replayed into the textarea on the next mount.
-  const out = el('term-output');
-  if (!out) return;
-  out.value = termOutputBuffer;
-  out.scrollTop = out.scrollHeight;
+  termLog.append(text);
+  flushLogBuffer(termLog, 'term-output');
 }
 
 async function termRun(text) {
@@ -1052,9 +1093,8 @@ async function termRun(text) {
 
 function initTerminalPage() {
   // Replay whatever accumulated while Terminal wasn't mounted -- the
-  // textarea itself is brand new, termOutputBuffer is not.
-  el('term-output').value = termOutputBuffer;
-  el('term-output').scrollTop = el('term-output').scrollHeight;
+  // textarea itself is brand new, termLog is not.
+  flushLogBuffer(termLog, 'term-output');
 
   el('term-send').addEventListener('click', () => {
     const input = el('term-input');
@@ -1081,7 +1121,7 @@ function initTerminalPage() {
   });
 
   el('term-clear').addEventListener('click', () => {
-    termOutputBuffer = '';
+    termLog.clear();
     el('term-output').value = '';
   });
 
@@ -1140,18 +1180,11 @@ function initTerminalPage() {
 const FW_MAX_LINES = 400;
 let dfuPollTimer = null;
 
-let fwLogBuffer = '';   // #fw-log's content, kept alive across unmount/remount
+const fwLog = makeLogBuffer(FW_MAX_LINES);   // #fw-log's content, kept alive across unmount/remount
 
 function firmwareLog(text) {
-  const lines = (fwLogBuffer ? fwLogBuffer.split('\n') : []).concat(text);
-  fwLogBuffer = lines.slice(-FW_MAX_LINES).join('\n');
-  // Guarded: a flash's WS progress events keep arriving even if the user
-  // navigates away from Firmware mid-flash -- the buffer above is what
-  // makes that not a crash and not a loss, replayed on the next mount.
-  const out = el('fw-log');
-  if (!out) return;
-  out.value = fwLogBuffer;
-  out.scrollTop = out.scrollHeight;
+  fwLog.append(text);
+  flushLogBuffer(fwLog, 'fw-log');
 }
 
 function setDfuPolling(on) {
@@ -1178,8 +1211,7 @@ function setDfuPolling(on) {
 }
 
 function initFirmwarePage() {
-  el('fw-log').value = fwLogBuffer;
-  el('fw-log').scrollTop = el('fw-log').scrollHeight;
+  flushLogBuffer(fwLog, 'fw-log');
 
   el('fw-enter-dfu').addEventListener('click', async () => {
     const store = Alpine.store('firmware');
@@ -1325,7 +1357,10 @@ function startWatchdog() {
   // Home is always the landing page, including on a reload while a device is
   // still connected server-side. Nothing navigates for you any more -- page
   // choice is the user's, and connecting only enables the gated nav items.
-  showPage('home');
+  // Not awaited (refreshPorts()/connect status shouldn't wait on it), but
+  // .catch()'d like every other async path in this file -- otherwise a
+  // failed fetch of pages/home.html surfaces only as an unhandled rejection.
+  showPage('home').catch((e) => showError(`Failed to load the app: ${e.message}`));
   await refreshPorts();
   const st = await Api.status();
   setState(st.state, st);
