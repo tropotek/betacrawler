@@ -91,6 +91,39 @@ void test_mix_applies_deadband_to_both_inputs() {
   TEST_ASSERT_EQUAL_UINT16(1500, r.rightUs);
 }
 
+// --- computeArmed ----------------------------------------------------------------
+
+void test_armed_requires_fresh_link() {
+  // rxFresh=false must force unarmed regardless of arm_src/range -- a stale
+  // link can never leave the vehicle armed, same reasoning as tank_drive's
+  // own failsafe for left/right.
+  TEST_ASSERT_FALSE(computeArmed(false, true, 0, 1700, 2000));
+  TEST_ASSERT_FALSE(computeArmed(false, false, 1800, 1700, 2000));
+}
+
+void test_armed_true_when_no_arm_src_selected_and_link_fresh() {
+  // arm_src=none means the feature is off: always armed once rxFresh, the
+  // exact "zero behavior change" default the design doc requires.
+  TEST_ASSERT_TRUE(computeArmed(true, true, 0, 1700, 2000));
+}
+
+void test_armed_true_when_channel_within_range() {
+  TEST_ASSERT_TRUE(computeArmed(true, false, 1900, 1700, 2000));
+}
+
+void test_armed_false_when_channel_below_range() {
+  TEST_ASSERT_FALSE(computeArmed(true, false, 1000, 1700, 2000));
+}
+
+void test_armed_false_when_channel_above_range() {
+  TEST_ASSERT_FALSE(computeArmed(true, false, 2500, 1700, 2000));
+}
+
+void test_armed_boundary_is_inclusive_at_min_and_max() {
+  TEST_ASSERT_TRUE(computeArmed(true, false, 1700, 1700, 2000));
+  TEST_ASSERT_TRUE(computeArmed(true, false, 2000, 1700, 2000));
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -109,5 +142,11 @@ int main() {
   RUN_TEST(test_mix_in_place_pivot);
   RUN_TEST(test_mix_proportional_clamp_preserves_turn_ratio);
   RUN_TEST(test_mix_applies_deadband_to_both_inputs);
+  RUN_TEST(test_armed_requires_fresh_link);
+  RUN_TEST(test_armed_true_when_no_arm_src_selected_and_link_fresh);
+  RUN_TEST(test_armed_true_when_channel_within_range);
+  RUN_TEST(test_armed_false_when_channel_below_range);
+  RUN_TEST(test_armed_false_when_channel_above_range);
+  RUN_TEST(test_armed_boundary_is_inclusive_at_min_and_max);
   return UNITY_END();
 }

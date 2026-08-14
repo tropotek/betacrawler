@@ -61,4 +61,11 @@ MixResult mix(int16_t throttleUs, int16_t steerUs, int16_t centerUs,
   return r;
 }
 
+bool computeArmed(bool rxFresh, bool armSrcIsNone, int16_t armSrcUs, int16_t armMinUs,
+                   int16_t armMaxUs) {
+  if (!rxFresh) return false;
+  if (armSrcIsNone) return true;
+  return armSrcUs >= armMinUs && armSrcUs <= armMaxUs;
+}
+
 }  // namespace tank_drive
