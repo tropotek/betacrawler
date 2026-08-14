@@ -50,6 +50,12 @@
 // even this is just a slot-index convention, not a header dependency.
 constexpr uint8_t kDriveSrcBase = 12;
 
+// Slot 2 of driveOutputs -- the shared ARM switch (1 armed, 0 not), read
+// unconditionally below regardless of what esc1.src currently selects. Same
+// duplicated-literal convention as kDriveSrcBase just above; tank_drive_driver.cpp
+// names this same value kArmSlot.
+constexpr uint8_t kDriveArmSlot = 2;
+
 namespace esc1 {
 
 // Storage for the one HardwareTimer, placement-new'd in begin(). Each
@@ -116,6 +122,14 @@ void EscDriver::apply(const core::Params& p) {
                            esc::isLinkFresh(src->lastFreshMs(), now, ESC1_INPUT_STALE_MS);
   const bool inputStale = (mode_ == esc::MODE_INPUT) && !inputFresh;
 
+  // Read unconditionally, regardless of usesDriveBus above: arming is a
+  // safety property that must hold whether this ESC is reading a raw rx
+  // channel or tank_drive's mixed output. driveBusFresh distinguishes "no
+  // tank_drive on this board" (never gate) from "switch says not armed"
+  // (gate) -- see Registry::driveOutputs()'s empty-bus fallback.
+  const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;
+  const bool armSwitchInactive = driveBusFresh && driveInputs_->get(kDriveArmSlot) == 0;
+
   if (esc::inputLossDemotesArmed(armState_, mode_, inputFresh) ||
       esc::srcChangeDemotesArmed(armState_, mode_, srcChanged)) {
     armState_ = esc::ARM_ARMING;
@@ -126,8 +140,8 @@ void EscDriver::apply(const core::Params& p) {
   const bool commandedLow = esc::isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, neutral,
                                                  ESC1_ARM_LOW_MARGIN_US, bidirectional);
   if (armState_ == esc::ARM_ARMING && !commandedLow) armT0_ = now;
-  armState_ = esc::nextArmState(armState_, mode_ == esc::MODE_OFF, enteringFromOff, now, armT0_,
-                                 ESC1_ARM_HOLD_MS, commandedLow);
+  armState_ = esc::nextArmState(armState_, mode_ == esc::MODE_OFF, armSwitchInactive, enteringFromOff,
+                                 now, armT0_, ESC1_ARM_HOLD_MS, commandedLow);
 
   if (mode_ == esc::MODE_OFF) { detach(); return; }
   if (enteringFromOff) attachOutput();
@@ -157,6 +171,9 @@ void EscDriver::tick(uint32_t nowMs) {
                            esc::isLinkFresh(src->lastFreshMs(), nowMs, ESC1_INPUT_STALE_MS);
   const bool inputStale = (mode_ == esc::MODE_INPUT) && !inputFresh;
 
+  const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;
+  const bool armSwitchInactive = driveBusFresh && driveInputs_->get(kDriveArmSlot) == 0;
+
   if (esc::inputLossDemotesArmed(armState_, mode_, inputFresh)) {
     armState_ = esc::ARM_ARMING;
     armT0_    = nowMs;
@@ -165,7 +182,8 @@ void EscDriver::tick(uint32_t nowMs) {
   const bool commandedLow = esc::isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, neutral,
                                                  ESC1_ARM_LOW_MARGIN_US, bidirectional);
   if (armState_ == esc::ARM_ARMING && !commandedLow) armT0_ = nowMs;
-  armState_ = esc::nextArmState(armState_, false, false, nowMs, armT0_, ESC1_ARM_HOLD_MS, commandedLow);
+  armState_ = esc::nextArmState(armState_, false, armSwitchInactive, false, nowMs, armT0_,
+                                 ESC1_ARM_HOLD_MS, commandedLow);
 
   const uint16_t us = esc::nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs,
                                         inputStale, neutral);
