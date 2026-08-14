@@ -12,10 +12,10 @@ uint16_t neutralUs(uint16_t minUs, uint16_t maxUs, bool bidirectional) {
   return bidirectional ? (uint16_t)(((uint32_t)minUs + maxUs) / 2) : minUs;
 }
 
-uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool enteringFromOff,
-                       uint32_t nowMs, uint32_t armT0Ms, uint32_t armHoldMs,
-                       bool commandedIsLow) {
-  if (modeIsOff) return ARM_OFF;
+uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool armSwitchInactive,
+                       bool enteringFromOff, uint32_t nowMs, uint32_t armT0Ms,
+                       uint32_t armHoldMs, bool commandedIsLow) {
+  if (modeIsOff || armSwitchInactive) return ARM_OFF;
   if (enteringFromOff) return ARM_ARMING;
   if (prevState == ARM_ARMING && commandedIsLow && (nowMs - armT0Ms) >= armHoldMs) {
     return ARM_ARMED;

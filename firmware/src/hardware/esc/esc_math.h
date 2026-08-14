@@ -29,17 +29,20 @@ uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs);
 // on the onParamChanged() call where mode left MODE_OFF -- the only event
 // that (re)starts the hold, mirroring servo::apply()'s
 // `if (prevMode == MODE_OFF) attachOutput()`. `modeIsOff` always wins
-// outright, from any state. Otherwise ARMING holds until BOTH armHoldMs has
-// elapsed since armT0Ms AND commandedIsLow is true, then becomes ARMED and
-// stays there -- switching between armed and input without passing through
-// off never resets it. commandedIsLow gates the PROMOTION only: the caller
-// is responsible for restarting the hold (resetting armT0Ms) whenever
-// commandedIsLow goes false while ARMING, the same way it already resets
-// armT0Ms on enteringFromOff -- this function has no memory of previous
-// calls beyond prevState, so it cannot do that restart itself.
-uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool enteringFromOff,
-                       uint32_t nowMs, uint32_t armT0Ms, uint32_t armHoldMs,
-                       bool commandedIsLow);
+// outright, from any state. armSwitchInactive gets the identical hard-reset
+// treatment -- a shared TX-switch ARM gate that lives above this function,
+// not inside it; see tank_drive's design doc for what sets it. Otherwise
+// ARMING holds until BOTH armHoldMs has elapsed since armT0Ms AND
+// commandedIsLow is true, then becomes ARMED and stays there -- switching
+// between armed and input without passing through off never resets it.
+// commandedIsLow gates the PROMOTION only: the caller is responsible for
+// restarting the hold (resetting armT0Ms) whenever commandedIsLow goes false
+// while ARMING, the same way it already resets armT0Ms on enteringFromOff --
+// this function has no memory of previous calls beyond prevState, so it
+// cannot do that restart itself.
+uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool armSwitchInactive,
+                       bool enteringFromOff, uint32_t nowMs, uint32_t armT0Ms,
+                       uint32_t armHoldMs, bool commandedIsLow);
 
 // The safe/idle pulse width for a given direction: min_us for a
 // unidirectional ESC (the low end is stop; everything above it is
