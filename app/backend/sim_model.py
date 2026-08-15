@@ -142,3 +142,224 @@ def effective_max_us(max_us: int, frame_us: int) -> int:
         return 0
     room = frame_us - MIN_LOW_US
     return room if max_us > room else max_us
+
+
+# A simulated board has no UART to receive on, so `sim` is the only honest
+# source for it -- `uart` would report a link that cannot exist. Selecting
+# uart still correctly drops the link and zeroes the channels.
+_BOOT_OVERRIDES = {"rx.source": "sim"}
+
+_SIM_RF_MODE = 2
+_SIM_TX_POWER_MW = 100
+_SIM_FRAME_RATE_HZ = 143
+_CROSSFIRE_RF_HZ = [4, 50, 150]
+_ELRS_RF_HZ = [0, 0, 50, 0, 100, 150, 0, 250, 333, 500, 250, 500, 500, 1000]
+
+
+class _Esc:
+    """One ESC channel: arm state machine and last written pulse.
+
+    update() detects mode/src/rate changes by comparing against the previous
+    tick, so it carries the firmware's apply() and tick() behaviour in one
+    call whether it runs from a parameter change or a plain tick.
+    """
+
+    def __init__(self, prefix: str):
+        self.prefix = prefix
+        self.arm_state = ARM_OFF
+        self.arm_t0 = 0
+        self.last_us = 0
+        self._prev_mode = MODE_OFF
+        self._prev_src = None
+        self._prev_rate = None
+
+    def update(self, now_ms, p, inputs, drive, rx_fresh, drive_ever_fresh):
+        mode = p.enum_index(f"{self.prefix}.mode")
+        throttle_us = p.num(f"{self.prefix}.throttle_us")
+        min_us = p.num(f"{self.prefix}.min_us")
+        max_us = p.num(f"{self.prefix}.max_us")
+        bidirectional = p.text(f"{self.prefix}.direction") == "bidirectional"
+        src_idx = p.enum_index(f"{self.prefix}.src")
+        rate = p.text(f"{self.prefix}.rate")
+
+        entering_from_off = self._prev_mode == MODE_OFF and mode != MODE_OFF
+        src_changed = self._prev_src is not None and src_idx != self._prev_src
+        rate_changed = self._prev_rate is not None and rate != self._prev_rate
+        self._prev_mode, self._prev_src, self._prev_rate = mode, src_idx, rate
+
+        neutral = neutral_us(min_us, max_us, bidirectional)
+        if src_idx >= DRIVE_SRC_BASE:
+            raw_input = drive[src_idx - DRIVE_SRC_BASE]
+        else:
+            raw_input = inputs[src_idx]
+        input_fresh = mode == MODE_INPUT and rx_fresh
+        input_stale = mode == MODE_INPUT and not input_fresh
+        input_us = raw_input if mode == MODE_INPUT else 0
+
+        armed_now = self.arm_state == ARM_ARMED
+        if ((armed_now and mode == MODE_INPUT and not input_fresh)
+                or (armed_now and mode == MODE_INPUT and src_changed)
+                or (armed_now and rate_changed)):
+            self.arm_state = ARM_ARMING
+            self.arm_t0 = now_ms
+        if entering_from_off:
+            self.arm_t0 = now_ms
+
+        commanded_low = is_commanded_low(mode, throttle_us, input_us, input_fresh,
+                                         neutral, ARM_LOW_MARGIN_US, bidirectional)
+        if self.arm_state == ARM_ARMING and not commanded_low:
+            self.arm_t0 = now_ms
+        self.arm_state = next_arm_state(self.arm_state, mode == MODE_OFF,
+                                        entering_from_off, now_ms, self.arm_t0,
+                                        ARM_HOLD_MS, commanded_low)
+        if mode == MODE_OFF:
+            return
+
+        us = next_pulse_us(self.arm_state, mode, min_us, max_us, throttle_us,
+                           input_us, input_stale, neutral)
+        # The shared ARM switch is a pure output gate outside the hold state
+        # machine: inactive forces neutral instantly, whatever the ESC's own
+        # state says.
+        if drive_ever_fresh and drive[DRIVE_ARM_SLOT] == 0:
+            us = neutral
+        eff_max = effective_max_us(max_us, FRAME_US[rate])
+        if us > eff_max:
+            us = eff_max
+        if us > 0:
+            self.last_us = us
+
+
+class SimModel:
+    """Parameter store plus the telemetry a simulated board would publish."""
+
+    def __init__(self, params: list[dict]):
+        self._specs = {p["key"]: p for p in params}
+        self._defaults = {p["key"]: p["def"] for p in params}
+        self._values = dict(self._defaults)
+        self._values.update(_BOOT_OVERRIDES)
+        self._stored: dict | None = None
+        self._esc = {"esc0": _Esc("esc0"), "esc1": _Esc("esc1")}
+        self._drive_ever_fresh = False
+        self._tlm: dict = {}
+        self._tick(0)
+
+    # --- parameter access ---------------------------------------------------
+    def spec(self, key: str) -> dict | None:
+        return self._specs.get(key)
+
+    def values(self) -> dict:
+        return dict(self._values)
+
+    def get(self, key: str):
+        return self._values[key]
+
+    def num(self, key: str) -> int:
+        return int(self._values[key])
+
+    def text(self, key: str) -> str:
+        return str(self._values[key])
+
+    def enum_index(self, key: str) -> int:
+        return self._specs[key]["options"].index(self._values[key])
+
+    def set(self, key: str, val, now_ms: int) -> None:
+        self._values[key] = val
+        self._tick(now_ms)
+
+    def load_defaults(self, now_ms: int) -> None:
+        self._values = dict(self._defaults)
+        self._values.update(_BOOT_OVERRIDES)
+        self._tick(now_ms)
+
+    def save(self) -> None:
+        self._stored = dict(self._values)
+
+    def revert(self, now_ms: int) -> str:
+        if self._stored is None:
+            self.load_defaults(now_ms)
+            return "defaults"
+        self._values = dict(self._stored)
+        self._tick(now_ms)
+        return "flash"
+
+    # --- telemetry ----------------------------------------------------------
+    def telemetry(self, now_ms: int) -> dict:
+        self._tick(now_ms)
+        return dict(self._tlm)
+
+    def _tick(self, now_ms: int) -> None:
+        rx_fresh = self._values["rx.source"] == "sim"
+        channels = self._channels(now_ms, rx_fresh)
+        inputs = [deadbanded(v, CENTER_US, self.num("rx.deadband_us"))
+                  for v in channels]
+        left, right, armed = self._tank(inputs, rx_fresh)
+        drive = [left, right, 1 if armed else 0]
+        if rx_fresh:
+            self._drive_ever_fresh = True
+        for esc in self._esc.values():
+            esc.update(now_ms, self, inputs, drive, rx_fresh, self._drive_ever_fresh)
+
+        tlm = {f"ch{i + 1}": channels[i] for i in range(WIRE_CHANNELS)}
+        tlm.update(self._link(rx_fresh))
+        tlm.update(self._system(now_ms))
+        tlm["drv_l"], tlm["drv_r"] = left, right
+        tlm["esc0"] = self._esc["esc0"].last_us
+        tlm["arm0"] = self._esc["esc0"].arm_state
+        tlm["esc1"] = self._esc["esc1"].last_us
+        tlm["arm1"] = self._esc["esc1"].arm_state
+        self._tlm = tlm
+
+    def _channels(self, now_ms: int, rx_fresh: bool) -> list[int]:
+        us = [0] * WIRE_CHANNELS
+        if not rx_fresh:
+            return us
+        n = PROTO_CHANNELS[self.text("rx.protocol")]
+        span = CH_HI_US - CH_LO_US
+        us[0] = CH_LO_US + triangle_percent(now_ms % 4000, 4000) * span // 100
+        us[1] = CH_LO_US + triangle_percent(now_ms % 8000, 8000) * span // 100
+        us[2] = CH_HI_US if (now_ms // 2000) % 2 else CH_LO_US
+        for i in range(3, n):
+            us[i] = CH_LO_US + span * (i - 2) // (n - 2)
+        return us
+
+    def _tank(self, inputs: list[int], rx_fresh: bool) -> tuple[int, int, bool]:
+        if rx_fresh:
+            left, right = mix(
+                inputs[self.enum_index("tank_drive.throttle_src")],
+                inputs[self.enum_index("tank_drive.steer_src")],
+                CENTER_US, DRIVE_MIN_US, DRIVE_MAX_US,
+                self.num("tank_drive.forward_ratio"),
+                self.num("tank_drive.reverse_ratio"),
+                self.num("tank_drive.steer_ratio"), 0)
+        else:
+            left = right = CENTER_US
+        arm_src = self.text("tank_drive.arm_src")
+        is_none = arm_src == "none"
+        arm_us = 0 if is_none else inputs[int(arm_src[2:]) - 1]
+        armed = compute_armed(rx_fresh, is_none, arm_us,
+                              self.num("tank_drive.arm_min"),
+                              self.num("tank_drive.arm_max"))
+        return left, right, armed
+
+    def _link(self, rx_fresh: bool) -> dict:
+        if not rx_fresh:
+            return {"link": 0, "lq": 0, "rssi": 0, "rate": 0, "err": 0,
+                    "rfrate": 0, "pwr": 0}
+        table = (_CROSSFIRE_RF_HZ if self.text("rx.protocol") == "crossfire"
+                 else _ELRS_RF_HZ)
+        return {"link": 1, "lq": 100, "rssi": -42, "rate": _SIM_FRAME_RATE_HZ,
+                "err": 0, "rfrate": table[_SIM_RF_MODE], "pwr": _SIM_TX_POWER_MW}
+
+    def _system(self, now_ms: int) -> dict:
+        # Deterministic triangles rather than a random walk: the whole model
+        # stays reproducible and unit-testable.
+        slow = triangle_percent(now_ms % 30000, 30000)
+        fast = triangle_percent(now_ms % 6000, 6000)
+        return {"up": now_ms,
+                "clk": 100,
+                "ram": 61440 + slow * 1024 // 100,
+                "temp": 32.0 + slow * 4.0 / 100,
+                "vdd": 3290 + slow * 20 // 100,
+                "fault": 0,
+                "loop": 8000 + fast * 400 // 100,
+                "loopworst": 320 + fast * 60 // 100}
