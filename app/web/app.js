@@ -601,7 +601,8 @@ document.addEventListener('alpine:init', () => {
 
     async refreshPorts() {
       try {
-        const ports = await Api.ports();
+        // The simulator is not a flash target; it exists only to connect to.
+        const ports = (await Api.ports()).filter((p) => !p.sim);
         // Only reassign when the list actually changed. This runs on the
         // Firmware page's 1.5s poll now, and swapping the array every tick
         // would re-render both port <select>s continuously -- which, apart
@@ -746,6 +747,7 @@ function alpineNextTick() {
 
 // --- wiring ----------------------------------------------------------------
 function portOptionLabel(p) {
+  if (p.sim) return 'Simulated board';
   // Every board this template's `match` heuristic doesn't recognize (not
   // one of link.py's _KNOWN_BOARDS) used to render as a bare path,
   // indistinguishable from this environment's own placeholder serial
@@ -833,8 +835,9 @@ async function refreshPorts() {
   // that are never a real device. A disabled option separates the top group
   // from genuinely bare ports below, only when both groups are non-empty:
   // nothing to separate from if every port qualifies, or none did.
-  const known = ports.filter((p) => p.match || p.vid);
-  const other = ports.filter((p) => !p.match && !p.vid);
+  const sims = ports.filter((p) => p.sim);
+  const known = ports.filter((p) => !p.sim && (p.match || p.vid));
+  const other = ports.filter((p) => !p.sim && !p.match && !p.vid);
 
   // Reuse each port's existing <option> element rather than tearing every
   // one down and recreating it -- an option's selectedness is a property of
@@ -863,6 +866,18 @@ async function refreshPorts() {
     touched.add(o);
   };
 
+  const separate = () => {
+    // Stateless (never selected, always disabled) -- cheaper to recreate
+    // than to track across a diff.
+    const sep = document.createElement('option');
+    sep.disabled = true;
+    sep.textContent = '──────────';
+    sel.appendChild(sep);
+    touched.add(sep);
+  };
+
+  for (const p of sims) place(p);
+  if (sims.length && (known.length || other.length)) separate();
   for (const p of known) {
     place(p);
     // First recognized-board match wins -- not just the first port with a
@@ -871,15 +886,7 @@ async function refreshPorts() {
     // found, not whichever matched last.
     if (!matched && p.match) matched = p.port;
   }
-  if (known.length && other.length) {
-    // Stateless (never selected, always disabled) -- cheaper to recreate
-    // than to track across a diff.
-    const sep = document.createElement('option');
-    sep.disabled = true;
-    sep.textContent = '──────────';
-    sel.appendChild(sep);
-    touched.add(sep);
-  }
+  if (known.length && other.length) separate();
   for (const p of other) place(p);
 
   // Whatever wasn't placed this round belonged to a port that dropped out
