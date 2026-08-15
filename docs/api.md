@@ -18,7 +18,7 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 | POST | `/api/params/defaults` | — | `{ok, vals}` |
 | POST | `/api/params/revert` | — | `{ok, src, vals}` |
 | POST | `/api/params/restore` | `{"ini": "[led]\nmode = on\n"}` | `{ok, applied, skipped, vals}` |
-| POST | `/api/terminal` | `{"command": "get led.blink_hz"}` | `{ok, friendly, raw_sent, raw_recv}` |
+| POST | `/api/terminal` | `{"command": "get rx.deadband_us"}` | `{ok, friendly, raw_sent, raw_recv}` |
 | GET | `/api/firmware/catalog` | — | `{app_version, images, board, recommended}` |
 | GET | `/api/firmware/dfu-status` | — | `{present, devices, busy}` |
 | POST | `/api/firmware/enter-dfu` | — | `{ok, ...status}` |
@@ -55,10 +55,10 @@ controls and telemetry cards with **no change to the backend or the UI**.
 ```json
 {
   "params": [
-    {"key": "led.mode", "type": "enum", "options": ["off","on","blink","fade"],
-     "def": "blink", "label": "LED Mode", "group": "LED"},
-    {"key": "led.blink_hz", "type": "u8", "min": 1, "max": 20, "def": 2,
-     "label": "Rate", "unit": "Hz", "group": "LED"},
+    {"key": "rx.protocol", "type": "enum", "options": ["crossfire","elrs"],
+     "def": "elrs", "label": "Protocol", "group": "RX"},
+    {"key": "rx.deadband_us", "type": "u8", "min": 0, "max": 200, "def": 0,
+     "label": "Deadband", "unit": "µs", "group": "RX"},
     {"key": "disp.page", "type": "enum", "options": ["info","stats","cycle"],
      "def": "info", "label": "Page", "group": "Display"}
   ],
@@ -66,6 +66,7 @@ controls and telemetry cards with **no change to the backend or the UI**.
     {"key": "temp", "label": "Temp", "unit": "°C", "dec": 1, "group": "System"},
     {"key": "vdd", "label": "VDD", "unit": "V", "div": 1000, "dec": 2, "group": "System"},
     {"key": "up", "label": "Uptime", "fmt": "hms", "group": "System"},
+    {"key": "fault", "label": "Fault", "group": "System"},
     {"key": "ch1", "label": "CH1", "unit": "µs", "fmt": "bar", "lo": 988, "hi": 2012, "group": "RC Channels"}
   ]
 }
@@ -123,8 +124,8 @@ unsaved — after a `"defaults"` fallback there is something worth saving.
 ### Settings backup and restore
 
 `dump` (a Terminal command) renders the device's settings as INI text; section
-= the part of a key before the first dot, option = the rest, so `led.blink_hz`
-becomes `[led]`/`blink_hz`. A key with no dot goes under `[general]`. The header
+= the part of a key before the first dot, option = the rest, so `rx.deadband_us`
+becomes `[rx]`/`deadband_us`. A key with no dot goes under `[general]`. The header
 lines are `;` comments, so a dump parses straight back in.
 
 `POST /api/params/restore` is the other half: it applies such a file to the
@@ -134,9 +135,9 @@ rejects goes into `skipped`, and every other key still applies:
 
 ```json
 {"ok": false,
- "applied": ["led.mode"],
+ "applied": ["rx.protocol"],
  "skipped": [{"key": "wifi.ssid", "reason": "unknown parameter 'wifi.ssid'"}],
- "vals": {"led.mode": "on", "...": "..."}}
+ "vals": {"rx.protocol": "elrs", "...": "..."}}
 ```
 
 `ok` is true only when at least one key applied and nothing was skipped.

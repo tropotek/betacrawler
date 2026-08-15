@@ -18,7 +18,7 @@ enum : uint8_t { T_US = 0, T_COUNT = 1 };
 
 // --- pure math ---------------------------------------------------------------
 // Lives here, not in the driver, so `pio test -e native` covers it with no
-// board attached -- the same split that keeps core::breathingDuty testable
+// board attached -- the same split that keeps core::trianglePercent testable
 // while the LED driver stays a thin shell.
 
 // Maps a 0-180 angle onto the calibrated pulse range. Multiplies before
@@ -29,7 +29,7 @@ enum : uint8_t { T_US = 0, T_COUNT = 1 };
 uint16_t angleToUs(uint8_t angle, uint16_t minUs, uint16_t maxUs);
 
 // Sweep position at `phaseMs` into a `periodMs` cycle. Returns 0-180.
-// Resolution is inherited from breathingDuty's 0-100 return, i.e. 1.8 degrees
+// Resolution is inherited from trianglePercent's 0-100 return, i.e. 1.8 degrees
 // -- far below what any hobby servo resolves, and hold mode is unaffected.
 uint8_t sweepAngle(uint32_t phaseMs, uint32_t periodMs);
 

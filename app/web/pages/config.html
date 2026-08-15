@@ -13,6 +13,15 @@
                   <div class="fs-4" x-text="$store.telemetry.field(key).value ?? '–'"></div>
                 </div>
               </template>
+              <template x-if="$store.telemetry.field('fault').def">
+                <div class="col-6 col-md-4">
+                  <div class="text-secondary small"
+                       x-text="$store.telemetry.field('fault').def.label"></div>
+                  <div class="fs-4"
+                       :class="faultIsError($store.telemetry.field('fault').value) ? 'text-danger' : ''"
+                       x-text="faultText($store.telemetry.field('fault').value)"></div>
+                </div>
+              </template>
             </div>
           </div>
           <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>

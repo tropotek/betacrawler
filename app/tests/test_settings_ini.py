@@ -35,7 +35,7 @@ def test_dump_sections_follow_schema_order():
     """Schema order is the firmware's module registration order -- the same
     rule the config form follows. A dump should read like the UI looks."""
     assert sections_in_order(dump_ini(SCHEMA, VALUES, INFO)) == [
-        "device", "tlm", "led"]
+        "device", "tlm", "rx"]
 
 
 def test_dump_includes_every_schema_key_that_has_a_value():
@@ -44,9 +44,9 @@ def test_dump_includes_every_schema_key_that_has_a_value():
 
 
 def test_dump_omits_keys_with_no_cached_value():
-    partial = {"led.mode": "blink"}
+    partial = {"rx.protocol": "elrs"}
     pairs = dict(parse_ini(dump_ini(SCHEMA, partial, INFO)))
-    assert pairs == {"led.mode": "blink"}
+    assert pairs == {"rx.protocol": "elrs"}
 
 
 def test_dump_omits_values_the_schema_does_not_describe():
@@ -101,12 +101,12 @@ def test_parse_tolerates_comments_blank_lines_and_colon_separators():
 ; a dump someone hand-edited
 # hash comments too
 
-[led]
-mode: blink
+[rx]
+protocol: elrs
 
-   blink_hz   =   7
+   deadband_us   =   7
 """
-    assert dict(parse_ini(text)) == {"led.mode": "blink", "led.blink_hz": "7"}
+    assert dict(parse_ini(text)) == {"rx.protocol": "elrs", "rx.deadband_us": "7"}
 
 
 def test_parse_preserves_key_case():
@@ -116,9 +116,9 @@ def test_parse_preserves_key_case():
 
 
 def test_parse_returns_pairs_in_file_order():
-    text = "[led]\nblink_hz = 7\nmode = on\n\n[tlm]\nrate = 20\n"
+    text = "[rx]\ndeadband_us = 7\nprotocol = elrs\n\n[tlm]\nrate = 20\n"
     assert [k for k, _ in parse_ini(text)] == [
-        "led.blink_hz", "led.mode", "tlm.rate"]
+        "rx.deadband_us", "rx.protocol", "tlm.rate"]
 
 
 def test_parse_rejects_garbage():
@@ -128,13 +128,13 @@ def test_parse_rejects_garbage():
 
 def test_parse_rejects_a_key_outside_any_section():
     with pytest.raises(ValueError):
-        parse_ini("mode = blink\n")
+        parse_ini("protocol = elrs\n")
 
 
 def test_parse_rejects_a_duplicated_key():
     """Two values for one setting is ambiguous -- refuse rather than pick."""
     with pytest.raises(ValueError):
-        parse_ini("[led]\nmode = on\nmode = off\n")
+        parse_ini("[rx]\nprotocol = elrs\nprotocol = crossfire\n")
 
 
 def test_parse_of_an_empty_document_yields_nothing():

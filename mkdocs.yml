@@ -33,7 +33,6 @@ nav:
       - Shipping a Release: guides/shipping-a-release.md
   - Modules:
       - Overview: modules/overview.md
-      - LED: modules/led.md
       - Button: modules/button.md
       - Servo: modules/servo.md
       - ESC: modules/esc.md
@@ -42,6 +41,7 @@ nav:
       - WiFi: modules/wifi.md
       - Adding Your Own Module: modules/adding-your-own-module.md
   - Reference:
+      - Status LED: status-led.md
       - Architecture: architecture.md
       - API / Wire Protocol: api.md
   - Troubleshooting: troubleshooting.md

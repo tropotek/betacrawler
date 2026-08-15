@@ -20,6 +20,7 @@
 #include "core/dispatch.h"
 #include "core/protocol.h"
 #include "core/registry.h"
+#include "core/health.h"
 
 using namespace core;
 
@@ -44,7 +45,7 @@ static const ModuleDesc kFakeDesc = {"fake", "Fake", kFakeParams, 2, kFakeTlm, 2
 // than 0. That offset is the whole point of it: with only kFakeDesc present,
 // Registry::notify() could hand drivers the GLOBAL index instead of the
 // module-local one and every assertion in this file would still pass -- while
-// on the real five-module board a revert would drive the LED module with
+// on the real multi-module board a revert would drive the rx module with
 // index 3 and the display with index 0, misapplying every parameter.
 //
 // Deliberately no telemetry (tlm = nullptr, tlmCount = 0): the telemetry
@@ -359,7 +360,7 @@ void test_hello_lists_the_enabled_modules() {
   d.handle(q, out, sizeof(out));
   TEST_ASSERT_NOT_NULL(strstr(
       out,
-      "\"mods\":[\"device\",\"system\",\"led\",\"rx\",\"tank_drive\",\"esc0\",\"esc1\"]"));
+      "\"mods\":[\"device\",\"system\",\"rx\",\"tank_drive\",\"esc0\",\"esc1\"]"));
 }
 
 void test_schema_lists_all_params_and_fits_buffer() {
@@ -375,8 +376,8 @@ void test_schema_lists_all_params_and_fits_buffer() {
   // a silently truncated result. Tighten to cap-2 so a real truncation
   // (which lands exactly on cap-1) actually fails this test.
   TEST_ASSERT_TRUE(n < kMaxLineOut - 1);   // must not truncate
-  TEST_ASSERT_NOT_NULL(strstr(out, "led.mode"));
-  TEST_ASSERT_NOT_NULL(strstr(out, "led.blink_hz"));
+  TEST_ASSERT_NOT_NULL(strstr(out, "rx.protocol"));
+  TEST_ASSERT_NOT_NULL(strstr(out, "rx.deadband_us"));
   TEST_ASSERT_NOT_NULL(strstr(out, "device.name"));
   TEST_ASSERT_NOT_NULL(strstr(out, "tlm.rate"));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"options\""));
@@ -386,6 +387,25 @@ void test_schema_lists_all_params_and_fits_buffer() {
 // Every parameter and telemetry field carries a group, so the UI never has to
 // invent a heading -- and tlm.rate proves the per-item override reaches the
 // wire, not just the registry.
+// The health verdict reaches the app as a plain code; the boot log carries its
+// human name and the Configuration page maps the code to text.
+void test_schema_publishes_the_fault_field() {
+  Params p(realReg); MockStore store;
+  Dispatcher d(realReg, p, store);
+
+  Request q = parseRequest("{\"id\":21,\"op\":\"schema\"}");
+  d.handle(q, out, sizeof(out));
+
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"key\":\"fault\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"label\":\"Fault\""));
+}
+
+// The shipping module set must fit the capacity limits in config.h. Adding a
+// parameter or telemetry field that overflows them silently drops a module.
+void test_real_module_set_registers_without_a_fault() {
+  TEST_ASSERT_TRUE(health().ok());
+}
+
 void test_schema_carries_groups_and_the_telemetry_descriptor() {
   Params p(realReg); MockStore store;
   Dispatcher d(realReg, p, store);
@@ -393,7 +413,7 @@ void test_schema_carries_groups_and_the_telemetry_descriptor() {
   Request q = parseRequest("{\"id\":14,\"op\":\"schema\"}");
   d.handle(q, out, sizeof(out));
 
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"LED\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"RX\""));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"Device\""));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"Telemetry\""));   // tlm.rate's override
   TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"System\""));
@@ -858,6 +878,10 @@ int main() {
   secretReg.add(ModuleDesc{"x", "X", kSecretParams, 2, nullptr, 0});
 
   UNITY_BEGIN();
+  // First: realReg is built during static init, so any overflow while
+  // registering the shipping module set is already recorded by now.
+  RUN_TEST(test_real_module_set_registers_without_a_fault);
+  RUN_TEST(test_schema_publishes_the_fault_field);
   RUN_TEST(test_set_applies_to_hardware_exactly_once);
   RUN_TEST(test_set_on_a_later_module_uses_that_modules_local_index);
   RUN_TEST(test_rejected_set_does_not_touch_hardware);

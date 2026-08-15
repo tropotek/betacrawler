@@ -24,7 +24,7 @@ SCHEMA = _GOLDEN["params"]
 # fake device advertises is the real firmware's -- adding a sensor module to a
 # board cannot leave these tests passing against a stale field list.
 TLM_SCHEMA = _GOLDEN["tlm"]
-VALUES = {"led.mode": "blink", "led.blink_hz": 2,
+VALUES = {"rx.protocol": "elrs", "rx.deadband_us": 2,
           "device.name": "betacrawler", "tlm.rate": 10}
 
 
@@ -91,9 +91,9 @@ def test_connect_caches_schema_and_values():
     try:
         assert dev.status()["state"] == "connected"
         assert dev.status()["proto"] == 1
-        assert len(dev.schema()["params"]) == 27
-        assert len(dev.schema()["tlm"]) == 34
-        assert dev.values()["led.blink_hz"] == 2
+        assert len(dev.schema()["params"]) == 25
+        assert len(dev.schema()["tlm"]) == 35
+        assert dev.values()["rx.deadband_us"] == 2
     finally:
         dev.disconnect()
 
@@ -187,7 +187,7 @@ def test_set_validates_against_cached_schema_before_sending():
     try:
         before = len(fake.written)
         with pytest.raises(DeviceError) as exc:
-            dev.set("led.blink_hz", 99)          # max is 20
+            dev.set("rx.deadband_us", 999)         # max is 200
         assert exc.value.code == "range"
         assert len(fake.written) == before        # nothing hit the wire
     finally:
@@ -199,7 +199,7 @@ def test_set_rejects_unknown_enum_option():
     dev.connect("/dev/fake")
     try:
         with pytest.raises(DeviceError) as exc:
-            dev.set("led.mode", "purple")
+            dev.set("rx.protocol", "purple")
         assert exc.value.code == "enum"
     finally:
         dev.disconnect()
@@ -231,8 +231,8 @@ def test_successful_set_updates_the_cache():
     dev, _ = make_device()
     dev.connect("/dev/fake")
     try:
-        dev.set("led.blink_hz", 15)
-        assert dev.values()["led.blink_hz"] == 15
+        dev.set("rx.deadband_us", 15)
+        assert dev.values()["rx.deadband_us"] == 15
     finally:
         dev.disconnect()
 
@@ -242,8 +242,8 @@ def test_set_accepts_exact_max_boundary():
     dev, _ = make_device()
     dev.connect("/dev/fake")
     try:
-        dev.set("led.blink_hz", 20)
-        assert dev.values()["led.blink_hz"] == 20
+        dev.set("rx.deadband_us", 200)
+        assert dev.values()["rx.deadband_us"] == 200
     finally:
         dev.disconnect()
 
@@ -434,7 +434,7 @@ def test_revert_reports_the_source_and_refreshes_values():
     dev, _ = make_device()
     dev.connect("/dev/fake")
     try:
-        dev.set("led.blink_hz", 15)
+        dev.set("rx.deadband_us", 15)
         assert dev.revert() == "flash"
         assert dev.values() == VALUES        # re-read from the device, not assumed
     finally:

@@ -42,11 +42,11 @@ def test_help_with_args_is_a_usage_error(connected_device):
 
 def test_get_returns_current_value_with_raw_wire_lines(connected_device):
     dev, _ = connected_device
-    result = terminal.run(dev, "get led.blink_hz")
+    result = terminal.run(dev, "get rx.deadband_us")
     assert result.ok
-    assert result.friendly == f"led.blink_hz = {VALUES['led.blink_hz']}"
+    assert result.friendly == f"rx.deadband_us = {VALUES['rx.deadband_us']}"
     assert result.raw_sent != ""
-    assert "led.blink_hz" in result.raw_sent
+    assert "rx.deadband_us" in result.raw_sent
     assert result.raw_recv != ""
     assert result.dirty is None
 
@@ -72,12 +72,12 @@ def test_get_wrong_arg_count_returns_usage_error(connected_device):
 
 def test_set_updates_value_and_returns_ok_with_raw_wire_lines(connected_device):
     dev, _ = connected_device
-    result = terminal.run(dev, "set led.blink_hz 15")
+    result = terminal.run(dev, "set rx.deadband_us 15")
     assert result.ok
-    assert result.friendly == "OK: led.blink_hz = 15"
+    assert result.friendly == "OK: rx.deadband_us = 15"
     assert result.raw_sent != ""
     assert result.raw_recv != ""
-    assert dev.values()["led.blink_hz"] == 15
+    assert dev.values()["rx.deadband_us"] == 15
 
 
 def test_set_reports_dirty_so_the_terminal_save_button_enables(connected_device):
@@ -86,24 +86,24 @@ def test_set_reports_dirty_so_the_terminal_save_button_enables(connected_device)
     # change is silently lost on the next reboot (nothing prompts the user to
     # actually save it to flash).
     dev, _ = connected_device
-    result = terminal.run(dev, "set led.blink_hz 15")
+    result = terminal.run(dev, "set rx.deadband_us 15")
     assert result.dirty is True
 
 
 def test_set_out_of_range_returns_validation_error(connected_device):
     dev, fake = connected_device
     before = len(fake.written)
-    result = terminal.run(dev, "set led.blink_hz 99")
+    result = terminal.run(dev, "set rx.deadband_us 999")
     assert not result.ok
-    assert "1..20" in result.friendly
+    assert "0..200" in result.friendly
     assert len(fake.written) == before
-    assert dev.values()["led.blink_hz"] == VALUES["led.blink_hz"]
+    assert dev.values()["rx.deadband_us"] == VALUES["rx.deadband_us"]
 
 
 def test_set_non_integer_for_u8_returns_error(connected_device):
     dev, fake = connected_device
     before = len(fake.written)
-    result = terminal.run(dev, "set led.blink_hz abc")
+    result = terminal.run(dev, "set rx.deadband_us abc")
     assert not result.ok
     assert "integer" in result.friendly
     assert len(fake.written) == before
@@ -118,7 +118,7 @@ def test_set_unknown_key_returns_error(connected_device):
 
 def test_set_unknown_enum_option_returns_error(connected_device):
     dev, _ = connected_device
-    result = terminal.run(dev, "set led.mode purple")
+    result = terminal.run(dev, "set rx.protocol purple")
     assert not result.ok
     assert "must be one of" in result.friendly
 
@@ -126,14 +126,14 @@ def test_set_unknown_enum_option_returns_error(connected_device):
 def test_set_wrong_arg_count_returns_usage_error(connected_device):
     dev, fake = connected_device
     before = len(fake.written)
-    assert not terminal.run(dev, "set led.blink_hz").ok
-    assert not terminal.run(dev, "set led.blink_hz 1 2").ok
+    assert not terminal.run(dev, "set rx.deadband_us").ok
+    assert not terminal.run(dev, "set rx.deadband_us 1 2").ok
     assert len(fake.written) == before
 
 
 def test_failed_set_does_not_report_dirty(connected_device):
     dev, _ = connected_device
-    result = terminal.run(dev, "set led.blink_hz 99")
+    result = terminal.run(dev, "set rx.deadband_us 999")
     assert result.dirty is None
 
 
@@ -151,7 +151,7 @@ def test_save_calls_device_and_returns_ok(connected_device):
 
 def test_defaults_resets_and_returns_ok(connected_device):
     dev, _ = connected_device
-    terminal.run(dev, "set led.blink_hz 15")
+    terminal.run(dev, "set rx.deadband_us 15")
     result = terminal.run(dev, "defaults")
     assert result.ok
     assert result.friendly == "OK: reset to defaults"
@@ -169,7 +169,7 @@ def test_save_and_defaults_reject_extra_args(connected_device):
 
 def test_revert_reloads_from_flash(connected_device):
     dev, _ = connected_device
-    terminal.run(dev, "set led.blink_hz 15")
+    terminal.run(dev, "set rx.deadband_us 15")
     result = terminal.run(dev, "revert")
     assert result.ok
     assert result.friendly == "OK: reloaded settings from flash"
@@ -278,7 +278,7 @@ def test_empty_command_returns_error(connected_device, command):
 def test_command_while_disconnected_returns_friendly_error_not_exception():
     fake = FakeSerial(responder=device_responder())
     dev = DeviceModel(SerialLink(open_port=lambda p: fake))
-    result = terminal.run(dev, "get led.blink_hz")
+    result = terminal.run(dev, "get rx.deadband_us")
     assert not result.ok
     assert "ERROR" in result.friendly
 
@@ -305,16 +305,16 @@ def test_terminal_endpoint_help_returns_200(client):
 
 
 def test_terminal_endpoint_set_then_get_round_trip(client):
-    r = client.post("/api/terminal", json={"command": "set led.blink_hz 7"})
+    r = client.post("/api/terminal", json={"command": "set rx.deadband_us 7"})
     body = r.json()
     assert body["ok"] is True
-    assert body["friendly"] == "OK: led.blink_hz = 7"
+    assert body["friendly"] == "OK: rx.deadband_us = 7"
     assert body["raw_sent"] != ""
     assert body["raw_recv"] != ""
     # app.js's termRun() reads this to drive the Terminal page's Save button.
     assert body["dirty"] is True
 
-    r = client.post("/api/terminal", json={"command": "get led.blink_hz"})
+    r = client.post("/api/terminal", json={"command": "get rx.deadband_us"})
     body = r.json()
     assert body["ok"] is True
     # The fake serial responder is stateless (always answers from its fixed
@@ -322,7 +322,7 @@ def test_terminal_endpoint_set_then_get_round_trip(client):
     # not the just-applied set -- this exercises the response shape and wire
     # round trip, not device-side persistence (already covered by
     # test_set_updates_value_and_returns_ok_with_raw_wire_lines's cache check).
-    assert body["friendly"] == f"led.blink_hz = {VALUES['led.blink_hz']}"
+    assert body["friendly"] == f"rx.deadband_us = {VALUES['rx.deadband_us']}"
     assert body["raw_sent"] != ""
     assert body["raw_recv"] != ""
 
@@ -343,7 +343,7 @@ def test_commands_report_disconnection_rather_than_unknown_key():
     dev = DeviceModel(SerialLink(open_port=lambda p: None))
     assert dev.status()["state"] != "connected"
 
-    for command in ("get led.mode", "set led.mode on", "save", "defaults",
+    for command in ("get rx.protocol", "set rx.protocol on", "save", "defaults",
                     "list", "dump"):
         result = terminal.run(dev, command)
         assert result.ok is False, command

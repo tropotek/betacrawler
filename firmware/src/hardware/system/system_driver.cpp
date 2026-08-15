@@ -1,5 +1,6 @@
 #include "hardware/system/system_driver.h"
 #include "config.h"
+#include "core/health.h"
 
 // STM32-side body -- see system_esp32_driver.cpp for the ESP32 counterpart,
 // and wifi_driver.cpp's own comment for why each architecture-specific file
@@ -50,6 +51,7 @@ void SystemDriver::readTelemetry(core::TlmValue* out) {
   out[T_RAM].i  = freeRamBytes();
   out[T_TEMP].f = readTempC(vdd);
   out[T_VDD].i  = vdd;
+  out[T_FAULT].u = (uint32_t)core::health().fault();
 }
 
 }  // namespace sys

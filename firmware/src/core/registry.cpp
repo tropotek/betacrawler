@@ -1,12 +1,18 @@
 #include "core/registry.h"
+#include "core/health.h"
 #include <string.h>
 
 namespace core {
 
 bool Registry::add(const ModuleDesc& desc, Module* driver) {
-  if (modCount_ >= FW_MAX_MODULES) return false;
-  if (paramCount_ + desc.paramCount > FW_MAX_PARAMS) return false;
-  if (tlmCount_   + desc.tlmCount   > FW_MAX_TLM)    return false;
+  // A module that does not fit is dropped from the schema entirely, so this
+  // is a fault rather than a quiet false.
+  if (modCount_ >= FW_MAX_MODULES ||
+      paramCount_ + desc.paramCount > FW_MAX_PARAMS ||
+      tlmCount_   + desc.tlmCount   > FW_MAX_TLM) {
+    health().fail(Fault::Registry);
+    return false;
+  }
 
   if (driver) driver->bind(paramCount_);
   mods_[modCount_] = Entry{&desc, driver, paramCount_, tlmCount_};

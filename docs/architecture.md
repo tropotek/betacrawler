@@ -111,6 +111,40 @@ still, so a line merely printed at boot reaches nobody. `hello`'s response shape
 unchanged — the record follows it as separate unsolicited `{"log":...}` lines, which `app.js`
 renders in the Terminal as `[device] …`.
 
+## Health and the status LED
+
+`core/health.h` holds one fault code for the whole firmware, reached through `core::health()`. It
+is a singleton for the same reason `bootLog()` is one: a health verdict has exactly one
+destination, and threading a reference through every module's `attach()` would be a lot of
+plumbing to carry one enum. Raising a fault is the same gesture as writing a boot line, so
+adding a new source needs no interface change anywhere.
+
+**First fault wins.** When one fault cascades into another, the root cause is the actionable one
+and the symptom is not. `fail()` also writes a `boot: fault=<name>` line, so the verdict replays
+on every `hello`, and the code rides the telemetry frame as `fault`.
+
+`Registry::add()` raises `Fault::Registry` on its own capacity checks rather than leaving callers
+to inspect a `bool`. A module that does not fit vanishes from the schema entirely; putting the
+fault at the point that detects it means no call site can forget to look.
+
+The LED that reports all this is **not** a module — no parameters, no telemetry — so it is wired
+directly in `main.cpp` beside `FlashStore` and `DfuTrigger`. Two things about its lifetime are
+deliberate: it ticks *outside* the registry, so it survives the registry failing, and it
+`begin()`s *before* `registerModules()`, so it is lit before anything is capable of failing. A
+health indicator must not depend on the subsystem it reports on.
+
+Healthy is an even 1Hz heartbeat. A stopped board latches its pins, so a steady-on LED looks
+identical whether the firmware is running or died moments ago — the healthy signal has to be one
+a stopped loop cannot counterfeit, and the blink is exactly that. Off would be worse still: it is
+also unpowered, unflashed, or a pin never configured. Both steps stay wider than the slowest loop
+iteration on purpose: a pass longer than a step would skip it entirely.
+
+The panic handler overrides the Arduino core's weak `HardFault_Handler`, which otherwise falls
+through to a silent infinite loop. It cannot use `delay()` or `millis()`: HardFault runs at
+priority −1 and masks every interrupt that advances the tick, so the wait is a bare counting loop.
+
+See [Status LED](status-led.md) for the patterns and fault codes themselves.
+
 ## The display, and why it is the exception to schema-driven rendering
 
 `app.js` builds itself entirely from the descriptor; the on-device dashboard
@@ -133,7 +167,7 @@ detail: `_notes/_archive/spec-display.md`.
 
 `config.h` reaches the board header via `#include BOARD_HEADER`, a macro-expanded include SCons
 cannot resolve, so board-header edits did not trigger rebuilds — verified at the time by toggling
-`FEATURE_LED` and getting a byte-identical binary, reported as a successful build.
+`FEATURE_STATUS_LED` and getting a byte-identical binary, reported as a successful build.
 `firmware/scripts/config_hash.py` folds a hash of `include/**/*.h` into a `-D FW_CONFIG_HASH` so
 any config edit forces a rebuild. Both envs reference it via `extra_scripts`; removing that line
 silently reintroduces stale-binary builds.

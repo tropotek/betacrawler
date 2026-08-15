@@ -1,8 +1,8 @@
-#include "core/led_curve.h"
+#include "core/triangle.h"
 
 namespace core {
 
-uint8_t breathingDuty(uint32_t phaseMs, uint32_t periodMs) {
+uint8_t trianglePercent(uint32_t phaseMs, uint32_t periodMs) {
   uint32_t half = periodMs / 2;
   if (half == 0) return 0;
   uint32_t t = phaseMs % periodMs;

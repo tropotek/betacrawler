@@ -26,6 +26,10 @@ static const TlmDef kTlm[T_COUNT] = {
   {"ram",  "Free RAM", "kB",  TlmType::I32,  1024,   1,  nullptr, nullptr},
   {"temp", "Temp",     "°C",  TlmType::F32,     0,   1,  nullptr, nullptr},
   {"vdd",  "VDD",      "V",   TlmType::I32,  1000,   2,  nullptr, nullptr},
+  // core::Fault as a plain code. The boot log carries the human name, and the
+  // Configuration page maps the code to text -- no named renderer for a
+  // three-value enum the on-device panel would have to implement a second time.
+  {"fault", "Fault",   nullptr, TlmType::U32,   0,   0,  nullptr, nullptr},
 };
 
 const core::ModuleDesc kDesc = {

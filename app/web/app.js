@@ -229,6 +229,20 @@ function formatTelemetryValue(def, value) {
   return scaled.toFixed(def.dec || 0);
 }
 
+// core::Fault codes, in the firmware's own order. The wire carries the code
+// and the Configuration page names it here, so no named renderer is needed.
+// Both helpers take the store's already-formatted value, i.e. a string.
+const FAULT_NAMES = ['OK', 'Registry overflow', 'Panic'];
+
+function faultText(value) {
+  if (value === null || value === undefined) return '–';
+  return FAULT_NAMES[Number(value)] ?? `Unknown (${value})`;
+}
+
+function faultIsError(value) {
+  return value !== null && value !== undefined && Number(value) > 0;
+}
+
 // The config form and telemetry cards are the two most repetitive,
 // DOM-construction-heavy regions of this file -- markup for both now lives in
 // index.html as <template x-for> blocks. These two stores are the only

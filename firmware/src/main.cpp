@@ -6,6 +6,7 @@
 #include "core/boot_log.h"
 #include "core/version.h"
 #include "dfu.h"
+#include "status_led.h"
 #include "storage.h"
 
 using namespace core;
@@ -19,6 +20,7 @@ static Registry   g_reg;
 static Params     g_params(g_reg);
 static FlashStore g_store(g_reg);
 static dfu::DfuTrigger g_boot;
+static status_led::StatusLed g_statusLed;
 static Dispatcher g_dispatch(g_reg, g_params, g_store, &g_boot);
 static LineReader g_reader;
 
@@ -110,6 +112,9 @@ static void emitBootLog() {
 }
 
 void setup() {
+  // First, so the health indicator is alive before anything can fail.
+  g_statusLed.begin();
+
   Serial.begin(FW_SERIAL_BAUD);
   registerModules(g_reg);
   g_dispatch.setWifiScanner(wifiScanner());
@@ -150,6 +155,8 @@ void setup() {
 
 void loop() {
   uint32_t now = millis();
+
+  g_statusLed.tick(now);
 
   while (Serial.available()) {
     if (g_reader.feed((char)Serial.read())) {

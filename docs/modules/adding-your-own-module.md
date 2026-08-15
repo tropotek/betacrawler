@@ -19,7 +19,7 @@ mkdir -p firmware/src/hardware/beeper
 
 This declares the module's `ModuleDesc` — its parameters and telemetry fields — and has **zero
 Arduino includes**. Write and native-test this before touching any hardware code. Follow
-`firmware/src/features/led/led_params.{h,cpp}` as the reference pattern:
+`firmware/src/hardware/button/button_params.{h,cpp}` as the reference pattern:
 
 ```cpp
 // firmware/src/hardware/beeper/beeper_params.h
@@ -55,7 +55,7 @@ static const ParamDef kParams[] = {
 const core::ModuleDesc kDesc = {
   "beeper", "Beeper",
   kParams, (uint8_t)(sizeof(kParams) / sizeof(kParams[0])),
-  nullptr, 0,     // no telemetry -- its state is a parameter, same as led.mode
+  nullptr, 0,     // no telemetry -- this module's state is a parameter
 };
 
 }  // namespace beeper
@@ -64,7 +64,7 @@ const core::ModuleDesc kDesc = {
 ## 3. Write `<name>_driver.{h,cpp}`
 
 This is the `core::Module` subclass that touches hardware — board builds only. Follow
-`firmware/src/features/led/led_driver.{h,cpp}` as the reference pattern:
+`firmware/src/hardware/button/button_driver.{h,cpp}` as the reference pattern:
 
 ```cpp
 // firmware/src/hardware/beeper/beeper_driver.h

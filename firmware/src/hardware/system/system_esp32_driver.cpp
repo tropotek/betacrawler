@@ -1,5 +1,6 @@
 #include "hardware/system/system_driver.h"
 #include "config.h"
+#include "core/health.h"
 
 #if FW_MCU_ESP32
 
@@ -19,6 +20,7 @@ void SystemDriver::readTelemetry(core::TlmValue* out) {
   out[T_RAM].i  = (int32_t)ESP.getFreeHeap();
   out[T_TEMP].f = 0.0f;
   out[T_VDD].i  = 0;
+  out[T_FAULT].u = (uint32_t)core::health().fault();
 }
 
 }  // namespace sys

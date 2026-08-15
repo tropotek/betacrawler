@@ -37,7 +37,7 @@ def test_connect_then_schema_and_params(client):
 
     schema = client.get("/api/schema").json()
     assert {p["key"] for p in schema["params"]} == {
-        "led.mode", "led.blink_hz", "device.name", "tlm.rate",
+        "device.name", "tlm.rate",
         "esc0.direction", "esc0.mode", "esc0.throttle_us", "esc0.min_us", "esc0.max_us", "esc0.src",
         "esc1.direction", "esc1.mode", "esc1.throttle_us", "esc1.min_us", "esc1.max_us", "esc1.src",
         "rx.protocol", "rx.source", "crossfire.timeout_ms", "elrs.timeout_ms", "rx.deadband_us",
@@ -46,7 +46,7 @@ def test_connect_then_schema_and_params(client):
     # Telemetry descriptor rides along in the same response, so the UI renders
     # its cards from the device rather than a hardcoded field list.
     assert {t["key"] for t in schema["tlm"]} == {
-        "up", "clk", "ram", "temp", "vdd",
+        "up", "clk", "ram", "temp", "vdd", "fault",
         "esc0", "arm0", "esc1", "arm1", "drv_l", "drv_r",
         "link", "lq", "rssi", "rate", "err", "rfrate", "pwr",
         "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8",
@@ -56,21 +56,21 @@ def test_connect_then_schema_and_params(client):
     assert all(p.get("group") for p in schema["params"])
     assert all(t.get("group") for t in schema["tlm"])
 
-    assert client.get("/api/params").json()["led.blink_hz"] == 2
+    assert client.get("/api/params").json()["rx.deadband_us"] == 2
 
 
 def test_valid_set_returns_200_and_updates(client):
     client.post("/api/connect", json={"port": "/dev/fake"})
-    assert client.put("/api/params/led.blink_hz", json={"val": 15}).status_code == 200
-    assert client.get("/api/params").json()["led.blink_hz"] == 15
+    assert client.put("/api/params/rx.deadband_us", json={"val": 15}).status_code == 200
+    assert client.get("/api/params").json()["rx.deadband_us"] == 15
 
 
 def test_a_show_if_hidden_param_is_still_settable():
     """showIf is a display hint, not an access rule.
 
-    The real shipped schema (led + button only) has no showIf field left to
-    exercise this with, so this test wires its own minimal fake device with
-    one: mode boots at "off", so hidden (showIf mode == on) is not drawn. It
+    This test wires its own minimal fake device rather than leaning on the
+    shipped schema, so the case stays pinned to one param whatever the board
+    exposes: mode boots at "off", so hidden (showIf mode == on) is not drawn. It
     must still be settable -- an INI restore writes it regardless and a
     Terminal `set` knows nothing about what the browser is rendering.
     """
@@ -110,7 +110,7 @@ def test_a_show_if_hidden_param_is_still_settable():
 
 def test_out_of_range_set_returns_400_with_code(client):
     client.post("/api/connect", json={"port": "/dev/fake"})
-    r = client.put("/api/params/led.blink_hz", json={"val": 99})
+    r = client.put("/api/params/rx.deadband_us", json={"val": 999})
     assert r.status_code == 400
     assert r.json()["err"] == "range"
 
@@ -119,8 +119,8 @@ def test_set_rejects_bool_and_float_coercion(client):
     """ValueBody uses StrictInt | StrictStr so `true` and `5.0` are rejected
     (422) rather than silently coerced to 1 / 5 -- see main.py's ValueBody."""
     client.post("/api/connect", json={"port": "/dev/fake"})
-    assert client.put("/api/params/led.blink_hz", json={"val": True}).status_code == 422
-    assert client.put("/api/params/led.blink_hz", json={"val": 5.0}).status_code == 422
+    assert client.put("/api/params/rx.deadband_us", json={"val": True}).status_code == 422
+    assert client.put("/api/params/rx.deadband_us", json={"val": 5.0}).status_code == 422
 
 
 def test_unknown_key_returns_400(client):
@@ -131,7 +131,7 @@ def test_unknown_key_returns_400(client):
 
 
 def test_set_while_disconnected_returns_409(client):
-    assert client.put("/api/params/led.blink_hz", json={"val": 5}).status_code == 409
+    assert client.put("/api/params/rx.deadband_us", json={"val": 5}).status_code == 409
 
 
 def test_save_and_defaults(client):
@@ -147,16 +147,16 @@ def test_revert_returns_the_source_and_values(client):
     body = resp.json()
     assert body["ok"] is True
     assert body["src"] == "flash"
-    assert body["vals"]["led.mode"] == "blink"
+    assert body["vals"]["rx.protocol"] == "elrs"
 
 
 # --- restore from INI ---------------------------------------------------------
 
 GOOD_INI = """
 ; a settings backup
-[led]
-mode = on
-blink_hz = 9
+[rx]
+protocol = crossfire
+deadband_us = 9
 
 [device]
 name = bench rig
@@ -177,18 +177,18 @@ def test_restore_applies_every_key_and_reports_them(client):
     assert r.status_code == 200
     body = r.json()
     assert body["ok"] is True
-    assert set(body["applied"]) == {"led.mode", "led.blink_hz", "device.name"}
+    assert set(body["applied"]) == {"rx.protocol", "rx.deadband_us", "device.name"}
     assert body["skipped"] == []
     # One `set` per key actually reached the device.
     assert wire_ops(fake)[before:] == ["set", "set", "set"]
-    assert body["vals"]["led.blink_hz"] == 9
+    assert body["vals"]["rx.deadband_us"] == 9
     assert body["vals"]["device.name"] == "bench rig"
 
 
 def test_restore_coerces_values_through_the_schema(client):
     """INI values are text; a u8 must arrive at the device as a number."""
     client.post("/api/connect", json={"port": "/dev/fake"})
-    client.post("/api/params/restore", json={"ini": "[led]\nblink_hz = 9\n"})
+    client.post("/api/params/restore", json={"ini": "[rx]\ndeadband_us = 9\n"})
     sent = [json.loads(line.decode()) for line in client.app.state.fake.written]
     last = sent[-1]
     assert last["op"] == "set"
@@ -199,22 +199,22 @@ def test_restore_skips_unknown_keys_but_applies_the_rest(client):
     """Restoring a dump from a board with more modules enabled is normal --
     the extra keys are reported, not fatal."""
     client.post("/api/connect", json={"port": "/dev/fake"})
-    ini = "[esc]\nmode = armed\n\n[led]\nblink_hz = 9\n"
+    ini = "[nosuch]\nmode = armed\n\n[rx]\ndeadband_us = 9\n"
     body = client.post("/api/params/restore", json={"ini": ini}).json()
     assert body["ok"] is False
-    assert body["applied"] == ["led.blink_hz"]
-    assert [s["key"] for s in body["skipped"]] == ["esc.mode"]
+    assert body["applied"] == ["rx.deadband_us"]
+    assert [s["key"] for s in body["skipped"]] == ["nosuch.mode"]
     assert "unknown parameter" in body["skipped"][0]["reason"]
 
 
 def test_restore_skips_an_invalid_value_but_applies_the_rest(client):
     client.post("/api/connect", json={"port": "/dev/fake"})
-    ini = "[led]\nblink_hz = 99\nmode = on\n"        # blink_hz max is 20
+    ini = "[rx]\ndeadband_us = 999\nprotocol = crossfire\n"  # deadband_us max is 200
     body = client.post("/api/params/restore", json={"ini": ini}).json()
     assert body["ok"] is False
-    assert body["applied"] == ["led.mode"]
-    assert body["skipped"][0]["key"] == "led.blink_hz"
-    assert "1..20" in body["skipped"][0]["reason"]
+    assert body["applied"] == ["rx.protocol"]
+    assert body["skipped"][0]["key"] == "rx.deadband_us"
+    assert "0..200" in body["skipped"][0]["reason"]
 
 
 def test_restore_does_not_write_to_flash(client):

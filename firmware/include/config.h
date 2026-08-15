@@ -67,8 +67,8 @@
 // plain `#if`. No Marlin-style ENABLED()/DISABLED() macro machinery -- the
 // defaults below buy the same "undefined is off" safety with none of the
 // preprocessor gymnastics.
-#ifndef FEATURE_LED
-#define FEATURE_LED 0
+#ifndef FEATURE_STATUS_LED
+#define FEATURE_STATUS_LED 0
 #endif
 #ifndef FEATURE_BUTTON
 #define FEATURE_BUTTON 0

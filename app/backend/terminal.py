@@ -104,7 +104,7 @@ def run(device: DeviceModel, command: str) -> TerminalResult:
     # Every command except `help` needs a device. Guarded here rather than left
     # to DeviceModel, which checks its cached schema before it checks link
     # state and so reports a disconnected device as "unknown parameter
-    # 'led.mode'" -- true of an empty cache, but a lie about what is wrong. The
+    # '<key>'" -- true of an empty cache, but a lie about what is wrong. The
     # same reasoning already put an explicit guard in main.py's
     # PUT /api/params/{key} route (see Deviations in _notes/progress.md).
     #
