@@ -5,6 +5,14 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **fix(firmware): tank drive defaults to throttle=ch2, steer=ch1.** A Mode 2 handset puts
+  elevator on ch2 and aileron on ch1, so the previous ch1/ch2 pair put the driver's throttle stick
+  on the steer input. The result on a default board is a pivot command rather than a drive command
+  — one track full forward, the other full reverse — and `tank_drive.reverse_ratio` appears to do
+  nothing, because its scaling is gated on the throttle input being below centre and that input
+  never leaves centre. Defaults are not part of `Registry::fingerprint()`, so this changes only
+  what a fresh board comes up with; a board with saved settings keeps its own mapping.
+
 - **feat: the ESC PWM frame rate is selectable, 50/100/200/400Hz.** New `esc0.rate`/`esc1.rate`
   parameters, surfaced as one **PWM Rate** control in a new ESC card on the Configuration page
   that writes both (the `esc0.direction`/`esc1.direction` pattern — two motors on one vehicle

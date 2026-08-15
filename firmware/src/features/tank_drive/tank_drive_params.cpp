@@ -27,11 +27,12 @@ static const char* const kArmSrcNames[] = {
 
 static const ParamDef kParams[] = {
   // key                          type             label            unit  min max opts       n  maxlen def defStr group
-  // Default ch1/ch2: the conventional throttle/steer channel pair,
-  // reassignable once connected, same as every other .src default in this
-  // tree.
-  {"tank_drive.throttle_src",  ParamType::Enum, "Throttle Src", nullptr, 0, 0, kSrcNames, 12, 0, 0, nullptr, nullptr, nullptr, nullptr},
-  {"tank_drive.steer_src",     ParamType::Enum, "Steer Src",    nullptr, 0, 0, kSrcNames, 12, 0, 1, nullptr, nullptr, nullptr, nullptr},
+  // Default throttle=ch2, steer=ch1: a Mode 2 handset puts elevator on ch2 and
+  // aileron on ch1, so this is the pair that lands under the sticks a driver
+  // expects. Reassignable once connected, same as every other .src default in
+  // this tree.
+  {"tank_drive.throttle_src",  ParamType::Enum, "Throttle Src", nullptr, 0, 0, kSrcNames, 12, 0, 1, nullptr, nullptr, nullptr, nullptr},
+  {"tank_drive.steer_src",     ParamType::Enum, "Steer Src",    nullptr, 0, 0, kSrcNames, 12, 0, 0, nullptr, nullptr, nullptr, nullptr},
   // Percent of full reverse power. Defaults to 100 (unscaled reverse) --
   // nothing already deployed changes behavior unless explicitly lowered.
   {"tank_drive.reverse_ratio", ParamType::U8,   "Reverse Ratio", "%",    0, 100, nullptr, 0, 0, 100, nullptr, nullptr, nullptr, nullptr},
