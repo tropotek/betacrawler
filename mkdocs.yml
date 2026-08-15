@@ -34,6 +34,11 @@ nav:
       - Install and connect: drive/install-and-connect.md
       - First setup: drive/first-setup.md
       - Tuning: drive/tuning.md
+  - Reference:
+      - Parameters: reference/parameters.md
+      - Arming and modes: reference/arming-and-modes.md
+      - Status LED: reference/status-led.md
+      - Terminal and backup: reference/terminal-and-backup.md
 
 markdown_extensions:
   - admonition
