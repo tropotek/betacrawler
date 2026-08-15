@@ -424,6 +424,20 @@ recommending a real flash image for a board that cannot be flashed, and leaves "
 honestly greyed out. Simulating DFU is deliberately out of scope: it would mean faking `dfu-util`'s
 enumeration, which lives behind a different seam entirely.
 
+A simulator session must never overwrite the remembered hardware identity. `DeviceModel` keeps
+`_last_real_board` alongside `_info`, updated only when the connected port is not `sim://board`,
+and the firmware catalog recommends from that rather than from `status()["board"]`. A board in DFU
+mode cannot identify itself, so the recommendation rests entirely on the last `hello` — and
+connecting the simulator between unplugging a board and flashing it would otherwise destroy the
+recommendation at exactly the moment it matters, on a destructive operation.
+
+Because the picker can now be showing a device that is not a port, the port scan runs on every
+watchdog tick rather than only while disconnected. "Connected" no longer implies the port list is
+settled: a board plugged in during a simulator session still has to appear in it. For the same
+reason the simulator is only ever a provisional selection — the picker adopts a recognized board as
+the desired port, so a board appearing later displaces the simulator, while choosing it by hand
+makes it stick.
+
 The default `tank_drive.arm_src` is `ch5`, which the sweep holds at a constant value below the
 default 1700–2000µs arm window, so the ESCs sit at neutral in `ARM_ARMING`. Set `arm_src` to `none`
 to arm whenever the link is fresh, to one of the high static channels near the top of the sweep's

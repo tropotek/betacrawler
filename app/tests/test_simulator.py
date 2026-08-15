@@ -146,6 +146,48 @@ def test_the_whole_api_works_against_the_simulator():
         c.post("/api/disconnect")
 
 
+def _mixed_link():
+    """A link where sim://board is the simulator and any other port is a board."""
+    from backend.link import SerialLink
+    from tests.fake_serial import FakeSerial
+    from tests.test_device import device_responder
+    return SerialLink(open_port=lambda p: SimSerial(telemetry=False) if p == SIM_PORT
+                      else FakeSerial(responder=device_responder()))
+
+
+def test_a_simulator_session_does_not_erase_the_last_real_board():
+    """A board in DFU mode cannot identify itself -- every STM32F4 bootloader
+    reports 0483:df11 -- so the Firmware page's image recommendation comes
+    entirely from the last successful `hello`. A simulator is not hardware and
+    must not be allowed to answer that question.
+    """
+    device = DeviceModel(_mixed_link())
+    try:
+        device.connect("/dev/fake")
+        assert device.last_real_board() == "blackpill_f411ce"
+        device.disconnect()
+
+        device.connect(SIM_PORT)
+        assert device.status()["board"] == "simulator"   # honest about now
+        assert device.last_real_board() == "blackpill_f411ce"  # remembers hardware
+        device.disconnect()
+
+        assert device.last_real_board() == "blackpill_f411ce"
+    finally:
+        device.disconnect()
+
+
+def test_the_catalog_reports_the_last_real_board_not_the_simulator():
+    device = DeviceModel(_mixed_link())
+    app = create_app(device)
+    with TestClient(app) as c:
+        c.post("/api/connect", json={"port": "/dev/fake"})
+        c.post("/api/disconnect")
+        c.post("/api/connect", json={"port": SIM_PORT})
+        c.post("/api/disconnect")
+        assert c.get("/api/firmware/catalog").json()["board"] == "blackpill_f411ce"
+
+
 def test_telemetry_frames_reach_a_websocket_client():
     app = create_app(DeviceModel())
     with TestClient(app) as c:
