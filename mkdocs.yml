@@ -30,6 +30,10 @@ nav:
       - What you need: build/what-you-need.md
       - Wiring: build/wiring.md
       - Flashing the firmware: build/flashing.md
+  - Drive it:
+      - Install and connect: drive/install-and-connect.md
+      - First setup: drive/first-setup.md
+      - Tuning: drive/tuning.md
 
 markdown_extensions:
   - admonition
