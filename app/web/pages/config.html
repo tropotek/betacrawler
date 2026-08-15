@@ -36,7 +36,7 @@
                        @change="$store.config.commit($store.config.field('device.name').def)">
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="f-tlm-rate">Telemetry Rate (Hz)</label>
+                <label class="form-label" for="f-tlm-rate">UI Telemetry Rate (Hz)</label>
                 <input type="number" class="form-control" id="f-tlm-rate"
                        :min="$store.config.field('tlm.rate').def?.min" :max="$store.config.field('tlm.rate').def?.max"
                        :class="{ 'is-invalid': $store.config.invalid['tlm.rate'] }"
