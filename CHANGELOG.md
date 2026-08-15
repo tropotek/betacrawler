@@ -5,6 +5,15 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **feat: a simulated board can be selected instead of a real one.** `sim://board` heads the
+  port dropdown as "Simulated board"; connecting to it runs an in-process device behind the same
+  JSON-lines protocol the firmware speaks, so every page, the Terminal, INI backup/restore and the
+  save/revert flow work with no hardware attached. Telemetry is reactive rather than canned —
+  `sim_model.py` ports the firmware's own mixer, ESC arm state machine and RC sweep, so changing a
+  ratio or a source moves the same readings it would move on a board. Its schema is a copy of the
+  firmware's golden test fixture, guarded by a test that fails if the two drift. It reports
+  `board: "simulator"` with no capabilities, so nothing offers to flash or DFU it.
+
 - **feat: forward and steer ratios join reverse ratio in the drive mixer.** New
   `tank_drive.forward_ratio` and `tank_drive.steer_ratio`, both 0–100% defaulting to 100
   (unscaled), rendered beside Reverse Ratio in the Controller page's Drive Mixer card. Each scales

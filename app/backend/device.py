@@ -6,7 +6,7 @@ trust its host.
 """
 import logging
 
-from .link import SerialLink, NotConnected, RequestTimeout
+from .link import SerialLink, NotConnected, RequestTimeout, SIM_PORT
 
 log = logging.getLogger(__name__)
 
@@ -51,6 +51,7 @@ class DeviceModel:
         self._values: dict = {}
         self._info: dict = {}
         self._port: str | None = None
+        self._last_real_board: str | None = None
 
     def subscribe(self, callback):
         self._link.subscribe(callback)
@@ -96,6 +97,11 @@ class DeviceModel:
             self._by_key = {p["key"]: p for p in self._schema}
             self._values = self._send("getall")["vals"]
             self._port = port
+            # A board in DFU mode cannot identify itself, so the firmware
+            # catalog's recommendation rests entirely on the last board seen.
+            # The simulator is not hardware and must not overwrite that.
+            if port != SIM_PORT:
+                self._last_real_board = self._info["board"]
         except Exception:
             self._link.disconnect()
             self._schema, self._tlm_schema = [], []
@@ -109,6 +115,14 @@ class DeviceModel:
     # --- reads --------------------------------------------------------------
     def status(self) -> dict:
         return {"state": self._link.state, "port": self._port, **self._info}
+
+    def last_real_board(self) -> str | None:
+        """The board string of the last physical device seen, or None.
+
+        Deliberately not the simulator's: this answers "which image suits the
+        hardware", and a simulated board is not an answer to that.
+        """
+        return self._last_real_board
 
     def schema(self) -> dict:
         """Both descriptors the UI renders from: config controls and telemetry

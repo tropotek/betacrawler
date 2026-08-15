@@ -134,8 +134,11 @@ def test_an_unavailable_image_is_never_recommended(bundle):
     app = make_client(bundle)
     with TestClient(app) as c:
         c.post("/api/connect", json={"port": "/dev/fake"})
-        # Point the device at the board whose binary is missing.
+        # Point the device at the board whose binary is missing. Both fields:
+        # _info is what is connected now, _last_real_board is what the catalog
+        # recommends from, and a coherent fake needs them to agree.
         app.state.device._info["board"] = "otherboard"
+        app.state.device._last_real_board = "otherboard"
         assert c.get("/api/firmware/catalog").json()["recommended"] is None
     app.state.device.disconnect()
 

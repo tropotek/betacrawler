@@ -396,6 +396,54 @@ telemetry hasn't arrived in 3x the configured interval while the port is still O
 catching a wedged-but-still-enumerated board. The 3x threshold is deliberate slack: a `save`'s ~1s
 flash stall must never look like a disconnect.
 
+## The simulated board
+
+`sim://board` is a reserved port string that `SerialLink._default_open()` answers with a
+`SimSerial` instead of a `serial.Serial`. That is the whole integration: the simulator sits at the
+same seam the test suite already injects through, so `DeviceModel`, the HTTP routes, the WebSocket
+push, the Terminal and INI restore run against it unmodified, and the `Api` seam is untouched.
+
+Its schema is `app/backend/sim_profile.json`, a verbatim copy of `firmware/test/golden/schema.json`
+— the fixture the native firmware test generates from a real `Dispatcher::handle("schema")` call.
+`test_simulator.py` asserts the two are equal, so a firmware schema change fails the backend suite
+rather than shipping a stale simulator. Refresh it with `pio test -e native` followed by a copy.
+
+Telemetry is reactive, not canned: `sim_model.py` ports the firmware's own `mix()`, ESC arm state
+machine and RC sweep, so changing a ratio, a source or a PWM rate moves the same readings it would
+move on hardware. The ports use `trunc_div()` wherever the C divides, because C truncates toward
+zero where Python's `//` floors — the two disagree on negative offsets, which is most of the mixer.
+
+Two things differ from a real board on purpose. `rx.source` boots at `sim` rather than `uart`: a
+simulated board has no UART to receive on, so `uart` would report a link that cannot exist. And the
+system readings follow fixed triangles rather than a random walk, which keeps the model
+reproducible and unit-testable. Selecting `uart` still correctly drops the link and zeroes the
+channels, so the fidelity holds in both directions.
+
+The board reports `board: "simulator"` and no `caps`. That keeps `/api/firmware/catalog` from
+recommending a real flash image for a board that cannot be flashed, and leaves "Reboot to DFU"
+honestly greyed out. Simulating DFU is deliberately out of scope: it would mean faking `dfu-util`'s
+enumeration, which lives behind a different seam entirely.
+
+A simulator session must never overwrite the remembered hardware identity. `DeviceModel` keeps
+`_last_real_board` alongside `_info`, updated only when the connected port is not `sim://board`,
+and the firmware catalog recommends from that rather than from `status()["board"]`. A board in DFU
+mode cannot identify itself, so the recommendation rests entirely on the last `hello` — and
+connecting the simulator between unplugging a board and flashing it would otherwise destroy the
+recommendation at exactly the moment it matters, on a destructive operation.
+
+Because the picker can now be showing a device that is not a port, the port scan runs on every
+watchdog tick rather than only while disconnected. "Connected" no longer implies the port list is
+settled: a board plugged in during a simulator session still has to appear in it. For the same
+reason the simulator is only ever a provisional selection — the picker adopts a recognized board as
+the desired port, so a board appearing later displaces the simulator, while choosing it by hand
+makes it stick.
+
+The default `tank_drive.arm_src` is `ch5`, which the sweep holds at a constant value below the
+default 1700–2000µs arm window, so the ESCs sit at neutral in `ARM_ARMING`. Set `arm_src` to `none`
+to arm whenever the link is fresh, to one of the high static channels near the top of the sweep's
+spread to arm continuously, or to `ch1`/`ch2` to watch it arm and disarm as the sweeping stick
+passes through the window.
+
 ## Versioning
 
 Firmware and app are separate projects with independent version numbers that are not meant to

@@ -302,8 +302,11 @@ def create_app(device: DeviceModel | None = None,
         say what it is. So `recommended` is derived from the `board` string of
         the last successful `hello`, and is null when no board has been
         connected in this session. The UI says so rather than guessing.
+
+        A simulator session leaves this untouched: it is not hardware, so it
+        cannot be the answer to "which image suits the board I have".
         """
-        board = device.status().get("board")
+        board = device.last_real_board()
         images = catalog.images()
         recommended = next(
             (img["id"] for img in images

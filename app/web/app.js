@@ -232,7 +232,7 @@ function formatTelemetryValue(def, value) {
 // core::Fault codes, in the firmware's own order. The wire carries the code
 // and the Configuration page names it here, so no named renderer is needed.
 // Both helpers take the store's already-formatted value, i.e. a string.
-const FAULT_NAMES = ['OK', 'Registry overflow', 'Panic'];
+const FAULT_NAMES = ['None', 'Registry overflow', 'Panic'];
 
 function faultText(value) {
   if (value === null || value === undefined) return '–';
@@ -601,7 +601,8 @@ document.addEventListener('alpine:init', () => {
 
     async refreshPorts() {
       try {
-        const ports = await Api.ports();
+        // The simulator is not a flash target; it exists only to connect to.
+        const ports = (await Api.ports()).filter((p) => !p.sim);
         // Only reassign when the list actually changed. This runs on the
         // Firmware page's 1.5s poll now, and swapping the array every tick
         // would re-render both port <select>s continuously -- which, apart
@@ -746,6 +747,7 @@ function alpineNextTick() {
 
 // --- wiring ----------------------------------------------------------------
 function portOptionLabel(p) {
+  if (p.sim) return 'Simulated board';
   // Every board this template's `match` heuristic doesn't recognize (not
   // one of link.py's _KNOWN_BOARDS) used to render as a bare path,
   // indistinguishable from this environment's own placeholder serial
@@ -833,8 +835,9 @@ async function refreshPorts() {
   // that are never a real device. A disabled option separates the top group
   // from genuinely bare ports below, only when both groups are non-empty:
   // nothing to separate from if every port qualifies, or none did.
-  const known = ports.filter((p) => p.match || p.vid);
-  const other = ports.filter((p) => !p.match && !p.vid);
+  const sims = ports.filter((p) => p.sim);
+  const known = ports.filter((p) => !p.sim && (p.match || p.vid));
+  const other = ports.filter((p) => !p.sim && !p.match && !p.vid);
 
   // Reuse each port's existing <option> element rather than tearing every
   // one down and recreating it -- an option's selectedness is a property of
@@ -863,6 +866,18 @@ async function refreshPorts() {
     touched.add(o);
   };
 
+  const separate = () => {
+    // Stateless (never selected, always disabled) -- cheaper to recreate
+    // than to track across a diff.
+    const sep = document.createElement('option');
+    sep.disabled = true;
+    sep.textContent = '──────────';
+    sel.appendChild(sep);
+    touched.add(sep);
+  };
+
+  for (const p of sims) place(p);
+  if (sims.length && (known.length || other.length)) separate();
   for (const p of known) {
     place(p);
     // First recognized-board match wins -- not just the first port with a
@@ -871,15 +886,7 @@ async function refreshPorts() {
     // found, not whichever matched last.
     if (!matched && p.match) matched = p.port;
   }
-  if (known.length && other.length) {
-    // Stateless (never selected, always disabled) -- cheaper to recreate
-    // than to track across a diff.
-    const sep = document.createElement('option');
-    sep.disabled = true;
-    sep.textContent = '──────────';
-    sel.appendChild(sep);
-    touched.add(sep);
-  }
+  if (known.length && other.length) separate();
   for (const p of other) place(p);
 
   // Whatever wasn't placed this round belonged to a port that dropped out
@@ -890,13 +897,16 @@ async function refreshPorts() {
 
   // First load / nothing picked yet: adopt the recognized-board guess as the
   // desired port too, so it's what a later flicker-and-recover restores.
+  // Only a real board is adopted -- the simulator stays a provisional
+  // fallback below, so a board appearing later displaces it.
   if (!desiredPort && matched) desiredPort = matched;
   const desiredPresent = ports.some((p) => p.port === desiredPort);
-  // Desired port missing this tick (e.g. mid-flicker) with no recognized
-  // board to fall back to either: leave whatever the browser just picked as
-  // its own default among the surviving options.
+  // Desired port missing this tick (e.g. mid-flicker): a recognized board
+  // wins, and the simulator is the last resort when no real board is there.
+  // Picking it by hand sets desiredPort, which keeps it selected regardless.
   if (desiredPresent) sel.value = desiredPort;
   else if (matched) sel.value = matched;
+  else if (sims.length) sel.value = sims[0].port;
   growPortSelectWidth(sel);
 }
 
@@ -1439,11 +1449,11 @@ function setTelemetryPeriodFrom(values) {
 
 function startWatchdog() {
   setInterval(async () => {
-    if (!connected) {
-      // While disconnected, keep rescanning so a replugged board reappears.
-      try { await refreshPorts(); } catch { /* ignore */ }
-      return;
-    }
+    // Rescan on every tick, connected or not. Being connected no longer
+    // implies the picker is settled: a board plugged in while the simulator
+    // is connected still has to appear in it.
+    try { await refreshPorts(); } catch { /* ignore */ }
+    if (!connected) return;
     if (!lastTlmAt || Date.now() - lastTlmAt <= tlmPeriodMs * 3) return;
     try {
       const st = await Api.status();
