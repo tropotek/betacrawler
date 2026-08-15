@@ -26,6 +26,10 @@ theme:
 
 nav:
   - Home: index.md
+  - Build:
+      - What you need: build/what-you-need.md
+      - Wiring: build/wiring.md
+      - Flashing the firmware: build/flashing.md
 
 markdown_extensions:
   - admonition

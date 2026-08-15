@@ -90,6 +90,15 @@ def main():
 
             page.screenshot(path=str(out_dir / f"{name}.png"),
                             full_page=name in FULL_PAGE)
+
+            if name == "wiring":
+                # The docs need the diagram without the app's chrome around
+                # it. Capturing the element here rather than copying the SVG
+                # into the page keeps the board's own stylesheet applied --
+                # the markup carries ~60 class attributes and renders
+                # unstyled without it.
+                page.locator(".diagram-card").screenshot(
+                    path=str(out_dir / "wiring-diagram.png"))
         browser.close()
 
     server.should_exit = True
