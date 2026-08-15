@@ -51,8 +51,8 @@ static const ParamDef kParams[] = {
   // human typing Terminal `set` commands). Putting esc0.direction first
   // guarantees it is always already known -- never still at its stale prior
   // value -- by the time esc0.mode or esc0.throttle_us can cause a pulse to
-  // be computed and armed against. Defaults to unidirectional: nothing
-  // already deployed changes behaviour unless explicitly switched over.
+  // be computed and armed against. Defaults to bidirectional: a tank drive
+  // needs reverse, so the ESC is expected to be in BLHeli's bidirectional mode.
   {"esc0.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_BIDIRECTIONAL, nullptr, nullptr},
   // Ahead of esc0.mode for exactly the reason esc0.direction is: the frame
   // rate must already be known by the time a pulse can be computed and armed
