@@ -36,13 +36,13 @@ void test_link_fresh_past_window_reads_stale() {
 // --- mix -------------------------------------------------------------------------
 
 void test_mix_straight_forward_no_steer() {
-  MixResult r = mix(1800, 1500, 1500, 1000, 2000, 100, 0);
+  MixResult r = mix(1800, 1500, 1500, 1000, 2000, 100, 100, 100, 0);
   TEST_ASSERT_EQUAL_UINT16(1800, r.leftUs);
   TEST_ASSERT_EQUAL_UINT16(1800, r.rightUs);
 }
 
 void test_mix_full_ratio_reverse_is_unscaled() {
-  MixResult r = mix(1200, 1500, 1500, 1000, 2000, 100, 0);
+  MixResult r = mix(1200, 1500, 1500, 1000, 2000, 100, 100, 100, 0);
   TEST_ASSERT_EQUAL_UINT16(1200, r.leftUs);
   TEST_ASSERT_EQUAL_UINT16(1200, r.rightUs);
 }
@@ -50,7 +50,7 @@ void test_mix_full_ratio_reverse_is_unscaled() {
 void test_mix_reverse_ratio_scales_reverse_power() {
   // Full-reverse stick (1000), 50% reverse ratio -> half the distance from
   // center: 1500 + (1000-1500)*50/100 = 1250.
-  MixResult r = mix(1000, 1500, 1500, 1000, 2000, 50, 0);
+  MixResult r = mix(1000, 1500, 1500, 1000, 2000, 100, 50, 100, 0);
   TEST_ASSERT_EQUAL_UINT16(1250, r.leftUs);
   TEST_ASSERT_EQUAL_UINT16(1250, r.rightUs);
 }
@@ -58,7 +58,7 @@ void test_mix_reverse_ratio_scales_reverse_power() {
 void test_mix_forward_throttle_is_never_ratio_scaled() {
   // reverseRatioPct only applies below center -- full forward at 50% ratio
   // must still be full forward, not halved.
-  MixResult r = mix(2000, 1500, 1500, 1000, 2000, 50, 0);
+  MixResult r = mix(2000, 1500, 1500, 1000, 2000, 100, 50, 100, 0);
   TEST_ASSERT_EQUAL_UINT16(2000, r.leftUs);
   TEST_ASSERT_EQUAL_UINT16(2000, r.rightUs);
 }
@@ -66,7 +66,7 @@ void test_mix_forward_throttle_is_never_ratio_scaled() {
 void test_mix_in_place_pivot() {
   // Throttle at center, full-right steer: one track full forward, the
   // other full reverse, neither needs clamping.
-  MixResult r = mix(1500, 2000, 1500, 1000, 2000, 100, 0);
+  MixResult r = mix(1500, 2000, 1500, 1000, 2000, 100, 100, 100, 0);
   TEST_ASSERT_EQUAL_UINT16(2000, r.leftUs);
   TEST_ASSERT_EQUAL_UINT16(1000, r.rightUs);
 }
@@ -78,7 +78,7 @@ void test_mix_proportional_clamp_preserves_turn_ratio() {
   // Proportional: BOTH offsets scaled by 66% -> left=1500+495=1995, right=1500+165=1665.
   // (An independent-clamp implementation would instead give 2000/1750 --
   // asserting the proportional numbers here is what catches that regression.)
-  MixResult r = mix(2000, 1750, 1500, 1000, 2000, 100, 0);
+  MixResult r = mix(2000, 1750, 1500, 1000, 2000, 100, 100, 100, 0);
   TEST_ASSERT_EQUAL_UINT16(1995, r.leftUs);
   TEST_ASSERT_EQUAL_UINT16(1665, r.rightUs);
 }
@@ -86,7 +86,7 @@ void test_mix_proportional_clamp_preserves_turn_ratio() {
 void test_mix_applies_deadband_to_both_inputs() {
   // Throttle 10us off center, steer exactly center, deadband 20 -> both
   // collapse to center, no motion at all.
-  MixResult r = mix(1510, 1500, 1500, 1000, 2000, 100, 20);
+  MixResult r = mix(1510, 1500, 1500, 1000, 2000, 100, 100, 100, 20);
   TEST_ASSERT_EQUAL_UINT16(1500, r.leftUs);
   TEST_ASSERT_EQUAL_UINT16(1500, r.rightUs);
 }
@@ -124,6 +124,75 @@ void test_armed_boundary_is_inclusive_at_min_and_max() {
   TEST_ASSERT_TRUE(computeArmed(true, false, 2000, 1700, 2000));
 }
 
+// --- forward ratio -----------------------------------------------------------
+
+void test_mix_full_forward_ratio_is_unscaled() {
+  MixResult r = mix(2000, 1500, 1500, 1000, 2000, 100, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(2000, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(2000, r.rightUs);
+}
+
+void test_mix_forward_ratio_scales_forward_power() {
+  // Full-forward stick (2000), 50% forward ratio -> half the distance from
+  // center: 1500 + (2000-1500)*50/100 = 1750.
+  MixResult r = mix(2000, 1500, 1500, 1000, 2000, 50, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(1750, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1750, r.rightUs);
+}
+
+void test_mix_forward_ratio_zero_disables_forward() {
+  MixResult r = mix(2000, 1500, 1500, 1000, 2000, 0, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(1500, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1500, r.rightUs);
+}
+
+// The two throttle ratios are independent halves of the stick: capping
+// forward must leave reverse exactly where reverse_ratio put it.
+void test_mix_forward_ratio_never_scales_reverse() {
+  MixResult r = mix(1000, 1500, 1500, 1000, 2000, 50, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(1000, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1000, r.rightUs);
+}
+
+// --- steer ratio -------------------------------------------------------------
+
+void test_mix_full_steer_ratio_is_unscaled() {
+  MixResult r = mix(1500, 2000, 1500, 1000, 2000, 100, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(2000, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1000, r.rightUs);
+}
+
+void test_mix_steer_ratio_scales_turn_authority() {
+  // Full-right steer at centered throttle, 50% steer ratio -> half the pivot:
+  // offset 500 becomes 250.
+  MixResult r = mix(1500, 2000, 1500, 1000, 2000, 100, 100, 50, 0);
+  TEST_ASSERT_EQUAL_UINT16(1750, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1250, r.rightUs);
+}
+
+void test_mix_steer_ratio_zero_disables_turning() {
+  MixResult r = mix(1500, 2000, 1500, 1000, 2000, 100, 100, 0, 0);
+  TEST_ASSERT_EQUAL_UINT16(1500, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1500, r.rightUs);
+}
+
+// --- the two are orthogonal --------------------------------------------------
+
+// Capping straight-line speed must not also cap a zero-throttle pivot: they
+// are separate complaints and get separate knobs.
+void test_mix_forward_ratio_does_not_limit_a_pivot() {
+  MixResult r = mix(1500, 2000, 1500, 1000, 2000, 50, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(2000, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1000, r.rightUs);
+}
+
+void test_mix_forward_and_steer_ratios_combine() {
+  // Throttle 2000 at 50% -> offset 250. Steer 1750 (offset 250) at 50% -> 125.
+  MixResult r = mix(2000, 1750, 1500, 1000, 2000, 50, 100, 50, 0);
+  TEST_ASSERT_EQUAL_UINT16(1875, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1625, r.rightUs);
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -140,6 +209,15 @@ int main() {
   RUN_TEST(test_mix_reverse_ratio_scales_reverse_power);
   RUN_TEST(test_mix_forward_throttle_is_never_ratio_scaled);
   RUN_TEST(test_mix_in_place_pivot);
+  RUN_TEST(test_mix_full_forward_ratio_is_unscaled);
+  RUN_TEST(test_mix_forward_ratio_scales_forward_power);
+  RUN_TEST(test_mix_forward_ratio_zero_disables_forward);
+  RUN_TEST(test_mix_forward_ratio_never_scales_reverse);
+  RUN_TEST(test_mix_full_steer_ratio_is_unscaled);
+  RUN_TEST(test_mix_steer_ratio_scales_turn_authority);
+  RUN_TEST(test_mix_steer_ratio_zero_disables_turning);
+  RUN_TEST(test_mix_forward_ratio_does_not_limit_a_pivot);
+  RUN_TEST(test_mix_forward_and_steer_ratios_combine);
   RUN_TEST(test_mix_proportional_clamp_preserves_turn_ratio);
   RUN_TEST(test_mix_applies_deadband_to_both_inputs);
   RUN_TEST(test_armed_requires_fresh_link);

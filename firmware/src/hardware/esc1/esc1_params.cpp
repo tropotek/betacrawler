@@ -1,4 +1,5 @@
 #include "hardware/esc1/esc1_params.h"
+#include "config.h"
 
 namespace esc1 {
 
@@ -25,10 +26,21 @@ static const char* const kSrcNames[] = {
 
 static const char* const kDirections[] = {"unidirectional", "bidirectional"};
 
+static const char* const kRates[] = {"50", "100", "200", "400"};
+
+#ifndef ESC1_FRAME_US
+#define ESC1_FRAME_US 20000
+#endif
+static constexpr int32_t kDefaultRate =
+    ESC1_FRAME_US <=  2500 ? esc::RATE_400 :
+    ESC1_FRAME_US <=  5000 ? esc::RATE_200 :
+    ESC1_FRAME_US <= 10000 ? esc::RATE_100 : esc::RATE_50;
+
 // Per-field reasoning: see esc0_params.cpp -- identical here, just esc1's keys.
 static const ParamDef kParams[] = {
   // key                type             label       unit  min   max   opts     n  maxlen def       defStr group
   {"esc1.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_BIDIRECTIONAL, nullptr, nullptr},
+  {"esc1.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr},
   {"esc1.mode",         ParamType::Enum, "ESC",      nullptr, 0,    0,    kModes, 3, 0, esc::MODE_INPUT, nullptr, nullptr},
   {"esc1.throttle_us",  ParamType::U8,   "Throttle", "µs",    1000, 2000, nullptr, 0, 0, 1500,     nullptr, nullptr},
   {"esc1.min_us",       ParamType::U8,   "Min",      "µs",    500,  1500, nullptr, 0, 0, 1000,     nullptr, nullptr},

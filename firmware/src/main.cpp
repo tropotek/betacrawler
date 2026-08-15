@@ -4,6 +4,7 @@
 #include "core/protocol.h"
 #include "core/registry.h"
 #include "core/boot_log.h"
+#include "core/loop_stats.h"
 #include "core/version.h"
 #include "dfu.h"
 #include "status_led.h"
@@ -155,6 +156,10 @@ void setup() {
 
 void loop() {
   uint32_t now = millis();
+
+  // Microseconds, and first: the pass this stamps is the one just finished,
+  // so the reading covers everything below including the telemetry write.
+  core::loopStats().mark(micros());
 
   g_statusLed.tick(now);
 

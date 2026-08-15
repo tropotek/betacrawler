@@ -4,7 +4,7 @@
           <div class="card mb-3" x-data>
             <div class="card-header h6 text-secondary mb-0 py-2">System</div>
             <div class="card-body row g-3">
-              <template x-for="key in ['up', 'clk', 'ram', 'temp', 'vdd']" :key="key">
+              <template x-for="key in ['up', 'clk', 'ram', 'temp', 'vdd', 'loop', 'loopworst']" :key="key">
                 <div class="col-6 col-md-4">
                   <div class="text-secondary small"
                        x-text="$store.telemetry.field(key).def?.unit
@@ -36,7 +36,7 @@
                        @change="$store.config.commit($store.config.field('device.name').def)">
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="f-tlm-rate">Telemetry Rate (Hz)</label>
+                <label class="form-label" for="f-tlm-rate">UI Telemetry Rate (Hz)</label>
                 <input type="number" class="form-control" id="f-tlm-rate"
                        :min="$store.config.field('tlm.rate').def?.min" :max="$store.config.field('tlm.rate').def?.max"
                        :class="{ 'is-invalid': $store.config.invalid['tlm.rate'] }"
@@ -45,4 +45,26 @@
               </div>
             </div>
           </fieldset>
+          <template x-if="$store.config.field('esc0.rate').def">
+            <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>
+              <legend class="card-header h6 text-secondary mb-0 py-2">ESC</legend>
+              <div class="card-body row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="f-esc-rate">PWM Rate (Hz)</label>
+                  <select class="form-select" id="f-esc-rate"
+                          :class="{ 'is-invalid': $store.config.invalid['esc0.rate'] || $store.config.invalid['esc1.rate'] }"
+                          @change="$store.config.setBothEscRates($event.target.value)">
+                    <template x-for="opt in $store.config.field('esc0.rate').def?.options ?? []" :key="opt">
+                      <option :value="opt" :selected="opt === $store.config.values['esc0.rate']" x-text="opt"></option>
+                    </template>
+                  </select>
+                  <div class="form-text">
+                    How often each ESC is sent a new command. 50 Hz is what every analog ESC
+                    auto-detects; a BLHeli_S-class ESC handles 400 Hz and cuts up to 20ms of
+                    stick-to-motor delay. Changing this re-runs the arm hold.
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+          </template>
           <p>&nbsp;</p>

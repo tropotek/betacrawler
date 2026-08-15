@@ -84,7 +84,8 @@ alignas(HardwareTimer) static uint8_t s_timerMem[sizeof(HardwareTimer)];
 void EscDriver::begin() {
   timer_ = new (s_timerMem) HardwareTimer(ESC0_TIMER);
   ch_ = STM_PIN_CHANNEL(pinmap_function(digitalPinToPinName(ESC0_PIN), PinMap_PWM));
-  timer_->setOverflow(ESC0_FRAME_US, MICROSEC_FORMAT);
+  frameUs_ = ESC0_FRAME_US;
+  timer_->setOverflow(frameUs_, MICROSEC_FORMAT);
   timer_->resume();
   detach();   // boot silent; main.cpp's notify pass applies any saved mode next
 }
@@ -121,6 +122,16 @@ void EscDriver::writeUs(uint16_t us) {
   lastUs_ = us;
 }
 
+// Retunes the PWM frame. setOverflow() may re-derive the prescaler, which
+// changes what a microsecond means to setCaptureCompare() -- so every caller
+// must re-write the pulse afterwards. apply() and tick() both do, by ending
+// on writeUs().
+void EscDriver::setFrameUs(uint32_t frameUs) {
+  if (frameUs == frameUs_) return;
+  frameUs_ = frameUs;
+  timer_->setOverflow(frameUs_, MICROSEC_FORMAT);
+}
+
 void EscDriver::attach(const core::Registry& reg, const core::Params& p) {
   (void)p;
   inputs_      = &reg.inputs();
@@ -130,15 +141,20 @@ void EscDriver::attach(const core::Registry& reg, const core::Params& p) {
 void EscDriver::apply(const core::Params& p) {
   const int32_t prevMode = mode_;
   const uint8_t prevSrcIdx = srcIdx_;
+  const uint8_t prevRateIdx = rateIdx_;
   mode_       = p.num(globalParam(P_MODE));
   throttleUs_ = (uint16_t)p.num(globalParam(P_THROTTLE_US));
   minUs_      = (uint16_t)p.num(globalParam(P_MIN_US));
   maxUs_      = (uint16_t)p.num(globalParam(P_MAX_US));
   direction_  = p.num(globalParam(P_DIRECTION));
   srcIdx_     = (uint8_t)p.num(globalParam(P_SRC));
+  rateIdx_    = (uint8_t)p.num(globalParam(P_RATE));
+
+  setFrameUs(esc::frameUsForRate(rateIdx_));
 
   const bool enteringFromOff = (prevMode == esc::MODE_OFF && mode_ != esc::MODE_OFF);
   const bool srcChanged = (srcIdx_ != prevSrcIdx);
+  const bool rateChanged = (rateIdx_ != prevRateIdx);
   const uint32_t now = millis();
   const bool bidirectional = (direction_ == esc::DIR_BIDIRECTIONAL);
   const uint16_t neutral   = esc::neutralUs(minUs_, maxUs_, bidirectional);
@@ -153,7 +169,8 @@ void EscDriver::apply(const core::Params& p) {
   const bool inputStale = (mode_ == esc::MODE_INPUT) && !inputFresh;
 
   if (esc::inputLossDemotesArmed(armState_, mode_, inputFresh) ||
-      esc::srcChangeDemotesArmed(armState_, mode_, srcChanged)) {
+      esc::srcChangeDemotesArmed(armState_, mode_, srcChanged) ||
+      esc::rateChangeDemotesArmed(armState_, rateChanged)) {
     armState_ = esc::ARM_ARMING;
     armT0_    = now;
   }
@@ -181,6 +198,10 @@ void EscDriver::apply(const core::Params& p) {
   const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;
   const bool armSwitchInactive = driveBusFresh && driveInputs_->get(kDriveArmSlot) == 0;
   if (armSwitchInactive) us = neutral;
+  // Last, so no route to the pin can outrun the frame. 0 means "hold the last
+  // pulse" and must never be clamped up into a real command.
+  const uint16_t effMax = esc::effectiveMaxUs(maxUs_, frameUs_);
+  if (us > effMax) us = effMax;
   if (us > 0) writeUs(us);
 }
 
@@ -219,6 +240,8 @@ void EscDriver::tick(uint32_t nowMs) {
   const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;
   const bool armSwitchInactive = driveBusFresh && driveInputs_->get(kDriveArmSlot) == 0;
   if (armSwitchInactive) us = neutral;
+  const uint16_t effMax = esc::effectiveMaxUs(maxUs_, frameUs_);
+  if (us > effMax) us = effMax;
   if (us > 0) writeUs(us);
 }
 

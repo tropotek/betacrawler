@@ -100,6 +100,45 @@ steady, since a real stick at its mechanical endpoint is indistinguishable from 
 value alone. `esc0`/`esc1`'s `mode=input` failsafe is the first consumer of this signal; `servo` does not
 need it (position-hold-on-dropout is its own correct, deliberate design, not a gap).
 
+## Control latency, and where it actually lives
+
+The stick-to-motor chain is `rx` decode → `tank_drive` mix → `esc0`/`esc1` write. All three run in
+one `Registry::tick()` pass, in that registration order, so a decoded frame reaches the compare
+register in the **same** loop iteration — there is no per-module pipeline delay to tune, and no
+smoothing or ramping anywhere in `esc_math` or `tank_drive_math` to unwind.
+
+The main loop is not the constraint either. It is free-running, unthrottled, and the `loop`
+telemetry field reports it in the tens of kHz on an F411 — already well past the 8kHz a flight
+controller treats as a maximum. Splitting it into priority tiers would buy nothing today.
+
+The costs that remain are the two frame rates at either end:
+
+- **The RF link**, set on the handset, not here. The `rfrate` field reports it. At a 50Hz packet
+  rate that is 20ms before the board has even been told anything changed.
+- **The PWM output frame**, `esc<N>.rate`. `writeUs()` writes a *shadow* compare register; it only
+  becomes a pulse at the next timer update event. At 50Hz that is 0–20ms of wait and an effective
+  command rate of 50Hz no matter how fast everything upstream runs. This is the term worth
+  changing, and the parameter exists to change it.
+
+Two consequences worth knowing before touching this area. `setOverflow()` may re-derive the
+prescaler, which changes what a microsecond means to `setCaptureCompare()` — so every frame-rate
+change must be followed by a re-write of the pulse, which is why `apply()` and `tick()` both end on
+`writeUs()`. And a BLHeli_S-class ESC frame-detects as it arms, so a rate change under an armed ESC
+forces a fresh arm-hold (`rateChangeDemotesArmed`), the same way a src change already does.
+
+`esc<N>.rate` and `esc<N>.max_us` interact, and that interaction is resolved in the driver by
+`effectiveMaxUs()`, not in the schema. `core::Params::setNum` validates one value against its own
+declared bounds and has no cross-parameter seam — the same limitation `esc<N>.min_us`/`max_us`
+already work around by declaring bounds that cannot cross. `effectiveMaxUs` reserves `kMinLowUs` of
+low time inside each frame so the ESC always sees a pulse train rather than a line held high; it is
+deliberately **not** applied to `neutralUs()`, because clamping neutral would silently move where
+"stop" is whenever the rate changed.
+
+`loopworst` is the companion to `loop` and the more diagnostic of the two: the loop being unbounded
+means any slow module stalls the whole control chain, and an average rate hides that completely. A
+single 200ms pass (`writeLine()`'s stall path is the known worst case) barely dents a rate measured
+in tens of kHz, but it is 200ms in which no ESC is sent anything.
+
 ## Boot health
 
 `core/boot_log.h` holds a fixed buffer of lines recorded during `setup()` — identity, whether

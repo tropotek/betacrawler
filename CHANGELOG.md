@@ -5,6 +5,44 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **feat: forward and steer ratios join reverse ratio in the drive mixer.** New
+  `tank_drive.forward_ratio` and `tank_drive.steer_ratio`, both 0–100% defaulting to 100
+  (unscaled), rendered beside Reverse Ratio in the Controller page's Drive Mixer card. Each scales
+  one input's distance from centre and nothing else, so capping straight-line speed leaves a
+  zero-throttle pivot untouched and capping turn authority leaves speed untouched. They cap at the
+  mixer rather than via `esc<N>.min_us`/`max_us` on purpose: that range is the ESC's calibration,
+  and narrowing it also moves `neutralUs()`, which is where "stop" lives on a bidirectional setup.
+
+- **fix(firmware): tank drive defaults to throttle=ch2, steer=ch1.** A Mode 2 handset puts
+  elevator on ch2 and aileron on ch1, so the previous ch1/ch2 pair put the driver's throttle stick
+  on the steer input. The result on a default board is a pivot command rather than a drive command
+  — one track full forward, the other full reverse — and `tank_drive.reverse_ratio` appears to do
+  nothing, because its scaling is gated on the throttle input being below centre and that input
+  never leaves centre. Defaults are not part of `Registry::fingerprint()`, so this changes only
+  what a fresh board comes up with; a board with saved settings keeps its own mapping.
+
+- **feat: the ESC PWM frame rate is selectable, 50/100/200/400Hz.** New `esc0.rate`/`esc1.rate`
+  parameters, surfaced as one **PWM Rate** control in a new ESC card on the Configuration page
+  that writes both (the `esc0.direction`/`esc1.direction` pattern — two motors on one vehicle
+  running different frame rates has no use case, and `Registry::notify()` only ever reaches the
+  owning module, so one shared parameter would leave the other ESC un-notified). At the shipped
+  50Hz default a new command waits up to 20ms for the next timer update event regardless of how
+  fast anything upstream runs; 400Hz cuts that to 2.5ms. 50 remains the default because it is what
+  every analog ESC auto-detects — a board header's `ESC<N>_FRAME_US` still states the hardware
+  default, and this parameter is the runtime override. Changing the rate forces a fresh arm-hold,
+  because a BLHeli_S-class ESC frame-detects as it arms. `esc<N>.max_us` is settable to the whole
+  400Hz frame, so `effectiveMaxUs()` reserves a low period inside each frame at the point of use —
+  `core::Params` validates one value at a time and has no cross-parameter seam. Adding parameters
+  changes `Registry::fingerprint()`, so saved settings fall back to defaults once on first boot.
+
+- **feat(firmware): loop rate and worst-pass time are system telemetry.** New `loop` (Hz) and
+  `loopworst` (µs) fields, shown in the Configuration page's System card. Measured on hardware at
+  ~27.6kHz with a ~2.8ms worst pass, which is what establishes that the main loop was never the
+  latency constraint. `loopworst` is the diagnostic half: the loop is unbounded, so a slow module
+  stalls the whole control chain, and an average rate hides that entirely. New `core::LoopStats`
+  is a singleton for the same reason `core::Health` is one, and takes its timestamp as an argument
+  rather than reading the clock, so it is pure and native-tested.
+
 - **feat(firmware): the onboard LED is a firmware health indicator, not a configurable module.**
   It blinks at an even 1Hz while the firmware is healthy and pulses at ~5Hz on a blocking fault; a hard fault blinks faster still, from a handler that previously left
   the board frozen with its pin latched and nothing said. The blink exists because a stopped board
