@@ -42,8 +42,6 @@ nav:
       - Adding Your Own Module: modules/adding-your-own-module.md
   - Reference:
       - Status LED: status-led.md
-      - Architecture: architecture.md
-      - API / Wire Protocol: api.md
   - Troubleshooting: troubleshooting.md
 
 markdown_extensions:

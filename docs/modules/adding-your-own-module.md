@@ -177,5 +177,4 @@ Connect with the backend running — `beeper.enabled` should now appear on the C
 with **no `app.js` changes**. If you find yourself needing to touch `app.js` to make a new
 parameter show up correctly, something about the module's declaration has drifted from the
 schema-driven design — see
-[Wire protocol and the schema-driven UI](../architecture.md#wire-protocol-and-the-schema-driven-ui)
-in the architecture reference before working around it.
+"Wire protocol and the schema-driven UI" in `dev-docs/architecture.md` before working around it.

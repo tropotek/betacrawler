@@ -23,5 +23,4 @@ half-replaced.
 
 For the full mechanics (how the manifest is derived, why `config_hash.py` matters here too, DFU
 vs. `esptool` dispatch), see the `bundle-firmware` skill and
-[Firmware bundling and in-app updates](../architecture.md#firmware-bundling-and-in-app-updates)
-in the architecture reference.
+"Firmware bundling and in-app updates" in `dev-docs/architecture.md`.
