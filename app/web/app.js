@@ -319,6 +319,24 @@ document.addEventListener('alpine:init', () => {
         showError(`Direction: ${e.message}`);
       }
     },
+
+    // Same dual-write convenience as setBothDirections, for the Configuration
+    // page's single PWM Rate control. esc0/esc1 keep independent .rate params
+    // -- notify() only ever reaches the owning module, so one shared param
+    // would leave the other ESC un-notified -- but two motors on one vehicle
+    // running different frame rates has no use case, so the UI offers one.
+    async setBothEscRates(v) {
+      const keys = ['esc0.rate', 'esc1.rate'].filter((k) => this.field(k).def);
+      keys.forEach((k) => { this.values[k] = v; });
+      try {
+        for (const k of keys) await Api.setParam(k, v);
+        keys.forEach((k) => { this.invalid[k] = false; });
+        setDirty(true);
+      } catch (e) {
+        keys.forEach((k) => { this.invalid[k] = true; });
+        showError(`PWM Rate: ${e.message}`);
+      }
+    },
   });
 
   // Dual-handle range slider over two config keys, built from plain elements

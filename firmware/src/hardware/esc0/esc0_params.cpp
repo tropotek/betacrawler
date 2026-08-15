@@ -1,4 +1,5 @@
 #include "hardware/esc0/esc0_params.h"
+#include "config.h"
 
 namespace esc0 {
 
@@ -25,6 +26,22 @@ static const char* const kSrcNames[] = {
 
 static const char* const kDirections[] = {"unidirectional", "bidirectional"};
 
+// Order must match esc::RATE_*. Bare numbers, so Terminal `set esc0.rate 400`
+// and an INI line read the way a user would write them.
+static const char* const kRates[] = {"50", "100", "200", "400"};
+
+// The board header states the hardware default; this param is the runtime
+// override. Same #ifndef fallback rx_params.cpp uses for RX_BAUD, and for the
+// same reason: this descriptor TU is compiled by the native env too, where no
+// driver ever reads the value.
+#ifndef ESC0_FRAME_US
+#define ESC0_FRAME_US 20000
+#endif
+static constexpr int32_t kDefaultRate =
+    ESC0_FRAME_US <=  2500 ? esc::RATE_400 :
+    ESC0_FRAME_US <=  5000 ? esc::RATE_200 :
+    ESC0_FRAME_US <= 10000 ? esc::RATE_100 : esc::RATE_50;
+
 static const ParamDef kParams[] = {
   // key                type             label       unit  min   max   opts     n  maxlen def       defStr group
   // Declared FIRST, ahead of esc0.mode -- not just cosmetic. EscDriver::apply()
@@ -37,6 +54,10 @@ static const ParamDef kParams[] = {
   // be computed and armed against. Defaults to unidirectional: nothing
   // already deployed changes behaviour unless explicitly switched over.
   {"esc0.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_BIDIRECTIONAL, nullptr, nullptr},
+  // Ahead of esc0.mode for exactly the reason esc0.direction is: the frame
+  // rate must already be known by the time a pulse can be computed and armed
+  // against, since a BLHeli_S-class ESC frame-detects as it arms.
+  {"esc0.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr},
   // Defaults to input: the shared ARM switch (tank_drive.arm_src, itself
   // defaulting to a real channel) clamps the output to neutral whenever the
   // link is stale or the switch is inactive, and the arm-hold state machine

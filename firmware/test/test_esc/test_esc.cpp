@@ -311,6 +311,76 @@ void test_pulse_stale_input_forces_neutral_when_bidirectional() {
   TEST_ASSERT_EQUAL_UINT16(1500, nextPulseUs(ARM_ARMED, MODE_INPUT, 1000, 2000, 1000, 1800, true, 1500));
 }
 
+// --- frameUsForRate ----------------------------------------------------------
+
+void test_frame_us_for_each_rate() {
+  TEST_ASSERT_EQUAL_UINT32(20000, frameUsForRate(RATE_50));
+  TEST_ASSERT_EQUAL_UINT32(10000, frameUsForRate(RATE_100));
+  TEST_ASSERT_EQUAL_UINT32(5000,  frameUsForRate(RATE_200));
+  TEST_ASSERT_EQUAL_UINT32(2500,  frameUsForRate(RATE_400));
+}
+
+// Out of range falls back to the slowest, universally auto-detected frame
+// rather than the fastest -- an unknown index must never speed the output up.
+void test_frame_us_out_of_range_falls_back_to_50hz() {
+  TEST_ASSERT_EQUAL_UINT32(20000, frameUsForRate(4));
+  TEST_ASSERT_EQUAL_UINT32(20000, frameUsForRate(255));
+}
+
+// --- effectiveMaxUs ----------------------------------------------------------
+
+void test_effective_max_unchanged_when_the_frame_has_room() {
+  TEST_ASSERT_EQUAL_UINT16(2000, effectiveMaxUs(2000, 20000));
+  TEST_ASSERT_EQUAL_UINT16(2000, effectiveMaxUs(2000, 2500));
+}
+
+// max_us is settable to 2500, which is the whole 400Hz frame -- writing it
+// would leave no low period at all and the ESC would see a permanently high
+// line instead of a pulse train.
+void test_effective_max_reserves_a_low_period_at_400hz() {
+  TEST_ASSERT_EQUAL_UINT16(2375, effectiveMaxUs(2500, 2500));
+}
+
+void test_effective_max_at_the_exact_boundary() {
+  TEST_ASSERT_EQUAL_UINT16(2375, effectiveMaxUs(2375, 2500));
+  TEST_ASSERT_EQUAL_UINT16(2374, effectiveMaxUs(2374, 2500));
+}
+
+// Defensive: no unsigned underflow if a frame somehow shorter than the
+// reserved low period is ever passed in.
+void test_effective_max_degenerate_frame_does_not_underflow() {
+  TEST_ASSERT_EQUAL_UINT16(0, effectiveMaxUs(2000, 100));
+  TEST_ASSERT_EQUAL_UINT16(0, effectiveMaxUs(2000, kMinLowUs));
+}
+
+// --- rateChangeDemotesArmed --------------------------------------------------
+
+// BLHeli_S detects its input frame rate when it arms. Changing the rate under
+// an already-armed ESC must force a fresh low-throttle hold so it re-syncs,
+// exactly as a src change or a stale link already does.
+void test_rate_change_demotes_an_armed_session() {
+  TEST_ASSERT_TRUE(rateChangeDemotesArmed(ARM_ARMED, true));
+}
+
+void test_unchanged_rate_does_not_demote() {
+  TEST_ASSERT_FALSE(rateChangeDemotesArmed(ARM_ARMED, false));
+}
+
+void test_rate_change_does_not_affect_an_arming_session() {
+  TEST_ASSERT_FALSE(rateChangeDemotesArmed(ARM_ARMING, true));
+}
+
+void test_rate_change_does_not_affect_an_off_session() {
+  TEST_ASSERT_FALSE(rateChangeDemotesArmed(ARM_OFF, true));
+}
+
+// Unlike srcChangeDemotesArmed, this is NOT restricted to MODE_INPUT: the
+// bench-throttle mode drives the same pin at the same new frame rate, so it
+// needs the same re-sync. There is no mode parameter to get wrong.
+void test_rate_change_demotes_regardless_of_mode() {
+  TEST_ASSERT_TRUE(rateChangeDemotesArmed(ARM_ARMED, true));
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -370,5 +440,16 @@ int main() {
   RUN_TEST(test_commanded_low_unidirectional_far_below_raised_min_is_still_low);
   RUN_TEST(test_pulse_not_armed_returns_neutral_when_bidirectional);
   RUN_TEST(test_pulse_stale_input_forces_neutral_when_bidirectional);
+  RUN_TEST(test_frame_us_for_each_rate);
+  RUN_TEST(test_frame_us_out_of_range_falls_back_to_50hz);
+  RUN_TEST(test_effective_max_unchanged_when_the_frame_has_room);
+  RUN_TEST(test_effective_max_reserves_a_low_period_at_400hz);
+  RUN_TEST(test_effective_max_at_the_exact_boundary);
+  RUN_TEST(test_effective_max_degenerate_frame_does_not_underflow);
+  RUN_TEST(test_rate_change_demotes_an_armed_session);
+  RUN_TEST(test_unchanged_rate_does_not_demote);
+  RUN_TEST(test_rate_change_does_not_affect_an_arming_session);
+  RUN_TEST(test_rate_change_does_not_affect_an_off_session);
+  RUN_TEST(test_rate_change_demotes_regardless_of_mode);
   return UNITY_END();
 }

@@ -55,6 +55,22 @@ bool srcChangeDemotesArmed(uint32_t armState, int32_t mode, bool srcChanged) {
   return armState == ARM_ARMED && mode == MODE_INPUT && srcChanged;
 }
 
+uint32_t frameUsForRate(uint8_t rateIdx) {
+  static const uint32_t kFrameUs[] = {20000, 10000, 5000, 2500};
+  if (rateIdx >= sizeof(kFrameUs) / sizeof(kFrameUs[0])) return kFrameUs[RATE_50];
+  return kFrameUs[rateIdx];
+}
+
+uint16_t effectiveMaxUs(uint16_t maxUs, uint32_t frameUs) {
+  if (frameUs <= kMinLowUs) return 0;
+  const uint32_t room = frameUs - kMinLowUs;
+  return (maxUs > room) ? (uint16_t)room : maxUs;
+}
+
+bool rateChangeDemotesArmed(uint32_t armState, bool rateChanged) {
+  return armState == ARM_ARMED && rateChanged;
+}
+
 uint16_t nextPulseUs(uint32_t armState, int32_t mode, uint16_t minUs, uint16_t maxUs,
                       uint16_t throttleUs, int16_t inputUs, bool inputStale, uint16_t neutralUs) {
   if (armState != ARM_ARMED) return neutralUs;

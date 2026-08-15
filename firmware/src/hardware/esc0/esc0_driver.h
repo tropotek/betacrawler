@@ -22,6 +22,7 @@ class EscDriver : public core::Module {
   void attachOutput();
   void detach();
   void writeUs(uint16_t us);
+  void setFrameUs(uint32_t frameUs);
 
   const core::Inputs* inputs_ = nullptr;
   const core::Inputs* driveInputs_ = nullptr;
@@ -36,6 +37,8 @@ class EscDriver : public core::Module {
   uint32_t armState_   = esc::ARM_OFF;
   uint32_t armT0_      = 0;
   uint16_t lastUs_     = 0;
+  uint8_t  rateIdx_    = 0;
+  uint32_t frameUs_    = 0;
 };
 
 }  // namespace esc0

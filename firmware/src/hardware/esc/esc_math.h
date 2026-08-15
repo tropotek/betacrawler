@@ -10,6 +10,17 @@ enum : int32_t { MODE_OFF = 0, MODE_ARMED = 1, MODE_INPUT = 2 };
 // Values of an esc<N>.direction parameter, in declaration order.
 enum : int32_t { DIR_UNIDIRECTIONAL = 0, DIR_BIDIRECTIONAL = 1 };
 
+// Values of an esc<N>.rate parameter, in declaration order -- the PWM frame
+// rate the output runs at. 50Hz is what every analog ESC auto-detects; a
+// BLHeli_S-class ESC handles the rest and cuts the 0-20ms wait for the next
+// frame that dominates rx-to-ESC latency at 50Hz.
+enum : int32_t { RATE_50 = 0, RATE_100 = 1, RATE_200 = 2, RATE_400 = 3 };
+
+// Low period reserved between pulses, so the ESC always sees a pulse train
+// rather than a line held high. Matters only at 400Hz, where the frame is
+// 2500us and esc<N>.max_us is settable to exactly that.
+constexpr uint16_t kMinLowUs = 125;
+
 // Arm-hold state, and the exact value an esc<N> module's `arm` telemetry
 // field carries -- a plain number, following rx's `link` field precedent
 // that a status reading is just a number, extended to three states here.
@@ -103,6 +114,30 @@ bool inputLossDemotesArmed(uint32_t armState, int32_t mode, bool inputFresh);
 // isCommandedLow/inputLossDemotesArmed exist to hold. Only meaningful for
 // MODE_INPUT; MODE_ARMED never reads the source channel at all.
 bool srcChangeDemotesArmed(uint32_t armState, int32_t mode, bool srcChanged);
+
+// Frame period in microseconds for a RATE_* index. An unrecognised index
+// answers 20000 (50Hz): an unknown value must never speed the output up past
+// what the attached ESC is known to handle.
+uint32_t frameUsForRate(uint8_t rateIdx);
+
+// The largest pulse that still leaves kMinLowUs of low time inside one frame.
+// This is where esc<N>.max_us and esc<N>.rate meet: both are independently
+// valid parameters (core::Params validates each against its own min/max and
+// has no cross-parameter seam), so the combination is resolved here, at the
+// point of use, rather than by refusing one of them.
+//
+// Deliberately NOT applied to neutralUs(): clamping the neutral point would
+// silently move where "stop" is when the rate changes, which is the last
+// thing that should move.
+uint16_t effectiveMaxUs(uint16_t maxUs, uint32_t frameUs);
+
+// True when a frame-rate change must force an already-ARMED session back
+// through a fresh arm-hold. A BLHeli_S-class ESC detects its input frame rate
+// as it arms, so changing that rate underneath it needs the same re-sync a
+// src change already gets (srcChangeDemotesArmed). Unlike that one this takes
+// no mode: MODE_ARMED drives the same pin at the same new rate and needs the
+// same treatment, and MODE_OFF can never be ARM_ARMED in the first place.
+bool rateChangeDemotesArmed(uint32_t armState, bool rateChanged);
 
 // The pulse width to write this tick, or 0 to mean "no update, hold the last
 // pulse" -- the same 0 sentinel rx/servo already use for "no data yet" on

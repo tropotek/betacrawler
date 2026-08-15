@@ -38,8 +38,8 @@ def test_connect_then_schema_and_params(client):
     schema = client.get("/api/schema").json()
     assert {p["key"] for p in schema["params"]} == {
         "device.name", "tlm.rate",
-        "esc0.direction", "esc0.mode", "esc0.throttle_us", "esc0.min_us", "esc0.max_us", "esc0.src",
-        "esc1.direction", "esc1.mode", "esc1.throttle_us", "esc1.min_us", "esc1.max_us", "esc1.src",
+        "esc0.direction", "esc0.rate", "esc0.mode", "esc0.throttle_us", "esc0.min_us", "esc0.max_us", "esc0.src",
+        "esc1.direction", "esc1.rate", "esc1.mode", "esc1.throttle_us", "esc1.min_us", "esc1.max_us", "esc1.src",
         "rx.protocol", "rx.source", "crossfire.timeout_ms", "elrs.timeout_ms", "rx.deadband_us",
         "tank_drive.throttle_src", "tank_drive.steer_src", "tank_drive.reverse_ratio",
         "tank_drive.arm_src", "tank_drive.arm_min", "tank_drive.arm_max"}
