@@ -897,13 +897,16 @@ async function refreshPorts() {
 
   // First load / nothing picked yet: adopt the recognized-board guess as the
   // desired port too, so it's what a later flicker-and-recover restores.
+  // Only a real board is adopted -- the simulator stays a provisional
+  // fallback below, so a board appearing later displaces it.
   if (!desiredPort && matched) desiredPort = matched;
   const desiredPresent = ports.some((p) => p.port === desiredPort);
-  // Desired port missing this tick (e.g. mid-flicker) with no recognized
-  // board to fall back to either: leave whatever the browser just picked as
-  // its own default among the surviving options.
+  // Desired port missing this tick (e.g. mid-flicker): a recognized board
+  // wins, and the simulator is the last resort when no real board is there.
+  // Picking it by hand sets desiredPort, which keeps it selected regardless.
   if (desiredPresent) sel.value = desiredPort;
   else if (matched) sel.value = matched;
+  else if (sims.length) sel.value = sims[0].port;
   growPortSelectWidth(sel);
 }
 
@@ -1446,11 +1449,11 @@ function setTelemetryPeriodFrom(values) {
 
 function startWatchdog() {
   setInterval(async () => {
-    if (!connected) {
-      // While disconnected, keep rescanning so a replugged board reappears.
-      try { await refreshPorts(); } catch { /* ignore */ }
-      return;
-    }
+    // Rescan on every tick, connected or not. Being connected no longer
+    // implies the picker is settled: a board plugged in while the simulator
+    // is connected still has to appear in it.
+    try { await refreshPorts(); } catch { /* ignore */ }
+    if (!connected) return;
     if (!lastTlmAt || Date.now() - lastTlmAt <= tlmPeriodMs * 3) return;
     try {
       const st = await Api.status();
