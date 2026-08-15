@@ -5,10 +5,10 @@ from backend.protocol import (
 
 
 def test_encode_produces_one_terminated_line():
-    line = encode(7, "set", key="led.blink_hz", val=5)
+    line = encode(7, "set", key="rx.deadband_us", val=5)
     assert line.endswith("\n")
     assert line.count("\n") == 1
-    assert decode(line) == {"id": 7, "op": "set", "key": "led.blink_hz", "val": 5}
+    assert decode(line) == {"id": 7, "op": "set", "key": "rx.deadband_us", "val": 5}
 
 
 def test_encode_omits_none_fields():
