@@ -8,7 +8,7 @@
           <p class="text-secondary">
             WeAct STM32F411CE Black Pill wired for the tank build's dual-ESC / receiver stack.
             Pin names come straight from <code>boards/blackpill_f411ce.h</code> &mdash; this is a
-            schematic wiring map, not the board's physical betacrawler layout, so match
+            schematic wiring map, not the board's physical silkscreen layout, so match
             connections by label, not by position.
           </p>
 
@@ -152,8 +152,8 @@
           <p class="text-secondary small mt-2">
             Dashed violet lead = wired but not required today (CRSF telemetry back-channel,
             reserved for a future use of PA9). Every other lead shown is load-bearing for the
-            firmware as it stands. ESC 0 and ESC 1 are independently commanded today &mdash; no
-            throttle/steering mixing yet.
+            firmware as it stands. ESC 0 drives the left track and ESC 1 the right, both fed by
+            the tank mixer rather than by a receiver channel directly.
           </p>
 
           <p>&nbsp;</p>
