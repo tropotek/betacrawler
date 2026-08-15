@@ -124,6 +124,10 @@ app/backend/           protocol.py (codec) -> link.py (threaded serial, id corre
                         terminal.py parses the Terminal page's commands; settings_ini.py is a
                         pure INI codec for settings backup/restore (no device, no coercion);
                         firmware.py is the bundle catalog + dfu-util wrapper.
+                        simulator.py + sim_model.py + sim_profile.json are the
+                        `sim://board` port: an in-process fake device behind the
+                        real wire protocol, schema copied from the firmware's
+                        golden fixture.
                         pytest-tested against a fake serial port (app/tests/fake_serial.py),
                         no board needed
 app/firmware/          the firmware images this app version ships with, plus manifest.json.

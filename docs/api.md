@@ -7,7 +7,7 @@ exactly this surface in Node; `app/web/` moves across untouched.**
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| GET | `/api/ports` | — | `[{port, desc, vid, pid, match, board}]` |
+| GET | `/api/ports` | — | `[{port, desc, vid, pid, match, board, sim}]` |
 | POST | `/api/connect` | `{"port": "/dev/ttyACM0"}` | status object |
 | POST | `/api/disconnect` | — | status object |
 | GET | `/api/status` | — | `{state, fw, proto, board, name, ver, built, mods}` |
@@ -40,6 +40,16 @@ present when the corresponding feature (`FEATURE_DFU`, `FEATURE_WIFI`) was
 compiled in — see `POST /api/wifi/scan` below for the latter. Same additive
 contract as `mods`: firmware that predates a given cap omits the key and the
 backend reports `[]`.
+
+### The simulated port
+
+`/api/ports` always lists `sim://board` first, with `sim: true` and
+`match: false`. Connecting to it runs an in-process simulated device that
+speaks the same wire protocol as real firmware, so every route on this page
+behaves identically against it. It reports `board: "simulator"` and no
+`caps`, so `/api/firmware/catalog` recommends nothing and `enter-dfu`
+answers `nodfu`. Its telemetry is fabricated and reacts to the parameters
+you set; nothing it stores survives a disconnect.
 
 `built` is the firmware's own `__DATE__ " " __TIME__`, and the firmware bundle's
 manifest records the identical string. That makes "is the device running *this*
