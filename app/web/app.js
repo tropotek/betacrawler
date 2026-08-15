@@ -232,7 +232,7 @@ function formatTelemetryValue(def, value) {
 // core::Fault codes, in the firmware's own order. The wire carries the code
 // and the Configuration page names it here, so no named renderer is needed.
 // Both helpers take the store's already-formatted value, i.e. a string.
-const FAULT_NAMES = ['OK', 'Registry overflow', 'Panic'];
+const FAULT_NAMES = ['None', 'Registry overflow', 'Panic'];
 
 function faultText(value) {
   if (value === null || value === undefined) return '–';
