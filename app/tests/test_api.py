@@ -46,7 +46,7 @@ def test_connect_then_schema_and_params(client):
     # Telemetry descriptor rides along in the same response, so the UI renders
     # its cards from the device rather than a hardcoded field list.
     assert {t["key"] for t in schema["tlm"]} == {
-        "up", "clk", "ram", "temp", "vdd", "fault",
+        "up", "clk", "ram", "temp", "vdd", "fault", "loop", "loopworst",
         "esc0", "arm0", "esc1", "arm1", "drv_l", "drv_r",
         "link", "lq", "rssi", "rate", "err", "rfrate", "pwr",
         "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8",

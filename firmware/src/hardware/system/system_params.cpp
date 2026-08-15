@@ -30,6 +30,11 @@ static const TlmDef kTlm[T_COUNT] = {
   // Configuration page maps the code to text -- no named renderer for a
   // three-value enum the on-device panel would have to implement a second time.
   {"fault", "Fault",   nullptr, TlmType::U32,   0,   0,  nullptr, nullptr},
+  // Loop health, from core::LoopStats. The rate answers "is the loop fast";
+  // the worst pass answers "does anything stall it", which an average hides
+  // completely -- a single 200ms blocking write leaves the rate barely dented.
+  {"loop",  "Loop",     "Hz",  TlmType::U32,     0,   0,  nullptr, nullptr},
+  {"loopworst", "Worst Pass", "\xC2\xB5s", TlmType::U32, 0, 0, nullptr, nullptr},
 };
 
 const core::ModuleDesc kDesc = {

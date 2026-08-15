@@ -4,7 +4,7 @@
           <div class="card mb-3" x-data>
             <div class="card-header h6 text-secondary mb-0 py-2">System</div>
             <div class="card-body row g-3">
-              <template x-for="key in ['up', 'clk', 'ram', 'temp', 'vdd']" :key="key">
+              <template x-for="key in ['up', 'clk', 'ram', 'temp', 'vdd', 'loop', 'loopworst']" :key="key">
                 <div class="col-6 col-md-4">
                   <div class="text-secondary small"
                        x-text="$store.telemetry.field(key).def?.unit
