@@ -53,6 +53,28 @@ PAGES = ("home", "config", "controller", "modes", "terminal", "firmware",
 FULL_PAGE = {"config", "controller", "modes", "wiring", "help"}
 
 
+# The wiring diagram is captured twice: one copy sized for the docs page, one
+# the reader opens full size to zoom into the pin labels. Both are element
+# screenshots off the live page rather than the raw SVG -- the markup carries
+# ~60 class attributes and renders unstyled without the app's own stylesheet.
+DIAGRAM_SHOTS = (("wiring-diagram.png", 2), ("wiring-diagram-large.png", 4))
+
+
+def capture_wiring_diagram(browser, out_dir):
+    for filename, scale in DIAGRAM_SHOTS:
+        # Tall enough to hold the whole card without scrolling: an element
+        # screenshot that has to scroll ends up with the app's sticky header
+        # painted over the top of the diagram.
+        page = browser.new_page(viewport={"width": 1600, "height": 1800},
+                                device_scale_factor=scale)
+        page.goto(f"http://127.0.0.1:{PORT}/")
+        page.click("[data-page='wiring']")
+        page.wait_for_selector(".diagram-card svg")
+        page.wait_for_timeout(300)
+        page.locator(".diagram-card").screenshot(path=str(out_dir / filename))
+        page.close()
+
+
 def main():
     device = DeviceModel(SerialLink())
     app = create_app(device)
@@ -91,14 +113,7 @@ def main():
             page.screenshot(path=str(out_dir / f"{name}.png"),
                             full_page=name in FULL_PAGE)
 
-            if name == "wiring":
-                # The docs need the diagram without the app's chrome around
-                # it. Capturing the element here rather than copying the SVG
-                # into the page keeps the board's own stylesheet applied --
-                # the markup carries ~60 class attributes and renders
-                # unstyled without it.
-                page.locator(".diagram-card").screenshot(
-                    path=str(out_dir / "wiring-diagram.png"))
+        capture_wiring_diagram(browser, out_dir)
         browser.close()
 
     server.should_exit = True

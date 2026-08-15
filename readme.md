@@ -16,7 +16,8 @@ steering limits, the arming switch, firmware updates.
 ## What you need
 
 A Black Pill (STM32F411CE), an ELRS receiver, two BLHeli-S ESCs in bidirectional mode, two
-brushless motors, a LiPo, and a tracked chassis. Full list and wiring in
+brushless motors, a power distribution board, a LiPo, and a tracked chassis. Full list and wiring
+in
 **[What you need](https://tropotek.github.io/betacrawler/build/what-you-need/)**.
 
 ## Quickstart

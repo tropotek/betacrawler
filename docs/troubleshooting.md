@@ -17,8 +17,8 @@ A board running Betacrawler is labelled **(STM32)** in the dropdown.
 The ESCs are being powered from the board's 5V pin. Under load they pull far more current than
 that rail can supply, the board browns out, and USB drops.
 
-It looks like a software or cable fault, which is what makes it confusing. It is not — give the
-ESCs their own supply from the battery, and keep a common ground with the board.
+It looks like a software or cable fault, which is what makes it confusing. It is not — run the
+ESCs off the power distribution board's battery pads, and keep a common ground with the board.
 
 ## No channels move on the Controller page
 

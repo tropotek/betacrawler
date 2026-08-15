@@ -12,7 +12,8 @@ you picked.
 | ELRS receiver | 1 | Must expose a CRSF-capable output pad. Crossfire works too. |
 | Brushless ESC, BLHeli-S | 2 | Must support **bidirectional** mode. One per track. |
 | Brushless motor | 2 | Sized for your chassis, matched to the ESCs' current rating. |
-| LiPo battery | 1 | Sized for the motors. Powers the ESCs, **not** the board. |
+| Power distribution board | 1 | With a 5V BEC. The reference build uses a Matek PDB with 5V and 12V outputs. |
+| LiPo battery | 1 | Sized for the motors. Feeds the PDB, **not** the board directly. |
 | USB-C cable | 1 | A data cable. Charge-only cables are a common and confusing failure. |
 | ST-Link/V2 | 1 | For the first flash only. You can borrow one — it is not needed again. |
 
@@ -40,9 +41,11 @@ firmware yourself.
 
 ## Power
 
-The battery powers the ESCs. The board is powered over USB while you are configuring it.
+The battery goes to the power distribution board, and everything else takes its power from there:
+the ESCs off the PDB's battery pads, the board and the receiver off its 5V BEC. USB powers the
+board too, and can stay plugged in with the battery connected.
 
 Never run the motors from the board's 5V pin — see [Wiring](wiring.md) for what happens if you
-try, and for the grounding you do still need between the two supplies.
+try, and for the grounding the ESCs need.
 
 Next: [Wiring](wiring.md).

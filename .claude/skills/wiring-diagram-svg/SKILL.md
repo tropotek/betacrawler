@@ -21,11 +21,15 @@ than re-deriving a layout.
 
 ## Reference implementation
 
-The full worked example (Black Pill + display/servo/ESC/receiver/USB cards) lives in
-`app/web/index.html`, inside `#page-examples` → `<div class="wiring-diagram">`. CSS tokens are in
-the same file's `<style>` block under `.wiring-diagram { --wd-* }`. Copy an existing card (the
-"Servo card" is the smallest complete one) as your starting point — don't build a card from a
-blank SVG.
+The full worked example (Black Pill + battery/PDB/ESC/motor/receiver/USB cards) lives in
+`app/web/pages/wiring.html`, inside `<div class="wiring-diagram">`. CSS tokens are in
+`app/web/index.html`'s `<style>` block under `.wiring-diagram { --wd-* }`. Copy an existing card
+(the "Motor 0 card" is the smallest complete one) as your starting point — don't build a card from
+a blank SVG.
+
+The docs site carries the same diagram as two PNGs, captured off the live page by
+`docs-tools/capture_screenshots.py` — one inline, one full-size for the reader to open and zoom.
+Re-run that script after changing the SVG or the docs page goes stale.
 
 ## Anatomy (non-negotiable)
 
@@ -42,7 +46,11 @@ blank SVG.
   labels sit **inside the module card's own border** — right-aligned (`text-anchor="end"`) for
   cards left of the board, left-aligned for cards right of the board — so each label hugs the wire
   it belongs to.
-- One color per peripheral (display/servo/receiver/esc/…), not per signal type — add a new
+- Pins normally sit on a card's left or right edge with a horizontal wire. A card that also has to
+  reach the power band below it puts those pins on its **bottom** edge instead: dot on the border,
+  label centered just inside it, wire straight down. Every such lead runs in its own vertical
+  channel down to the PDB's top edge, so no two leads cross.
+- One color per peripheral (receiver/esc/motor/pdb/…), not per signal type — add a new
   `--wd-<name>` token plus matching `.fill-<name>` / `.wire-<name>` CSS classes when introducing a
   peripheral; reuse existing ones for a repeat appearance.
 - A wired-but-not-currently-used pin (e.g. a reserved RX line) gets `wire-reserved`
@@ -50,7 +58,8 @@ blank SVG.
   active pin.
 - copper (`--wd-copper`) is the brand accent, used for the USB connector only. Power-red
   (`--wd-power`) is reserved for safety callouts in footnote text (e.g. "never board 5V") — never
-  used as a wire color.
+  used as a wire color. Teal (`--wd-pdb`) carries the whole battery/PDB power chain, at a heavier
+  `stroke-width`, so current-carrying leads read as one system.
 - Type: `lbl-mono` (monospace) for all pin names and technical labels, `lbl-heading` (condensed
   sans) for card/board titles, plain body copy outside the SVG for prose.
 

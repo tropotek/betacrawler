@@ -5,6 +5,18 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **docs: the wiring diagram now shows the whole power chain.** It stopped at the two ESC signal
+  leads and the receiver, leaving a builder to guess at everything carrying current: the battery
+  went unshown, the ESCs had no power source, and the motors — the reason the ESCs are there —
+  were absent entirely. The diagram now runs LiPo → PDB → ESCs → motors, with the PDB's 5V BEC
+  feeding the board's 5V rail and the receiver through it, on a canvas grown to 1600x1240 with the
+  power chain as its own band along the bottom so no lead crosses another. Two new peripheral
+  colors: teal for the power chain, navy for the motor phases. The docs page links a 4x capture of
+  the diagram, opened in a new tab, because the inline image is scaled to the content column and
+  the pin labels are unreadable at that size. The parts list gains the PDB, and the pages that
+  described the board and ESCs as running off two separate supplies now describe the PDB feeding
+  both.
+
 - **docs: the documentation site is now a Betacrawler build guide.** The previous set was the
   upstream template's docs put through a find-and-replace — the home page opened by explaining
   what a silkscreen is on a PCB with the project name substituted for the word, and the whole set
