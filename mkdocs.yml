@@ -1,5 +1,5 @@
 site_name: betacrawler
-site_description: A Betaflight-Configurator-style tool for small microcontroller boards, and a template to fork for your own.
+site_description: Build and tune a radio-controlled tracked vehicle with a browser-based configurator.
 site_url: https://tropotek.github.io/betacrawler/
 repo_url: https://github.com/tropotek/betacrawler
 repo_name: tropotek/betacrawler
@@ -26,24 +26,19 @@ theme:
 
 nav:
   - Home: index.md
-  - Getting Started: getting-started.md
-  - Guides:
-      - Adding a Board: guides/adding-a-board.md
-      - Wiring the Display: guides/wiring-the-display.md
-      - Shipping a Release: guides/shipping-a-release.md
-  - Modules:
-      - Overview: modules/overview.md
-      - Button: modules/button.md
-      - Servo: modules/servo.md
-      - ESC: modules/esc.md
-      - RX (Receiver): modules/rx.md
-      - Display (ST7789): modules/display.md
-      - WiFi: modules/wifi.md
-      - Adding Your Own Module: modules/adding-your-own-module.md
+  - Build:
+      - What you need: build/what-you-need.md
+      - Wiring: build/wiring.md
+      - Flashing the firmware: build/flashing.md
+  - Drive it:
+      - Install and connect: drive/install-and-connect.md
+      - First setup: drive/first-setup.md
+      - Tuning: drive/tuning.md
   - Reference:
-      - Status LED: status-led.md
-      - Architecture: architecture.md
-      - API / Wire Protocol: api.md
+      - Parameters: reference/parameters.md
+      - Arming and modes: reference/arming-and-modes.md
+      - Status LED: reference/status-led.md
+      - Terminal and backup: reference/terminal-and-backup.md
   - Troubleshooting: troubleshooting.md
 
 markdown_extensions:

@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 It documents development procedures and practices only — build/test commands, layout, and rules
 that must not be undone. It is not a memory file: decision history, rationale, and narrative belong
-in `docs/architecture.md`, `CHANGELOG.md`, or commit messages, not here. Keep this file minimal.
+in `dev-docs/architecture.md`, `CHANGELOG.md`, or commit messages, not here. Keep this file minimal.
 
 ## What this is
 
@@ -15,8 +15,8 @@ HTTP+WebSocket, and a static Bootstrap web UI drives it.
 |---|---|
 | `_notes/todo.md` | the live document — what's next. Read it first in any new session |
 | `CHANGELOG.md` | what has shipped, one summary per change |
-| `docs/architecture.md` | the reasoning behind every rule below — read the relevant section before changing that area |
-| `docs/api.md` | the HTTP/WS contract |
+| `dev-docs/architecture.md` | the reasoning behind every rule below — read the relevant section before changing that area |
+| `dev-docs/api.md` | the HTTP/WS contract |
 | `_notes/_archive/` | history, not documentation (see below) |
 
 **`_notes/_archive/` holds superseded specs, implementation plans and the retired `progress.md`.**
@@ -93,7 +93,7 @@ protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer ma
 - Never reference a line number or a spec/design-doc file in a comment — both go stale the moment
   either file changes. If the reasoning matters, it belongs in the commit message or PR
   description, not inline.
-- Comments and documentation (`docs/architecture.md`, `docs/api.md`, this file) describe the
+- Comments and documentation (`dev-docs/architecture.md`, `dev-docs/api.md`, this file) describe the
   project as it currently is, never as a narrative of what changed — no "no longer exists", "used
   to be", "the old X page", "retired". `CHANGELOG.md` is the one place that history belongs; a
   living doc a reader hits later has no time context for a change narrative. This holds even more
@@ -152,7 +152,7 @@ folder in `betacrawler.code-workspace`, same pattern as `firmware/`.
 
 ## Rules that must not be undone
 
-Each of these has cost real defects or real rework. The reasoning is in `docs/architecture.md`
+Each of these has cost real defects or real rework. The reasoning is in `dev-docs/architecture.md`
 under the named section — read it before changing that area, not after.
 
 **Modules** — `core/` never names a feature. Each module is `<name>_params.cpp` (its `ModuleDesc`;

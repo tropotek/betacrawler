@@ -1,60 +1,81 @@
 # Troubleshooting
 
-## The port doesn't appear
+Symptoms in roughly the order you are likely to hit them.
 
-Charge-only USB cable, or missing udev rules (see [Getting Started](getting-started.md)). The
-board's own USB is the USB-C connector — the ST-Link is a separate path and does not carry the
-serial port.
+## The port does not appear in the dropdown
 
-## Upload grabs the wrong ST-Link
+Most often the cable. Plenty of USB cables carry power only, and a charge-only cable makes the
+board look dead while the LED blinks away happily.
 
-With two ST-Link/V2 units attached at once, pin the right one by adding
-`upload_port = <device>` to `[env:blackpill_f411ce]` in `firmware/platformio.ini`.
+Check the LED first: if it is blinking once a second, the board is fine and the problem is
+between it and your computer. Try another cable, then another port.
 
-## Editing a board header seemed to change nothing
+A board running Betacrawler is labelled **(STM32)** in the dropdown.
 
-It rebuilds correctly — `firmware/scripts/config_hash.py` exists precisely because a
-macro-expanded include is invisible to the build system's dependency scanner. Don't remove the
-`extra_scripts` line that runs it (see [Adding a Board](guides/adding-a-board.md)), or silent
-stale binaries come back.
+## The board connects, then drops out when the motors run
 
-## Saved settings vanished after reflashing
+The ESCs are being powered from the board's 5V pin. Under load they pull far more current than
+that rail can supply, the board browns out, and USB drops.
 
-Working as intended. A fingerprint over every parameter's key, type and bounds is stored with the
-settings, so changing the enabled module set or a parameter's range discards the saved block
-rather than reinterpreting old bytes against a new table.
+It looks like a software or cable fault, which is what makes it confusing. It is not — give the
+ESCs their own supply from the battery, and keep a common ground with the board.
 
-## A brief freeze when saving
+## No channels move on the Controller page
 
-The F411 has no real EEPROM; flash emulation stalls the MCU for about a second. That's why values
-apply to RAM instantly and flash is written only on an explicit Save, and why the app's staleness
-watchdog allows three telemetry intervals before it complains.
+Work through these in order:
 
-## The board is bricked
+1. **The receiver pad is still in PWM mode.** This is the usual answer. A receiver's pads ship as
+   PWM servo outputs; one has to be reassigned to CRSF in the receiver's own menu. Until then
+   nothing reaches the board at all, with no error to say so.
+2. **The receiver is not bound** to your handset.
+3. **The protocol does not match** — check `rx.protocol` is `elrs` or `crossfire` to suit your
+   receiver.
+4. **TX and RX are the wrong way round.** The receiver's *TX* pad goes to the board's PA10.
 
-It isn't — BOOT0 + NRST reaches the ROM bootloader regardless of what is in flash.
+## Channels move but the tracks do not
 
-### First flash without an ST-Link
+The vehicle is not armed. Check on the **Modes** page that the arm channel's live marker sits
+inside the highlighted band, and that `tank_drive.arm_src` names the channel your switch is
+actually on.
 
-A board with no betacrawler firmware on it can't be asked to reboot into DFU over USB, so do it by
-hand — the same procedure rescues a board whose firmware is broken:
+If the switch looks right, centre the throttle and wait two seconds — arming also requires the
+throttle to have been at neutral for that long before it takes effect.
 
-1. Make sure there is an image to flash: `python3 app/tools/bundle_firmware.py blackpill_f411ce`
-   (see [Getting Started](getting-started.md)). From a fresh clone the Firmware page is empty
-   until you do this.
-2. Hold **BOOT0**, tap **NRST**, release BOOT0. The board goes quiet rather than showing any sign
-   of life — that is what DFU mode looks like.
-3. On the app's Firmware page, press Flash. (`dfu-util -l` should list the board if you want to
-   check first.)
+## One track runs backwards
 
-> **Nothing can identify a board in DFU mode.** Every STM32F4 ROM bootloader reports `0483:df11`
-> and nothing else — no board name, no version. The app carries the board string forward from the
-> last connection and says plainly when it has none. Check you picked the right image; the
-> bootloader cannot check for you.
+Swap any two of the three motor wires on that ESC, or reverse that motor's direction in BLHeli
+Configurator. Either works.
 
-## ESP32: flashing fails or hangs
+## The two tracks are swapped left-for-right
 
-ESP32 boards flash over their own USB-UART bridge with `esptool`, not DFU — a different path from
-the STM32 boards above. Make sure nothing else has the serial port open (a monitor session, a
-second app instance), and that the board isn't held in a bootloader-entry strap state it needs
-manual button presses to exit.
+No need to rewire. Swap `esc0.src` and `esc1.src` between `drive_left` and `drive_right`.
+
+## It will not reverse
+
+The ESC is not in bidirectional mode. Set it in BLHeli Configurator — the firmware already
+expects bidirectional and cannot make an ESC reverse that is not configured for it.
+
+## It creeps with the sticks centred
+
+Raise `rx.deadband_us`. Start around 10–20 µs.
+
+If it creeps in one direction only and a lot of deadband is needed, the ESC's calibration is
+likely off-centre; recheck **Min** and **Max**.
+
+## Settings vanish after a power cycle
+
+They were never saved. Changes apply to the running board immediately but live in RAM until you
+press **Save to flash**.
+
+## The board is unresponsive and will not appear for a firmware update
+
+Reach the built-in bootloader by hand: hold **BOOT0**, tap **NRST**, release **BOOT0**. The
+**Firmware** page stays available even with nothing connected, which is exactly when you need it.
+
+One thing to know: every STM32F4 in bootloader mode identifies itself the same way, so a board in
+that state cannot be told apart from any other. Only have the one you are flashing plugged in.
+
+## My receiver is not ELRS or Crossfire
+
+It will not work. The firmware speaks CRSF only, in those two flavours. Anything else — PWM, PPM,
+SBUS, IBUS — means modifying the firmware yourself.

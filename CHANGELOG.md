@@ -5,6 +5,30 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **docs: the documentation site is now a Betacrawler build guide.** The previous set was the
+  upstream template's docs put through a find-and-replace — the home page opened by explaining
+  what a silkscreen is on a PCB with the project name substituted for the word, and the whole set
+  framed the project as a board-agnostic configurator to fork rather than as the tracked vehicle
+  this firmware builds. Twelve new pages in four sections, ordered the way a builder works:
+  Build (parts, wiring, flashing), Drive it (connect, first setup, tuning), Reference
+  (parameters, arming, status LED, terminal) and Troubleshooting. Parameter tables are generated
+  from the firmware's golden schema and checked back against it, so every default and range on the
+  site matches the device. `architecture.md` and `api.md` move to `dev-docs/`, off the published
+  site: they are developer material, and the site is for people building the machine. The README
+  is rewritten around the hero image, rendered to PNG because GitHub's markdown sanitiser will not
+  reliably display the SVG. Screenshots are recaptured against the `sim://board` simulator, whose
+  schema is a copy of the golden fixture — the capture tool previously carried its own
+  hand-written schema which had drifted, still declaring a display parameter this board does not
+  ship.
+
+- **fix: four stale statements in the app and firmware.** The Wiring page described a "physical
+  betacrawler layout" (another find-and-replace casualty — it is the silkscreen a schematic map is
+  contrasted with) and claimed the two ESCs are independently commanded with no mixing, which
+  `tank_drive` has since made false. The Terminal's placeholder offered `get led.mode`, naming a
+  parameter no board in this tree ships, and the Home page pointed at a Telemetry page the nav does
+  not have. In the firmware, `esc0_params.cpp` said "Defaults to unidirectional" directly above a
+  line defaulting to `esc::DIR_BIDIRECTIONAL`.
+
 - **feat: a simulated board can be selected instead of a real one.** `sim://board` heads the
   port dropdown as "Simulated board"; connecting to it runs an in-process device behind the same
   JSON-lines protocol the firmware speaks, so every page, the Terminal, INI backup/restore and the
