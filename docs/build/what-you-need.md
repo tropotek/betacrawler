@@ -44,3 +44,5 @@ The battery powers the ESCs. The board is powered over USB while you are configu
 
 Never run the motors from the board's 5V pin — see [Wiring](wiring.md) for what happens if you
 try, and for the grounding you do still need between the two supplies.
+
+Next: [Wiring](wiring.md).

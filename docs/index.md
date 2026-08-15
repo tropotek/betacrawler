@@ -30,6 +30,9 @@ the app builds the controls from that.
 
 ## Where to start
 
-Work through the Build section in order, then Drive it. Build gets you from a box of parts to a
-board with firmware on it; Drive it gets the app talking to the board and the vehicle moving the
-way you want.
+Work through the Build section in order — [What you need](build/what-you-need.md),
+[Wiring](build/wiring.md), [Flashing the firmware](build/flashing.md) — then Drive it, where
+[Install and connect](drive/install-and-connect.md) gets the app talking to the board and
+[First setup](drive/first-setup.md) decides whether the vehicle actually drives.
+
+If something is not behaving, [Troubleshooting](troubleshooting.md) lists the usual causes.

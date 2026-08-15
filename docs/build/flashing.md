@@ -38,7 +38,7 @@ it grabs the wrong one, add `upload_port = <device>` under `[env:blackpill_f411c
 
 Unplug the ST-Link and power the board over USB. The onboard LED should settle into an even
 one-beat-per-second blink — that is the firmware reporting itself healthy. Anything faster means
-a fault; see the Status LED page under Reference.
+a fault; see [Status LED](../reference/status-led.md).
 
 ## Updating later
 
@@ -50,3 +50,5 @@ so gating it on a working device would be backwards.
 
 If a board ever becomes unresponsive and will not appear for an update, you can reach the same
 built-in bootloader by hand: hold **BOOT0**, tap **NRST**, release **BOOT0**.
+
+Next: [Install and connect](../drive/install-and-connect.md).

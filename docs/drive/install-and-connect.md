@@ -49,3 +49,5 @@ parts arrive. Nothing it reports is real.
 
 Most pages grey out until a device is connected. **Firmware** deliberately does not — it is the
 tool you need when a board is in a bad state, so it stays reachable.
+
+Next: [First setup](first-setup.md).

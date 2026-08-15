@@ -39,6 +39,7 @@ nav:
       - Arming and modes: reference/arming-and-modes.md
       - Status LED: reference/status-led.md
       - Terminal and backup: reference/terminal-and-backup.md
+  - Troubleshooting: troubleshooting.md
 
 markdown_extensions:
   - admonition
