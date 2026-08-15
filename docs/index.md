@@ -1,34 +1,35 @@
-# betacrawler
+# Betacrawler
 
-A Betaflight-Configurator-style tool for small microcontroller boards, and a template to fork
-for your own.
+![A Betacrawler](assets/tank-hero.png)
 
-The betacrawler on a PCB is the printed layer that tells you what every pad and pin actually is.
-This does the same for firmware: the board declares its parameters and telemetry, and a browser
-UI builds itself from that declaration. Adding a setting to the firmware makes a control appear
-in the app. There is no second list to keep in sync.
+Betacrawler is a radio-controlled tracked vehicle. An STM32 board reads your RC receiver, mixes
+the sticks into left and right track speeds, and drives two brushless ESCs. Everything about how
+it drives — which channels the sticks live on, the speed and steering limits, the arming switch —
+is set from a browser, with the vehicle plugged in over USB.
 
-Three tiers:
+There is no firmware rebuild to change how it behaves. The board publishes what it can do, and
+the app builds the controls from that.
+
+## How the parts fit together
 
 ```
-  STM32 board  ──USB serial──  Python backend  ──HTTP+WebSocket──  browser UI
-  (firmware/)   JSON lines      (app/backend/)                      (app/web/)
+  STM32 board  ──USB serial──  backend  ──HTTP+WebSocket──  browser
+  reads the receiver,          bridges the                  the app you
+  drives the ESCs              serial link                  configure with
 ```
 
-The reference board throughout this site is a WeAct **Black Pill (STM32F411CE)** with an LED, a
-button and an optional ST7789 240x240 panel. Other boards are called out only where they differ.
+## What you can do from the app
 
-## What you get
+- **Set it up** — assign throttle and steering to receiver channels, pick the arming switch,
+  calibrate both ESCs.
+- **Tune it** — cap forward speed, reverse speed and steering authority, each independently.
+- **Watch it live** — every receiver channel, link quality, and what each ESC is being told to do.
+- **Update the firmware** — over USB, without a programmer, once the board has been flashed the
+  first time.
+- **Back up your settings** to a file, and restore them.
 
-- **Live config** — every firmware parameter as a form control, validated on the device as well
-  as in the app. Values apply instantly; flash is written only when you press Save.
-- **Telemetry** — pushed from the board at a configurable rate, rendered as cards.
-- **Terminal** — type `get rx.protocol`, `set rx.deadband_us 5`, `save`; see the raw JSON both ways.
-- **Firmware updates in-app** — the app carries an image matching its own version and flashes it
-  over USB DFU (or `esptool` on ESP32), no ST-Link needed after the first time.
-- **Settings backup/restore** as INI files.
-- **An on-device dashboard** on the optional SPI panel.
+## Where to start
 
-Start with [Getting Started](getting-started.md), then see the [Modules](modules/overview.md)
-section to add or write your own module, or [Adding a Board](guides/adding-a-board.md) to port
-to different hardware.
+Work through the Build section in order, then Drive it. Build gets you from a box of parts to a
+board with firmware on it; Drive it gets the app talking to the board and the vehicle moving the
+way you want.
