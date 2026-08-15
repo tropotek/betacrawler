@@ -10,8 +10,13 @@ import serial
 from serial.tools import list_ports
 
 from . import protocol
+from .simulator import SimSerial
 
 log = logging.getLogger(__name__)
+
+# Reserved port string for the in-process simulated board. Not a device path,
+# so it can never collide with a real port the OS enumerates.
+SIM_PORT = "sim://board"
 
 # USB VID:PID pairs for the boards this app knows how to talk to, in the
 # order the port dropdown should prefer them when auto-selecting. A CP2102
@@ -45,7 +50,11 @@ class _Pending:
 
 
 def list_candidate_ports() -> list[dict]:
-    out = []
+    # The simulator leads the list but sets match=False on purpose: `match`
+    # is what the UI auto-selects on, and a real board must always win it.
+    out = [{"port": SIM_PORT, "desc": "Simulated board (no hardware)",
+            "vid": None, "pid": None, "match": False, "board": "Simulator",
+            "sim": True}]
     for p in list_ports.comports():
         board = next(
             (name for vid, pid, name in _KNOWN_BOARDS if p.vid == vid and p.pid == pid),
@@ -58,11 +67,14 @@ def list_candidate_ports() -> list[dict]:
             "pid": f"{p.pid:04x}" if p.pid else None,
             "match": board is not None,
             "board": board,
+            "sim": False,
         })
     return out
 
 
 def _default_open(port: str):
+    if port == SIM_PORT:
+        return SimSerial()
     return serial.Serial(port, baudrate=115200, timeout=0.2)
 
 

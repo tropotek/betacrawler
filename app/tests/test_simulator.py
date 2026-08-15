@@ -1,6 +1,12 @@
 import json
+import time
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
+from backend.device import DeviceModel
+from backend.link import SIM_PORT, list_candidate_ports
+from backend.main import create_app
 from backend.simulator import SimSerial
 
 _REPO = Path(__file__).resolve().parents[2]
@@ -105,3 +111,52 @@ def test_readline_returns_empty_on_timeout_like_pyserial():
     sim = SimSerial(telemetry=False, timeout=0.01)
     assert sim.readline() == b""
     sim.close()
+
+
+def test_the_simulator_is_always_offered_first_and_never_preselected():
+    ports = list_candidate_ports()
+    assert ports[0]["port"] == SIM_PORT
+    assert ports[0]["sim"] is True
+    # match drives the UI's auto-selection: a real board must always win it.
+    assert ports[0]["match"] is False
+    assert all(p["sim"] is False for p in ports[1:])
+
+
+def test_connecting_to_the_simulator_serves_schema_and_values():
+    device = DeviceModel()
+    try:
+        device.connect(SIM_PORT)
+        assert device.status()["state"] == "connected"
+        assert device.status()["board"] == "simulator"
+        assert len(device.schema()["params"]) == 29
+        assert device.values()["tlm.rate"] == 10
+    finally:
+        device.disconnect()
+
+
+def test_the_whole_api_works_against_the_simulator():
+    app = create_app(DeviceModel())
+    with TestClient(app) as c:
+        assert c.post("/api/connect", json={"port": SIM_PORT}).status_code == 200
+        assert c.put("/api/params/tlm.rate", json={"val": 25}).status_code == 200
+        assert c.get("/api/params").json()["tlm.rate"] == 25
+        assert c.post("/api/params/save").json()["ok"] is True
+        assert c.post("/api/params/revert").json()["src"] == "flash"
+        assert c.post("/api/terminal", json={"command": "get tlm.rate"}).json()["ok"]
+        c.post("/api/disconnect")
+
+
+def test_telemetry_frames_reach_a_websocket_client():
+    app = create_app(DeviceModel())
+    with TestClient(app) as c:
+        c.post("/api/connect", json={"port": SIM_PORT})
+        with c.websocket_connect("/ws") as ws:
+            deadline = time.monotonic() + 5.0
+            while time.monotonic() < deadline:
+                msg = ws.receive_json()
+                if msg["type"] == "tlm":
+                    assert msg["data"]["ch1"] > 0
+                    break
+            else:
+                raise AssertionError("no telemetry frame within 5s")
+        c.post("/api/disconnect")
