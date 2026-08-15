@@ -6,9 +6,8 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 ## Unreleased
 
 - **feat(firmware): the onboard LED is a firmware health indicator, not a configurable module.**
-  It reads as solid on with a brief wink each second while the firmware is healthy, and pulses at
-  ~5Hz on a blocking fault; a hard fault blinks faster still, from a handler that previously left
-  the board frozen with its pin latched and nothing said. The wink exists because a stopped board
+  It blinks at an even 1Hz while the firmware is healthy and pulses at ~5Hz on a blocking fault; a hard fault blinks faster still, from a handler that previously left
+  the board frozen with its pin latched and nothing said. The blink exists because a stopped board
   holds its pins: a steady-on LED cannot distinguish healthy from dead, so the healthy signal has
   to be one a stopped loop cannot counterfeit. New `core::Health` records one fault code
   (first-fault-wins) and writes a `boot: fault=<name>` line that replays on every `hello`; new

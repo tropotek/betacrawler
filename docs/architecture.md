@@ -133,10 +133,11 @@ deliberate: it ticks *outside* the registry, so it survives the registry failing
 `begin()`s *before* `registerModules()`, so it is lit before anything is capable of failing. A
 health indicator must not depend on the subsystem it reports on.
 
-Healthy is on 950ms, off 50ms. A stopped board latches its pins, so a steady-on LED looks
+Healthy is an even 1Hz heartbeat. A stopped board latches its pins, so a steady-on LED looks
 identical whether the firmware is running or died moments ago — the healthy signal has to be one
-a stopped loop cannot counterfeit, and the wink is exactly that. Off would be worse still: it is
-also unpowered, unflashed, or a pin never configured.
+a stopped loop cannot counterfeit, and the blink is exactly that. Off would be worse still: it is
+also unpowered, unflashed, or a pin never configured. Both steps stay wider than the slowest loop
+iteration on purpose: a pass longer than a step would skip it entirely.
 
 The panic handler overrides the Arduino core's weak `HardFault_Handler`, which otherwise falls
 through to a silent infinite loop. It cannot use `delay()` or `millis()`: HardFault runs at

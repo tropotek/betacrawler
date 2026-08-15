@@ -6,12 +6,12 @@ than through the registry.
 
 | State | Pattern |
 |---|---|
-| Healthy | On 950ms, off 50ms — reads as solid on, with a brief wink each second |
+| Healthy | An even 1Hz heartbeat — 500ms on, 500ms off |
 | Fault | An even ~5Hz pulse |
 | Hard fault | A much faster blink, driven by the exception handler itself |
-| Frozen | Latched fully on or fully off — never winking |
+| Frozen | Latched fully on or fully off — never changing |
 
-## Why the healthy signal winks
+## Why the healthy signal blinks
 
 A stopped board holds its pins in whatever state they were last written. So an LED left solid on
 looks identical whether the firmware is running perfectly or died four hundred milliseconds ago —
@@ -20,9 +20,13 @@ the healthy signal and the dead signal are the same photons.
 An LED that is simply off is no better: off is also unpowered, unflashed, a dead regulator, or a
 pin never configured. It is the state the board is in *before* the firmware runs.
 
-The healthy signal therefore has to be one a stopped loop cannot counterfeit. The wink costs
-nothing to read — at a glance the LED looks solid — but it only happens if `loop()` is still
-calling `tick()`.
+The healthy signal therefore has to be one a stopped loop cannot counterfeit: the blink only
+happens if `loop()` is still calling `tick()`.
+
+Both steps also have to stay wider than the slowest loop iteration. A pass longer than a step
+straddles it entirely and the LED never changes state — an ST7789 refresh measures ~87ms on this
+hardware, so a step of a few tens of milliseconds would be skipped and a healthy board would look
+frozen. Healthy and fault differ by rate, 1Hz against 5Hz.
 
 ## Board header
 

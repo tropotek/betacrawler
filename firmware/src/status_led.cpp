@@ -13,9 +13,11 @@ namespace status_led {
 
 #if FEATURE_STATUS_LED
 
-// Healthy reads as solid on with a 50ms wink -- the wink is what proves the
-// loop is still running, since a frozen board latches the pin instead.
-static const uint16_t kHealthySteps[] = {950, 50};
+// An even 1Hz heartbeat for healthy, an even 5Hz pulse for a fault. The blink
+// is what proves the loop is still running, since a frozen board latches the
+// pin instead. Both steps must stay wider than the slowest loop iteration (an
+// ST7789 refresh measures ~87ms) or a slow pass straddles one and skips it.
+static const uint16_t kHealthySteps[] = {500, 500};
 static const uint16_t kFaultSteps[]   = {100, 100};
 
 static void writePin(bool on) {
