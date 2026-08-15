@@ -31,15 +31,18 @@ static uint16_t clampToRange(int32_t v, uint16_t minUs, uint16_t maxUs) {
 
 MixResult mix(int16_t throttleUs, int16_t steerUs, int16_t centerUs,
               uint16_t minUs, uint16_t maxUs,
-              uint8_t reverseRatioPct, uint16_t deadbandUs) {
+              uint8_t forwardRatioPct, uint8_t reverseRatioPct,
+              uint8_t steerRatioPct, uint16_t deadbandUs) {
   int32_t throttle = deadbanded(throttleUs, centerUs, deadbandUs);
   const int32_t steer = deadbanded(steerUs, centerUs, deadbandUs);
 
-  if (throttle < centerUs) {
+  if (throttle > centerUs) {
+    throttle = centerUs + (throttle - centerUs) * (int32_t)forwardRatioPct / 100;
+  } else if (throttle < centerUs) {
     throttle = centerUs + (throttle - centerUs) * (int32_t)reverseRatioPct / 100;
   }
 
-  const int32_t steerOffset = steer - centerUs;
+  const int32_t steerOffset = (steer - centerUs) * (int32_t)steerRatioPct / 100;
   int32_t leftOffset  = (throttle - centerUs) + steerOffset;
   int32_t rightOffset = (throttle - centerUs) - steerOffset;
 

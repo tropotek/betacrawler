@@ -5,6 +5,14 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **feat: forward and steer ratios join reverse ratio in the drive mixer.** New
+  `tank_drive.forward_ratio` and `tank_drive.steer_ratio`, both 0–100% defaulting to 100
+  (unscaled), rendered beside Reverse Ratio in the Controller page's Drive Mixer card. Each scales
+  one input's distance from centre and nothing else, so capping straight-line speed leaves a
+  zero-throttle pivot untouched and capping turn authority leaves speed untouched. They cap at the
+  mixer rather than via `esc<N>.min_us`/`max_us` on purpose: that range is the ESC's calibration,
+  and narrowing it also moves `neutralUs()`, which is where "stop" lives on a bidirectional setup.
+
 - **fix(firmware): tank drive defaults to throttle=ch2, steer=ch1.** A Mode 2 handset puts
   elevator on ch2 and aileron on ch1, so the previous ch1/ch2 pair put the driver's throttle stick
   on the steer input. The result on a default board is a pivot command rather than a drive command

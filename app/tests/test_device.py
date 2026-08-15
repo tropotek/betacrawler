@@ -91,7 +91,7 @@ def test_connect_caches_schema_and_values():
     try:
         assert dev.status()["state"] == "connected"
         assert dev.status()["proto"] == 1
-        assert len(dev.schema()["params"]) == 27
+        assert len(dev.schema()["params"]) == 29
         assert len(dev.schema()["tlm"]) == 37
         assert dev.values()["rx.deadband_us"] == 2
     finally:

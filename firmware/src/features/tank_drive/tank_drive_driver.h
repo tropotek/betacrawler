@@ -26,7 +26,9 @@ class TankDriveDriver : public core::Module {
 
   uint8_t  throttleSrcIdx_  = 0;
   uint8_t  steerSrcIdx_     = 1;
+  uint8_t  forwardRatioPct_ = 100;
   uint8_t  reverseRatioPct_ = 100;
+  uint8_t  steerRatioPct_   = 100;
   uint8_t  armSrcIdx_       = 0;      // ARM_SRC_NONE
   uint16_t armMinUs_        = 1700;
   uint16_t armMaxUs_        = 2000;

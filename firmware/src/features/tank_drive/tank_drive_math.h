@@ -23,9 +23,12 @@ struct MixResult {
 };
 
 // Arcade-style differential mix. Deadbands both inputs around centerUs, then
-// -- if throttleUs is below center -- scales the throttle's DISTANCE from
-// center by reverseRatioPct before mixing, so reverse power can be capped
-// lower than forward without touching steering authority's own scale.
+// scales each input's DISTANCE from center by its own ratio before mixing:
+// throttle above center by forwardRatioPct, throttle below center by
+// reverseRatioPct, and the steer offset by steerRatioPct. The three are
+// independent on purpose -- capping straight-line speed leaves a zero-throttle
+// pivot untouched, and capping turn authority leaves straight-line speed
+// untouched. 100 means unscaled.
 // left = throttle + (steer - center), right = throttle - (steer - center).
 // If either result would fall outside [minUs, maxUs], BOTH are scaled down
 // by the same factor (relative to centerUs) before being written -- this is
@@ -33,7 +36,8 @@ struct MixResult {
 // track clipping to its limit while the other keeps whatever value it had.
 MixResult mix(int16_t throttleUs, int16_t steerUs, int16_t centerUs,
               uint16_t minUs, uint16_t maxUs,
-              uint8_t reverseRatioPct, uint16_t deadbandUs);
+              uint8_t forwardRatioPct, uint8_t reverseRatioPct,
+              uint8_t steerRatioPct, uint16_t deadbandUs);
 
 // True when the vehicle is armed: the rx link is fresh, and either no arm
 // switch is configured (armSrcIsNone) or the selected channel's raw value

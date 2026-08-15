@@ -12,8 +12,9 @@ enum : int32_t { ARM_SRC_NONE = 0 };
 
 // Parameter indices *within this module* -- what onParamChanged() receives.
 enum : uint8_t {
-  P_THROTTLE_SRC = 0, P_STEER_SRC = 1, P_REVERSE_RATIO = 2,
-  P_ARM_SRC = 3, P_ARM_MIN = 4, P_ARM_MAX = 5,
+  P_THROTTLE_SRC = 0, P_STEER_SRC = 1,
+  P_FORWARD_RATIO = 2, P_REVERSE_RATIO = 3, P_STEER_RATIO = 4,
+  P_ARM_SRC = 5, P_ARM_MIN = 6, P_ARM_MAX = 7,
 };
 
 // Telemetry indices within this module's slice of the frame.

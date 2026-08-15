@@ -33,9 +33,15 @@ static const ParamDef kParams[] = {
   // this tree.
   {"tank_drive.throttle_src",  ParamType::Enum, "Throttle Src", nullptr, 0, 0, kSrcNames, 12, 0, 1, nullptr, nullptr, nullptr, nullptr},
   {"tank_drive.steer_src",     ParamType::Enum, "Steer Src",    nullptr, 0, 0, kSrcNames, 12, 0, 0, nullptr, nullptr, nullptr, nullptr},
-  // Percent of full reverse power. Defaults to 100 (unscaled reverse) --
-  // nothing already deployed changes behavior unless explicitly lowered.
+  // Percent of full power in each direction, and of full turn authority.
+  // Independent knobs: capping forward leaves a zero-throttle pivot alone, and
+  // capping steer leaves straight-line speed alone. All default to 100
+  // (unscaled) -- nothing already deployed changes behavior unless lowered.
+  // These cap at the MIXER, deliberately not via esc<N>.min_us/max_us: that
+  // range is the ESC's calibration, and narrowing it also moves neutralUs().
+  {"tank_drive.forward_ratio", ParamType::U8,   "Forward Ratio", "%",    0, 100, nullptr, 0, 0, 100, nullptr, nullptr, nullptr, nullptr},
   {"tank_drive.reverse_ratio", ParamType::U8,   "Reverse Ratio", "%",    0, 100, nullptr, 0, 0, 100, nullptr, nullptr, nullptr, nullptr},
+  {"tank_drive.steer_ratio",   ParamType::U8,   "Steer Ratio",   "%",    0, 100, nullptr, 0, 0, 100, nullptr, nullptr, nullptr, nullptr},
   // Shared ARM switch, default ch5 -- kArmSrcNames index 5 (none=0, ch1=1,
   // ..., ch5=5), the conventional switch channel on this build's TX. Still
   // reassignable to any other channel, or to "none" to turn the feature off,

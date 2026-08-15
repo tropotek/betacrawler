@@ -42,7 +42,9 @@ void TankDriveDriver::attach(const core::Registry& reg, const core::Params& p) {
 void TankDriveDriver::apply(const core::Params& p) {
   throttleSrcIdx_  = (uint8_t)p.num(globalParam(P_THROTTLE_SRC));
   steerSrcIdx_     = (uint8_t)p.num(globalParam(P_STEER_SRC));
+  forwardRatioPct_ = (uint8_t)p.num(globalParam(P_FORWARD_RATIO));
   reverseRatioPct_ = (uint8_t)p.num(globalParam(P_REVERSE_RATIO));
+  steerRatioPct_   = (uint8_t)p.num(globalParam(P_STEER_RATIO));
   armSrcIdx_       = (uint8_t)p.num(globalParam(P_ARM_SRC));
   armMinUs_        = (uint16_t)p.num(globalParam(P_ARM_MIN));
   armMaxUs_        = (uint16_t)p.num(globalParam(P_ARM_MAX));
@@ -60,7 +62,8 @@ void TankDriveDriver::compute(uint32_t nowMs) {
   if (rxFresh) {
     const int16_t throttleUs = inputs_->get(throttleSrcIdx_);
     const int16_t steerUs    = inputs_->get(steerSrcIdx_);
-    r = mix(throttleUs, steerUs, kCenterUs, kMinUs, kMaxUs, reverseRatioPct_, kDeadbandUs);
+    r = mix(throttleUs, steerUs, kCenterUs, kMinUs, kMaxUs,
+            forwardRatioPct_, reverseRatioPct_, steerRatioPct_, kDeadbandUs);
   } else {
     r.leftUs  = (uint16_t)kCenterUs;
     r.rightUs = (uint16_t)kCenterUs;
