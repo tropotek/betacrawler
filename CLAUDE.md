@@ -108,12 +108,14 @@ firmware/include/      config.h (project name/version/baud/capacity limits) and
                         boards/<board>.h (FEATURE_* flags + pin map). Selected per-env by
                         -D BOARD_HEADER; _template.h documents adding a board.
 firmware/src/core/     pure C++, zero Arduino — protocol, params, registry, dispatch,
-                        led_curve, tlm_format, boot_log, version, device_params. Native-tested (Unity).
-firmware/src/features/ behaviours, one folder per module (led/)
+                        triangle, led_pattern, health, tlm_format, boot_log, version,
+                        device_params. Native-tested (Unity).
+firmware/src/features/ behaviours, one folder per module (tank_drive/)
 firmware/src/hardware/ device drivers, one folder per module (system/, button/, servo/, rx/,
                         st7789_240x240/; WiFi and other peripherals go here)
 firmware/src/modules.cpp  THE wiring file — one #if block per module. Compiled by BOTH envs.
-firmware/src/          Arduino glue: main.cpp, storage.cpp (flash), dfu.cpp
+firmware/src/          Arduino glue: main.cpp, storage.cpp (flash), dfu.cpp,
+                        status_led.cpp (health LED + HardFault_Handler)
 firmware/docs/          placeholder templates (BOM.md, ASSEMBLY.md) for a fork's own bill of
                         materials and assembly instructions
 
@@ -188,6 +190,11 @@ makes a shipped image's `built` stamp truthful.
 **Flash is written only on explicit `save`** — an erase stalls the MCU ~1s. Set applies to
 RAM/hardware instantly. The stored record is guarded by magic/version/fingerprint/CRC and falls
 back to defaults on any mismatch.
+
+**The status LED outlives the registry** — `main.cpp` calls `g_statusLed.begin()` before
+`registerModules()` and ticks it outside `g_reg`, on purpose: a health indicator must not depend on
+the subsystem it reports on. The panic handler's busy-wait must never become `delay()` — HardFault
+masks the interrupt that advances `millis()`, so it would hang forever.
 
 **Both DFU paths must keep working** — the `dfu` wire op *and* BOOT0+NRST by hand. The Firmware
 page stays out of `CONNECTION_REQUIRED_PAGES`; gating the recovery tool on a working device is

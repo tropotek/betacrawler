@@ -1,6 +1,6 @@
 # Modules — Overview
 
-Every piece of behavior or hardware in betacrawler is a **module**: LED, Button, Servo, ESC, RX,
+Every piece of behavior or hardware in betacrawler is a **module**: Button, Servo, ESC, RX,
 Display, WiFi. Modules are the unit a board turns on or off with one `FEATURE_*` flag, and the
 unit whose parameters and telemetry flow automatically into the app with zero UI code.
 
@@ -41,7 +41,6 @@ the way it is.
 
 ## The modules
 
-- [LED](led.md) — status indication
 - [Button](button.md) — user input
 - [Servo](servo.md) — hobby servo output
 - [ESC](esc.md) — brushless motor ESC output (two independent instances, `esc0`/`esc1`, sharing

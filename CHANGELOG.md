@@ -3,6 +3,35 @@
 Summaries of completed work. Detail, reasoning and hardware-verification records live in
 `_notes/` (specs and plans) and in the git history.
 
+## Unreleased
+
+- **feat(firmware): the onboard LED is a firmware health indicator, not a configurable module.**
+  It reads as solid on with a brief wink each second while the firmware is healthy, and pulses at
+  ~5Hz on a blocking fault; a hard fault blinks faster still, from a handler that previously left
+  the board frozen with its pin latched and nothing said. The wink exists because a stopped board
+  holds its pins: a steady-on LED cannot distinguish healthy from dead, so the healthy signal has
+  to be one a stopped loop cannot counterfeit. New `core::Health` records one fault code
+  (first-fault-wins) and writes a `boot: fault=<name>` line that replays on every `hello`; new
+  `core::patternState()` plays the on/off sequences, so a distinct pattern per fault code is a
+  table entry rather than new logic. **Breaking for any fork's board header:** `FEATURE_LED` is
+  now `FEATURE_STATUS_LED` (`LED_PIN` and `LED_ACTIVE_LOW` are unchanged), and the `led.mode` /
+  `led.blink_hz` parameters are gone — which changes `Registry::fingerprint()`, so saved settings
+  fall back to defaults once on the first boot of this firmware. `core/led_curve.cpp` survives as
+  `core/triangle.cpp`: its symmetric triangle wave is used by servo sweep mode and the
+  `rx.source=sim` channel generator, neither of which is an LED, so `breathingDuty()` is now
+  `trianglePercent()`.
+
+- **fix(firmware): a module that does not fit the registry raises a fault instead of vanishing.**
+  `registerModules()` discarded `Registry::add()`'s return value, so exceeding `FW_MAX_MODULES`,
+  `FW_MAX_PARAMS` or `FW_MAX_TLM` silently dropped a module from the schema. `add()` now raises
+  `Fault::Registry` itself, so no call site can forget to check, and a native test asserts the
+  shipping module set registers cleanly.
+
+- **feat(web): the Configuration page names the firmware's fault.** The system telemetry frame
+  carries a new `fault` field and the System card renders it by name, in red when non-zero. The
+  row is guarded on the key being present, so a board whose firmware does not publish it renders
+  as before.
+
 ## Version 1.0.0 (2026-07-29)
 
 - **feat(firmware): split the single-instance `esc` module into shared math plus two independent

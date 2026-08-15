@@ -23,7 +23,7 @@ button and an optional ST7789 240x240 panel. Other boards are called out only wh
 - **Live config** — every firmware parameter as a form control, validated on the device as well
   as in the app. Values apply instantly; flash is written only when you press Save.
 - **Telemetry** — pushed from the board at a configurable rate, rendered as cards.
-- **Terminal** — type `get led.mode`, `set led.blink_hz 5`, `save`; see the raw JSON both ways.
+- **Terminal** — type `get rx.protocol`, `set rx.deadband_us 5`, `save`; see the raw JSON both ways.
 - **Firmware updates in-app** — the app carries an image matching its own version and flashes it
   over USB DFU (or `esptool` on ESP32), no ST-Link needed after the first time.
 - **Settings backup/restore** as INI files.
