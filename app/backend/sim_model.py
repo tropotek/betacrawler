@@ -32,6 +32,21 @@ def trunc_div(a: int, b: int) -> int:
     return -q if (a < 0) != (b < 0) else q
 
 
+# Mirrors the firmware's vbat module. Cell detection divides by just above a
+# full cell, so every charged pack resolves; a part-drained one reads low.
+VBAT_SIM_LOW_MV = 13200
+VBAT_SIM_HIGH_MV = 16800
+VBAT_SIM_PERIOD_MS = 60000
+VBAT_MIN_VALID_MV = 5000
+VBAT_CELL_DETECT_MV = 4300
+
+
+def detect_cells(pack_mv: int) -> int:
+    if pack_mv < VBAT_MIN_VALID_MV:
+        return 0
+    return -(-pack_mv // VBAT_CELL_DETECT_MV)
+
+
 def triangle_percent(phase_ms: int, period_ms: int) -> int:
     half = period_ms // 2
     if half == 0:
@@ -240,6 +255,7 @@ class SimModel:
         self._stored: dict | None = None
         self._esc = {"esc0": _Esc("esc0"), "esc1": _Esc("esc1")}
         self._drive_ever_fresh = False
+        self._vbat_cells = 0
         self._tlm: dict = {}
         self._tick(0)
 
@@ -302,6 +318,7 @@ class SimModel:
         tlm = {f"ch{i + 1}": channels[i] for i in range(WIRE_CHANNELS)}
         tlm.update(self._link(rx_fresh))
         tlm.update(self._system(now_ms))
+        tlm.update(self._vbat(now_ms))
         tlm["drv_l"], tlm["drv_r"] = left, right
         tlm["esc0"] = self._esc["esc0"].last_us
         tlm["arm0"] = self._esc["esc0"].arm_state
@@ -349,6 +366,26 @@ class SimModel:
                  else _ELRS_RF_HZ)
         return {"link": 1, "lq": 100, "rssi": -42, "rate": _SIM_FRAME_RATE_HZ,
                 "err": 0, "rfrate": table[_SIM_RF_MODE], "pwr": _SIM_TX_POWER_MW}
+
+    def _vbat(self, now_ms: int) -> dict:
+        """Mirrors the firmware's vbat module: off publishes nothing, sim
+        sweeps a synthetic pack, and the cell count latches once."""
+        source = self.text("vbat.source")
+        if source == "off":
+            return {"vbat": 0, "cells": 0}
+        if source == "sim":
+            span = VBAT_SIM_HIGH_MV - VBAT_SIM_LOW_MV
+            mv = VBAT_SIM_LOW_MV + triangle_percent(
+                now_ms % VBAT_SIM_PERIOD_MS, VBAT_SIM_PERIOD_MS) * span // 100
+        else:
+            # No divider exists in the simulator, so adc reads nothing.
+            mv = 0
+        sel = self.text("vbat.cells")
+        if sel != "auto":
+            self._vbat_cells = int(sel)
+        elif self._vbat_cells == 0:
+            self._vbat_cells = detect_cells(mv)
+        return {"vbat": mv, "cells": self._vbat_cells}
 
     def _system(self, now_ms: int) -> dict:
         # Deterministic triangles rather than a random walk: the whole model

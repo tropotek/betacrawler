@@ -128,7 +128,7 @@ def test_connecting_to_the_simulator_serves_schema_and_values():
         device.connect(SIM_PORT)
         assert device.status()["state"] == "connected"
         assert device.status()["board"] == "simulator"
-        assert len(device.schema()["params"]) == 29
+        assert len(device.schema()["params"]) == 32
         assert device.values()["tlm.rate"] == 10
     finally:
         device.disconnect()
