@@ -21,6 +21,7 @@
 #define FEATURE_TANK_DRIVE 1
 #define FEATURE_ESC0       1
 #define FEATURE_ESC1       1
+#define FEATURE_VBAT       1
 #define FEATURE_WIFI    0
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
 // bootloader in ROM, so this costs a magic word and a reset -- no bootloader
@@ -121,6 +122,12 @@
 // the only other module that claims it (PB6/TIM4_CH1), is off here.
 #define ESC1_TIMER      TIM4
 #define ESC1_PIN        PB6
+
+// Battery voltage sense on ADC1_IN1. PA1 is unclaimed on this board: the LED
+// is PC13, the button PA0, the ESCs PA6/PB6, CRSF PA9/PA10, USB PA11/PA12 and
+// SWD PA13/PA14. Expects a 47k/5k6 divider from the PDB's VCC pad; vbat.scale
+// is the runtime calibration.
+#define VBAT_PIN        PA1
 
 // 200Hz frame on both, which every analogue-PWM ESC auto-detects. A 5ms
 // period bounds output latency at a quarter of a 50Hz frame's, and

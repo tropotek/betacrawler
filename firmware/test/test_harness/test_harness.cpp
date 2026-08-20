@@ -4,7 +4,7 @@
 void test_constants_are_sane() {
   TEST_ASSERT_EQUAL(31, core::kMaxStrLen);
   TEST_ASSERT_EQUAL(256, core::kMaxLineIn);
-  TEST_ASSERT_EQUAL(7168, core::kMaxLineOut);
+  TEST_ASSERT_EQUAL(8192, core::kMaxLineOut);
   TEST_ASSERT_EQUAL(1, core::kProtoVersion);
 }
 
