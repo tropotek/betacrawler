@@ -53,17 +53,17 @@
                 <!-- ===== Right stubs: Receiver group ===== -->
                 <g class="wire-receiver">
                   <line x1="940" y1="222" x2="1020" y2="222" />
-                  <line x1="940" y1="246" x2="1020" y2="246" class="wire-reserved" />
+                  <line x1="940" y1="246" x2="1020" y2="246" />
                   <line x1="940" y1="270" x2="1020" y2="270" />
                   <line x1="940" y1="294" x2="1020" y2="294" />
                 </g>
                 <g class="fill-receiver">
-                  <circle cx="940" cy="222" r="3" /><circle cx="940" cy="246" r="3" opacity="0.55" />
+                  <circle cx="940" cy="222" r="3" /><circle cx="940" cy="246" r="3" />
                   <circle cx="940" cy="270" r="3" /><circle cx="940" cy="294" r="3" />
                 </g>
                 <g class="lbl-mono fill-receiver" font-size="10.5" font-weight="600" text-anchor="end">
                   <text x="933" y="221">PA10</text>
-                  <text x="933" y="245" opacity="0.6">PA9</text>
+                  <text x="933" y="245">PA9</text>
                   <text x="933" y="269">5V</text>
                   <text x="933" y="293">GND</text>
                 </g>
@@ -171,7 +171,7 @@
 
                 <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
                   <text x="1035" y="222">TX (out to STM)</text>
-                  <text x="1035" y="246" opacity="0.6">RX (reserved)</text>
+                  <text x="1035" y="246">RX (telemetry in)</text>
                   <text x="1035" y="270">+</text>
                   <text x="1035" y="294">GND</text>
                 </g>
@@ -179,7 +179,7 @@
                 <text x="1035" y="336" class="lbl-mono fill-muted" font-size="10">Nano-RX pads default to PWM out —</text>
                 <text x="1035" y="352" class="lbl-mono fill-muted" font-size="10">switch to CRSF in its own menu first.</text>
                 <g class="fill-receiver">
-                  <circle cx="1020" cy="222" r="3" /><circle cx="1020" cy="246" r="3" opacity="0.55" />
+                  <circle cx="1020" cy="222" r="3" /><circle cx="1020" cy="246" r="3" />
                   <circle cx="1020" cy="270" r="3" /><circle cx="1020" cy="294" r="3" />
                 </g>
 
@@ -455,8 +455,8 @@
             Teal = the power chain: the LiPo feeds the PDB, the PDB feeds both ESCs and the board's
             5V rail (which in turn powers the receiver). Navy = the three motor leads out of each
             ESC. Green = the ESC signal leads, the only motor wiring the board itself touches.
-            Dashed violet = wired but not required today (CRSF telemetry back-channel, reserved for
-            a future use of PA9). ESC 0 drives the left track and ESC 1 the right, both fed by the
+            Violet = the CRSF link, both directions: the receiver's TX carries stick positions in on
+            PA10, and PA9 carries telemetry back out to the handset. ESC 0 drives the left track and ESC 1 the right, both fed by the
             tank mixer rather than by a receiver channel directly.
           </p>
 

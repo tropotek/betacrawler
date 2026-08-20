@@ -57,11 +57,20 @@ FULL_PAGE = {"config", "controller", "modes", "wiring", "help"}
 # the reader opens full size to zoom into the pin labels. Both are element
 # screenshots off the live page rather than the raw SVG -- the markup carries
 # ~60 class attributes and renders unstyled without the app's own stylesheet.
-DIAGRAM_SHOTS = (("wiring-diagram.png", 2), ("wiring-diagram-large.png", 4))
+# (figure index on the page, filename, device scale). The wiring page carries
+# two figures: the wiring map, then the optional sense divider's circuit. Each
+# is captured twice, one sized for the docs page and one the reader opens full
+# size to zoom into.
+DIAGRAM_SHOTS = (
+    (0, "wiring-diagram.png", 2),
+    (0, "wiring-diagram-large.png", 4),
+    (1, "sense-divider.png", 2),
+    (1, "sense-divider-large.png", 4),
+)
 
 
 def capture_wiring_diagram(browser, out_dir):
-    for filename, scale in DIAGRAM_SHOTS:
+    for index, filename, scale in DIAGRAM_SHOTS:
         # Tall enough to hold the whole card without scrolling: an element
         # screenshot that has to scroll ends up with the app's sticky header
         # painted over the top of the diagram.
@@ -71,9 +80,7 @@ def capture_wiring_diagram(browser, out_dir):
         page.click("[data-page='wiring']")
         page.wait_for_selector(".diagram-card svg")
         page.wait_for_timeout(300)
-        # The page carries more than one figure now (wiring map, then the
-        # sense-divider circuit); this capture is the wiring map.
-        page.locator(".diagram-card").first.screenshot(path=str(out_dir / filename))
+        page.locator(".diagram-card").nth(index).screenshot(path=str(out_dir / filename))
         page.close()
 
 
