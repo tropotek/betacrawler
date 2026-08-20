@@ -8,6 +8,13 @@
 // src/ regardless of what includes it.
 #if FEATURE_VBAT
 
+#include <Arduino.h>
+#include "hardware/adc/adc_vref.h"
+
+#ifndef VBAT_PIN
+#error "FEATURE_VBAT is on but the board header defines no VBAT_PIN"
+#endif
+
 namespace vbat {
 
 // A full sweep of the simulated pack. Slow enough to watch, fast enough to
@@ -66,6 +73,17 @@ uint16_t VbatDriver::simMv(uint32_t nowMs) {
       (uint32_t)core::trianglePercent(t % kSimPeriodMs, kSimPeriodMs) * span / 100);
 }
 
+// Tap millivolts from the pin, then the calibrated multiplier. vddaMv() comes
+// from VREFINT, so the reading self-corrects for a supply that is not exactly
+// 3.3V rather than assuming a nominal rail.
+uint16_t VbatDriver::adcMv() {
+  analogReadResolution(12);
+  const int32_t raw = analogRead(VBAT_PIN);
+  if (raw <= 0) return 0;
+  const uint16_t tapMv = (uint16_t)((raw * adcref::vddaMv()) / 4095);
+  return packMvFromTap(tapMv, scale_);
+}
+
 void VbatDriver::publish(uint16_t packMv, uint32_t nowMs) {
   mv_ = packMv;
   // Latch once and never re-evaluate: a pack sagging under load would
@@ -82,7 +100,8 @@ void VbatDriver::tick(uint32_t nowMs) {
       publish(simMv(nowMs), nowMs);
       break;
     case SRC_ADC:
-      break;   // wired once the divider exists
+      publish(adcMv(), nowMs);
+      break;
     default:
       break;   // SRC_OFF publishes nothing at all, so rx sends no frame
   }

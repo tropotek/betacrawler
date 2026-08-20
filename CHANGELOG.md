@@ -5,6 +5,35 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **feat: the board can measure pack voltage and send it to the handset.** A `vbat` module
+  reads a resistor divider on PA1, converts it against the MCU's own VREFINT-derived supply
+  rather than a nominal 3.3V, and publishes pack millivolts, a latched cell count and a
+  remaining percentage onto a new `core::Battery` bus. The `rx` module reads that bus and
+  transmits a CRSF battery-sensor frame on PA9 twice a second, so the pack appears as a
+  sensor on the transmitter. Neither module names the other: the bus repeats the
+  one-producer pattern `core::Inputs` already uses twice, with the producer holding a
+  mutable reference from its constructor and consumers reading a const one through the
+  registry. `vbat.source` offers `off`, `adc` and `sim`, mirroring `rx.source` — `off`
+  publishes nothing at all rather than a zero, and `sim` sweeps a synthetic pack so the
+  reading, the display and the uplink can be exercised with no divider fitted, saying so in
+  the boot log. `vbat.cells` takes an explicit count or `auto`, which latches from the first
+  valid reading and never revisits it; recomputing per tick would let a pack sagging under
+  load flip the count mid-drive. Auto-detection cannot tell a part-drained 6S from a 5S, so
+  the latched value is published as its own telemetry field where a wrong answer is visible
+  instead of silently skewing the percentage. Calibration follows Betaflight's split: the
+  firmware stores one `vbat.scale` multiplier and the Configurator computes it from a
+  measured voltage, because `onParamChanged()` takes a const `Params` and a driver cannot
+  write a parameter. Current and consumed capacity are transmitted as zero — this firmware
+  measures neither, and the PDB has no current sensor. The battery write is guarded by
+  `availableForWrite()` and skipped rather than blocked: a dropped frame is free and a
+  stalled `loop()` is not.
+
+- **chore: the outbound line budget grows from 7168 to 8192 bytes.** The schema response
+  reached 7281 bytes with the battery module registered, past the old ceiling.
+  `dispatch.cpp` refuses to emit a truncated schema, so the response was dropped whole —
+  which presents as a device that answers nothing rather than as a size problem. Costs 1KB
+  more static RAM in one buffer.
+
 - **firmware: both ESCs now default to a 200Hz PWM frame.** `blackpill_f411ce.h` defines
   `ESC0_FRAME_US`/`ESC1_FRAME_US` as 5000, so `kDefaultRate` resolves to `RATE_200` and a freshly
   flashed board no longer ships on the 20ms frame a 50Hz default gives it. The 5ms period bounds

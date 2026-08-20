@@ -18,6 +18,7 @@ class VbatDriver : public core::Module {
  private:
   void     publish(uint16_t packMv, uint32_t nowMs);
   uint16_t simMv(uint32_t nowMs);
+  uint16_t adcMv();
 
   core::Battery& out_;            // this module's own bus, mutable
   int32_t  source_   = SRC_OFF;
