@@ -16,7 +16,7 @@
           <div class="wiring-diagram">
             <div class="diagram-card">
               <svg viewBox="0 0 1600 1240" xmlns="http://www.w3.org/2000/svg" role="img"
-                   aria-label="Wiring diagram connecting a LiPo battery and Matek power distribution board to two brushless ESCs and their three-wire motors, a Black Pill STM32F411CE board, a CRSF receiver, a battery sense divider, and a USB host">
+                   aria-label="Wiring diagram connecting a LiPo battery and Matek power distribution board to two brushless ESCs and their three-wire motors, a Black Pill STM32F411CE board, a CRSF receiver, an optional battery sense divider, and a USB host">
 
                 <!-- ===== Board ===== -->
                 <rect x="720" y="90" width="220" height="590" rx="20" class="fill-surface2 stroke-border" stroke-width="1.5" />
@@ -265,7 +265,7 @@
                 <rect x="515" y="520" width="175" height="180" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
                 <rect x="530" y="534" width="12" height="12" rx="2" class="fill-vbat" />
                 <text x="550" y="544" class="lbl-heading fill-ink" font-size="13">Battery sense</text>
-                <text x="530" y="562" class="lbl-mono fill-muted" font-size="9.5">47k / 5k6 divider</text>
+                <text x="530" y="562" class="lbl-mono fill-muted" font-size="9.5">optional &middot; 47k / 5k6</text>
                 <line x1="530" y1="576" x2="675" y2="576" class="stroke-border" stroke-width="1" />
 
                 <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
@@ -354,9 +354,11 @@
             </div>
           </div>
 
-          <h2 class="h5 mt-4">Battery sense divider &mdash; circuit</h2>
+          <h2 class="h5 mt-4">Battery sense divider (optional) &mdash; circuit</h2>
           <p class="text-secondary">
-            The component-level circuit behind the sense card above. A LiPo pack is far above the
+            Optional &mdash; the vehicle drives without it. Fit it if you want pack voltage on the
+            transmitter and in the Configurator. This is the component-level circuit behind the
+            sense card above. A LiPo pack is far above the
             3.3V the ADC can read, so a resistor divider scales it down. Only the three terminals
             are shown here &mdash; where they land on the board is in the wiring map above.
             47k/5k6 reads a 4S at 1.79V and a 6S at 2.68V, both comfortably inside range.
