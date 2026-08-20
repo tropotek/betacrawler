@@ -364,7 +364,7 @@
 
           <div class="wiring-diagram">
             <div class="diagram-card">
-              <svg viewBox="0 0 700 480" xmlns="http://www.w3.org/2000/svg" role="img"
+              <svg viewBox="0 0 700 500" xmlns="http://www.w3.org/2000/svg" role="img"
                    aria-label="Circuit diagram of the battery sense divider: a 47k resistor from pack positive to a tap node, a 5k6 resistor from the tap to ground, a 100nF capacitor and a 3.3V zener with its cathode to the tap also going to ground, and a 1k resistor in series from the tap to the sense output">
 
                 <g class="wire-vbat">
@@ -427,23 +427,25 @@
                 <g class="lbl-mono fill-ink" font-size="12" font-weight="500">
                   <text x="128" y="132">47k</text>
                   <text x="128" y="252">5k6</text>
-                  <text x="220" y="296" text-anchor="middle">100nF</text>
-                  <text x="330" y="296" text-anchor="middle">3V3 zener</text>
+                  <text x="248" y="292">100nF</text>
+                  <text x="362" y="292">3V3 zener</text>
                   <text x="424" y="168" text-anchor="middle">1k</text>
                 </g>
-                <g class="lbl-mono fill-muted" font-size="10">
-                  <text x="128" y="148">1% metal film</text>
-                  <text x="128" y="268">1% metal film</text>
-                  <text x="220" y="311" text-anchor="middle">ceramic &middot; marked 104</text>
-                  <text x="330" y="311" text-anchor="middle">band to the tap</text>
+                <!-- Half the value type size, and tucked close under it, so each
+                     note reads as belonging to its part rather than as loose text. -->
+                <g class="lbl-mono fill-muted" font-size="6">
+                  <text x="128" y="143">1% metal film</text>
+                  <text x="128" y="263">1% metal film</text>
+                  <text x="248" y="303">ceramic &middot; marked 104</text>
+                  <text x="362" y="303">band to the tap</text>
                 </g>
 
-                <line x1="60" y1="418" x2="640" y2="418" class="stroke-border" stroke-width="1" />
+                <text x="60" y="428" class="lbl-mono fill-power" font-size="10">Take VCC from a raw pack pad &mdash; never a regulated BEC output, which reads constant.</text>
+                <line x1="60" y1="444" x2="640" y2="444" class="stroke-border" stroke-width="1" />
                 <g class="lbl-mono fill-muted" font-size="10">
-                  <text x="60" y="440">Nothing external touches the tap node. It reaches the board only through the 1k,</text>
-                  <text x="60" y="456">which protects the pin if the 5k6 ever goes open circuit.</text>
+                  <text x="60" y="466">Nothing external touches the tap node. It reaches the board only through the 1k,</text>
+                  <text x="60" y="482">which protects the pin if the 5k6 ever goes open circuit.</text>
                 </g>
-                <text x="60" y="404" class="lbl-mono fill-power" font-size="10">Take VCC from a raw pack pad &mdash; never a regulated BEC output, which reads constant.</text>
               </svg>
             </div>
           </div>
