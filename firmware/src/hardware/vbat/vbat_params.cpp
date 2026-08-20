@@ -19,13 +19,22 @@ static const char* const kSourceNames[] = {"off", "adc", "sim"};
 // user would write them, same convention esc0.rate uses. Index 0 is auto.
 static const char* const kCellNames[] = {"auto", "2", "3", "4", "5", "6"};
 
+// The board header states the divider fitted to this hardware; vbat.scale is
+// the runtime override, set by calibrating. Same #ifndef fallback
+// esc0_params.cpp uses for ESC0_FRAME_US, and for the same reason: this
+// descriptor TU is compiled by the native env too, where no board header
+// value is meaningful.
+#ifndef VBAT_SCALE_DEFAULT
+#define VBAT_SCALE_DEFAULT 9393
+#endif
+
 static const ParamDef kParams[] = {
   // key           type             label     unit     min   max    opts          n  maxlen def         defStr   group
   {"vbat.source",  ParamType::Enum, "Source", nullptr, 0,    0,     kSourceNames, 3, 0,     SRC_ADC,    nullptr, nullptr},
-  // x1000 multiplier from tap millivolts to pack millivolts. 9393 is the
-  // 47k/5k6 divider: ratio 0.106464, so 1/0.106464 = 9.3929. Calibrated from
-  // the Configurator against a multimeter.
-  {"vbat.scale",   ParamType::U8,   "Scale",  nullptr, 1000, 30000, nullptr,      0, 0,     9393,       nullptr, nullptr},
+  // x1000 multiplier from tap millivolts to pack millivolts, so a 1:10
+  // divider is 10000. Whatever the board header states is only the starting
+  // point -- calibrating against a multimeter is what makes it right.
+  {"vbat.scale",   ParamType::U8,   "Scale",  nullptr, 1000, 30000, nullptr,      0, 0,     VBAT_SCALE_DEFAULT, nullptr, nullptr},
   {"vbat.cells",   ParamType::Enum, "Cells",  nullptr, 0,    0,     kCellNames,   6, 0,     CELLS_AUTO, nullptr, nullptr},
 };
 

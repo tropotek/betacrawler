@@ -96,6 +96,20 @@ the PDB's **VCC** pad &mdash; raw pack voltage &mdash; and bring the divider's o
 47k/5k6 reads a 4S at 1.79V and a 6S at 2.68V, both comfortably inside range. Use metal film
 rather than carbon: calibration cancels a resistor's tolerance but not its drift with temperature.
 
+### Using a PDB that already has a sense output
+
+Some power distribution boards bring out a divided pack voltage of their own. If yours does,
+skip the components above: wire that pin to **PA1** and calibrate. The firmware only ever
+multiplies what it reads at the pin, so it does not care who did the dividing.
+
+Check the PDB's output at **full charge**, not its nominal ratio &mdash; it has to stay under
+3.3V. A 1:10 output reads 2.52V on a 6S, a 1:11 output 2.29V, both fine. Set
+`VBAT_SCALE_DEFAULT` in your board header to that ratio &times; 1000, so an uncalibrated board
+starts close.
+
+The 1&nbsp;kΩ series resistor and the zener are still worth fitting. If the PDB's output is
+already under 3.3V the zener never conducts, and both cost pennies against a dead pin.
+
 !!! warning "Take VCC from a raw pack pad"
 
     Never a regulated BEC output. A regulator holds its output steady as the pack drains, so the

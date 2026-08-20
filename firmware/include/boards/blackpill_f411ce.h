@@ -129,6 +129,14 @@
 // is the runtime calibration.
 #define VBAT_PIN        PA1
 
+// x1000 multiplier from the sense pin to pack millivolts, and the default for
+// vbat.scale. 9393 is this build's own 47k/5k6 divider: 5.6/52.6 = 0.106464,
+// inverted. A board reading a PDB's built-in sense output instead states that
+// PDB's ratio here -- 10000 for 1:10, 11000 for 1:11 -- since the divider is a
+// property of the hardware, not of the firmware. Calibrating corrects it
+// either way; this only decides where an uncalibrated board starts.
+#define VBAT_SCALE_DEFAULT 9393
+
 // 200Hz frame on both, which every analogue-PWM ESC auto-detects. A 5ms
 // period bounds output latency at a quarter of a 50Hz frame's, and
 // effectiveMaxUs()'s reserved low time leaves ample headroom over max_us.
