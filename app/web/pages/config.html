@@ -88,22 +88,6 @@
               <legend class="card-header h6 text-secondary mb-0 py-2">Battery Sensor</legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
-                  <label class="form-label" for="f-vbat-source">Source</label>
-                  <select class="form-select" id="f-vbat-source"
-                          :class="{ 'is-invalid': $store.config.invalid['vbat.source'] }"
-                          x-model="$store.config.values['vbat.source']"
-                          @change="$store.config.commit($store.config.field('vbat.source').def)">
-                    <template x-for="opt in ($store.config.field('vbat.source').def?.options ?? []).filter((o) => o !== 'sim')" :key="opt">
-                      <option :value="opt" x-text="opt"></option>
-                    </template>
-                  </select>
-                  <div class="form-text">
-                    <strong>off</strong> when no divider is fitted — reports nothing and
-                    sends no telemetry frame. <strong>adc</strong> reads the divider on the
-                    sense pin.
-                  </div>
-                </div>
-                <div class="col-md-6">
                   <label class="form-label" for="f-vbat-cells">Cells</label>
                   <select class="form-select" id="f-vbat-cells"
                           :class="{ 'is-invalid': $store.config.invalid['vbat.cells'] }"

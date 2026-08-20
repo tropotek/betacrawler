@@ -8,8 +8,11 @@ using core::ParamType;
 using core::TlmDef;
 using core::TlmType;
 
-// Order must match SRC_*. Defaults to off: a board with no divider fitted
-// must not publish a reading, the same reasoning rx.source defaults to uart.
+// Order must match SRC_*. Defaults to adc: a board carrying this module is
+// expected to have the divider fitted, so reading the pin is the useful
+// default and needs no setup. off is for a board built without one; sim
+// fabricates a pack and is reachable from the Terminal, not the app, since
+// it exists to exercise the CRSF uplink before a divider is built.
 static const char* const kSourceNames[] = {"off", "adc", "sim"};
 
 // Bare numbers so Terminal `set vbat.cells 4` and an INI line read the way a
@@ -18,7 +21,7 @@ static const char* const kCellNames[] = {"auto", "2", "3", "4", "5", "6"};
 
 static const ParamDef kParams[] = {
   // key           type             label     unit     min   max    opts          n  maxlen def         defStr   group
-  {"vbat.source",  ParamType::Enum, "Source", nullptr, 0,    0,     kSourceNames, 3, 0,     SRC_OFF,    nullptr, nullptr},
+  {"vbat.source",  ParamType::Enum, "Source", nullptr, 0,    0,     kSourceNames, 3, 0,     SRC_ADC,    nullptr, nullptr},
   // x1000 multiplier from tap millivolts to pack millivolts. 9393 is the
   // 47k/5k6 divider: ratio 0.106464, so 1/0.106464 = 9.3929. Calibrated from
   // the Configurator against a multimeter.

@@ -373,13 +373,13 @@ class SimModel:
         source = self.text("vbat.source")
         if source == "off":
             return {"vbat": 0, "cells": 0}
-        if source == "sim":
-            span = VBAT_SIM_HIGH_MV - VBAT_SIM_LOW_MV
-            mv = VBAT_SIM_LOW_MV + triangle_percent(
-                now_ms % VBAT_SIM_PERIOD_MS, VBAT_SIM_PERIOD_MS) * span // 100
-        else:
-            # No divider exists in the simulator, so adc reads nothing.
-            mv = 0
+        # Both adc and sim sweep the same synthetic pack. There is no divider
+        # here to read, and everything this model reports is synthetic by
+        # definition -- a simulator that reported zero volts for its own
+        # battery would be simulating a fault, not a vehicle.
+        span = VBAT_SIM_HIGH_MV - VBAT_SIM_LOW_MV
+        mv = VBAT_SIM_LOW_MV + triangle_percent(
+            now_ms % VBAT_SIM_PERIOD_MS, VBAT_SIM_PERIOD_MS) * span // 100
         sel = self.text("vbat.cells")
         if sel != "auto":
             self._vbat_cells = int(sel)
