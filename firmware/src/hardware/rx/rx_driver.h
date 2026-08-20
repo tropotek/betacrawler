@@ -8,6 +8,7 @@
 // the `sim` source -- synthetic channels, the telemetry frame, the schema,
 // and the bar rendering. Treat the uart path as built, not verified.
 #include "hardware/rx/rx_params.h"
+#include "core/battery.h"
 #include "core/inputs.h"
 
 // Forward-declared rather than including <HardwareSerial.h>: this header is
@@ -43,10 +44,15 @@ class RxDriver : public core::Module {
   void runSim(uint32_t nowMs);
   void applyRcFrame(uint32_t nowMs);
   void syncInputs();
+  void sendBattery(uint32_t nowMs);
 
   const Protocol& proto() const { return kProtocols[protocol_]; }
 
   core::Inputs&   inputs_;
+  // vbat's bus, const and read-only. lastFreshMs() == 0 means no producer is
+  // compiled into this board at all, which is not the same as a stale one.
+  const core::Battery* battery_ = nullptr;
+  uint32_t        lastBattMs_ = 0;
   HardwareSerial* uart_ = nullptr;
   FrameParser     parser_;
   LinkState       link_;

@@ -1,5 +1,6 @@
 #include "hardware/rx/rx_driver.h"
 #include "core/boot_log.h"
+#include "core/registry.h"
 #include "core/triangle.h"
 #include "config.h"
 
@@ -35,6 +36,10 @@
 
 namespace rx {
 
+// 2Hz. Twelve bytes at 420000 baud is 0.29ms of wire time, negligible
+// against the RC frame stream sharing this UART.
+constexpr uint32_t kBatteryFrameMs = 500;
+
 // Constructed from the pins rather than using a global Serial1: the STM32
 // core only defines Serial1 when the VARIANT declares PIN_SERIAL1_RX/TX,
 // which is not something a board header controls. Constructing from pins lets
@@ -43,7 +48,7 @@ namespace rx {
 static HardwareSerial g_uart(RX_RX_PIN, RX_TX_PIN);
 
 void RxDriver::attach(const core::Registry& reg, const core::Params& p) {
-  (void)reg;
+  battery_ = &reg.battery();
   // Params reflects whatever main.cpp's store.load() already restored from
   // flash, so this is real persisted state. onParamChanged() only fires on a
   // LATER change, never for the initial load -- without this, a saved
@@ -145,11 +150,13 @@ void RxDriver::tick(uint32_t nowMs) {
   if (source_ == SRC_SIM) {
     runSim(nowMs);
     syncInputs();
+    sendBattery(nowMs);
     return;
   }
   drainUart(nowMs);
   link_.tick(nowMs, timeoutMs_);
   syncInputs();
+  sendBattery(nowMs);
 }
 
 void RxDriver::drainUart(uint32_t nowMs) {
@@ -201,6 +208,24 @@ void RxDriver::applyRcFrame(uint32_t nowMs) {
 void RxDriver::syncInputs() {
   for (uint8_t i = 0; i < kWireChannels; ++i)
     inputs_.set(i, deadbanded((int16_t)us_[i], 1500, deadbandUs_));
+}
+
+// One battery frame every kBatteryFrameMs. Sent whenever the bus is fresh and
+// deliberately NOT gated on link_.up(): a bench board with no receiver still
+// transmits, so PA9 can be scoped independently of whether anything listens.
+void RxDriver::sendBattery(uint32_t nowMs) {
+  if (!uart_ || !battery_) return;
+  if (battery_->lastFreshMs() == 0) return;          // no producer on this board
+  if ((uint32_t)(nowMs - lastBattMs_) < kBatteryFrameMs) return;
+  uint8_t buf[kBatteryFrameLen];
+  const size_t n = encodeBatteryFrame(buf, battery_->milliVolts(),
+                                      battery_->remainingPct());
+  // Never block: this runs inside loop(), so a stalled write would stop the
+  // receiver drain and the ESC pulse writes with it. A dropped frame is free;
+  // the next one is kBatteryFrameMs away.
+  if ((size_t)uart_->availableForWrite() < n) return;
+  uart_->write(buf, n);
+  lastBattMs_ = nowMs;
 }
 
 void RxDriver::runSim(uint32_t nowMs) {
