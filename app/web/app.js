@@ -337,6 +337,45 @@ document.addEventListener('alpine:init', () => {
         showError(`PWM Rate: ${e.message}`);
       }
     },
+
+    // Betaflight's own formula: new = old * (measured / reported). The
+    // firmware cannot do this itself -- onParamChanged() takes a const Params,
+    // so a driver cannot write a parameter -- and does not need to, since one
+    // multiplier absorbs every systematic error in the divider chain at once.
+    async calibrateVbat(measuredMv) {
+      if (!this.field('vbat.scale').def) {
+        showError('Calibrate: this board has no battery sensor');
+        return;
+      }
+      if (this.values['vbat.source'] !== 'adc') {
+        showError('Calibrate: set Source to adc first \u2014 a simulated pack cannot be calibrated');
+        return;
+      }
+      const reported = Alpine.store('telemetry').field('vbat').value;
+      if (!reported || reported < 5000) {
+        showError('Calibrate: no valid reading \u2014 connect a pack first');
+        return;
+      }
+      const measured = Number(measuredMv);
+      if (!Number.isFinite(measured) || measured < 5000 || measured > 30000) {
+        showError('Calibrate: enter the measured pack voltage in millivolts (5000\u201330000)');
+        return;
+      }
+      const next = Math.round((measured * this.values['vbat.scale']) / reported);
+      if (next < 1000 || next > 30000) {
+        showError(`Calibrate: computed scale ${next} is outside 1000\u201330000 \u2014 check the divider`);
+        return;
+      }
+      this.values['vbat.scale'] = next;
+      try {
+        await Api.setParam('vbat.scale', next);
+        this.invalid['vbat.scale'] = false;
+        setDirty(true);
+      } catch (e) {
+        this.invalid['vbat.scale'] = true;
+        showError(`Calibrate: ${e.message}`);
+      }
+    },
   });
 
   // Dual-handle range slider over two config keys, built from plain elements

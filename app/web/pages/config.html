@@ -83,4 +83,68 @@
               </div>
             </fieldset>
           </template>
+          <template x-if="$store.config.field('vbat.source').def">
+            <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data="{ measured: '' }">
+              <legend class="card-header h6 text-secondary mb-0 py-2">Battery Sensor</legend>
+              <div class="card-body row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="f-vbat-source">Source</label>
+                  <select class="form-select" id="f-vbat-source"
+                          :class="{ 'is-invalid': $store.config.invalid['vbat.source'] }"
+                          x-model="$store.config.values['vbat.source']"
+                          @change="$store.config.commit($store.config.field('vbat.source').def)">
+                    <template x-for="opt in $store.config.field('vbat.source').def?.options ?? []" :key="opt">
+                      <option :value="opt" x-text="opt"></option>
+                    </template>
+                  </select>
+                  <div class="form-text">
+                    <strong>off</strong> reports nothing and sends no telemetry frame.
+                    <strong>adc</strong> reads the divider on the sense pin.
+                    <strong>sim</strong> sweeps a synthetic pack so the reading, the display
+                    and the uplink to the handset can be exercised with no divider fitted.
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="f-vbat-cells">Cells</label>
+                  <select class="form-select" id="f-vbat-cells"
+                          :class="{ 'is-invalid': $store.config.invalid['vbat.cells'] }"
+                          x-model="$store.config.values['vbat.cells']"
+                          @change="$store.config.commit($store.config.field('vbat.cells').def)">
+                    <template x-for="opt in $store.config.field('vbat.cells').def?.options ?? []" :key="opt">
+                      <option :value="opt" x-text="opt"></option>
+                    </template>
+                  </select>
+                  <div class="form-text">
+                    <strong>auto</strong> latches the count from the first valid reading and
+                    never revisits it. It cannot tell a part-drained 6S from a 5S, so set the
+                    count explicitly if the Cells reading above is wrong.
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="f-vbat-scale">Scale</label>
+                  <input type="number" class="form-control" id="f-vbat-scale"
+                         :class="{ 'is-invalid': $store.config.invalid['vbat.scale'] }"
+                         x-model="$store.config.values['vbat.scale']"
+                         @change="$store.config.commit($store.config.field('vbat.scale').def)">
+                  <div class="form-text">
+                    Multiplier from the sense pin to pack voltage, ×1000. Use Calibrate rather
+                    than editing this by hand.
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label" for="f-vbat-measured">Measured pack voltage (mV)</label>
+                  <div class="input-group">
+                    <input type="number" class="form-control" id="f-vbat-measured"
+                           x-model="measured" placeholder="e.g. 16780">
+                    <button class="btn btn-outline-secondary" type="button"
+                            @click="$store.config.calibrateVbat(measured)">Calibrate</button>
+                  </div>
+                  <div class="form-text">
+                    Read the pack with a multimeter, enter it here, and Scale is adjusted so
+                    the reading matches. Needs Source set to adc.
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+          </template>
           <p>&nbsp;</p>
