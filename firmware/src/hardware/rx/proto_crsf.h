@@ -19,6 +19,10 @@ namespace rx {
 constexpr uint8_t kSync           = 0xC8;   // frames addressed to the FC
 constexpr uint8_t kTypeRcChannels = 0x16;
 constexpr uint8_t kTypeLinkStats  = 0x14;
+constexpr uint8_t kTypeBattery       = 0x08;
+constexpr uint8_t kBatteryPayloadLen = 8;
+// sync + len + type + payload + crc
+constexpr uint8_t kBatteryFrameLen   = 3 + kBatteryPayloadLen + 1;
 constexpr uint8_t kRcPayloadLen   = 22;     // 16 channels x 11 bits
 constexpr uint8_t kLinkPayloadLen = 10;
 constexpr uint8_t kMinLen         = 2;
@@ -34,6 +38,11 @@ constexpr uint8_t kWireChannels = 16;
 // CRC-8, polynomial 0xD5 (DVB-S2), init 0, no reflection, no final xor.
 // Covers type + payload only -- not the sync byte and not the length byte.
 uint8_t crc8(const uint8_t* data, size_t n);
+
+// Builds a CRSF battery-sensor frame. `out` must have kBatteryFrameLen bytes.
+// Current and consumed capacity are sent as zero -- this firmware measures
+// neither, and zero is what "not measured" looks like on the wire.
+size_t encodeBatteryFrame(uint8_t* out, uint16_t packMv, uint8_t remainingPct);
 
 // CRSF tick -> microseconds. Deliberately does NOT clamp: a receiver may
 // legally send outside 172..1811 and the firmware reports what arrived. The
