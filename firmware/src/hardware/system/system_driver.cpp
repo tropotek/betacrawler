@@ -10,11 +10,12 @@
 #if !FW_MCU_ESP32
 
 #include <Arduino.h>
+#include "hardware/adc/adc_vref.h"
 
 namespace sys {
 
-// STM32F411 factory calibration (reference manual)
-#define VREFINT_CAL  (*((uint16_t *)0x1FFF7A2AU))
+// STM32F411 factory calibration (reference manual). The VREFINT constant
+// lives in hardware/adc/adc_vref.cpp with the routine that reads it.
 #define TS_CAL1      (*((uint16_t *)0x1FFF7A2CU))
 #define TS_CAL2      (*((uint16_t *)0x1FFF7A2EU))
 static const int32_t CAL_VDDA_MV = 3300;
@@ -25,13 +26,6 @@ extern "C" char *sbrk(int incr);
 static int freeRamBytes() {
   char top;
   return (int)(&top - (char *)sbrk(0));
-}
-
-static int32_t readVddaMv() {
-  analogReadResolution(12);
-  int32_t raw = analogRead(AVREF);
-  if (raw <= 0) return CAL_VDDA_MV;
-  return (CAL_VDDA_MV * (int32_t)VREFINT_CAL) / raw;
 }
 
 static float readTempC(int32_t vddaMv) {
@@ -46,7 +40,7 @@ static float readTempC(int32_t vddaMv) {
 
 // Order must match kTlm in system_params.cpp.
 void SystemDriver::readTelemetry(core::TlmValue* out) {
-  int32_t vdd = readVddaMv();
+  int32_t vdd = adcref::vddaMv();
   out[T_UP].u   = millis();
   out[T_CLK].u  = SystemCoreClock / 1000000UL;
   out[T_RAM].i  = freeRamBytes();
