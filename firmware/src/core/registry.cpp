@@ -108,6 +108,11 @@ const Inputs& Registry::driveOutputs() const {
   return driveOutputs_ ? *driveOutputs_ : kEmptyDriveOutputs;
 }
 
+const Battery& Registry::battery() const {
+  static const Battery kEmptyBattery;
+  return battery_ ? *battery_ : kEmptyBattery;
+}
+
 void Registry::begin(const Params& p) {
   // Two passes on purpose: every module is attached before any module begins,
   // so a driver's begin() can act on state another module published.
