@@ -99,10 +99,10 @@
 // nothing else here claims it. FEATURE_SERVO, the only other module that
 // claims TIM4 (PB6/TIM4_CH1), is off on this board, so esc1 takes it.
 //
-// ESC0_FRAME_US/ESC1_FRAME_US (20000, i.e. 50Hz), ESC0_ARM_HOLD_MS/
-// ESC1_ARM_HOLD_MS (2000), ESC0_INPUT_STALE_MS/ESC1_INPUT_STALE_MS (500) and
-// ESC0_ARM_LOW_MARGIN_US/ESC1_ARM_LOW_MARGIN_US (50) are all optional per
-// instance, defaulted in esc0_driver.cpp/esc1_driver.cpp respectively.
+// ESC0_ARM_HOLD_MS/ESC1_ARM_HOLD_MS (2000), ESC0_INPUT_STALE_MS/
+// ESC1_INPUT_STALE_MS (500) and ESC0_ARM_LOW_MARGIN_US/
+// ESC1_ARM_LOW_MARGIN_US (50) are all optional per instance, defaulted in
+// esc0_driver.cpp/esc1_driver.cpp respectively.
 //
 // Power the motor/ESC from its own supply, never the board's 5V/VBUS pin --
 // an ESC under load draws far more than the servo's own VBUS warning already
@@ -121,6 +121,12 @@
 // the only other module that claims it (PB6/TIM4_CH1), is off here.
 #define ESC1_TIMER      TIM4
 #define ESC1_PIN        PB6
+
+// 200Hz frame on both, which every analogue-PWM ESC auto-detects. A 5ms
+// period bounds output latency at a quarter of a 50Hz frame's, and
+// effectiveMaxUs()'s reserved low time leaves ample headroom over max_us.
+#define ESC0_FRAME_US   5000
+#define ESC1_FRAME_US   5000
 
 // Both esc1 and (if ever enabled) servo drive TIM4/PB6. FEATURE_SERVO ships
 // 0 on this board today, so nothing conflicts yet -- but if someone flips it

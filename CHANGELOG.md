@@ -5,6 +5,15 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **firmware: both ESCs now default to a 200Hz PWM frame.** `blackpill_f411ce.h` defines
+  `ESC0_FRAME_US`/`ESC1_FRAME_US` as 5000, so `kDefaultRate` resolves to `RATE_200` and a freshly
+  flashed board no longer ships on the 20ms frame a 50Hz default gives it. The 5ms period bounds
+  output latency at a quarter of what it was, and `effectiveMaxUs()` reserves only 125us of low
+  time per frame, leaving 4875us of headroom over the 2000us `max_us` so nothing is clamped. An
+  existing saved configuration is unaffected: `Registry::fingerprint()` covers each parameter's
+  key, type, bounds, option count and max length, but not its default, so the new value applies
+  only to a fresh board or a `defaults` op. The golden schema fixture is regenerated to match.
+
 - **fix: the control loop no longer stalls 200ms at a time when nothing is listening on USB.**
   Telemetry is on by default and is not gated on a host being connected, so an untethered board
   still wrote a telemetry line every `1000/tlm.rate` ms. `USBSerial::write()` returns 0
