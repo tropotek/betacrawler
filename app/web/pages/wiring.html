@@ -16,7 +16,7 @@
           <div class="wiring-diagram">
             <div class="diagram-card">
               <svg viewBox="0 0 1600 1240" xmlns="http://www.w3.org/2000/svg" role="img"
-                   aria-label="Wiring diagram connecting a LiPo battery and Matek power distribution board to two brushless ESCs and their three-wire motors, a Black Pill STM32F411CE board, a CRSF receiver, and a USB host">
+                   aria-label="Wiring diagram connecting a LiPo battery and Matek power distribution board to two brushless ESCs and their three-wire motors, a Black Pill STM32F411CE board, a CRSF receiver, a battery sense divider, and a USB host">
 
                 <!-- ===== Board ===== -->
                 <rect x="720" y="90" width="220" height="590" rx="20" class="fill-surface2 stroke-border" stroke-width="1.5" />
@@ -248,7 +248,7 @@
                 </g>
 
                 <!-- ===== USB card ===== -->
-                <rect x="820" y="770" width="340" height="140" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="820" y="770" width="290" height="140" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
                 <rect x="836" y="786" width="12" height="12" rx="2" class="fill-copper" />
                 <text x="856" y="796" class="lbl-heading fill-ink" font-size="13">USB-C · to host PC</text>
                 <text x="836" y="820" class="lbl-mono fill-muted" font-size="10.5">One cable carries the Configurator link,</text>
@@ -256,6 +256,44 @@
                 <text x="836" y="852" class="lbl-mono fill-muted" font-size="10.5">updates (PA11/PA12, built in).</text>
                 <text x="836" y="874" class="lbl-mono fill-muted" font-size="10.5">No cable? BOOT0+NRST by hand, or SWD</text>
                 <text x="836" y="890" class="lbl-mono fill-muted" font-size="10.5">(PA13/PA14), reach the same bootloader.</text>
+
+                <!-- ===== Battery sense card =====
+                     Sits in the clear corridor between ESC 0's battery leads
+                     (x=440/500) and the board's left edge (x=720). Three leads
+                     only, none crossing another: SENSE across to the board, VCC
+                     and GND straight down to the PDB. -->
+                <rect x="515" y="520" width="175" height="180" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="530" y="534" width="12" height="12" rx="2" class="fill-vbat" />
+                <text x="550" y="544" class="lbl-heading fill-ink" font-size="13">Battery sense</text>
+                <text x="530" y="562" class="lbl-mono fill-muted" font-size="9.5">47k / 5k6 divider</text>
+                <line x1="530" y1="576" x2="675" y2="576" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="675" y="604">SENSE OUT</text>
+                </g>
+                <line x1="530" y1="624" x2="675" y2="624" class="stroke-border" stroke-width="1" />
+                <text x="530" y="646" class="lbl-mono fill-muted" font-size="10">Divides pack voltage</text>
+                <text x="530" y="662" class="lbl-mono fill-muted" font-size="10">into the ADC's 0&ndash;3.3V</text>
+                <text x="530" y="678" class="lbl-mono fill-muted" font-size="10">range. Circuit below.</text>
+
+                <g class="lbl-mono fill-vbat" font-size="11" font-weight="600" text-anchor="middle">
+                  <text x="560" y="694">VCC</text>
+                  <text x="620" y="694">GND</text>
+                </g>
+                <g class="wire-vbat">
+                  <line x1="690" y1="600" x2="720" y2="600" />
+                  <line x1="560" y1="700" x2="560" y2="960" />
+                  <line x1="620" y1="700" x2="620" y2="960" />
+                </g>
+                <g class="fill-vbat">
+                  <circle cx="690" cy="600" r="3" /><circle cx="720" cy="600" r="3" />
+                  <circle cx="560" cy="700" r="3" /><circle cx="560" cy="960" r="3" />
+                  <circle cx="620" cy="700" r="3" /><circle cx="620" cy="960" r="3" />
+                </g>
+                <!-- STM pin name, inside the board's own border -->
+                <g class="lbl-mono fill-vbat" font-size="10.5" font-weight="600">
+                  <text x="727" y="599">PA1</text>
+                </g>
 
                 <!-- ===== PDB card ===== -->
                 <rect x="300" y="960" width="980" height="240" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
@@ -266,6 +304,11 @@
                   <text x="780" y="980">GND</text>
                   <text x="1130" y="980">ESC 1 +</text>
                   <text x="1190" y="980">ESC 1 −</text>
+                </g>
+                <!-- sense taps, after the card rect so they are not painted over -->
+                <g class="lbl-mono fill-vbat" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="560" y="980">VCC</text>
+                  <text x="620" y="980">GND</text>
                 </g>
                 <line x1="315" y1="996" x2="1265" y2="996" class="stroke-border" stroke-width="1" />
                 <rect x="315" y="1008" width="12" height="12" rx="2" class="fill-pdb" />
@@ -307,6 +350,100 @@
                   <line x1="280" y1="1076" x2="300" y2="1076" />
                   <line x1="280" y1="1100" x2="300" y2="1100" />
                 </g>
+              </svg>
+            </div>
+          </div>
+
+          <h2 class="h5 mt-4">Battery sense divider &mdash; circuit</h2>
+          <p class="text-secondary">
+            The component-level circuit behind the sense card above. A LiPo pack is far above the
+            3.3V the ADC can read, so a resistor divider scales it down. Only the three terminals
+            are shown here &mdash; where they land on the board is in the wiring map above.
+            47k/5k6 reads a 4S at 1.79V and a 6S at 2.68V, both comfortably inside range.
+          </p>
+
+          <div class="wiring-diagram">
+            <div class="diagram-card">
+              <svg viewBox="0 0 700 480" xmlns="http://www.w3.org/2000/svg" role="img"
+                   aria-label="Circuit diagram of the battery sense divider: a 47k resistor from pack positive to a tap node, a 5k6 resistor from the tap to ground, a 100nF capacitor and a 3.3V zener with its cathode to the tap also going to ground, and a 1k resistor in series from the tap to the sense output">
+
+                <g class="wire-vbat">
+                  <line x1="100" y1="62" x2="100" y2="110" />
+                  <line x1="100" y1="158" x2="100" y2="190" />
+                  <line x1="100" y1="190" x2="400" y2="190" />
+                  <line x1="448" y1="190" x2="558" y2="190" />
+                  <line x1="100" y1="190" x2="100" y2="230" />
+                  <line x1="100" y1="278" x2="100" y2="330" />
+                  <line x1="220" y1="190" x2="220" y2="238" />
+                  <line x1="220" y1="262" x2="220" y2="330" />
+                  <line x1="330" y1="190" x2="330" y2="234" />
+                  <line x1="330" y1="258" x2="330" y2="330" />
+                  <line x1="100" y1="330" x2="330" y2="330" />
+                  <line x1="215" y1="330" x2="215" y2="372" />
+                </g>
+
+                <!-- resistors -->
+                <g class="fill-surface stroke-border" stroke-width="1.5">
+                  <rect x="86" y="110" width="28" height="48" rx="2" />
+                  <rect x="86" y="230" width="28" height="48" rx="2" />
+                  <rect x="400" y="176" width="48" height="28" rx="2" />
+                </g>
+                <!-- 100nF plates -->
+                <g class="wire-vbat">
+                  <line x1="198" y1="238" x2="242" y2="238" />
+                  <line x1="198" y1="262" x2="242" y2="262" />
+                </g>
+                <!-- 3V3 zener, cathode UP: the bar sits on the tap side, the
+                     triangle's base is the anode going to ground -->
+                <polygon points="316,258 344,258 330,236" class="fill-vbat" />
+                <g class="wire-vbat">
+                  <line x1="314" y1="234" x2="346" y2="234" />
+                  <line x1="346" y1="234" x2="346" y2="242" />
+                  <line x1="314" y1="234" x2="314" y2="226" />
+                </g>
+
+                <g class="fill-vbat">
+                  <circle cx="100" cy="62" r="4" /><circle cx="558" cy="190" r="4" />
+                  <circle cx="215" cy="372" r="4" />
+                  <circle cx="100" cy="190" r="3" /><circle cx="220" cy="190" r="3" />
+                  <circle cx="330" cy="190" r="3" /><circle cx="100" cy="330" r="3" />
+                  <circle cx="220" cy="330" r="3" /><circle cx="330" cy="330" r="3" />
+                  <circle cx="215" cy="330" r="3" />
+                </g>
+
+                <!-- terminals -->
+                <g class="lbl-mono fill-vbat" font-size="12" font-weight="600">
+                  <text x="100" y="46" text-anchor="middle">VCC</text>
+                  <text x="572" y="186">SENSE OUT</text>
+                  <text x="215" y="394" text-anchor="middle">GND</text>
+                </g>
+                <g class="lbl-mono fill-muted" font-size="9.5">
+                  <text x="100" y="30" text-anchor="middle">raw pack, from the PDB</text>
+                  <text x="572" y="204">to the board</text>
+                  <text x="112" y="182">tap node</text>
+                </g>
+
+                <!-- values, staggered so no two labels share a row -->
+                <g class="lbl-mono fill-ink" font-size="12" font-weight="500">
+                  <text x="128" y="132">47k</text>
+                  <text x="128" y="252">5k6</text>
+                  <text x="220" y="296" text-anchor="middle">100nF</text>
+                  <text x="330" y="296" text-anchor="middle">3V3 zener</text>
+                  <text x="424" y="168" text-anchor="middle">1k</text>
+                </g>
+                <g class="lbl-mono fill-muted" font-size="10">
+                  <text x="128" y="148">1% metal film</text>
+                  <text x="128" y="268">1% metal film</text>
+                  <text x="220" y="311" text-anchor="middle">ceramic &middot; marked 104</text>
+                  <text x="330" y="311" text-anchor="middle">band to the tap</text>
+                </g>
+
+                <line x1="60" y1="418" x2="640" y2="418" class="stroke-border" stroke-width="1" />
+                <g class="lbl-mono fill-muted" font-size="10">
+                  <text x="60" y="440">Nothing external touches the tap node. It reaches the board only through the 1k,</text>
+                  <text x="60" y="456">which protects the pin if the 5k6 ever goes open circuit.</text>
+                </g>
+                <text x="60" y="404" class="lbl-mono fill-power" font-size="10">Take VCC from a raw pack pad &mdash; never a regulated BEC output, which reads constant.</text>
               </svg>
             </div>
           </div>

@@ -71,7 +71,9 @@ def capture_wiring_diagram(browser, out_dir):
         page.click("[data-page='wiring']")
         page.wait_for_selector(".diagram-card svg")
         page.wait_for_timeout(300)
-        page.locator(".diagram-card").screenshot(path=str(out_dir / filename))
+        # The page carries more than one figure now (wiring map, then the
+        # sense-divider circuit); this capture is the wiring map.
+        page.locator(".diagram-card").first.screenshot(path=str(out_dir / filename))
         page.close()
 
 
