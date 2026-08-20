@@ -5,6 +5,22 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **fix: the control loop no longer stalls 200ms at a time when nothing is listening on USB.**
+  Telemetry is on by default and is not gated on a host being connected, so an untethered board
+  still wrote a telemetry line every `1000/tlm.rate` ms. `USBSerial::write()` returns 0
+  immediately when `CDC_connected()` is false, which covers both "no host has the port open" and
+  a momentary in-flight packet overrun, and `writeLine()` treated every such zero as a stalled
+  host worth waiting out — burning its full 200ms retry budget inside `loop()`. Nothing else ran
+  meanwhile: no receiver drain, no mix, no ESC pulse write, and the 256-byte CRSF ring (about
+  20ms of an ELRS 500Hz stream) overflowed on every stall. Since the telemetry deadline is
+  checked against a timestamp taken at the top of `loop()`, the next pass was immediately overdue
+  and stalled again, so the control path effectively ran at 5Hz and stick-to-ESC latency was
+  quantised to roughly 200ms — the delay was worst on exactly the untethered vehicle that has
+  nobody listening. `writeLine()` now tells the two cases apart by whether any byte was accepted:
+  a partial line is still a stalled host worth the retry budget, but zero bytes on the first call
+  means nothing is listening and returns at once. Measured on hardware across a 9-second
+  disconnect, which now holds 27698Hz with a 2313us worst pass.
+
 - **docs: the wiring diagram now shows the whole power chain.** It stopped at the two ESC signal
   leads and the receiver, leaving a builder to guess at everything carrying current: the battery
   went unshown, the ESCs had no power source, and the motors — the reason the ESCs are there —

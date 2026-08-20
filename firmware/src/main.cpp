@@ -30,25 +30,22 @@ static TlmValue g_tlm[FW_MAX_TLM];
 static uint32_t g_lastTlm = 0;
 static ParamId  g_tlmRateId = kNoParam;
 
-// Longest a single write() call is allowed to make zero progress before
-// writeLine() gives up on the rest of a line -- see writeLine()'s own
-// comment for why this exists at all. Real disconnects (unplugged, app
-// closed) stay unwritable far longer than this; a still-connected host that
-// was merely slow to drain one USB packet recovers within it.
+// Longest writeLine() will spend retrying a line it has already started
+// putting on the wire, before giving up on the rest of it.
 constexpr uint32_t kWriteStallTimeoutMs = 200;
 
-// USBSerial::write() (libraries/USBDevice/src/USBSerial.cpp, this board's
-// Serial) can return fewer bytes than requested: its own retry loop bails
-// the instant CDC_connected() reads false even once -- which usbd_cdc_if.c's
-// CDC_connected() does whenever a single in-flight USB packet hasn't
-// completed within USB_CDC_TRANSMIT_TIMEOUT (a handful of ms) of starting,
-// a momentary host-side stall rather than a real disconnect -- and it never
-// resumes on its own. For a short line this is harmless (the odds of a
-// stall landing inside one write() call are low); for the schema response,
-// by far the largest and slowest-to-transmit line this firmware sends,
-// hitting that window even once used to silently truncate it -- observed on
-// real hardware, not theoretical. Retrying the remainder here is what a
-// blocking write is supposed to do; USBSerial::write() just doesn't.
+// USBSerial::write() can return fewer bytes than requested: it bails the
+// instant CDC_connected() reads false, which happens both when no host has
+// the port open at all and when one in-flight packet merely overran
+// USB_CDC_TRANSMIT_TIMEOUT. It never resumes on its own, which used to
+// truncate the schema response -- by far the longest line sent here.
+//
+// The two cases are told apart by whether ANY byte was accepted. A partial
+// line is a stalled host worth waiting out. Zero bytes on the first call is
+// no host at all, and must return immediately: this runs inside loop(), so
+// blocking here stops the receiver drain, the mix and the ESC pulse writes
+// for as long as it waits -- which for an untethered vehicle, where nothing
+// is ever listening, is every telemetry period.
 static void writeLine(const char* buf, size_t len) {
   size_t sent = 0;
   uint32_t stallStart = 0;
@@ -57,9 +54,10 @@ static void writeLine(const char* buf, size_t len) {
     sent += n;
     if (sent >= len) break;
     if (n == 0) {
+      if (sent == 0) return;   // nothing listening
       uint32_t now = millis();
       if (stallStart == 0) stallStart = now;
-      if (now - stallStart > kWriteStallTimeoutMs) return;   // host genuinely gone
+      if (now - stallStart > kWriteStallTimeoutMs) return;
       delay(1);
     } else {
       stallStart = 0;
