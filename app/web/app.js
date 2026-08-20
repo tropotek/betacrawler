@@ -342,7 +342,7 @@ document.addEventListener('alpine:init', () => {
     // firmware cannot do this itself -- onParamChanged() takes a const Params,
     // so a driver cannot write a parameter -- and does not need to, since one
     // multiplier absorbs every systematic error in the divider chain at once.
-    async calibrateVbat(measuredMv) {
+    async calibrateVbat(measuredVolts) {
       if (!this.field('vbat.scale').def) {
         showError('Calibrate: this board has no battery sensor');
         return;
@@ -351,14 +351,19 @@ document.addEventListener('alpine:init', () => {
         showError('Calibrate: set Source to adc first \u2014 a simulated pack cannot be calibrated');
         return;
       }
-      const reported = Alpine.store('telemetry').field('vbat').value;
+      // raw, not field().value: the latter is the FORMATTED string ("16.78"),
+      // already through the div/dec display hints. The comparison and the
+      // formula below are both in millivolts, which is what raw carries.
+      const reported = Alpine.store('telemetry').raw['vbat'];
       if (!reported || reported < 5000) {
         showError('Calibrate: no valid reading \u2014 connect a pack first');
         return;
       }
-      const measured = Number(measuredMv);
+      // Entered in volts because that is what a multimeter reads; the wire and
+      // vbat.scale both stay in millivolts.
+      const measured = Math.round(Number(measuredVolts) * 1000);
       if (!Number.isFinite(measured) || measured < 5000 || measured > 30000) {
-        showError('Calibrate: enter the measured pack voltage in millivolts (5000\u201330000)');
+        showError('Calibrate: enter the measured pack voltage in volts (5\u201330)');
         return;
       }
       const next = Math.round((measured * this.values['vbat.scale']) / reported);

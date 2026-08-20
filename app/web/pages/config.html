@@ -93,15 +93,14 @@
                           :class="{ 'is-invalid': $store.config.invalid['vbat.source'] }"
                           x-model="$store.config.values['vbat.source']"
                           @change="$store.config.commit($store.config.field('vbat.source').def)">
-                    <template x-for="opt in $store.config.field('vbat.source').def?.options ?? []" :key="opt">
+                    <template x-for="opt in ($store.config.field('vbat.source').def?.options ?? []).filter((o) => o !== 'sim')" :key="opt">
                       <option :value="opt" x-text="opt"></option>
                     </template>
                   </select>
                   <div class="form-text">
-                    <strong>off</strong> reports nothing and sends no telemetry frame.
-                    <strong>adc</strong> reads the divider on the sense pin.
-                    <strong>sim</strong> sweeps a synthetic pack so the reading, the display
-                    and the uplink to the handset can be exercised with no divider fitted.
+                    <strong>off</strong> when no divider is fitted — reports nothing and
+                    sends no telemetry frame. <strong>adc</strong> reads the divider on the
+                    sense pin.
                   </div>
                 </div>
                 <div class="col-md-6">
@@ -121,27 +120,20 @@
                   </div>
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label" for="f-vbat-scale">Scale</label>
-                  <input type="number" class="form-control" id="f-vbat-scale"
-                         :class="{ 'is-invalid': $store.config.invalid['vbat.scale'] }"
-                         x-model="$store.config.values['vbat.scale']"
-                         @change="$store.config.commit($store.config.field('vbat.scale').def)">
-                  <div class="form-text">
-                    Multiplier from the sense pin to pack voltage, ×1000. Use Calibrate rather
-                    than editing this by hand.
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label" for="f-vbat-measured">Measured pack voltage (mV)</label>
+                  <label class="form-label" for="f-vbat-measured">Measured pack voltage (V)</label>
                   <div class="input-group">
-                    <input type="number" class="form-control" id="f-vbat-measured"
-                           x-model="measured" placeholder="e.g. 16780">
+                    <input type="number" step="0.01" class="form-control" id="f-vbat-measured"
+                           x-model="measured" placeholder="e.g. 16.78">
                     <button class="btn btn-outline-secondary" type="button"
                             @click="$store.config.calibrateVbat(measured)">Calibrate</button>
                   </div>
                   <div class="form-text">
-                    Read the pack with a multimeter, enter it here, and Scale is adjusted so
-                    the reading matches. Needs Source set to adc.
+                    Read the pack with a multimeter, enter it here, and the reading is
+                    adjusted to match. Needs Source set to adc.
+                    <span class="d-block mt-1">
+                      Scale <span class="font-monospace" x-text="$store.config.values['vbat.scale']"></span>
+                      &mdash; set by calibrating, not edited directly.
+                    </span>
                   </div>
                 </div>
               </div>
