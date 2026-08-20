@@ -94,8 +94,13 @@ static core::Inputs g_driveOutputs;
 
 #if FEATURE_VBAT
 #  include "hardware/vbat/vbat_params.h"
-   // Driver arrives with the next change; descriptor-only until then.
-#  define VBAT_DRV nullptr
+#  if FW_TARGET_ARDUINO
+#    include "hardware/vbat/vbat_driver.h"
+     static vbat::VbatDriver g_vbat(g_battery);
+#    define VBAT_DRV (&g_vbat)
+#  else
+#    define VBAT_DRV nullptr
+#  endif
 #endif
 
 #if FEATURE_ESC0
