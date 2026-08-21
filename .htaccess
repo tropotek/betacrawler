@@ -1,0 +1,6 @@
+# Serves web-app/ at the site root when this repo is cloned directly into
+# Apache's DocumentRoot. Requests are rewritten into web-app/ internally, so
+# paths outside that folder (firmware/, app/, hardware/, etc.) 404.
+RewriteEngine On
+RewriteCond %{REQUEST_URI} !^/web-app/
+RewriteRule ^(.*)$ /web-app/$1 [L]

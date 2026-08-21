@@ -1,0 +1,7 @@
+{$SERVER_NAME} {
+	root * /srv
+	file_server
+
+	@service_worker path /service-worker.js
+	header @service_worker Cache-Control "no-cache"
+}

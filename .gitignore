@@ -31,6 +31,10 @@ site/
 _autosave-*
 fp-info-cache
 
+# Docker hosting config: per-deployment secrets/ports, not source. .env.example
+# documents the variables and is committed.
+.env
+
 # Editor / OS
 .vscode/
 .DS_Store
