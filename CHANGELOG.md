@@ -5,6 +5,15 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **feat: `web-app/` is a standalone browser configurator, talking to a board directly over the
+  Web Serial API.** Feature-equivalent to `app/web/` minus firmware flashing, WiFi scan and the
+  `sim://board` simulator — those need a backend process this tree deliberately has none of. No
+  build step and no npm dependencies: `js/*.js` ports `app/backend/`'s protocol/link/device/
+  terminal/settings_ini logic to vanilla ES modules behind the same `Api` seam `app/web/` uses,
+  and everything above that seam is copied from `app/web/` unmodified (held to parity by a test).
+  Installable as a PWA (manifest + service worker); requires a Chromium-based browser and a
+  secure context (`localhost` or HTTPS), since Web Serial and service workers both need one.
+
 - **fix: the ST7789 240x240 display module is removed.** No board ships it enabled and none is
   planned to, so the driver, params, board-header pin maps and the `moononournation/GFX Library`
   dependency it needed are gone rather than kept as dead code, and the architecture doc's page on

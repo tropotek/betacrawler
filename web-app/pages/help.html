@@ -1,0 +1,82 @@
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Help</h1>
+          </div>
+
+          <!-- App and firmware are separate projects with independent version
+               numbers; showing them side by side is the quickest way to tell
+               which half is stale when something misbehaves. -->
+          <dl class="row mb-4">
+            <dt class="col-sm-3">App version</dt>
+            <dd class="col-sm-9"><span x-text="$store.app.version"></span></dd>
+            <dt class="col-sm-3">Firmware</dt>
+            <dd class="col-sm-9"><span x-text="$store.app.fwSummary"></span></dd>
+          </dl>
+
+          <p><strong>The board doesn't appear in the browser's device picker</strong></p>
+          <ul>
+            <li>Check the USB cable is a data cable, not a charge-only cable.</li>
+            <li>Make sure the board is powered — you should see LED activity on it.</li>
+            <li>Try unplugging and replugging the cable, then click <strong>Connect</strong> again.</li>
+          </ul>
+
+          <p><strong>Connect fails or times out</strong></p>
+          <ul>
+            <li>Confirm you selected the right device in the browser's picker.</li>
+            <li>Make sure no other program (a serial monitor, another instance of this app) already has the port open.</li>
+            <li>Try disconnecting and reconnecting.</li>
+          </ul>
+
+          <p><strong>Connected, but no telemetry appears</strong></p>
+          <ul>
+            <li>Check the Telemetry Rate setting on the Configuration page isn't set very low.</li>
+            <li>Try disconnecting and reconnecting.</li>
+          </ul>
+
+          <p><strong>Changing a setting doesn't seem to do anything</strong></p>
+          <ul>
+            <li>Changes apply to the device immediately, but only persist through a power cycle after you click <strong>Save</strong>.</li>
+            <li>An invalid value (out of range, too long) is rejected and shown with a red outline — check for that.</li>
+          </ul>
+
+          <p><strong>The status badge shows "stale"</strong></p>
+          <ul>
+            <li>This means the device is still connected but hasn't sent telemetry recently — often just a
+                brief pause during a Save (writing to flash takes about a second). If it doesn't clear on its
+                own, try disconnecting and reconnecting.</li>
+          </ul>
+
+          <p><strong>Backing up and restoring settings</strong></p>
+          <ul>
+            <li>On the Terminal page, type <code>dump</code> to print every setting as INI text, then
+                copy it into a file. <code>list</code> shows what each setting accepts.</li>
+            <li><strong>Restore from INI…</strong> reads such a file back. Settings the connected
+                firmware doesn't have — or values it rejects — are listed as skipped and the rest
+                still apply.</li>
+            <li>A restore applies to the device immediately but is <strong>not</strong> written to
+                flash. Click <strong>Save to flash</strong> — the button beside Restore, or the one
+                on the Configuration page — to keep it. It stays greyed out until there is
+                something unsaved.</li>
+          </ul>
+
+          <p><strong>Undoing changes you haven't saved</strong></p>
+          <ul>
+            <li><strong>Discard changes</strong> reloads the settings last written to flash, so
+                it undoes everything since your last Save. This is different from
+                <strong>Load defaults</strong>, which goes to the firmware's factory values —
+                somewhere you may never have saved.</li>
+            <li>On a board that has never been saved to, there is nothing stored to go back to,
+                so Discard changes loads the defaults instead and tells you it did.</li>
+          </ul>
+
+          <p><strong>A saved setting didn't survive a restart</strong></p>
+          <ul>
+            <li>Confirm you clicked <strong>Save</strong> after changing the value, not just changed the field
+                — edits apply live but aren't written to flash until Save.</li>
+          </ul>
+
+          <p><strong>Updating the firmware</strong></p>
+          <ul>
+            <li>This app talks to a board over Web Serial and cannot flash it. Use the
+                desktop app to update firmware, then come back here to configure it.</li>
+          </ul>
+          <p>&nbsp;</p>

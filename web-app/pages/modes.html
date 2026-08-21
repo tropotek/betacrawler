@@ -1,0 +1,83 @@
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Modes</h1>
+          </div>
+          <fieldset class="card" :disabled="!$store.app.connected" x-data="{
+            rows: [
+              { title: 'Throttle',  channelKey: 'tank_drive.throttle_src', rangeKeys: null, directionSelect: true },
+              { title: 'Direction', channelKey: 'tank_drive.steer_src',    rangeKeys: null, directionSelect: false },
+              { title: 'Arm',       channelKey: 'tank_drive.arm_src',      rangeKeys: ['tank_drive.arm_min', 'tank_drive.arm_max'], directionSelect: false },
+            ],
+          }">
+            <div class="card-body">
+              <template x-for="row in rows" :key="row.channelKey">
+                <div class="mode-row d-flex gap-3 align-items-start">
+                  <div class="mode-name">
+                    <div class="mode-title" x-text="row.title"></div>
+                    <template x-if="row.directionSelect">
+                      <select class="form-select form-select-sm mt-2" aria-label="ESC direction"
+                              x-model="$store.config.values['esc0.direction']"
+                              @change="$store.config.setBothDirections($event.target.value)">
+                        <template x-for="opt in $store.config.field('esc0.direction').def?.options ?? []" :key="opt">
+                          <option :value="opt" :selected="opt === $store.config.values['esc0.direction']" x-text="opt"></option>
+                        </template>
+                      </select>
+                    </template>
+                  </div>
+
+                  <div class="mode-channel">
+                    <select class="form-select form-select-sm" :id="'f-' + row.channelKey"
+                            :class="{ 'is-invalid': $store.config.invalid[row.channelKey] }"
+                            :aria-label="row.title + ' channel'"
+                            x-model="$store.config.values[row.channelKey]"
+                            @change="$store.config.commit($store.config.field(row.channelKey).def)">
+                      <template x-for="opt in $store.config.field(row.channelKey).def?.options ?? []" :key="opt">
+                        <option :value="opt" :selected="opt === $store.config.values[row.channelKey]" x-text="opt"></option>
+                      </template>
+                    </select>
+                    <template x-if="row.rangeKeys">
+                      <div class="small text-secondary text-end mt-1">
+                        <div>Min: <span x-text="$store.config.values[row.rangeKeys[0]]"></span></div>
+                        <div>Max: <span x-text="$store.config.values[row.rangeKeys[1]]"></span></div>
+                      </div>
+                    </template>
+                  </div>
+
+                  <div class="range-slider flex-grow-1"
+                       :class="{ 'range-slider-disabled': !$store.app.connected }"
+                       x-data="rangeSlider(1000, 2000, row.rangeKeys, row.channelKey)">
+                    <div class="range-track" x-ref="track">
+                      <div class="range-fill" x-show="hasRange"
+                           :style="`left:${pct(lo)}%; width:${pct(hi) - pct(lo)}%`"></div>
+                      <template x-for="which in (hasRange ? [0, 1] : [])" :key="which">
+                        <div class="range-thumb" role="slider"
+                             :style="`left:${pct(which === 0 ? lo : hi)}%`"
+                             :tabindex="enabled ? 0 : -1"
+                             :aria-label="which === 0 ? 'Range minimum' : 'Range maximum'"
+                             :aria-valuemin="min" :aria-valuemax="max"
+                             :aria-valuenow="which === 0 ? lo : hi"
+                             @pointerdown="down($event, which)"
+                             @pointermove="move($event)"
+                             @pointerup="up()"
+                             @keydown.arrow-left.prevent="nudge(which, -1)"
+                             @keydown.arrow-down.prevent="nudge(which, -1)"
+                             @keydown.arrow-right.prevent="nudge(which, 1)"
+                             @keydown.arrow-up.prevent="nudge(which, 1)"
+                             @keydown.page-down.prevent="nudge(which, -50)"
+                             @keydown.page-up.prevent="nudge(which, 50)"></div>
+                      </template>
+                    </div>
+                    <div class="range-ruler">
+                      <template x-for="tick in ticks" :key="tick.v">
+                        <div class="range-tick" :class="{ 'range-tick-major': tick.major }"
+                             :style="`left:${pct(tick.v)}%`">
+                          <span x-text="tick.v"></span>
+                        </div>
+                      </template>
+                      <div class="range-live" :style="`left:${livePct}%`" :title="live + ' µs'"></div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </fieldset>
+          <p>&nbsp;</p>
