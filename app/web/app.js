@@ -243,6 +243,25 @@ function faultIsError(value) {
   return value !== null && value !== undefined && Number(value) > 0;
 }
 
+// "Label (unit)" for a telemetry key, or just the label when it carries no
+// unit. The descriptor owns both; this only assembles them.
+function tlmLabel(key) {
+  const def = Alpine.store('telemetry').field(key).def;
+  if (!def) return '';
+  return def.unit ? `${def.label} (${def.unit})` : def.label;
+}
+
+// Volts per cell, derived rather than published: an exact division of two
+// readings the schema already carries, where `pct` is a firmware policy and so
+// comes over the wire. Dashes until a cell count has been latched.
+function perCellText() {
+  const t = Alpine.store('telemetry');
+  const mv = t.raw['vbat'];
+  const cells = t.raw['cells'];
+  if (!mv || !cells) return '\u2013';
+  return (mv / cells / 1000).toFixed(2);
+}
+
 // The config form and telemetry cards are the two most repetitive,
 // DOM-construction-heavy regions of this file -- markup for both now lives in
 // index.html as <template x-for> blocks. These two stores are the only
@@ -354,8 +373,10 @@ document.addEventListener('alpine:init', () => {
       // raw, not field().value: the latter is the FORMATTED string ("16.78"),
       // already through the div/dec display hints. The comparison and the
       // formula below are both in millivolts, which is what raw carries.
+      // Matches the firmware's own validity floor: a USB-powered board wired
+      // to a PDB reads ~4600mV with no pack, which must not be calibrated on.
       const reported = Alpine.store('telemetry').raw['vbat'];
-      if (!reported || reported < 5000) {
+      if (!reported || reported < 6000) {
         showError('Calibrate: no valid reading \u2014 connect a pack first');
         return;
       }

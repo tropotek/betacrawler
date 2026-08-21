@@ -37,14 +37,29 @@ def trunc_div(a: int, b: int) -> int:
 VBAT_SIM_LOW_MV = 13200
 VBAT_SIM_HIGH_MV = 16800
 VBAT_SIM_PERIOD_MS = 60000
-VBAT_MIN_VALID_MV = 5000
+VBAT_MIN_VALID_MV = 6000
 VBAT_CELL_DETECT_MV = 4300
+VBAT_CELL_EMPTY_MV = 3300
+VBAT_CELL_FULL_MV = 4200
 
 
 def detect_cells(pack_mv: int) -> int:
     if pack_mv < VBAT_MIN_VALID_MV:
         return 0
     return -(-pack_mv // VBAT_CELL_DETECT_MV)
+
+
+def remaining_pct(pack_mv: int, cells: int) -> int:
+    """Linear across empty..full per cell, clamped, as the firmware does it."""
+    if cells == 0:
+        return 0
+    per_cell = trunc_div(pack_mv, cells)
+    if per_cell <= VBAT_CELL_EMPTY_MV:
+        return 0
+    if per_cell >= VBAT_CELL_FULL_MV:
+        return 100
+    return trunc_div((per_cell - VBAT_CELL_EMPTY_MV) * 100,
+                     VBAT_CELL_FULL_MV - VBAT_CELL_EMPTY_MV)
 
 
 def triangle_percent(phase_ms: int, period_ms: int) -> int:
@@ -372,7 +387,7 @@ class SimModel:
         sweeps a synthetic pack, and the cell count latches once."""
         source = self.text("vbat.source")
         if source == "off":
-            return {"vbat": 0, "cells": 0}
+            return {"vbat": 0, "cells": 0, "pct": 0}
         # Both adc and sim sweep the same synthetic pack. There is no divider
         # here to read, and everything this model reports is synthetic by
         # definition -- a simulator that reported zero volts for its own
@@ -385,7 +400,8 @@ class SimModel:
             self._vbat_cells = int(sel)
         elif self._vbat_cells == 0:
             self._vbat_cells = detect_cells(mv)
-        return {"vbat": mv, "cells": self._vbat_cells}
+        return {"vbat": mv, "cells": self._vbat_cells,
+                "pct": remaining_pct(mv, self._vbat_cells)}
 
     def _system(self, now_ms: int) -> dict:
         # Deterministic triangles rather than a random walk: the whole model

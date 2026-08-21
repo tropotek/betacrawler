@@ -5,6 +5,17 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **feat: the Configuration page gains a Battery card — pack voltage, volts per cell, remaining
+  percent and cell count.** Per-cell voltage is the number that tells you a pack is going flat
+  without any mental arithmetic, so it sits beside the pack total rather than being derived by the
+  reader. `pct` is now published as telemetry rather than computed in the browser: the firmware
+  already sends that figure in its CRSF frame, and a second copy of the 3.3–4.2V-per-cell curve in
+  JavaScript would let the app and the handset disagree about the same pack. Volts per cell stays
+  a browser-side division — it is exact arithmetic over two readings the schema already carries,
+  with no policy to duplicate. The four readings move out of the System card, which had grown to
+  carry two of them already. `FW_MAX_TLM` goes 40 → 48: this build now publishes 40 fields and a
+  bare fit leaves nothing for the next one, at a cost of 32 bytes of static RAM.
+
 - **fix: CRSF receive moves from PA10 to PB7, so USB DFU works with a receiver connected.**
   A powered receiver made the board impossible to put into DFU mode — via the `dfu` wire op and
   via BOOT0+NRST alike, since the cause is in ROM. The STM32 system bootloader auto-selects its

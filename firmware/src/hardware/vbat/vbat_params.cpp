@@ -41,10 +41,13 @@ static const ParamDef kParams[] = {
 // Pack millivolts on the wire; div/dec are display hints only, exactly as
 // sys.vdd does it. cells is the LATCHED count, 0 before detection -- it
 // exists so a misdetection is visible rather than silently skewing percent.
+// pct is the same figure the CRSF frame carries, so the app and the handset
+// cannot disagree about how full the pack is.
 static const TlmDef kTlm[T_COUNT] = {
-  // key      label      unit     type          div   dec  fmt      group
-  {"vbat",   "Battery", "V",     TlmType::U32, 1000, 2,   nullptr, nullptr},
-  {"cells",  "Cells",   nullptr, TlmType::U32, 0,    0,   nullptr, nullptr},
+  // key      label        unit     type          div   dec  fmt      group
+  {"vbat",   "Battery",   "V",     TlmType::U32, 1000, 2,   nullptr, nullptr},
+  {"cells",  "Cells",     nullptr, TlmType::U32, 0,    0,   nullptr, nullptr},
+  {"pct",    "Remaining", "%",     TlmType::U32, 0,    0,   nullptr, nullptr},
 };
 
 const core::ModuleDesc kDesc = {

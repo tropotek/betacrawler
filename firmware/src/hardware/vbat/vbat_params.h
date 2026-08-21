@@ -16,6 +16,6 @@ enum : uint8_t { SRC_OFF = 0, SRC_ADC = 1, SRC_SIM = 2 };
 enum : uint8_t { CELLS_AUTO = 0 };
 
 // Telemetry indices within this module's slice of the frame.
-enum : uint8_t { T_MV = 0, T_CELLS = 1, T_COUNT = 2 };
+enum : uint8_t { T_MV = 0, T_CELLS = 1, T_PCT = 2, T_COUNT = 3 };
 
 }  // namespace vbat

@@ -121,6 +121,7 @@ void VbatDriver::tick(uint32_t nowMs) {
 void VbatDriver::readTelemetry(core::TlmValue* out) {
   out[T_MV].u    = mv_;
   out[T_CELLS].u = cells_;
+  out[T_PCT].u   = pct_;
 }
 
 }  // namespace vbat

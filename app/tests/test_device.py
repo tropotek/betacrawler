@@ -92,7 +92,7 @@ def test_connect_caches_schema_and_values():
         assert dev.status()["state"] == "connected"
         assert dev.status()["proto"] == 1
         assert len(dev.schema()["params"]) == 32
-        assert len(dev.schema()["tlm"]) == 39
+        assert len(dev.schema()["tlm"]) == 40
         assert dev.values()["rx.deadband_us"] == 2
     finally:
         dev.disconnect()
