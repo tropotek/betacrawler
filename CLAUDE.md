@@ -205,6 +205,15 @@ page stays out of `CONNECTION_REQUIRED_PAGES`; gating the recovery tool on a wor
 backwards. `enterDfu()` only arms the reboot (so the response can flush first) and `initVariant()`
 clears the RTC magic before jumping (or a failed jump is an unrecoverable boot loop).
 
+**CRSF receive stays off the ROM bootloader's UART pins** — `RX_RX_PIN` is PB7, not USART1's
+usual PA10, and moving it back breaks both DFU paths. The bootloader picks its host interface by
+watching for traffic and commits to the first one that shows any; a powered receiver on PA10 wins
+that race every time, after which USB never enumerates. PB7 is the same USART1 on its alternate
+pin, and is only an I2C1 candidate to the bootloader, which cannot commit without a master
+clocking SCL. `RX_TX_PIN` stays PA9 deliberately: it is outbound only so it never triggers
+detection, and leaving PB6 (I2C1_SCL) connected to nothing keeps that guarantee absolute — which
+is also why esc1 keeps PB6. PA2/PA3 are no escape: USART2 is a bootloader interface too.
+
 **`app/firmware/` stays gitignored** — don't re-commit the binaries and don't "fix" the
 `.gitignore` entry. A checkout with no firmware until the script runs is the expected state.
 

@@ -30,7 +30,8 @@ Work through these in order:
 2. **The receiver is not bound** to your handset.
 3. **The protocol does not match** — check `rx.protocol` is `elrs` or `crossfire` to suit your
    receiver.
-4. **TX and RX are the wrong way round.** The receiver's *TX* pad goes to the board's PA10.
+4. **TX and RX are the wrong way round.** The receiver's *TX* pad goes to the board's PB7
+   (not PA10 &mdash; see the wiring guide for why), and its *RX* pad to PA9.
 
 ## Channels move but the tracks do not
 

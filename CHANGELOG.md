@@ -5,6 +5,22 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **fix: CRSF receive moves from PA10 to PB7, so USB DFU works with a receiver connected.**
+  A powered receiver made the board impossible to put into DFU mode — via the `dfu` wire op and
+  via BOOT0+NRST alike, since the cause is in ROM. The STM32 system bootloader auto-selects its
+  host interface, bringing up both USARTs, all three I2Cs, all three SPIs and USB DFU together and
+  committing to whichever shows traffic first. A receiver streaming CRSF into PA10 wins that race
+  every time; the bootloader then configures 8E1, masks interrupts and parks in a polled receive
+  loop, and USB is abandoned. It presents as a board that leaves the bus and never returns, with
+  the host logging `unable to enumerate USB device` — the USB core still answers bus reset and
+  speed negotiation in hardware, so it looks half-alive while never answering a SETUP packet.
+  PB7 is the same USART1 on its alternate mapping, and is only an I2C1 candidate to the
+  bootloader, which cannot commit without a master clocking SCL. Transmit stays on PA9 because it
+  is outbound only and never triggers detection, which also leaves PB6/I2C1_SCL connected to
+  nothing and keeps that guarantee absolute — so esc1 keeps PB6 and nothing else moves. Wiring
+  change: the receiver's TX pad now goes to PB7. Verified on hardware with a linked receiver
+  transmitting at 250mW: DFU enumerates in about a second, and CRSF still reports LQ 100%.
+
 - **feat: the board can measure pack voltage and send it to the handset.** A `vbat` module
   reads a resistor divider on PA1, converts it against the MCU's own VREFINT-derived supply
   rather than a nominal 3.3V, and publishes pack millivolts, a latched cell count and a

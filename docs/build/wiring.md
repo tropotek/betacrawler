@@ -16,7 +16,7 @@ position on the diagram.
 |---|---|---|
 | ESC 0 | PA6 | ESC 0 signal wire — the **left** track |
 | ESC 1 | PB6 | ESC 1 signal wire — the **right** track |
-| Receiver | PA10 | The receiver's CRSF **TX** pad |
+| Receiver | PB7 | The receiver's CRSF **TX** pad |
 | Receiver power | 5V, GND | The receiver's + and − |
 | Board power | 5V, GND | The PDB's 5V BEC output |
 | Telemetry | PA9 | The receiver's CRSF **RX** pad |
@@ -25,6 +25,11 @@ position on the diagram.
 
 PA9 is the board's CRSF transmit line. It carries telemetry back to your handset &mdash; pack
 voltage today, and anything added later.
+
+Receive is on **PB7**, not the PA10 you may expect from USART1. The STM32's built-in bootloader
+picks its host interface by watching for traffic, and a powered receiver on PA10 always wins that
+race &mdash; leaving the board unable to appear in DFU mode for flashing. PB7 is the same UART on
+its alternate pin and the bootloader cannot mistake it. Wire the receiver's TX to PB7.
 
 Both ESC grounds connect to the board's ground.
 
