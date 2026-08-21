@@ -32,9 +32,13 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   registry. `vbat.source` offers `off`, `adc` and `sim`, mirroring `rx.source` — `off`
   publishes nothing at all rather than a zero, and `sim` sweeps a synthetic pack so the
   reading, the display and the uplink can be exercised with no divider fitted, saying so in
-  the boot log. `vbat.cells` takes an explicit count or `auto`, which latches from the first
-  valid reading and never revisits it; recomputing per tick would let a pack sagging under
-  load flip the count mid-drive. Auto-detection cannot tell a part-drained 6S from a 5S, so
+  the boot log. `vbat.cells` takes an explicit count or `auto`, which latches once five
+  consecutive readings agree and never revisits it; recomputing per tick would let a pack
+  sagging under load flip the count mid-drive, while latching on a single sample lets one
+  transient fix a count nothing ever corrects. The validity floor is 6000mV — a 2S at its
+  3.0V/cell floor, and the lowest reading that can be a real pack — because a USB-powered
+  board wired to a PDB reads about 4600mV with no pack connected, from the BEC back-feeding
+  its own input. Auto-detection cannot tell a part-drained 6S from a 5S, so
   the latched value is published as its own telemetry field where a wrong answer is visible
   instead of silently skewing the percentage. Calibration follows Betaflight's split: the
   firmware stores one `vbat.scale` multiplier and the Configurator computes it from a

@@ -5,9 +5,10 @@
 // this, and every rule below is asserted in test_vbat.
 namespace vbat {
 
-// Below this the board is on USB with no pack and a floating pin. Nothing is
-// detected and nothing is claimed.
-constexpr uint16_t kMinValidMv = 5000;
+// The lowest reading that can be a real pack: 2S at its 3.0V/cell floor. A
+// USB-powered board wired to a PDB reads around 4600mV with no pack connected,
+// from the BEC back-feeding its own input, which must never count as a battery.
+constexpr uint16_t kMinValidMv = 6000;
 
 // Cell detection divides by just above a full cell, so every CHARGED pack
 // resolves correctly. A part-drained pack reads low -- a 6S at or below
@@ -28,5 +29,22 @@ uint8_t detectCells(uint16_t packMv);
 // 0. Linear over a non-linear discharge curve, so it overstates mid-pack --
 // adequate for a handset indicator, not a fuel gauge.
 uint8_t remainingPct(uint16_t packMv, uint8_t cells);
+
+// Consecutive readings that must agree before a cell count is trusted.
+constexpr uint8_t kCellConfirmSamples = 5;
+
+// Confirms detectCells() across several readings. The driver latches a count
+// once and never revisits it, so a lone transient must not be able to fix it.
+// update() returns 0 until kCellConfirmSamples consecutive readings resolve to
+// the same non-zero count; any disagreeing or invalid reading restarts the run.
+class CellLatch {
+ public:
+  uint8_t update(uint16_t packMv);
+  void    reset();
+
+ private:
+  uint8_t candidate_ = 0;
+  uint8_t run_       = 0;
+};
 
 }  // namespace vbat

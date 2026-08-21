@@ -42,6 +42,15 @@ void test_detect_cells_returns_zero_below_the_validity_floor() {
   TEST_ASSERT_EQUAL_UINT8(0, detectCells(kMinValidMv - 1));
 }
 
+// The floor is 2S at 3.0V/cell -- the lowest reading that can be a real pack.
+// A USB-powered board wired to a PDB sits near 4600mV with nothing connected,
+// so that standing voltage has to fall well short of it.
+void test_validity_floor_admits_a_flat_two_s_but_not_a_bec_backfeed() {
+  TEST_ASSERT_EQUAL_UINT8(2, detectCells(6000));
+  TEST_ASSERT_EQUAL_UINT8(0, detectCells(5999));
+  TEST_ASSERT_EQUAL_UINT8(0, detectCells(4600));
+}
+
 void test_detect_cells_holds_a_four_s_down_to_its_low_voltage_cutoff() {
   TEST_ASSERT_EQUAL_UINT8(4, detectCells(13200));   // 3.30 V/cell
 }
@@ -53,6 +62,54 @@ void test_detect_cells_holds_a_four_s_down_to_its_low_voltage_cutoff() {
 void test_detect_cells_misreads_a_part_drained_six_s() {
   TEST_ASSERT_EQUAL_UINT8(6, detectCells(21501));
   TEST_ASSERT_EQUAL_UINT8(5, detectCells(21500));
+}
+
+// --- CellLatch -------------------------------------------------------------
+
+void test_latch_reports_nothing_until_enough_readings_agree() {
+  CellLatch l;
+  for (uint8_t i = 1; i < kCellConfirmSamples; i++)
+    TEST_ASSERT_EQUAL_UINT8(0, l.update(16800));
+  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800));
+}
+
+void test_latch_keeps_reporting_once_confirmed() {
+  CellLatch l;
+  for (uint8_t i = 0; i < kCellConfirmSamples; i++) l.update(16800);
+  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800));
+  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800));
+}
+
+// The defect this exists to prevent: one spurious sample latching a count the
+// driver then never revisits.
+void test_latch_ignores_a_lone_transient() {
+  CellLatch l;
+  TEST_ASSERT_EQUAL_UINT8(0, l.update(8400));    // a single 2S-looking blip
+  for (uint8_t i = 0; i < 20; i++)
+    TEST_ASSERT_EQUAL_UINT8(0, l.update(4600));  // then the usual standing read
+}
+
+void test_latch_restarts_its_run_when_a_reading_disagrees() {
+  CellLatch l;
+  for (uint8_t i = 1; i < kCellConfirmSamples; i++) l.update(16800);
+  l.update(12600);                                // 3S disagrees, run restarts
+  for (uint8_t i = 1; i < kCellConfirmSamples; i++)
+    TEST_ASSERT_EQUAL_UINT8(0, l.update(16800));
+  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800));
+}
+
+void test_latch_run_is_broken_by_an_invalid_reading() {
+  CellLatch l;
+  for (uint8_t i = 1; i < kCellConfirmSamples; i++) l.update(16800);
+  TEST_ASSERT_EQUAL_UINT8(0, l.update(0));
+  TEST_ASSERT_EQUAL_UINT8(0, l.update(16800));
+}
+
+void test_latch_reset_discards_a_confirmed_count() {
+  CellLatch l;
+  for (uint8_t i = 0; i < kCellConfirmSamples; i++) l.update(16800);
+  l.reset();
+  TEST_ASSERT_EQUAL_UINT8(0, l.update(16800));
 }
 
 // --- remainingPct ----------------------------------------------------------
@@ -90,8 +147,15 @@ int main() {
   RUN_TEST(test_scale_of_zero_or_less_reads_nothing);
   RUN_TEST(test_detect_cells_resolves_every_charged_pack);
   RUN_TEST(test_detect_cells_returns_zero_below_the_validity_floor);
+  RUN_TEST(test_validity_floor_admits_a_flat_two_s_but_not_a_bec_backfeed);
   RUN_TEST(test_detect_cells_holds_a_four_s_down_to_its_low_voltage_cutoff);
   RUN_TEST(test_detect_cells_misreads_a_part_drained_six_s);
+  RUN_TEST(test_latch_reports_nothing_until_enough_readings_agree);
+  RUN_TEST(test_latch_keeps_reporting_once_confirmed);
+  RUN_TEST(test_latch_ignores_a_lone_transient);
+  RUN_TEST(test_latch_restarts_its_run_when_a_reading_disagrees);
+  RUN_TEST(test_latch_run_is_broken_by_an_invalid_reading);
+  RUN_TEST(test_latch_reset_discards_a_confirmed_count);
   RUN_TEST(test_remaining_is_full_at_four_point_two_volts_per_cell);
   RUN_TEST(test_remaining_is_empty_at_three_point_three_volts_per_cell);
   RUN_TEST(test_remaining_is_linear_between_the_endpoints);

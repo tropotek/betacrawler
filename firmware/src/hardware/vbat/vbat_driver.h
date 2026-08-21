@@ -1,6 +1,7 @@
 #pragma once
 #include "core/battery.h"
 #include "core/module.h"
+#include "hardware/vbat/vbat_math.h"
 #include "hardware/vbat/vbat_params.h"
 
 namespace vbat {
@@ -26,6 +27,7 @@ class VbatDriver : public core::Module {
   int32_t  cellsSel_ = CELLS_AUTO;
   uint16_t mv_       = 0;
   uint8_t  cells_    = 0;         // latched; never recomputed once non-zero
+  CellLatch latch_;               // confirms a count before cells_ takes it
   uint8_t  pct_      = 0;
   uint32_t simT0_    = 0;
 };

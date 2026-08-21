@@ -45,6 +45,7 @@ void VbatDriver::onParamChanged(uint8_t local, const core::Params& p) {
       if (v != source_) {
         // Everything measured under the previous source is meaningless now.
         mv_ = 0; pct_ = 0; simT0_ = 0;
+        latch_.reset();
         if (cellsSel_ == CELLS_AUTO) cells_ = 0;
         out_.set(0, cells_, 0);
       }
@@ -58,6 +59,7 @@ void VbatDriver::onParamChanged(uint8_t local, const core::Params& p) {
       // An explicit selection replaces the latch at once; returning to auto
       // re-arms detection on the next valid reading.
       cellsSel_ = p.num(globalParam(P_CELLS));
+      latch_.reset();
       cells_ = (cellsSel_ == CELLS_AUTO) ? 0 : (uint8_t)(cellsSel_ + 1);
       break;
     default:
@@ -87,8 +89,9 @@ uint16_t VbatDriver::adcMv() {
 void VbatDriver::publish(uint16_t packMv, uint32_t nowMs) {
   mv_ = packMv;
   // Latch once and never re-evaluate: a pack sagging under load would
-  // otherwise flip the cell count mid-drive and make percent jump.
-  if (cells_ == 0) cells_ = detectCells(packMv);
+  // otherwise flip the cell count mid-drive and make percent jump. The latch
+  // only yields a count once several readings have agreed on it.
+  if (cells_ == 0) cells_ = latch_.update(packMv);
   pct_ = remainingPct(mv_, cells_);
   out_.set(mv_, cells_, pct_);
   out_.markFresh(nowMs);
