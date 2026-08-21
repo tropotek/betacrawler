@@ -15,10 +15,13 @@
 //
 // NOTE: the native test environment builds against the F411 header, not this
 // one -- see platformio.ini's [env:native]. Only one header can back
-// test/golden/schema.json. This header's feature block is kept in step with
-// blackpill_f411ce.h's by hand (button/led/rx/esc0/esc1 all on here too) --
-// check both headers' feature blocks before assuming parity still holds, since
-// nothing enforces it automatically.
+// test/golden/schema.json.
+//
+// This board ships what blackpill_f411ce.h ships, and test_board_headers holds
+// the two files to it: same FEATURE_ flags with the same values, no define
+// present in one and absent from the other, and shared names agreeing on their
+// value. A deliberate difference goes in that suite's exception list, with the
+// reason, rather than being left to be noticed.
 
 #define BOARD_ID "blackpill_f401ce"
 
@@ -32,6 +35,7 @@
 #define FEATURE_ESC0       1
 #define FEATURE_ESC1       1
 #define FEATURE_VBAT       1
+#define FEATURE_WIFI    0
 // The F401 has the same USB DFU bootloader in ROM as the F411 -- same system
 // memory base, same AN2606 entry. See blackpill_f411ce.h for the rationale.
 #define FEATURE_DFU     1

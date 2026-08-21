@@ -5,6 +5,18 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **test: board-header parity is enforced rather than remembered.** `blackpill_f401ce.h` said its
+  feature block was kept in step with the F411's by hand and that nothing enforced it, and that
+  convention had failed four times: `vbat` and `tank_drive` enabled on one board only, and both ESC
+  frame periods absent from the F401, where `esc0_params.cpp`'s `#ifndef` fallback quietly applied
+  50Hz against the F411's 200Hz — nothing broke, the boards just shipped differently. `test_board_headers`
+  now asserts that both headers carry the same `FEATURE_` flags with the same values, that neither
+  defines something the other lacks, and that shared names agree on their value. Each of the four
+  historical regressions was replayed against it and fails with the offending define named. A
+  deliberate difference goes in the suite's exception list with its reason; `BOARD_ID` is there
+  because it must differ, and the `WIFI_*` pins because they mean nothing while `FEATURE_WIFI` is 0
+  on both. The headers are read as text, since only one board header can be compiled in at a time.
+
 - **fix: a board with no divider fitted no longer reports a battery that isn't there.** `vbat`
   ships enabled and reading the ADC, but the divider is optional — so the default state for anyone
   who has not built one is a floating sense pin. A floating input does not read zero: it drifts to
