@@ -95,7 +95,8 @@
 #endif
 
 // CRSF receiver on USART1. Same pins as blackpill_f411ce.h; see that header
-// for why PA9/PA10 and not the ALTERNATE PB6/PB7 mapping.
-#define RX_RX_PIN       PA10
+// for why receive is on PB7 rather than USART1's usual PA10, and why transmit
+// stays on PA9.
+#define RX_RX_PIN       PB7
 #define RX_TX_PIN       PA9
 #define RX_BAUD         420000

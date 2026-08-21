@@ -38,6 +38,7 @@ def test_connect_then_schema_and_params(client):
     schema = client.get("/api/schema").json()
     assert {p["key"] for p in schema["params"]} == {
         "device.name", "tlm.rate",
+        "vbat.source", "vbat.scale", "vbat.cells",
         "esc0.direction", "esc0.rate", "esc0.mode", "esc0.throttle_us", "esc0.min_us", "esc0.max_us", "esc0.src",
         "esc1.direction", "esc1.rate", "esc1.mode", "esc1.throttle_us", "esc1.min_us", "esc1.max_us", "esc1.src",
         "rx.protocol", "rx.source", "crossfire.timeout_ms", "elrs.timeout_ms", "rx.deadband_us",
@@ -48,6 +49,7 @@ def test_connect_then_schema_and_params(client):
     # its cards from the device rather than a hardcoded field list.
     assert {t["key"] for t in schema["tlm"]} == {
         "up", "clk", "ram", "temp", "vdd", "fault", "loop", "loopworst",
+        "vbat", "cells", "pct",
         "esc0", "arm0", "esc1", "arm1", "drv_l", "drv_r",
         "link", "lq", "rssi", "rate", "err", "rfrate", "pwr",
         "ch1", "ch2", "ch3", "ch4", "ch5", "ch6", "ch7", "ch8",

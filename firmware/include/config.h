@@ -34,18 +34,19 @@
 // person, so don't rely on it as a warning.
 #define FW_MAX_MODULES  8
 #define FW_MAX_PARAMS   32
-// This board's current build (led, button, esc0, esc1, rx enabled; servo and
-// st7789_240x240 off) exposes 33 telemetry fields: rx alone publishes 16
-// channels plus 7 link readings, esc0 and esc1 add 2 each (its pulse width
-// and arm state), and the rest split across system/button. 40 rather than a
-// bare fit leaves a little headroom for the next module or field;
+// This board's current build (led, button, esc0, esc1, rx, vbat, tank_drive
+// enabled; servo and st7789_240x240 off) exposes 40 telemetry fields: rx alone
+// publishes 16 channels plus 7 link readings, esc0 and esc1 add 2 each (its
+// pulse width and arm state), vbat 3, and the rest split across
+// system/tank_drive. 48 rather than a bare fit leaves headroom for the next
+// module or field;
 // TlmValue is 4 bytes, so the headroom costs 32 bytes of RAM in one place --
 // but there are two FW_MAX_TLM-sized arrays, not one: main.cpp's
 // `static TlmValue g_tlm[FW_MAX_TLM]` (+32 bytes static) and
 // st7789_240x240_driver.cpp's `core::TlmValue vals[FW_MAX_TLM]` (+32 more,
 // on the display-refresh stack). So raising this headroom costs 32 bytes of
 // static RAM plus 32 more on the display-refresh stack.
-#define FW_MAX_TLM      40
+#define FW_MAX_TLM      48
 
 // --- board ------------------------------------------------------------------
 // BOARD_HEADER is supplied by platformio.ini per environment, e.g.

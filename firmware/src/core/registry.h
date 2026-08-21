@@ -1,5 +1,6 @@
 #pragma once
 #include "core/module.h"
+#include "core/battery.h"
 #include "core/inputs.h"
 
 namespace core {
@@ -57,6 +58,11 @@ class Registry {
   void          setDriveOutputs(const Inputs& in) { driveOutputs_ = &in; }
   const Inputs& driveOutputs() const;
 
+  // Pack measurements, published by vbat and read by whichever module
+  // transmits them. Third application of the same one-producer pattern.
+  void           setBattery(const Battery& b) { battery_ = &b; }
+  const Battery& battery() const;
+
   // --- lifecycle ------------------------------------------------------------
   // Attaches every driver, then begins every driver -- two passes, so a
   // begin() can rely on all modules having been attached. Params is passed
@@ -96,6 +102,7 @@ class Registry {
   uint8_t tlmCount_   = 0;
   const Inputs* inputs_ = nullptr;
   const Inputs* driveOutputs_ = nullptr;
+  const Battery* battery_ = nullptr;
 };
 
 // Defined in src/modules.cpp -- the single wiring point where board #defines

@@ -16,6 +16,20 @@ uint8_t crc8(const uint8_t* data, size_t n) {
   return crc;
 }
 
+size_t encodeBatteryFrame(uint8_t* out, uint16_t packMv, uint8_t remainingPct) {
+  const uint16_t dV = (uint16_t)(packMv / 100);
+  out[0]  = kSync;
+  out[1]  = (uint8_t)(kBatteryPayloadLen + 2);        // type + payload + crc
+  out[2]  = kTypeBattery;
+  out[3]  = (uint8_t)(dV >> 8);
+  out[4]  = (uint8_t)(dV & 0xFF);
+  out[5]  = 0; out[6] = 0;                            // current, deciamps
+  out[7]  = 0; out[8] = 0; out[9] = 0;                // capacity used, mAh
+  out[10] = remainingPct;
+  out[11] = crc8(&out[2], kBatteryPayloadLen + 1);    // covers type + payload
+  return kBatteryFrameLen;
+}
+
 uint16_t ticksToUs(uint16_t ticks) {
   // us = 1500 + 5/8 * (ticks - 992), rounded to nearest with ties going up.
   //

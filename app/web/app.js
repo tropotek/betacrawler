@@ -243,6 +243,25 @@ function faultIsError(value) {
   return value !== null && value !== undefined && Number(value) > 0;
 }
 
+// "Label (unit)" for a telemetry key, or just the label when it carries no
+// unit. The descriptor owns both; this only assembles them.
+function tlmLabel(key) {
+  const def = Alpine.store('telemetry').field(key).def;
+  if (!def) return '';
+  return def.unit ? `${def.label} (${def.unit})` : def.label;
+}
+
+// Volts per cell, derived rather than published: an exact division of two
+// readings the schema already carries, where `pct` is a firmware policy and so
+// comes over the wire. Dashes until a cell count has been latched.
+function perCellText() {
+  const t = Alpine.store('telemetry');
+  const mv = t.raw['vbat'];
+  const cells = t.raw['cells'];
+  if (!mv || !cells) return '\u2013';
+  return (mv / cells / 1000).toFixed(2);
+}
+
 // The config form and telemetry cards are the two most repetitive,
 // DOM-construction-heavy regions of this file -- markup for both now lives in
 // index.html as <template x-for> blocks. These two stores are the only
@@ -335,6 +354,52 @@ document.addEventListener('alpine:init', () => {
       } catch (e) {
         keys.forEach((k) => { this.invalid[k] = true; });
         showError(`PWM Rate: ${e.message}`);
+      }
+    },
+
+    // Betaflight's own formula: new = old * (measured / reported). The
+    // firmware cannot do this itself -- onParamChanged() takes a const Params,
+    // so a driver cannot write a parameter -- and does not need to, since one
+    // multiplier absorbs every systematic error in the divider chain at once.
+    async calibrateVbat(measuredVolts) {
+      if (!this.field('vbat.scale').def) {
+        showError('Calibrate: this board has no battery sensor');
+        return;
+      }
+      if (this.values['vbat.source'] !== 'adc') {
+        showError('Calibrate: set Source to adc first \u2014 a simulated pack cannot be calibrated');
+        return;
+      }
+      // raw, not field().value: the latter is the FORMATTED string ("16.78"),
+      // already through the div/dec display hints. The comparison and the
+      // formula below are both in millivolts, which is what raw carries.
+      // Matches the firmware's own validity floor: a USB-powered board wired
+      // to a PDB reads ~4600mV with no pack, which must not be calibrated on.
+      const reported = Alpine.store('telemetry').raw['vbat'];
+      if (!reported || reported < 6000) {
+        showError('Calibrate: no valid reading \u2014 connect a pack first');
+        return;
+      }
+      // Entered in volts because that is what a multimeter reads; the wire and
+      // vbat.scale both stay in millivolts.
+      const measured = Math.round(Number(measuredVolts) * 1000);
+      if (!Number.isFinite(measured) || measured < 5000 || measured > 30000) {
+        showError('Calibrate: enter the measured pack voltage in volts (5\u201330)');
+        return;
+      }
+      const next = Math.round((measured * this.values['vbat.scale']) / reported);
+      if (next < 1000 || next > 30000) {
+        showError(`Calibrate: computed scale ${next} is outside 1000\u201330000 \u2014 check the divider`);
+        return;
+      }
+      this.values['vbat.scale'] = next;
+      try {
+        await Api.setParam('vbat.scale', next);
+        this.invalid['vbat.scale'] = false;
+        setDirty(true);
+      } catch (e) {
+        this.invalid['vbat.scale'] = true;
+        showError(`Calibrate: ${e.message}`);
       }
     },
   });

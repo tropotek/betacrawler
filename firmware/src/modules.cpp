@@ -18,6 +18,7 @@
 // static instance only exist in the Arduino build.
 
 #include "config.h"
+#include "core/battery.h"
 #include "core/registry.h"
 #include "core/inputs.h"
 #include "core/device_params.h"
@@ -28,6 +29,10 @@
 // all-zero bus this way, and the one module allowed to write it (rx, wired
 // below) can be constructed against a real instance regardless of what
 // other modules are enabled.
+// Third bus, same one-producer pattern as g_inputs and g_driveOutputs:
+// vbat writes it, rx reads it.
+static core::Battery g_battery;
+
 static core::Inputs g_inputs;
 
 // tank_drive's own bus (core/inputs.h) -- a second, parallel application of
@@ -84,6 +89,17 @@ static core::Inputs g_driveOutputs;
 #    define TANK_DRIVE_DRV (&g_tankDrive)
 #  else
 #    define TANK_DRIVE_DRV nullptr
+#  endif
+#endif
+
+#if FEATURE_VBAT
+#  include "hardware/vbat/vbat_params.h"
+#  if FW_TARGET_ARDUINO
+#    include "hardware/vbat/vbat_driver.h"
+     static vbat::VbatDriver g_vbat(g_battery);
+#    define VBAT_DRV (&g_vbat)
+#  else
+#    define VBAT_DRV nullptr
 #  endif
 #endif
 
@@ -144,6 +160,7 @@ namespace core {
 void registerModules(Registry& reg) {
   reg.setInputs(g_inputs);
   reg.setDriveOutputs(g_driveOutputs);
+  reg.setBattery(g_battery);
   reg.add(device::kDesc);            // always: device.name, tlm.rate
   reg.add(sys::kDesc, SYSTEM_DRV);   // always: uptime/clock/ram/temp/vdd
 #if FEATURE_BUTTON
@@ -151,6 +168,11 @@ void registerModules(Registry& reg) {
 #endif
 #if FEATURE_SERVO
   reg.add(servo::kDesc, SERVO_DRV);
+#endif
+  // Before rx: Registry::tick() walks in registration order, so measuring
+  // here means rx transmits a value produced in the same loop pass.
+#if FEATURE_VBAT
+  reg.add(vbat::kDesc, VBAT_DRV);
 #endif
 #if FEATURE_RX
   reg.add(rx::kDesc, RX_DRV);

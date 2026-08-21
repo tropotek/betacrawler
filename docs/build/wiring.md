@@ -16,13 +16,20 @@ position on the diagram.
 |---|---|---|
 | ESC 0 | PA6 | ESC 0 signal wire — the **left** track |
 | ESC 1 | PB6 | ESC 1 signal wire — the **right** track |
-| Receiver | PA10 | The receiver's CRSF **TX** pad |
+| Receiver | PB7 | The receiver's CRSF **TX** pad |
 | Receiver power | 5V, GND | The receiver's + and − |
 | Board power | 5V, GND | The PDB's 5V BEC output |
+| Telemetry | PA9 | The receiver's CRSF **RX** pad |
+| Battery sense *(optional)* | PA1 | The sense divider's output |
 | Status LED | PC13 | On the board already, nothing to wire |
 
-PA9 is wired on the diagram but does nothing today. It is the board's CRSF transmit line,
-reserved for sending telemetry back to your handset later.
+PA9 is the board's CRSF transmit line. It carries telemetry back to your handset &mdash; pack
+voltage today, and anything added later.
+
+Receive is on **PB7**, not the PA10 you may expect from USART1. The STM32's built-in bootloader
+picks its host interface by watching for traffic, and a powered receiver on PA10 always wins that
+race &mdash; leaving the board unable to appear in DFU mode for flashing. PB7 is the same UART on
+its alternate pin and the bootloader cannot mistake it. Wire the receiver's TX to PB7.
 
 Both ESC grounds connect to the board's ground.
 
@@ -39,7 +46,8 @@ Everything with current in it hangs off the PDB, and the board sits outside that
 - **ESC → motor.** Three wires per motor, in any order.
 
 The 12V BEC output is spare in this build. It is there for lights, a pump, or a video transmitter
-if you add one.
+if you add one. It is **not** a voltage-sense point: being regulated, it reads the same whatever
+the pack is doing.
 
 USB can stay plugged in with the battery connected — that is how you tune while the vehicle is on
 the bench.
@@ -71,3 +79,47 @@ you do not need to rewire: change `esc0.src` and `esc1.src` between `drive_left`
 If a single track runs backwards, swap any two of the three motor wires on that ESC.
 
 Next: [Flashing the firmware](flashing.md).
+
+## Battery sense (optional)
+
+The vehicle drives without this. Fit it if you want pack voltage on your transmitter and in the
+Configurator.
+
+A LiPo is far above the 3.3V the board's ADC can read, so a resistor divider scales it down. Tap
+the PDB's **VCC** pad &mdash; raw pack voltage &mdash; and bring the divider's output to **PA1**.
+
+[![Circuit diagram of the optional battery sense divider](../assets/screenshots/sense-divider.png)](../assets/screenshots/sense-divider-large.png){target=_blank}
+
+| Part | Value | Notes |
+|---|---|---|
+| High side | 47 kΩ | 1% metal film |
+| Low side | 4.7 kΩ | 1% metal film, same family as the high side |
+| Series | 1 kΩ | Protects PA1 if the low side ever goes open circuit |
+| Filter | 100 nF | Ceramic, marked `104` |
+| Clamp | 3.3 V zener | **Band to the tap.** Fitted backwards it pins the reading at 0.7V |
+
+47k/4k7 divides by exactly 11: a 4S reads 1.53V and a 6S 2.29V, both comfortably inside range,
+and nothing reaches the clamp below 36.3V. Use metal film rather than carbon: calibration cancels
+a resistor's tolerance but not its drift with temperature.
+
+### Using a PDB that already has a sense output
+
+Some power distribution boards bring out a divided pack voltage of their own. If yours does,
+skip the components above: wire that pin to **PA1** and calibrate. The firmware only ever
+multiplies what it reads at the pin, so it does not care who did the dividing.
+
+Check the PDB's output at **full charge**, not its nominal ratio &mdash; it has to stay under
+3.3V. A 1:10 output reads 2.52V on a 6S, a 1:11 output 2.29V, both fine. Set
+`VBAT_SCALE_DEFAULT` in your board header to that ratio &times; 1000, so an uncalibrated board
+starts close.
+
+The 1&nbsp;kΩ series resistor and the zener are still worth fitting. If the PDB's output is
+already under 3.3V the zener never conducts, and both cost pennies against a dead pin.
+
+!!! warning "Take VCC from a raw pack pad"
+
+    Never a regulated BEC output. A regulator holds its output steady as the pack drains, so the
+    reading would look healthy right up until the vehicle stops.
+
+Once it is wired, calibrate it: read the pack with a multimeter, enter that voltage on the
+Configuration page, and the scale is adjusted so the board agrees.

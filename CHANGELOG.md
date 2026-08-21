@@ -5,6 +5,68 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **feat: the Configuration page gains a Battery card — pack voltage, volts per cell, remaining
+  percent and cell count.** Per-cell voltage is the number that tells you a pack is going flat
+  without any mental arithmetic, so it sits beside the pack total rather than being derived by the
+  reader. `pct` is now published as telemetry rather than computed in the browser: the firmware
+  already sends that figure in its CRSF frame, and a second copy of the 3.3–4.2V-per-cell curve in
+  JavaScript would let the app and the handset disagree about the same pack. Volts per cell stays
+  a browser-side division — it is exact arithmetic over two readings the schema already carries,
+  with no policy to duplicate. The four readings move out of the System card, which had grown to
+  carry two of them already. With no pack connected the card says so outright, and gives the
+  sense input's reading underneath rather than presenting a few volts of BEC back-feed as though
+  it were a battery. `FW_MAX_TLM` goes 40 → 48: this build now publishes 40 fields and a
+  bare fit leaves nothing for the next one, at a cost of 32 bytes of static RAM.
+
+- **fix: CRSF receive moves from PA10 to PB7, so USB DFU works with a receiver connected.**
+  A powered receiver made the board impossible to put into DFU mode — via the `dfu` wire op and
+  via BOOT0+NRST alike, since the cause is in ROM. The STM32 system bootloader auto-selects its
+  host interface, bringing up both USARTs, all three I2Cs, all three SPIs and USB DFU together and
+  committing to whichever shows traffic first. A receiver streaming CRSF into PA10 wins that race
+  every time; the bootloader then configures 8E1, masks interrupts and parks in a polled receive
+  loop, and USB is abandoned. It presents as a board that leaves the bus and never returns, with
+  the host logging `unable to enumerate USB device` — the USB core still answers bus reset and
+  speed negotiation in hardware, so it looks half-alive while never answering a SETUP packet.
+  PB7 is the same USART1 on its alternate mapping, and is only an I2C1 candidate to the
+  bootloader, which cannot commit without a master clocking SCL. Transmit stays on PA9 because it
+  is outbound only and never triggers detection, which also leaves PB6/I2C1_SCL connected to
+  nothing and keeps that guarantee absolute — so esc1 keeps PB6 and nothing else moves. Wiring
+  change: the receiver's TX pad now goes to PB7. Verified on hardware with a linked receiver
+  transmitting at 250mW: DFU enumerates in about a second, and CRSF still reports LQ 100%.
+
+- **feat: the board can measure pack voltage and send it to the handset.** A `vbat` module
+  reads a resistor divider on PA1, converts it against the MCU's own VREFINT-derived supply
+  rather than a nominal 3.3V, and publishes pack millivolts, a latched cell count and a
+  remaining percentage onto a new `core::Battery` bus. The `rx` module reads that bus and
+  transmits a CRSF battery-sensor frame on PA9 twice a second, so the pack appears as a
+  sensor on the transmitter. Neither module names the other: the bus repeats the
+  one-producer pattern `core::Inputs` already uses twice, with the producer holding a
+  mutable reference from its constructor and consumers reading a const one through the
+  registry. `vbat.source` offers `off`, `adc` and `sim`, mirroring `rx.source` — `off`
+  publishes nothing at all rather than a zero, and `sim` sweeps a synthetic pack so the
+  reading, the display and the uplink can be exercised with no divider fitted, saying so in
+  the boot log. `vbat.cells` takes an explicit count or `auto`, which latches once a count
+  has held for 500ms and is revisited only when the pack goes away; recomputing per tick would let a pack
+  sagging under load flip the count mid-drive, while latching on a single sample lets one
+  transient fix a count nothing ever corrects. The validity floor is 6000mV — a 2S at its
+  3.0V/cell floor, and the lowest reading that can be a real pack — because a USB-powered
+  board wired to a PDB reads about 4600mV with no pack connected, from the BEC back-feeding
+  its own input. Auto-detection cannot tell a part-drained 6S from a 5S, so
+  the latched value is published as its own telemetry field where a wrong answer is visible
+  instead of silently skewing the percentage. Calibration follows Betaflight's split: the
+  firmware stores one `vbat.scale` multiplier and the Configurator computes it from a
+  measured voltage, because `onParamChanged()` takes a const `Params` and a driver cannot
+  write a parameter. Current and consumed capacity are transmitted as zero — this firmware
+  measures neither, and the PDB has no current sensor. The battery write is guarded by
+  `availableForWrite()` and skipped rather than blocked: a dropped frame is free and a
+  stalled `loop()` is not.
+
+- **chore: the outbound line budget grows from 7168 to 8192 bytes.** The schema response
+  reached 7281 bytes with the battery module registered, past the old ceiling.
+  `dispatch.cpp` refuses to emit a truncated schema, so the response was dropped whole —
+  which presents as a device that answers nothing rather than as a size problem. Costs 1KB
+  more static RAM in one buffer.
+
 - **firmware: both ESCs now default to a 200Hz PWM frame.** `blackpill_f411ce.h` defines
   `ESC0_FRAME_US`/`ESC1_FRAME_US` as 5000, so `kDefaultRate` resolves to `RATE_200` and a freshly
   flashed board no longer ships on the 20ms frame a 50Hz default gives it. The 5ms period bounds

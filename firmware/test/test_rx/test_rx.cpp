@@ -570,6 +570,52 @@ void test_deadbanded_handles_a_value_below_center_symmetrically() {
   TEST_ASSERT_EQUAL_INT16(988, deadbanded(988, 1500, 50));
 }
 
+// --- battery frame encoding ------------------------------------------------
+
+void test_battery_frame_has_the_documented_header() {
+  uint8_t buf[kBatteryFrameLen];
+  size_t n = encodeBatteryFrame(buf, 16800, 100);
+  TEST_ASSERT_EQUAL_UINT32(kBatteryFrameLen, n);
+  TEST_ASSERT_EQUAL_UINT8(kSync, buf[0]);
+  TEST_ASSERT_EQUAL_UINT8(10, buf[1]);            // type + payload + crc
+  TEST_ASSERT_EQUAL_UINT8(kTypeBattery, buf[2]);
+}
+
+void test_battery_frame_carries_decivolts_big_endian() {
+  uint8_t buf[kBatteryFrameLen];
+  encodeBatteryFrame(buf, 16800, 100);            // 16800mV -> 168 dV
+  TEST_ASSERT_EQUAL_UINT8(0, buf[3]);
+  TEST_ASSERT_EQUAL_UINT8(168, buf[4]);
+}
+
+void test_battery_frame_zeroes_current_and_capacity() {
+  uint8_t buf[kBatteryFrameLen];
+  encodeBatteryFrame(buf, 16800, 100);
+  for (int i = 5; i <= 9; ++i) TEST_ASSERT_EQUAL_UINT8(0, buf[i]);
+}
+
+void test_battery_frame_carries_remaining_percent() {
+  uint8_t buf[kBatteryFrameLen];
+  encodeBatteryFrame(buf, 15000, 55);
+  TEST_ASSERT_EQUAL_UINT8(55, buf[10]);
+}
+
+// The encoder and the parser share crc8(), so a round trip proves CRC,
+// length and byte order together.
+void test_battery_frame_round_trips_through_the_parser() {
+  uint8_t buf[kBatteryFrameLen];
+  size_t n = encodeBatteryFrame(buf, 14800, 42);   // 148 dV
+  FrameParser fp;
+  FrameParser::Result last = FrameParser::Result::None;
+  for (size_t i = 0; i < n; ++i) last = fp.feed(buf[i]);
+  TEST_ASSERT_EQUAL_INT((int)FrameParser::Result::Frame, (int)last);
+  TEST_ASSERT_EQUAL_UINT8(kTypeBattery, fp.type());
+  TEST_ASSERT_EQUAL_UINT8(kBatteryPayloadLen, fp.payloadLen());
+  TEST_ASSERT_EQUAL_UINT8(0, fp.payload()[0]);
+  TEST_ASSERT_EQUAL_UINT8(148, fp.payload()[1]);
+  TEST_ASSERT_EQUAL_UINT8(42, fp.payload()[7]);
+}
+
 int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_crc8_of_empty_is_zero);
@@ -624,5 +670,10 @@ int main(int, char**) {
   RUN_TEST(test_deadbanded_just_outside_the_boundary_passes_through);
   RUN_TEST(test_deadbanded_zero_deadband_is_a_passthrough_except_at_exact_center);
   RUN_TEST(test_deadbanded_handles_a_value_below_center_symmetrically);
+  RUN_TEST(test_battery_frame_has_the_documented_header);
+  RUN_TEST(test_battery_frame_carries_decivolts_big_endian);
+  RUN_TEST(test_battery_frame_zeroes_current_and_capacity);
+  RUN_TEST(test_battery_frame_carries_remaining_percent);
+  RUN_TEST(test_battery_frame_round_trips_through_the_parser);
   return UNITY_END();
 }

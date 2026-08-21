@@ -21,6 +21,7 @@
 #define FEATURE_TANK_DRIVE 1
 #define FEATURE_ESC0       1
 #define FEATURE_ESC1       1
+#define FEATURE_VBAT       1
 #define FEATURE_WIFI    0
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
 // bootloader in ROM, so this costs a magic word and a reset -- no bootloader
@@ -122,6 +123,20 @@
 #define ESC1_TIMER      TIM4
 #define ESC1_PIN        PB6
 
+// Battery voltage sense on ADC1_IN1. PA1 is unclaimed on this board: the LED
+// is PC13, the button PA0, the ESCs PA6/PB6, CRSF PA9/PA10, USB PA11/PA12 and
+// SWD PA13/PA14. Expects a 47k/4k7 divider from the PDB's VCC pad; vbat.scale
+// is the runtime calibration.
+#define VBAT_PIN        PA1
+
+// x1000 multiplier from the sense pin to pack millivolts, and the default for
+// vbat.scale. 11000 is this build's own 47k/4k7 divider: 4.7/51.7 is exactly
+// 1:11, inverted. A board reading a PDB's built-in sense output instead states
+// that PDB's ratio here -- 10000 for a 1:10 output -- since the divider is a
+// property of the hardware, not of the firmware. Calibrating corrects it
+// either way; this only decides where an uncalibrated board starts.
+#define VBAT_SCALE_DEFAULT 11000
+
 // 200Hz frame on both, which every analogue-PWM ESC auto-detects. A 5ms
 // period bounds output latency at a quarter of a 50Hz frame's, and
 // effectiveMaxUs()'s reserved low time leaves ample headroom over max_us.
@@ -138,20 +153,20 @@
 #error "servo and esc1 both claim TIM4/PB6 on this board -- move one to another timer/pin before enabling both"
 #endif
 
-// CRSF receiver on USART1. PA9/PA10 are the only unclaimed peripheral pins on
-// this board and nothing else here references them: the LED is PC13, the
-// button PA0, the panel PA5/PA7 + PB0/PB1, the servo and esc1 both on PB6,
-// USB PA11/PA12 and SWD PA13/PA14. USART1's ALTERNATE mapping is PB6/PB7,
-// which would collide with the servo/esc1 output -- so this mapping, not
-// that one.
+// CRSF receiver on USART1, receiving on PB7 rather than USART1's usual PA10.
+// The ROM bootloader auto-selects its host interface and commits to whichever
+// shows traffic first; a powered receiver on PA10 wins that race every time and
+// USB DFU then never enumerates. PB7 is USART1_RX on its alternate mapping and
+// is only an I2C1 candidate to the bootloader, which cannot commit without a
+// master clocking SCL. Transmit stays on PA9: it is outbound only, so it never
+// triggers detection. esc1 keeps PB6.
 //
 // The driver constructs its own HardwareSerial from these pins rather than
 // using a global Serial1, which the STM32 core only defines when the variant
 // declares PIN_SERIAL1_RX/TX.
-#define RX_RX_PIN       PA10
-// Reserved, unused in phase 1. Sending telemetry back to the handset (battery,
-// GPS, flight mode) is the natural next use of this peripheral, and claiming
-// the pin now is cheaper than discovering it taken later.
+#define RX_RX_PIN       PB7
+// Telemetry back to the handset: the rx module transmits CRSF battery frames
+// here from the core::Battery bus.
 #define RX_TX_PIN       PA9
 // The TBS specification gives 416666 for the dual-wire vehicle-side link;
 // Betaflight and everyone else use 420000. They are 0.8% apart, well inside
