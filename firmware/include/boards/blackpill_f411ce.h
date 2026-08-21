@@ -125,17 +125,17 @@
 
 // Battery voltage sense on ADC1_IN1. PA1 is unclaimed on this board: the LED
 // is PC13, the button PA0, the ESCs PA6/PB6, CRSF PA9/PA10, USB PA11/PA12 and
-// SWD PA13/PA14. Expects a 47k/5k6 divider from the PDB's VCC pad; vbat.scale
+// SWD PA13/PA14. Expects a 47k/4k7 divider from the PDB's VCC pad; vbat.scale
 // is the runtime calibration.
 #define VBAT_PIN        PA1
 
 // x1000 multiplier from the sense pin to pack millivolts, and the default for
-// vbat.scale. 9393 is this build's own 47k/5k6 divider: 5.6/52.6 = 0.106464,
-// inverted. A board reading a PDB's built-in sense output instead states that
-// PDB's ratio here -- 10000 for 1:10, 11000 for 1:11 -- since the divider is a
+// vbat.scale. 11000 is this build's own 47k/4k7 divider: 4.7/51.7 is exactly
+// 1:11, inverted. A board reading a PDB's built-in sense output instead states
+// that PDB's ratio here -- 10000 for a 1:10 output -- since the divider is a
 // property of the hardware, not of the firmware. Calibrating corrects it
 // either way; this only decides where an uncalibrated board starts.
-#define VBAT_SCALE_DEFAULT 9393
+#define VBAT_SCALE_DEFAULT 11000
 
 // 200Hz frame on both, which every analogue-PWM ESC auto-detects. A 5ms
 // period bounds output latency at a quarter of a 50Hz frame's, and

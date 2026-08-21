@@ -25,7 +25,7 @@ static const char* const kCellNames[] = {"auto", "2", "3", "4", "5", "6"};
 // descriptor TU is compiled by the native env too, where no board header
 // value is meaningful.
 #ifndef VBAT_SCALE_DEFAULT
-#define VBAT_SCALE_DEFAULT 9393
+#define VBAT_SCALE_DEFAULT 11000
 #endif
 
 static const ParamDef kParams[] = {

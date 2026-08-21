@@ -22,7 +22,7 @@ class VbatDriver : public core::Module {
 
   core::Battery& out_;            // this module's own bus, mutable
   int32_t  source_   = SRC_OFF;
-  int32_t  scale_    = 9393;
+  int32_t  scale_    = 11000;
   int32_t  cellsSel_ = CELLS_AUTO;
   uint16_t mv_       = 0;
   uint8_t  cells_    = 0;         // latched; never recomputed once non-zero

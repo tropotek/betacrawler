@@ -18,7 +18,7 @@ constexpr uint16_t kCellEmptyMv = 3300;
 constexpr uint16_t kCellFullMv  = 4200;
 
 // Tap millivolts -> pack millivolts. scale is a x1000 multiplier, so the
-// 47k/5k6 divider's 9.3929 is stored as 9393.
+// 47k/4k7 divider's 11.0 is stored as 11000.
 uint16_t packMvFromTap(uint16_t tapMv, int32_t scale);
 
 // ceil(packMv / kCellDetectMv), or 0 below kMinValidMv.

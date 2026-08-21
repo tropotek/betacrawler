@@ -6,8 +6,8 @@ using namespace vbat;
 // --- packMvFromTap ---------------------------------------------------------
 
 void test_scale_converts_tap_to_pack_millivolts() {
-  // 47k/5k6 divider, scale 9393. A full 4S reads 1793mV at the tap.
-  TEST_ASSERT_EQUAL_UINT16(16841, packMvFromTap(1793, 9393));
+  // 47k/4k7 divider, scale 11000. A full 4S reads 1527mV at the tap.
+  TEST_ASSERT_EQUAL_UINT16(16797, packMvFromTap(1527, 11000));
 }
 
 void test_scale_of_one_thousand_is_unity() {
@@ -20,7 +20,7 @@ void test_scale_saturates_rather_than_wrapping_at_the_extremes() {
   // would report a plausible-looking 33.4V, while 65535 is obviously pegged.
   TEST_ASSERT_EQUAL_UINT16(65535, packMvFromTap(3300, 30000));
   // A realistic scale stays far below the ceiling.
-  TEST_ASSERT_EQUAL_UINT16(30996, packMvFromTap(3300, 9393));
+  TEST_ASSERT_EQUAL_UINT16(36300, packMvFromTap(3300, 11000));
 }
 
 void test_scale_of_zero_or_less_reads_nothing() {

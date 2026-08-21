@@ -88,13 +88,14 @@ the PDB's **VCC** pad &mdash; raw pack voltage &mdash; and bring the divider's o
 | Part | Value | Notes |
 |---|---|---|
 | High side | 47 kΩ | 1% metal film |
-| Low side | 5.6 kΩ | 1% metal film, same family as the high side |
+| Low side | 4.7 kΩ | 1% metal film, same family as the high side |
 | Series | 1 kΩ | Protects PA1 if the low side ever goes open circuit |
 | Filter | 100 nF | Ceramic, marked `104` |
 | Clamp | 3.3 V zener | **Band to the tap.** Fitted backwards it pins the reading at 0.7V |
 
-47k/5k6 reads a 4S at 1.79V and a 6S at 2.68V, both comfortably inside range. Use metal film
-rather than carbon: calibration cancels a resistor's tolerance but not its drift with temperature.
+47k/4k7 divides by exactly 11: a 4S reads 1.53V and a 6S 2.29V, both comfortably inside range,
+and nothing reaches the clamp below 36.3V. Use metal film rather than carbon: calibration cancels
+a resistor's tolerance but not its drift with temperature.
 
 ### Using a PDB that already has a sense output
 
