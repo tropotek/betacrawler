@@ -1,0 +1,10 @@
+# Content-specific serving rules for this static site.
+<IfModule mod_headers.c>
+	<Files "service-worker.js">
+		Header set Cache-Control "no-cache"
+	</Files>
+</IfModule>
+
+<Files "manifest.json">
+	ForceType application/manifest+json
+</Files>
