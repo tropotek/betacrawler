@@ -104,7 +104,7 @@
 #define ESC1_PIN        PB6
 
 // Battery voltage sense on ADC1_IN1. PA1 is unclaimed on this board: the LED
-// is PC13, the button PA0, the ESCs PA6/PB6, CRSF PA9/PA10, USB PA11/PA12 and
+// is PC13, the button PA0, the ESCs PA6/PB6, CRSF PA9/PB7, USB PA11/PA12 and
 // SWD PA13/PA14. Expects a 47k/4k7 divider from the PDB's VCC pad; vbat.scale
 // is the runtime calibration.
 #define VBAT_PIN        PA1
@@ -155,7 +155,7 @@
 #define RX_BAUD         420000
 //
 // Wiring: receiver 5V and GND from the board's 5V pin, receiver CRSF TX ->
-// PA10. The Nano RX's pads default to PWM output -- one must be reassigned to
+// PB7. The Nano RX's pads default to PWM output -- one must be reassigned to
 // CRSF in the TBS menu before anything appears on the wire at all.
 
 // ESP-01 (ESP8266) WiFi module, stock AT firmware, on USART2. PA2/PA3 are

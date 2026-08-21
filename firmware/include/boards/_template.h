@@ -119,7 +119,11 @@
 // Required when FEATURE_RX is 1: an RC receiver on its own hardware serial
 // port, decoded by the protocol-agnostic rx module.
 // #define FEATURE_RX      1
-// #define RX_RX_PIN       PA10       // receiver's serial TX -> this pin
+// #define RX_RX_PIN       PB7        // receiver's serial TX -> this pin
+// Keep receive OFF the pins the ROM bootloader watches for a host (USART1's
+// PA10, USART2's PA3): it commits to whichever interface shows traffic first,
+// and a powered receiver there wins that race, after which USB never
+// enumerates and DFU is unreachable.
 // #define RX_TX_PIN       PA9        // reserved for a telemetry uplink; unused
 // #define RX_BAUD         420000     // CRSF family: Crossfire and ExpressLRS both
 // Requires -D SERIAL_RX_BUFFER_SIZE=256 in this env's build_flags -- the
