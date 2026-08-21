@@ -111,8 +111,8 @@ firmware/src/core/     pure C++, zero Arduino — protocol, params, registry, di
                         triangle, led_pattern, health, tlm_format, boot_log, version,
                         device_params. Native-tested (Unity).
 firmware/src/features/ behaviours, one folder per module (tank_drive/)
-firmware/src/hardware/ device drivers, one folder per module (system/, button/, servo/, rx/,
-                        st7789_240x240/; WiFi and other peripherals go here)
+firmware/src/hardware/ device drivers, one folder per module (system/, button/, servo/, rx/;
+                        WiFi and other peripherals go here)
 firmware/src/modules.cpp  THE wiring file — one #if block per module. Compiled by BOTH envs.
 firmware/src/          Arduino glue: main.cpp, storage.cpp (flash), dfu.cpp,
                         status_led.cpp (health LED + HardFault_Handler)
@@ -217,9 +217,7 @@ is also why esc1 keeps PB6. PA2/PA3 are no escape: USART2 is a bootloader interf
 **`app/firmware/` stays gitignored** — don't re-commit the binaries and don't "fix" the
 `.gitignore` entry. A checkout with no firmware until the script runs is the expected state.
 
-**No panel presence detection exists** — `gfx->begin()`'s bool is not a presence check; there is no
-MISO to read a controller ID back over. Likewise, nothing can identify a board in DFU mode: every
-STM32F4 bootloader reports `0483:df11`.
+**Nothing can identify a board in DFU mode** — every STM32F4 bootloader reports `0483:df11`.
 
 **Both versions stay 1.0.0 in this template** — firmware (`FW_VERSION`) and app (`APP_VERSION`)
 version independently, and bumps happen in forked projects, not here.

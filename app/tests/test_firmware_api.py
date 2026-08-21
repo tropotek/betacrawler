@@ -39,7 +39,7 @@ def bundle(tmp_path):
             "version": "1.0.0", "built": "Jul 26 2026 15:02:35", "proto": 1,
             "method": "dfu", "file": "blackpill_f411ce/betacrawler-1.0.0.bin",
             "size": len(blob), "sha256": hashlib.sha256(blob).hexdigest(),
-            "notes": "led, button, st7789_240x240",
+            "notes": "led, button, servo",
         }, {
             # A second board, so "recommended" has something to choose wrong.
             "id": "otherboard-betacrawler-1.0.0",

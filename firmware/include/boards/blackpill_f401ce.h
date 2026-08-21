@@ -28,7 +28,6 @@
 // --- features ---------------------------------------------------------------
 #define FEATURE_STATUS_LED  1
 #define FEATURE_BUTTON  0
-#define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0
 #define FEATURE_RX         1
 #define FEATURE_TANK_DRIVE 1
@@ -59,19 +58,6 @@
 // KEY button, pulled up; the driver samples its idle level at boot rather
 // than assuming a polarity.
 #define BUTTON_PIN      USER_BTN
-
-// ST7789 240x240 IPS (GMT130) on hardware SPI1: SCK=PA5, MOSI=PA7 come from
-// the SPI peripheral itself, so only the two control pins are named here.
-// The module brings out no CS (DISPLAY_CS defaults to GFX_NOT_DEFINED) and
-// BLK is tied to 3V3, so there is no backlight control either.
-#define DISPLAY_DC      PB1
-#define DISPLAY_RST     PB0
-#define DISPLAY_ROTATION 0
-// 24MHz target, same as the F411 env. The F401 tops out at 84MHz rather than
-// 100MHz, so SPI1's prescaler quantises this to a different actual value than
-// the F411's 96/4 -- still well under the ST7789's tolerance either way. Lower
-// it here if a long or noisy ribbon shows artifacts.
-#define DISPLAY_SPI_HZ  24000000
 
 // Hobby servo on TIM4_CH1 -- but TIM4 is now claimed by esc1 (below), which
 // also drives PB6/TIM4_CH1. Same latent conflict as blackpill_f411ce.h: this

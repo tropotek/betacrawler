@@ -46,7 +46,7 @@ static const ModuleDesc kFakeDesc = {"fake", "Fake", kFakeParams, 2, kFakeTlm, 2
 // Registry::notify() could hand drivers the GLOBAL index instead of the
 // module-local one and every assertion in this file would still pass -- while
 // on the real multi-module board a revert would drive the rx module with
-// index 3 and the display with index 0, misapplying every parameter.
+// index 3 and esc1 with index 0, misapplying every parameter.
 //
 // Deliberately no telemetry (tlm = nullptr, tlmCount = 0): the telemetry
 // assertions here are about kFakeDesc's single field, and a second module
@@ -289,11 +289,11 @@ void test_telemetry_frame_is_built_from_the_registry() {
 }
 
 void test_log_line_is_unsolicited_and_well_formed() {
-  size_t n = writeLog(out, sizeof(out), "display: ST7789 240x240 init=138ms");
+  size_t n = writeLog(out, sizeof(out), "boot: init complete in 138ms");
 
   TEST_ASSERT_TRUE(n > 0);
   TEST_ASSERT_EQUAL_STRING(
-      "{\"log\":\"display: ST7789 240x240 init=138ms\"}", out);
+      "{\"log\":\"boot: init complete in 138ms\"}", out);
   // id-less, exactly like telemetry -- that is what makes the backend treat
   // it as unsolicited (app/backend/protocol.py's is_log).
   TEST_ASSERT_NULL(strstr(out, "\"id\""));

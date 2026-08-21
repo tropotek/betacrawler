@@ -182,7 +182,7 @@ checkout serves an empty catalog until that script has been run.
    {"id": "blackpill_f411ce-betacrawler-1.0.0", "board": "blackpill_f411ce",
     "name": "betacrawler", "version": "1.0.0", "built": "Jul 26 2026 16:25:03",
     "proto": 1, "method": "dfu", "file": "blackpill_f411ce/betacrawler-1.0.0.bin",
-    "size": 86652, "sha256": "...", "notes": "led, button, st7789_240x240, dfu",
+    "size": 86652, "sha256": "...", "notes": "led, button, servo, dfu",
     "available": true}]}
 ```
 
@@ -260,8 +260,8 @@ Server pushes only; clients send nothing. Every frame is
 - `state` — status object, or the string `"disconnected"`
 - `log` — device log string. Unsolicited `{"log": "..."}` lines from the
   firmware. The device holds its boot record (identity, whether saved settings
-  survived, module/param counts, free RAM, plus any per-module line such as the
-  display's init timing) and **replays it after every `hello`**, so a client
+  survived, module/param counts, free RAM, plus any per-module init line) and
+  **replays it after every `hello`**, so a client
   that connects long after boot still receives it. The UI shows these in the
   Terminal prefixed `[device]`. Buffer is 8 lines; if boot produced more, a
   final `boot: log full, lines dropped` says so rather than hiding it.

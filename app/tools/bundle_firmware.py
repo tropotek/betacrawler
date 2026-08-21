@@ -183,7 +183,7 @@ def enabled_features(header_text: str) -> list[str]:
 
     Deliberately not mapped to prettier names: a lookup table here would need
     an edit every time a module is added, which is the drift this tool exists
-    to prevent. "led, button, st7789_240x240" is honest and self-maintaining.
+    to prevent. "led, button, servo" is honest and self-maintaining.
     """
     found = re.findall(r'^\s*#\s*define\s+FEATURE_(\w+)\s+1\s*$', header_text, re.M)
     return [f.lower() for f in found]

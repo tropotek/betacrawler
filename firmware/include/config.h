@@ -27,7 +27,7 @@
 // rather than overflowing, and a native test covers that path.
 // blackpill_f411ce ships device, system, button, led, rx, tank_drive, esc0
 // and esc1 today -- 8 modules, exactly at the cap, zero headroom left.
-// Turning on servo, st7789_240x240, or WiFi ALONGSIDE this board's mixed-tank
+// Turning on servo or WiFi ALONGSIDE this board's mixed-tank
 // build would need FW_MAX_MODULES raised first -- Registry::add() silently
 // refuses the module that doesn't fit rather than overflowing, and a native
 // test covers that path, but nothing today surfaces the refusal to a
@@ -35,17 +35,12 @@
 #define FW_MAX_MODULES  8
 #define FW_MAX_PARAMS   32
 // This board's current build (led, button, esc0, esc1, rx, vbat, tank_drive
-// enabled; servo and st7789_240x240 off) exposes 40 telemetry fields: rx alone
+// enabled; servo off) exposes 40 telemetry fields: rx alone
 // publishes 16 channels plus 7 link readings, esc0 and esc1 add 2 each (its
 // pulse width and arm state), vbat 3, and the rest split across
 // system/tank_drive. 48 rather than a bare fit leaves headroom for the next
-// module or field;
-// TlmValue is 4 bytes, so the headroom costs 32 bytes of RAM in one place --
-// but there are two FW_MAX_TLM-sized arrays, not one: main.cpp's
-// `static TlmValue g_tlm[FW_MAX_TLM]` (+32 bytes static) and
-// st7789_240x240_driver.cpp's `core::TlmValue vals[FW_MAX_TLM]` (+32 more,
-// on the display-refresh stack). So raising this headroom costs 32 bytes of
-// static RAM plus 32 more on the display-refresh stack.
+// module or field; TlmValue is 4 bytes, so the headroom costs 32 bytes of
+// static RAM in main.cpp's `static TlmValue g_tlm[FW_MAX_TLM]`.
 #define FW_MAX_TLM      48
 
 // --- board ------------------------------------------------------------------
@@ -73,9 +68,6 @@
 #endif
 #ifndef FEATURE_BUTTON
 #define FEATURE_BUTTON 0
-#endif
-#ifndef FEATURE_ST7789_240X240
-#define FEATURE_ST7789_240X240 0
 #endif
 #ifndef FEATURE_SERVO
 #define FEATURE_SERVO 0

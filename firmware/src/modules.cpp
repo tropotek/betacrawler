@@ -141,17 +141,6 @@ static core::Inputs g_driveOutputs;
 #  endif
 #endif
 
-#if FEATURE_ST7789_240X240
-#  include "hardware/st7789_240x240/st7789_240x240_params.h"
-#  if FW_TARGET_ARDUINO
-#    include "hardware/st7789_240x240/st7789_240x240_driver.h"
-     static st7789::St7789Driver g_display;
-#    define DISPLAY_DRV (&g_display)
-#  else
-#    define DISPLAY_DRV nullptr
-#  endif
-#endif
-
 namespace core {
 
 // Registration order fixes the order of the schema, the telemetry frame and
@@ -196,13 +185,6 @@ void registerModules(Registry& reg) {
 #endif
 #if FEATURE_WIFI
   reg.add(wifi::kDesc, WIFI_DRV);
-#endif
-  // Last on purpose: the display observes the modules above it, and
-  // Registry::begin() attaches every module before beginning any, so
-  // registration order does not affect what it can read -- but reading the
-  // list in the order things appear on screen is easier to follow.
-#if FEATURE_ST7789_240X240
-  reg.add(st7789::kDesc, DISPLAY_DRV);
 #endif
 }
 

@@ -5,6 +5,11 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **fix: the ST7789 240x240 display module is removed.** No board ships it enabled and none is
+  planned to, so the driver, params, board-header pin maps and the `moononournation/GFX Library`
+  dependency it needed are gone rather than kept as dead code, and the architecture doc's page on
+  curated on-device rendering (the one thing that read other modules' keys directly) goes with it.
+
 - **test: board-header parity is enforced rather than remembered.** `blackpill_f401ce.h` said its
   feature block was kept in step with the F411's by hand and that nothing enforced it, and that
   convention had failed four times: `vbat` and `tank_drive` enabled on one board only, and both ESC

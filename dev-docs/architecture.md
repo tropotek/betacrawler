@@ -52,8 +52,8 @@ back when a driver needs to read a value.
 ## Observing modules
 
 `Module::attach(const Registry&, const Params&)` is called on every module before any module's
-`begin()`, for modules that must *read* the rest of the device (the display is the only one so
-far). Access is const on purpose: an observer may look at the device, but must never reconfigure
+`begin()`, for modules that must *read* the rest of the device. Access is const on purpose: an
+observer may look at the device, but must never reconfigure
 it behind `dispatch`'s back, which would skip validation and the change notification everything
 else depends on. Resolve keys there once (`findParam`/`findTlm`), never per tick — the registry is
 fixed after boot.
@@ -183,24 +183,6 @@ through to a silent infinite loop. It cannot use `delay()` or `millis()`: HardFa
 priority −1 and masks every interrupt that advances the tick, so the wait is a bare counting loop.
 
 See [Status LED](status-led.md) for the patterns and fault codes themselves.
-
-## The display, and why it is the exception to schema-driven rendering
-
-`app.js` builds itself entirely from the descriptor; the on-device dashboard
-(`hardware/st7789_240x240/`) uses a *curated* layout instead, because it must fit 240x240 exactly
-and a board may want to show things the registry knows nothing about.
-
-The coupling that buys is contained — every key is resolved once in `attach()` and a key the board
-doesn't publish drops its row — but it does mean `st7789_240x240_driver.cpp` is the one file
-outside a module's own folder that names other modules' keys. Values still render through
-`core::formatTlm()` from each field's own `TlmDef`, so the panel and the browser cannot disagree
-about what a telemetry frame says.
-
-**Nothing detects whether a panel is physically connected.** There is no MISO to read a controller
-ID back over, and `Arduino_HWSPI::begin()` returns true unconditionally, so `gfx->begin()`'s bool
-is not a presence check. The driver is write-only and therefore cannot block the loop when the
-panel is absent; it emits a truthful startup `log` line instead of a fabricated warning. Full
-detail: `_notes/_archive/spec-display.md`.
 
 ## The config-hash build gotcha
 

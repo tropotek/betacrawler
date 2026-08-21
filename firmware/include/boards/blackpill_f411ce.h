@@ -15,7 +15,6 @@
 // --- features ---------------------------------------------------------------
 #define FEATURE_STATUS_LED  1
 #define FEATURE_BUTTON  0
-#define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0
 #define FEATURE_RX         1
 #define FEATURE_TANK_DRIVE 1
@@ -51,25 +50,6 @@
 // than assuming a polarity.
 #define BUTTON_PIN      USER_BTN
 
-// ST7789 240x240 IPS (GMT130) on hardware SPI1: SCK=PA5, MOSI=PA7 come from
-// the SPI peripheral itself, so only the two control pins are named here.
-// The module brings out no CS (DISPLAY_CS defaults to GFX_NOT_DEFINED) and
-// BLK is tied to 3V3, so there is no backlight control either.
-//
-// Nothing detects whether the panel is actually plugged in -- it cannot be
-// done on this wiring, there being no MISO to read an ID back over. The
-// driver is write-only and so costs the same either way; see
-// _notes/spec-display.md.
-#define DISPLAY_DC      PB1
-#define DISPLAY_RST     PB0
-#define DISPLAY_ROTATION 0
-// 24MHz: the STM32F411 SPI1 prescaler quantises this to 96/4. The ST7789
-// tolerates far more, and at the old 8MHz (which quantised down to 6MHz) a
-// cycle-mode page flip stalled telemetry 353ms -- past the frontend's 300ms
-// staleness threshold at tlm.rate 10, i.e. a false "stale" badge every 5s.
-// Lower it here if a long or noisy ribbon shows artifacts.
-#define DISPLAY_SPI_HZ  24000000
-
 // Hobby servo on TIM4_CH1 -- but TIM4 is now claimed by esc1 (below), which
 // also drives PB6/TIM4_CH1. This board does not ship FEATURE_SERVO on, so the
 // conflict is latent, not live; the #error guard just past ESC1's block below
@@ -77,10 +57,10 @@
 // reconsidering esc1. A servo fork on this board needs a different timer,
 // not TIM4 -- CH2-4 (PB7/PB8/PB9) of the SAME peripheral don't help, since
 // esc1 already owns the peripheral's shared overflow/period register.
-// Nothing else here touches PB6/7/8/9: the LED is PC13, the button PA0, the
-// panel PA5/PA7 + PB0/PB1, USB PA11/PA12 and SWD PA13/PA14. Note this part is
-// LQFP48, so port C is only PC13/14/15 and PB11 is not bonded out -- most of
-// the timer maps a generic F4 pinout table offers do not exist here.
+// Nothing else here touches PB6/7/8/9: the LED is PC13, the button PA0,
+// USB PA11/PA12 and SWD PA13/PA14. Note this part is LQFP48, so port C is
+// only PC13/14/15 and PB11 is not bonded out -- most of the timer maps a
+// generic F4 pinout table offers do not exist here.
 //
 // SERVO_FRAME_US (20000, i.e. 50Hz) is optional, defaulted in the driver.
 //
