@@ -1,0 +1,110 @@
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Help</h1>
+          </div>
+
+          <!-- App and firmware are separate projects with independent version
+               numbers; showing them side by side is the quickest way to tell
+               which half is stale when something misbehaves. -->
+          <dl class="row mb-4">
+            <dt class="col-sm-3">App version</dt>
+            <dd class="col-sm-9"><span x-text="$store.app.version"></span></dd>
+            <dt class="col-sm-3">Firmware</dt>
+            <dd class="col-sm-9"><span x-text="$store.app.fwSummary"></span></dd>
+          </dl>
+
+          <p><strong>The board doesn't appear in the port dropdown</strong></p>
+          <ul>
+            <li>Check the USB cable is a data cable, not a charge-only cable.</li>
+            <li>Make sure the board is powered — you should see LED activity on it.</li>
+            <li>Try unplugging and replugging the cable, then check the dropdown again.</li>
+          </ul>
+
+          <p><strong>Connect fails or times out</strong></p>
+          <ul>
+            <li>Confirm you selected the right port — a detected STM32 board is marked "(STM32)" in the dropdown.</li>
+            <li>Make sure no other program (a serial monitor, another instance of this app) already has the port open.</li>
+            <li>Try disconnecting and reconnecting.</li>
+          </ul>
+
+          <p><strong>Connected, but no telemetry appears</strong></p>
+          <ul>
+            <li>Check the Telemetry Rate setting on the Configuration page isn't set very low.</li>
+            <li>Try disconnecting and reconnecting.</li>
+          </ul>
+
+          <p><strong>Changing a setting doesn't seem to do anything</strong></p>
+          <ul>
+            <li>Changes apply to the device immediately, but only persist through a power cycle after you click <strong>Save</strong>.</li>
+            <li>An invalid value (out of range, too long) is rejected and shown with a red outline — check for that.</li>
+          </ul>
+
+          <p><strong>The status badge shows "stale"</strong></p>
+          <ul>
+            <li>This means the device is still connected but hasn't sent telemetry recently — often just a
+                brief pause during a Save (writing to flash takes about a second). If it doesn't clear on its
+                own, try disconnecting and reconnecting.</li>
+          </ul>
+
+          <p><strong>Backing up and restoring settings</strong></p>
+          <ul>
+            <li>On the Terminal page, type <code>dump</code> to print every setting as INI text, then
+                copy it into a file. <code>list</code> shows what each setting accepts.</li>
+            <li><strong>Restore from INI…</strong> reads such a file back. Settings the connected
+                firmware doesn't have — or values it rejects — are listed as skipped and the rest
+                still apply.</li>
+            <li>A restore applies to the device immediately but is <strong>not</strong> written to
+                flash. Click <strong>Save to flash</strong> — the button beside Restore, or the one
+                on the Configuration page — to keep it. It stays greyed out until there is
+                something unsaved.</li>
+          </ul>
+
+          <p><strong>Undoing changes you haven't saved</strong></p>
+          <ul>
+            <li><strong>Discard changes</strong> reloads the settings last written to flash, so
+                it undoes everything since your last Save. This is different from
+                <strong>Load defaults</strong>, which goes to the firmware's factory values —
+                somewhere you may never have saved.</li>
+            <li>On a board that has never been saved to, there is nothing stored to go back to,
+                so Discard changes loads the defaults instead and tells you it did.</li>
+          </ul>
+
+          <p><strong>A saved setting didn't survive a restart</strong></p>
+          <ul>
+            <li>Confirm you clicked <strong>Save</strong> after changing the value, not just changed the field
+                — edits apply live but aren't written to flash until Save.</li>
+          </ul>
+
+          <p><strong>Updating the firmware</strong></p>
+          <ul>
+            <li>The <strong>Firmware</strong> page flashes the images this app shipped with, so the
+                firmware and the app always match.</li>
+            <li>The board has to be in <em>DFU mode</em> first. If it's running and connected,
+                <strong>Reboot to DFU</strong> does it for you. Otherwise: hold <strong>BOOT0</strong>,
+                tap <strong>NRST</strong>, release <strong>BOOT0</strong>.</li>
+            <li>The button is greyed out on firmware built without DFU support — use the
+                BOOT0 method for those.</li>
+          </ul>
+
+          <p><strong>The board doesn't show up as a DFU device</strong></p>
+          <ul>
+            <li>Check the badge at the top of the Firmware page. If it says "no DFU device"
+                after the BOOT0 sequence, the sequence didn't take — the order matters: BOOT0
+                held down <em>first</em>, then NRST tapped, then BOOT0 released.</li>
+            <li>A board in DFU mode disappears from the port dropdown. Seeing it in both places
+                at once means it never left normal mode.</li>
+          </ul>
+
+          <p><strong>The flash failed partway through</strong></p>
+          <ul>
+            <li>The board is half-written, not bricked. Put it back into DFU mode with BOOT0 +
+                NRST and flash again — the whole image is rewritten each time.</li>
+            <li>If the board no longer enumerates as anything at all, BOOT0 + NRST still reaches
+                the ROM bootloader; it lives in read-only memory and cannot be erased.</li>
+          </ul>
+
+          <p><strong>It flashed, but the board stayed in DFU mode</strong></p>
+          <ul>
+            <li>Tap <strong>NRST</strong>. The flasher asks the bootloader to restart into the new
+                firmware when it finishes, and that request is occasionally ignored.</li>
+          </ul>
+          <p>&nbsp;</p>

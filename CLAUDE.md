@@ -58,6 +58,15 @@ are left in place as unused dead code, so support is cheap to resurrect later; s
 Building and bundling release firmware images (`app/firmware/`) is covered by the
 `bundle-firmware` skill — invoke it rather than reading this file for those steps.
 
+**web-app** (from `web-app/`):
+```
+python3 -m http.server 9091   # serves the static site; open http://localhost:9091
+node --test                   # runs the ported logic's unit tests, no board needed
+```
+Web Serial and service workers both require a secure context — `localhost` or HTTPS. Serving
+this tree from a LAN IP over plain HTTP will not work, and it needs a Chromium-based browser
+(Chrome, Edge, Brave, Opera); Firefox and Safari have no Web Serial API.
+
 **Web UI**: no build step. `app/web/{index.html,app.js}` are static files served directly by the
 FastAPI app above (`main.py` mounts `app/web/` at `/`). No automated UI test suite exists, by
 design — but "therefore you cannot check the UI" does not follow, and believing it has cost real
@@ -142,6 +151,15 @@ app/web/                static HTML/JS only, talks to the backend exclusively th
                         navigation — adding a page means adding one `pages/<name>.html` and
                         a nav button, not editing every other page's markup.
 app/docs/               placeholder template (USER_GUIDE.md) for a fork's own user guide
+
+web-app/                a second, fully static front end for the same board, talking to it
+                        directly over the Web Serial API instead of through a backend. Above
+                        the `Api` seam it is a copy of `app/web/`; below it, `js/*.js` ports
+                        `app/backend/`'s protocol/link/device/terminal/settings_ini logic to
+                        vanilla ES modules. No build step, no npm dependencies, no Python.
+                        Unit-tested with `node --test`, run from `web-app/` (it discovers
+                        `tests/*.test.js` itself); `tests/parity.test.js` holds the copied
+                        page fragments and vendor files to `app/web/`.
 ```
 
 **`hardware/`** sits outside those three tiers — KiCad schematic/PCB source for the wiring

@@ -1,0 +1,463 @@
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Wiring</h1>
+          </div>
+          <p>Reference diagrams for using betacrawler with real hardware. This page grows over time
+             as new boards and setups get documented.</p>
+
+          <h2 class="h5 mt-4">Wiring a Black Pill</h2>
+          <p class="text-secondary">
+            WeAct STM32F411CE Black Pill wired for the tank build's full stack &mdash; LiPo into a
+            power distribution board, PDB into both ESCs and the board's 5V rail, ESCs out to the
+            brushless motors, and a CRSF receiver on the serial port. Pin names come straight from
+            <code>boards/blackpill_f411ce.h</code> &mdash; this is a schematic wiring map, not the
+            board's physical silkscreen layout, so match connections by label, not by position.
+          </p>
+
+          <div class="wiring-diagram">
+            <div class="diagram-card">
+              <svg viewBox="0 0 1600 1240" xmlns="http://www.w3.org/2000/svg" role="img"
+                   aria-label="Wiring diagram connecting a LiPo battery and Matek power distribution board to two brushless ESCs and their three-wire motors, a Black Pill STM32F411CE board, a CRSF receiver, an optional battery sense divider, and a USB host">
+
+                <!-- ===== Board ===== -->
+                <rect x="720" y="90" width="220" height="590" rx="20" class="fill-surface2 stroke-border" stroke-width="1.5" />
+                <text x="830" y="128" text-anchor="middle" class="lbl-heading fill-ink" font-size="16">STM32F411CE</text>
+                <text x="830" y="146" text-anchor="middle" class="lbl-mono fill-muted" font-size="10.5" letter-spacing="0.05em">WEACT BLACK PILL</text>
+                <line x1="752" y1="160" x2="908" y2="160" class="stroke-border" stroke-width="1" />
+
+                <!-- onboard badges -->
+                <text x="732" y="420" class="lbl-mono fill-muted" font-size="9">PC13 · LED (LOW=on, onboard)</text>
+                <text x="732" y="445" class="lbl-mono fill-muted" font-size="9">PA0 · KEY button (onboard)</text>
+                <text x="732" y="470" class="lbl-mono fill-muted" font-size="9">PA13/PA14 · SWD (alt. flash)</text>
+
+                <!-- USB-C nub + lead -->
+                <rect x="845" y="680" width="50" height="20" rx="3" class="fill-copper" />
+                <line x1="870" y1="700" x2="870" y2="770" class="wire-copper" />
+                <g class="fill-copper">
+                  <circle cx="870" cy="700" r="3" /><circle cx="870" cy="770" r="3" />
+                </g>
+
+                <!-- ===== Left stubs: ESC 0 signal ===== -->
+                <g class="wire-esc">
+                  <line x1="720" y1="222" x2="630" y2="222" />
+                  <line x1="720" y1="246" x2="630" y2="246" />
+                </g>
+                <g class="fill-esc">
+                  <circle cx="720" cy="222" r="3" /><circle cx="720" cy="246" r="3" />
+                </g>
+                <!-- STM pin names, inside the board's own border -->
+                <g class="lbl-mono fill-esc" font-size="10.5" font-weight="600">
+                  <text x="727" y="221">PA6</text>
+                  <text x="727" y="245">GND</text>
+                </g>
+
+                <!-- ===== Right stubs: Receiver group ===== -->
+                <g class="wire-receiver">
+                  <line x1="940" y1="222" x2="1020" y2="222" />
+                  <line x1="940" y1="246" x2="1020" y2="246" />
+                  <line x1="940" y1="270" x2="1020" y2="270" />
+                  <line x1="940" y1="294" x2="1020" y2="294" />
+                </g>
+                <g class="fill-receiver">
+                  <circle cx="940" cy="222" r="3" /><circle cx="940" cy="246" r="3" />
+                  <circle cx="940" cy="270" r="3" /><circle cx="940" cy="294" r="3" />
+                </g>
+                <g class="lbl-mono fill-receiver" font-size="10.5" font-weight="600" text-anchor="end">
+                  <text x="933" y="221">PB7</text>
+                  <text x="933" y="245">PA9</text>
+                  <text x="933" y="269">5V</text>
+                  <text x="933" y="293">GND</text>
+                </g>
+
+                <!-- ===== Right stubs: ESC 1 signal ===== -->
+                <g class="wire-esc">
+                  <line x1="940" y1="502" x2="1020" y2="502" />
+                  <line x1="940" y1="526" x2="1020" y2="526" />
+                </g>
+                <g class="fill-esc">
+                  <circle cx="940" cy="502" r="3" /><circle cx="940" cy="526" r="3" />
+                </g>
+                <g class="lbl-mono fill-esc" font-size="10.5" font-weight="600" text-anchor="end">
+                  <text x="933" y="501">PB6</text>
+                  <text x="933" y="525">GND</text>
+                </g>
+
+                <!-- ===== Bottom stubs: board 5V rail, fed by the PDB's BEC ===== -->
+                <g class="wire-pdb">
+                  <line x1="730" y1="680" x2="730" y2="960" />
+                  <line x1="780" y1="680" x2="780" y2="960" />
+                </g>
+                <g class="fill-pdb">
+                  <circle cx="730" cy="680" r="3" /><circle cx="780" cy="680" r="3" />
+                  <circle cx="730" cy="960" r="3" /><circle cx="780" cy="960" r="3" />
+                </g>
+                <g class="lbl-mono fill-pdb" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="730" y="668">5V</text>
+                  <text x="780" y="668">GND</text>
+                </g>
+
+                <!-- ===== ESC 0 card ===== -->
+                <rect x="360" y="140" width="270" height="340" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="375" y="154" width="12" height="12" rx="2" class="fill-esc" />
+                <text x="395" y="164" class="lbl-heading fill-ink" font-size="13">Brushless ESC 0</text>
+                <text x="375" y="182" class="lbl-mono fill-muted" font-size="9.5">TIM3 CH1 · left track · module pins</text>
+                <line x1="375" y1="196" x2="615" y2="196" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="615" y="222">SIGNAL</text>
+                  <text x="615" y="246">GND</text>
+                </g>
+                <line x1="375" y1="270" x2="615" y2="270" class="stroke-border" stroke-width="1" />
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="375" y="300">PHASE A</text>
+                  <text x="375" y="324">PHASE B</text>
+                  <text x="375" y="348">PHASE C</text>
+                </g>
+                <line x1="375" y1="372" x2="615" y2="372" class="stroke-border" stroke-width="1" />
+                <text x="375" y="394" class="lbl-mono fill-power" font-size="10">Battery power from the PDB only —</text>
+                <text x="375" y="410" class="lbl-mono fill-power" font-size="10">never from the board's 5V pin.</text>
+                <text x="375" y="426" class="lbl-mono fill-muted" font-size="10">Leave the ESC's own BEC lead unused.</text>
+                <g class="fill-esc">
+                  <circle cx="630" cy="222" r="3" /><circle cx="630" cy="246" r="3" />
+                </g>
+                <g class="fill-motor">
+                  <circle cx="360" cy="300" r="3" /><circle cx="360" cy="324" r="3" /><circle cx="360" cy="348" r="3" />
+                </g>
+                <g class="fill-pdb">
+                  <circle cx="440" cy="480" r="3" /><circle cx="500" cy="480" r="3" />
+                </g>
+                <g class="lbl-mono fill-pdb" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="440" y="468">BAT +</text>
+                  <text x="500" y="468">BAT −</text>
+                </g>
+                <!-- ESC 0 battery leads, down to the PDB -->
+                <g class="wire-pdb">
+                  <line x1="440" y1="480" x2="440" y2="960" />
+                  <line x1="500" y1="480" x2="500" y2="960" />
+                </g>
+                <g class="fill-pdb">
+                  <circle cx="440" cy="960" r="3" /><circle cx="500" cy="960" r="3" />
+                </g>
+
+                <!-- ===== Motor 0 card ===== -->
+                <rect x="40" y="230" width="240" height="200" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="55" y="244" width="12" height="12" rx="2" class="fill-motor" />
+                <text x="75" y="254" class="lbl-heading fill-ink" font-size="13">Brushless motor 0</text>
+                <text x="55" y="272" class="lbl-mono fill-muted" font-size="9.5">3-phase · left track · motor leads</text>
+                <line x1="55" y1="286" x2="265" y2="286" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="265" y="300">LEAD 1</text>
+                  <text x="265" y="324">LEAD 2</text>
+                  <text x="265" y="348">LEAD 3</text>
+                </g>
+                <line x1="55" y1="368" x2="265" y2="368" class="stroke-border" stroke-width="1" />
+                <text x="55" y="390" class="lbl-mono fill-muted" font-size="10">Any lead order runs. Swap</text>
+                <text x="55" y="406" class="lbl-mono fill-muted" font-size="10">any two to reverse the track.</text>
+                <g class="fill-motor">
+                  <circle cx="280" cy="300" r="3" /><circle cx="280" cy="324" r="3" /><circle cx="280" cy="348" r="3" />
+                </g>
+                <g class="wire-motor">
+                  <line x1="280" y1="300" x2="360" y2="300" />
+                  <line x1="280" y1="324" x2="360" y2="324" />
+                  <line x1="280" y1="348" x2="360" y2="348" />
+                </g>
+
+                <!-- ===== Receiver card ===== -->
+                <rect x="1020" y="140" width="260" height="230" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="1035" y="154" width="12" height="12" rx="2" class="fill-receiver" />
+                <text x="1055" y="164" class="lbl-heading fill-ink" font-size="13">CRSF receiver</text>
+                <text x="1035" y="182" class="lbl-mono fill-muted" font-size="9.5">TBS / ELRS · module pins</text>
+                <line x1="1035" y1="196" x2="1265" y2="196" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="1035" y="222">TX (out to STM)</text>
+                  <text x="1035" y="246">RX (telemetry in)</text>
+                  <text x="1035" y="270">+</text>
+                  <text x="1035" y="294">GND</text>
+                </g>
+                <line x1="1035" y1="314" x2="1265" y2="314" class="stroke-border" stroke-width="1" />
+                <text x="1035" y="336" class="lbl-mono fill-muted" font-size="10">Nano-RX pads default to PWM out —</text>
+                <text x="1035" y="352" class="lbl-mono fill-muted" font-size="10">switch to CRSF in its own menu first.</text>
+                <g class="fill-receiver">
+                  <circle cx="1020" cy="222" r="3" /><circle cx="1020" cy="246" r="3" />
+                  <circle cx="1020" cy="270" r="3" /><circle cx="1020" cy="294" r="3" />
+                </g>
+
+                <!-- ===== ESC 1 card ===== -->
+                <rect x="1020" y="420" width="270" height="280" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="1035" y="434" width="12" height="12" rx="2" class="fill-esc" />
+                <text x="1055" y="444" class="lbl-heading fill-ink" font-size="13">Brushless ESC 1</text>
+                <text x="1035" y="462" class="lbl-mono fill-muted" font-size="9.5">TIM4 CH1 · right track · module pins</text>
+                <line x1="1035" y1="476" x2="1275" y2="476" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="1035" y="502">SIGNAL</text>
+                  <text x="1035" y="526">GND</text>
+                </g>
+                <line x1="1035" y1="550" x2="1275" y2="550" class="stroke-border" stroke-width="1" />
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="1275" y="596">PHASE A</text>
+                  <text x="1275" y="620">PHASE B</text>
+                  <text x="1275" y="644">PHASE C</text>
+                </g>
+                <line x1="1035" y1="664" x2="1275" y2="664" class="stroke-border" stroke-width="1" />
+                <g class="fill-esc">
+                  <circle cx="1020" cy="502" r="3" /><circle cx="1020" cy="526" r="3" />
+                </g>
+                <g class="fill-motor">
+                  <circle cx="1290" cy="596" r="3" /><circle cx="1290" cy="620" r="3" /><circle cx="1290" cy="644" r="3" />
+                </g>
+                <g class="fill-pdb">
+                  <circle cx="1130" cy="700" r="3" /><circle cx="1190" cy="700" r="3" />
+                </g>
+                <g class="lbl-mono fill-pdb" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="1130" y="688">BAT +</text>
+                  <text x="1190" y="688">BAT −</text>
+                </g>
+                <!-- ESC 1 battery leads, down to the PDB -->
+                <g class="wire-pdb">
+                  <line x1="1130" y1="700" x2="1130" y2="960" />
+                  <line x1="1190" y1="700" x2="1190" y2="960" />
+                </g>
+                <g class="fill-pdb">
+                  <circle cx="1130" cy="960" r="3" /><circle cx="1190" cy="960" r="3" />
+                </g>
+
+                <!-- ===== Motor 1 card ===== -->
+                <rect x="1330" y="526" width="240" height="200" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="1345" y="540" width="12" height="12" rx="2" class="fill-motor" />
+                <text x="1365" y="550" class="lbl-heading fill-ink" font-size="13">Brushless motor 1</text>
+                <text x="1345" y="568" class="lbl-mono fill-muted" font-size="9.5">3-phase · right track · motor leads</text>
+                <line x1="1345" y1="582" x2="1555" y2="582" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="1345" y="596">LEAD 1</text>
+                  <text x="1345" y="620">LEAD 2</text>
+                  <text x="1345" y="644">LEAD 3</text>
+                </g>
+                <line x1="1345" y1="664" x2="1555" y2="664" class="stroke-border" stroke-width="1" />
+                <text x="1345" y="686" class="lbl-mono fill-muted" font-size="10">Any lead order runs. Swap</text>
+                <text x="1345" y="702" class="lbl-mono fill-muted" font-size="10">any two to reverse the track.</text>
+                <g class="fill-motor">
+                  <circle cx="1330" cy="596" r="3" /><circle cx="1330" cy="620" r="3" /><circle cx="1330" cy="644" r="3" />
+                </g>
+                <g class="wire-motor">
+                  <line x1="1290" y1="596" x2="1330" y2="596" />
+                  <line x1="1290" y1="620" x2="1330" y2="620" />
+                  <line x1="1290" y1="644" x2="1330" y2="644" />
+                </g>
+
+                <!-- ===== USB card ===== -->
+                <rect x="820" y="770" width="290" height="140" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="836" y="786" width="12" height="12" rx="2" class="fill-copper" />
+                <text x="856" y="796" class="lbl-heading fill-ink" font-size="13">USB-C · to host PC</text>
+                <text x="836" y="820" class="lbl-mono fill-muted" font-size="10.5">One cable carries the Configurator link,</text>
+                <text x="836" y="836" class="lbl-mono fill-muted" font-size="10.5">the serial console, and one-click DFU</text>
+                <text x="836" y="852" class="lbl-mono fill-muted" font-size="10.5">updates (PA11/PA12, built in).</text>
+                <text x="836" y="874" class="lbl-mono fill-muted" font-size="10.5">No cable? BOOT0+NRST by hand, or SWD</text>
+                <text x="836" y="890" class="lbl-mono fill-muted" font-size="10.5">(PA13/PA14), reach the same bootloader.</text>
+
+                <!-- ===== Battery sense card =====
+                     Sits in the clear corridor between ESC 0's battery leads
+                     (x=440/500) and the board's left edge (x=720). Three leads
+                     only, none crossing another: SENSE across to the board, VCC
+                     and GND straight down to the PDB. -->
+                <rect x="515" y="520" width="175" height="180" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="530" y="534" width="12" height="12" rx="2" class="fill-vbat" />
+                <text x="550" y="544" class="lbl-heading fill-ink" font-size="13">Battery sense</text>
+                <text x="530" y="562" class="lbl-mono fill-muted" font-size="9.5">optional &middot; 47k / 4k7</text>
+                <line x1="530" y1="576" x2="675" y2="576" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="675" y="604">SENSE OUT</text>
+                </g>
+                <line x1="530" y1="624" x2="675" y2="624" class="stroke-border" stroke-width="1" />
+                <text x="530" y="646" class="lbl-mono fill-muted" font-size="10">Divides pack voltage</text>
+                <text x="530" y="662" class="lbl-mono fill-muted" font-size="10">into the ADC's 0&ndash;3.3V</text>
+                <text x="530" y="678" class="lbl-mono fill-muted" font-size="10">range. Circuit below.</text>
+
+                <g class="lbl-mono fill-vbat" font-size="11" font-weight="600" text-anchor="middle">
+                  <text x="560" y="694">VCC</text>
+                  <text x="620" y="694">GND</text>
+                </g>
+                <g class="wire-vbat">
+                  <line x1="690" y1="600" x2="720" y2="600" />
+                  <line x1="560" y1="700" x2="560" y2="960" />
+                  <line x1="620" y1="700" x2="620" y2="960" />
+                </g>
+                <g class="fill-vbat">
+                  <circle cx="690" cy="600" r="3" /><circle cx="720" cy="600" r="3" />
+                  <circle cx="560" cy="700" r="3" /><circle cx="560" cy="960" r="3" />
+                  <circle cx="620" cy="700" r="3" /><circle cx="620" cy="960" r="3" />
+                </g>
+                <!-- STM pin name, inside the board's own border -->
+                <g class="lbl-mono fill-vbat" font-size="10.5" font-weight="600">
+                  <text x="727" y="599">PA1</text>
+                </g>
+
+                <!-- ===== PDB card ===== -->
+                <rect x="300" y="960" width="980" height="240" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <g class="lbl-mono fill-pdb" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="440" y="980">ESC 0 +</text>
+                  <text x="500" y="980">ESC 0 −</text>
+                  <text x="730" y="980">5V BEC</text>
+                  <text x="780" y="980">GND</text>
+                  <text x="1130" y="980">ESC 1 +</text>
+                  <text x="1190" y="980">ESC 1 −</text>
+                </g>
+                <!-- sense taps, after the card rect so they are not painted over -->
+                <g class="lbl-mono fill-vbat" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="560" y="980">VCC</text>
+                  <text x="620" y="980">GND</text>
+                </g>
+                <line x1="315" y1="996" x2="1265" y2="996" class="stroke-border" stroke-width="1" />
+                <rect x="315" y="1008" width="12" height="12" rx="2" class="fill-pdb" />
+                <text x="335" y="1018" class="lbl-heading fill-ink" font-size="13">Matek PDB · 5V / 12V BEC</text>
+                <text x="315" y="1036" class="lbl-mono fill-muted" font-size="9.5">LiPo in · four ESC pads out · 5V and 12V regulated</text>
+                <line x1="315" y1="1050" x2="1265" y2="1050" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="315" y="1076">VBAT IN +</text>
+                  <text x="315" y="1100">VBAT IN −</text>
+                </g>
+                <text x="620" y="1080" class="lbl-mono fill-power" font-size="10">Match polarity on every pad — the PDB has no reverse protection.</text>
+                <text x="620" y="1104" class="lbl-mono fill-muted" font-size="10">The 5V BEC feeds the board's 5V pin, and the receiver through it.</text>
+                <text x="620" y="1120" class="lbl-mono fill-muted" font-size="10">USB may stay plugged in with the battery connected.</text>
+                <text x="620" y="1136" class="lbl-mono fill-muted" font-size="10">The 12V pads are spare here — lights, a pump, a video transmitter.</text>
+                <text x="620" y="1152" class="lbl-mono fill-muted" font-size="10">Motor current never touches the board: it runs battery → PDB → ESC.</text>
+                <g class="fill-pdb">
+                  <circle cx="300" cy="1076" r="3" /><circle cx="300" cy="1100" r="3" />
+                </g>
+
+                <!-- ===== Battery card ===== -->
+                <rect x="40" y="990" width="240" height="190" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="55" y="1004" width="12" height="12" rx="2" class="fill-pdb" />
+                <text x="75" y="1014" class="lbl-heading fill-ink" font-size="13">LiPo battery</text>
+                <text x="55" y="1032" class="lbl-mono fill-muted" font-size="9.5">3S–4S · XT60 lead</text>
+                <line x1="55" y1="1046" x2="265" y2="1046" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="265" y="1076">VBAT +</text>
+                  <text x="265" y="1100">VBAT −</text>
+                </g>
+                <line x1="55" y1="1120" x2="265" y2="1120" class="stroke-border" stroke-width="1" />
+                <text x="55" y="1142" class="lbl-mono fill-power" font-size="10">Connect the battery last, once</text>
+                <text x="55" y="1158" class="lbl-mono fill-power" font-size="10">everything else is wired.</text>
+                <g class="fill-pdb">
+                  <circle cx="280" cy="1076" r="3" /><circle cx="280" cy="1100" r="3" />
+                </g>
+                <g class="wire-pdb">
+                  <line x1="280" y1="1076" x2="300" y2="1076" />
+                  <line x1="280" y1="1100" x2="300" y2="1100" />
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <h2 class="h5 mt-4">Battery sense divider (optional) &mdash; circuit</h2>
+          <p class="text-secondary">
+            Optional &mdash; the vehicle drives without it. Fit it if you want pack voltage on the
+            transmitter and in the Configurator. This is the component-level circuit behind the
+            sense card above. A LiPo pack is far above the
+            3.3V the ADC can read, so a resistor divider scales it down. Only the three terminals
+            are shown here &mdash; where they land on the board is in the wiring map above.
+            47k/4k7 divides by exactly 11: a 4S reads 1.53V and a 6S 2.29V, both comfortably inside range.
+          </p>
+
+          <div class="wiring-diagram">
+            <div class="diagram-card">
+              <svg viewBox="0 0 700 500" xmlns="http://www.w3.org/2000/svg" role="img"
+                   aria-label="Circuit diagram of the battery sense divider: a 47k resistor from pack positive to a tap node, a 4k7 resistor from the tap to ground, a 100nF capacitor and a 3.3V zener with its cathode to the tap also going to ground, and a 1k resistor in series from the tap to the sense output">
+
+                <g class="wire-vbat">
+                  <line x1="100" y1="62" x2="100" y2="110" />
+                  <line x1="100" y1="158" x2="100" y2="190" />
+                  <line x1="100" y1="190" x2="400" y2="190" />
+                  <line x1="448" y1="190" x2="558" y2="190" />
+                  <line x1="100" y1="190" x2="100" y2="230" />
+                  <line x1="100" y1="278" x2="100" y2="330" />
+                  <line x1="220" y1="190" x2="220" y2="238" />
+                  <line x1="220" y1="262" x2="220" y2="330" />
+                  <line x1="330" y1="190" x2="330" y2="234" />
+                  <line x1="330" y1="258" x2="330" y2="330" />
+                  <line x1="100" y1="330" x2="330" y2="330" />
+                  <line x1="215" y1="330" x2="215" y2="372" />
+                </g>
+
+                <!-- resistors -->
+                <g class="fill-surface stroke-border" stroke-width="1.5">
+                  <rect x="86" y="110" width="28" height="48" rx="2" />
+                  <rect x="86" y="230" width="28" height="48" rx="2" />
+                  <rect x="400" y="176" width="48" height="28" rx="2" />
+                </g>
+                <!-- 100nF plates -->
+                <g class="wire-vbat">
+                  <line x1="198" y1="238" x2="242" y2="238" />
+                  <line x1="198" y1="262" x2="242" y2="262" />
+                </g>
+                <!-- 3V3 zener, cathode UP: the bar sits on the tap side, the
+                     triangle's base is the anode going to ground -->
+                <polygon points="316,258 344,258 330,236" class="fill-vbat" />
+                <g class="wire-vbat">
+                  <line x1="314" y1="234" x2="346" y2="234" />
+                  <line x1="346" y1="234" x2="346" y2="242" />
+                  <line x1="314" y1="234" x2="314" y2="226" />
+                </g>
+
+                <g class="fill-vbat">
+                  <circle cx="100" cy="62" r="4" /><circle cx="558" cy="190" r="4" />
+                  <circle cx="215" cy="372" r="4" />
+                  <circle cx="100" cy="190" r="3" /><circle cx="220" cy="190" r="3" />
+                  <circle cx="330" cy="190" r="3" /><circle cx="100" cy="330" r="3" />
+                  <circle cx="220" cy="330" r="3" /><circle cx="330" cy="330" r="3" />
+                  <circle cx="215" cy="330" r="3" />
+                </g>
+
+                <!-- terminals -->
+                <g class="lbl-mono fill-vbat" font-size="12" font-weight="600">
+                  <text x="100" y="46" text-anchor="middle">VCC</text>
+                  <text x="572" y="186">SENSE OUT</text>
+                  <text x="215" y="394" text-anchor="middle">GND</text>
+                </g>
+                <g class="lbl-mono fill-muted" font-size="9.5">
+                  <text x="100" y="30" text-anchor="middle">raw pack, from the PDB</text>
+                  <text x="572" y="204">to the board</text>
+                  <text x="112" y="182">tap node</text>
+                </g>
+
+                <!-- values, staggered so no two labels share a row -->
+                <g class="lbl-mono fill-ink" font-size="12" font-weight="500">
+                  <text x="128" y="132">47k</text>
+                  <text x="128" y="252">4k7</text>
+                  <text x="248" y="292">100nF</text>
+                  <text x="362" y="292">3V3 zener</text>
+                  <text x="424" y="168" text-anchor="middle">1k</text>
+                </g>
+                <!-- Half the value type size, and tucked close under it, so each
+                     note reads as belonging to its part rather than as loose text. -->
+                <g class="lbl-mono fill-muted" font-size="6">
+                  <text x="128" y="143">1% metal film</text>
+                  <text x="128" y="263">1% metal film</text>
+                  <text x="248" y="303">ceramic &middot; marked 104</text>
+                  <text x="362" y="303">band to the tap</text>
+                </g>
+
+                <text x="60" y="428" class="lbl-mono fill-power" font-size="10">Take VCC from a raw pack pad &mdash; never a regulated BEC output, which reads constant.</text>
+                <line x1="60" y1="444" x2="640" y2="444" class="stroke-border" stroke-width="1" />
+                <g class="lbl-mono fill-muted" font-size="10">
+                  <text x="60" y="466">Nothing external touches the tap node. It reaches the board only through the 1k,</text>
+                  <text x="60" y="482">which protects the pin if the 4k7 ever goes open circuit.</text>
+                </g>
+              </svg>
+            </div>
+          </div>
+          <p class="text-secondary small mt-2">
+            Teal = the power chain: the LiPo feeds the PDB, the PDB feeds both ESCs and the board's
+            5V rail (which in turn powers the receiver). Navy = the three motor leads out of each
+            ESC. Green = the ESC signal leads, the only motor wiring the board itself touches.
+            Violet = the CRSF link, both directions: the receiver's TX carries stick positions in on
+            PB7, and PA9 carries telemetry back out to the handset. ESC 0 drives the left track and ESC 1 the right, both fed by the
+            tank mixer rather than by a receiver channel directly.
+          </p>
+
+          <p>&nbsp;</p>
