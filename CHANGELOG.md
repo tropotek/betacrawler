@@ -5,6 +5,17 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **fix: blackpill_f401ce ships what blackpill_f411ce ships.** The two headers are kept in step
+  by hand and had drifted in four places, each one a flag or default added to the F411 and never
+  carried across: `vbat` was off (added with the module and never enabled here), `tank_drive` was
+  off, and both ESC frame periods fell back to the module default of 20000us — so the F401 drove
+  its ESCs at 50Hz where the F411 uses 200Hz. PA1 was free, so the sense divider needed no pin
+  decision. The module sets are now identical, which puts the parameter table at the same 32 of
+  `FW_MAX_PARAMS` 32 the F411 already sits at; `registry.cpp` raises `Fault::Registry` if that is
+  ever exceeded. Saved settings on an F401 fall back to defaults, since `Registry::fingerprint()`
+  covers the new parameters. The remaining difference between the headers is `BOARD_ID` and the
+  retired ESP32 `WIFI_*` pins, which are off on both.
+
 - **feat: the Configuration page gains a Battery card — pack voltage, volts per cell, remaining
   percent and cell count.** Per-cell voltage is the number that tells you a pack is going flat
   without any mental arithmetic, so it sits beside the pack total rather than being derived by the

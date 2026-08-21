@@ -28,9 +28,10 @@
 #define FEATURE_ST7789_240X240 0
 #define FEATURE_SERVO   0
 #define FEATURE_RX         1
-#define FEATURE_TANK_DRIVE 0
+#define FEATURE_TANK_DRIVE 1
 #define FEATURE_ESC0       1
 #define FEATURE_ESC1       1
+#define FEATURE_VBAT       1
 // The F401 has the same USB DFU bootloader in ROM as the F411 -- same system
 // memory base, same AN2606 entry. See blackpill_f411ce.h for the rationale.
 #define FEATURE_DFU     1
@@ -88,11 +89,21 @@
 #define ESC1_TIMER      TIM4
 #define ESC1_PIN        PB6
 
+// 200Hz frame on both, same reasoning as blackpill_f411ce.h. Without these the
+// module default of 20000us applies, which is 50Hz.
+#define ESC0_FRAME_US   5000
+#define ESC1_FRAME_US   5000
+
 // Both esc1 and (if ever enabled) servo drive TIM4/PB6 -- see
 // blackpill_f411ce.h's identical guard for the full hazard explanation.
 #if FEATURE_SERVO && FEATURE_ESC1
 #error "servo and esc1 both claim TIM4/PB6 on this board -- move one to another timer/pin before enabling both"
 #endif
+
+// Battery voltage sense on ADC1_IN1, same pin, divider and scale as
+// blackpill_f411ce.h; see that header for the ratio and what vbat.scale means.
+#define VBAT_PIN        PA1
+#define VBAT_SCALE_DEFAULT 11000
 
 // CRSF receiver on USART1. Same pins as blackpill_f411ce.h; see that header
 // for why receive is on PB7 rather than USART1's usual PA10, and why transmit
