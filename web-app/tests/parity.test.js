@@ -7,10 +7,11 @@ const here = fileURLToPath(new URL('.', import.meta.url));
 const webApp = `${here}..`;
 const appWeb = `${here}../../app/web`;
 
-// Copied verbatim in Task 1. help.html is edited on purpose (Task 9) and
-// firmware.html is not copied at all, so neither belongs here.
+// Copied verbatim in Task 1. help.html and home.html are edited on purpose
+// (both described a port dropdown and DFU/Firmware-page features this build
+// doesn't have) and firmware.html is not copied at all, so none belong here.
 const COPIED = [
-  'pages/home.html', 'pages/config.html', 'pages/controller.html', 'pages/modes.html',
+  'pages/config.html', 'pages/controller.html', 'pages/modes.html',
   'pages/terminal.html', 'pages/wiring.html',
   'vendor/bootstrap.min.css', 'vendor/bootstrap.bundle.min.js', 'vendor/alpine.min.js',
   'favicon.ico', 'tank-hero.svg',
