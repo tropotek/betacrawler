@@ -593,11 +593,6 @@ document.querySelectorAll('[data-page]').forEach((btn) => {
 // being forced to connect first and navigate second is exactly the moment
 // you would miss it. Its controls are disabled instead (Alpine-bound to
 // $store.app.connected, see pages/terminal.html).
-//
-// Firmware is not gated either, for a stronger version of the same reason: a
-// board that needs re-flashing is frequently a board that cannot be talked
-// to, and gating the recovery tool on a working device would be exactly
-// backwards.
 const CONNECTION_REQUIRED_PAGES = new Set(['config', 'controller', 'modes']);
 
 // Bumped on every call, checked after the (possibly slow, first-visit-only)
@@ -636,6 +631,11 @@ async function showPage(page) {
   // loadDevice() already relies on for its own direct Alpine.store() calls.
   Alpine.initTree(el('page-mount'));
   PAGE_INIT[page]?.();
+  // Save/Discard/Load defaults act on the device's config -- only the pages
+  // that edit it need the bar at all. It stays mounted in the shell rather
+  // than each page's own fragment so it survives navigation without losing
+  // Alpine's dirty/revertNote state.
+  el('save-bar').classList.toggle('d-none', !CONNECTION_REQUIRED_PAGES.has(page));
   document.querySelectorAll('[data-page]').forEach((btn) => {
     const isActive = btn.dataset.page === page;
     btn.classList.toggle('active', isActive);

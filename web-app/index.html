@@ -288,10 +288,10 @@
       <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
         <div id="alert" class="alert alert-danger d-none mt-3" role="alert"></div>
 
-        <div id="save-bar" class="d-flex gap-2 align-items-center mt-3" x-show="$store.app.connected" x-data>
-          <button id="save" class="btn btn-success btn-sm">Save to flash</button>
-          <button id="revert" class="btn btn-outline-secondary btn-sm">Discard changes</button>
-          <button id="defaults" class="btn btn-outline-secondary btn-sm">Load defaults</button>
+        <div id="save-bar" class="d-flex gap-2 align-items-center mt-3 d-none" x-data>
+          <button id="save" class="btn btn-success btn-sm" :disabled="!$store.app.connected">Save to flash</button>
+          <button id="revert" class="btn btn-outline-secondary btn-sm" :disabled="!$store.app.connected">Discard changes</button>
+          <button id="defaults" class="btn btn-outline-secondary btn-sm" :disabled="!$store.app.connected">Load defaults</button>
           <span class="text-warning-emphasis small" x-show="$store.app.dirty">applied — not saved to flash</span>
           <span class="text-warning-emphasis small" x-show="$store.app.revertNote">no saved settings on this board — loaded defaults instead</span>
         </div>
