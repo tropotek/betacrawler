@@ -20,6 +20,10 @@ namespace vbat {
 // A full sweep of the simulated pack. Slow enough to watch, fast enough to
 // exercise both directions inside a bench session.
 constexpr uint32_t kSimPeriodMs = 60000;
+
+// Long enough for the sense node to follow an internal pull. A fitted divider
+// carries a 100nF filter cap, which the ~40k internal pull moves slowly.
+constexpr uint32_t kProbeSettleMs = 5;
 constexpr uint16_t kSimLowMv    = 13200;
 constexpr uint16_t kSimHighMv   = 16800;
 
@@ -33,9 +37,39 @@ void VbatDriver::attach(const core::Registry& reg, const core::Params& p) {
   if (cellsSel_ != CELLS_AUTO) cells_ = (uint8_t)(cellsSel_ + 1);
 }
 
+// Is anything actually on the sense pin? A pin with no divider fitted floats,
+// and a floating ADC input does not read zero -- it drifts to roughly a third
+// of the supply, which through the divider's multiplier is a plausible pack
+// voltage that nothing downstream can tell from a real one.
+//
+// Probed digitally rather than by reading the ADC: on this part a pin in analog
+// mode has its pull resistors disabled in hardware, so the two cannot be
+// combined. A floating pin FOLLOWS whichever pull is applied. The divider's
+// low-side resistor is an order of magnitude stronger than the internal pull,
+// so a fitted one holds the pin against both. Comparing the two reads sidesteps
+// the indeterminate logic band entirely -- what matters is whether the pin
+// moved, not what level either read reported.
+bool VbatDriver::senseWired() {
+  pinMode(VBAT_PIN, INPUT_PULLDOWN);
+  delay(kProbeSettleMs);
+  const bool followedDown = (digitalRead(VBAT_PIN) == LOW);
+  pinMode(VBAT_PIN, INPUT_PULLUP);
+  delay(kProbeSettleMs);
+  const bool followedUp = (digitalRead(VBAT_PIN) == HIGH);
+  // analogRead() reconfigures the pin as analog on every call, so there is
+  // nothing to restore here.
+  return !(followedDown && followedUp);
+}
+
 void VbatDriver::begin() {
-  if (source_ == SRC_SIM)
+  if (source_ == SRC_SIM) {
     core::bootLog().add("vbat source=sim (synthetic, no divider)");
+    return;
+  }
+  if (source_ != SRC_ADC) return;
+  wired_ = senseWired();
+  if (!wired_)
+    core::bootLog().add("vbat: sense pin floating, no divider fitted -- not reading");
 }
 
 void VbatDriver::onParamChanged(uint8_t local, const core::Params& p) {
@@ -48,6 +82,8 @@ void VbatDriver::onParamChanged(uint8_t local, const core::Params& p) {
         latch_.reset();
         if (cellsSel_ == CELLS_AUTO) cells_ = 0;
         out_.set(0, cells_, 0);
+        // Re-probe on the way in: the divider may have been fitted since boot.
+        if (v == SRC_ADC) wired_ = senseWired();
       }
       source_ = v;
       break;
@@ -114,7 +150,9 @@ void VbatDriver::tick(uint32_t nowMs) {
       publish(simMv(nowMs), nowMs);
       break;
     case SRC_ADC:
-      publish(adcMv(), nowMs);
+      // Nothing wired: publish nothing at all, exactly as SRC_OFF does, rather
+      // than a floating pin's reading dressed up as a pack.
+      if (wired_) publish(adcMv(), nowMs);
       break;
     default:
       break;   // SRC_OFF publishes nothing at all, so rx sends no frame

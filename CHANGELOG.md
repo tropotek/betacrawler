@@ -5,6 +5,21 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **fix: a board with no divider fitted no longer reports a battery that isn't there.** `vbat`
+  ships enabled and reading the ADC, but the divider is optional — so the default state for anyone
+  who has not built one is a floating sense pin. A floating input does not read zero: it drifts to
+  roughly a third of the supply, which through the divider's multiplier is a steady, entirely
+  plausible pack. A bare board reported 12.4V, latched 3S and sent 86% to the handset, and nothing
+  downstream could tell it from a real pack — every guard on the reading assumes a wrong value
+  looks wrong, and this one looks perfect. The driver now probes the pin at startup by tugging it
+  with the internal pull-up and pull-down in turn and watching whether it moves: a floating pin
+  follows both, while a fitted divider's low-side resistor is an order of magnitude stronger than
+  the internal pull and holds it against either. Comparing the two reads rather than thresholding
+  one sidesteps the indeterminate logic band. The probe is digital because it has to be — a pin in
+  analog mode has its pull resistors disabled in hardware, so it cannot be done with the ADC.
+  Nothing wired publishes nothing at all, exactly as `vbat.source = off` does, and says so in the
+  boot log. Switching the source back to `adc` re-probes, so fitting the divider needs no reboot.
+
 - **fix: blackpill_f401ce ships what blackpill_f411ce ships.** The two headers are kept in step
   by hand and had drifted in four places, each one a flag or default added to the F411 and never
   carried across: `vbat` was off (added with the module and never enabled here), `tank_drive` was

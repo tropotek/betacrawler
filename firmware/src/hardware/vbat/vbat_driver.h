@@ -20,6 +20,7 @@ class VbatDriver : public core::Module {
   void     publish(uint16_t packMv, uint32_t nowMs);
   uint16_t simMv(uint32_t nowMs);
   uint16_t adcMv();
+  bool     senseWired();
 
   core::Battery& out_;            // this module's own bus, mutable
   int32_t  source_   = SRC_OFF;
@@ -30,6 +31,7 @@ class VbatDriver : public core::Module {
   CellLatch latch_;               // confirms a count before cells_ takes it
   uint8_t  pct_      = 0;
   uint32_t simT0_    = 0;
+  bool     wired_    = true;      // false when nothing holds the sense pin
 };
 
 }  // namespace vbat
