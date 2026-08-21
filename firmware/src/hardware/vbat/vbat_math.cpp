@@ -22,21 +22,20 @@ uint8_t remainingPct(uint16_t packMv, uint8_t cells) {
                    ((int32_t)kCellFullMv - (int32_t)kCellEmptyMv));
 }
 
-uint8_t CellLatch::update(uint16_t packMv) {
+uint8_t CellLatch::update(uint16_t packMv, uint32_t nowMs) {
   const uint8_t n = detectCells(packMv);
   if (n == 0) { reset(); return 0; }
-  if (n == candidate_) {
-    if (run_ < kCellConfirmSamples) run_++;
-  } else {
+  if (n != candidate_) {
     candidate_ = n;
-    run_ = 1;
+    since_ = nowMs;
+    return 0;
   }
-  return (run_ >= kCellConfirmSamples) ? candidate_ : 0;
+  return (nowMs - since_ >= kCellConfirmMs) ? candidate_ : 0;
 }
 
 void CellLatch::reset() {
   candidate_ = 0;
-  run_ = 0;
+  since_ = 0;
 }
 
 }  // namespace vbat

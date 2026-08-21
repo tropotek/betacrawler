@@ -30,21 +30,24 @@ uint8_t detectCells(uint16_t packMv);
 // adequate for a handset indicator, not a fuel gauge.
 uint8_t remainingPct(uint16_t packMv, uint8_t cells);
 
-// Consecutive readings that must agree before a cell count is trusted.
-constexpr uint8_t kCellConfirmSamples = 5;
+// How long a cell count must hold before it is trusted. A duration, not a
+// sample count: the driver ticks at loop rate, so any plausible sample count is
+// over in under a millisecond, while plugging a pack in ramps the reading up
+// through the lower cell bands and bounces the connector for far longer.
+constexpr uint32_t kCellConfirmMs = 500;
 
-// Confirms detectCells() across several readings. The driver latches a count
-// once and never revisits it, so a lone transient must not be able to fix it.
-// update() returns 0 until kCellConfirmSamples consecutive readings resolve to
-// the same non-zero count; any disagreeing or invalid reading restarts the run.
+// Confirms detectCells() over time. The driver latches a count once and never
+// revisits it, so a reading that is merely passing through must not fix it.
+// update() returns 0 until the same non-zero count has held for kCellConfirmMs;
+// any disagreeing or invalid reading restarts the window.
 class CellLatch {
  public:
-  uint8_t update(uint16_t packMv);
+  uint8_t update(uint16_t packMv, uint32_t nowMs);
   void    reset();
 
  private:
-  uint8_t candidate_ = 0;
-  uint8_t run_       = 0;
+  uint8_t  candidate_ = 0;
+  uint32_t since_     = 0;
 };
 
 }  // namespace vbat

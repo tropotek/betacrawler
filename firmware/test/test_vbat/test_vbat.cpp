@@ -66,50 +66,68 @@ void test_detect_cells_misreads_a_part_drained_six_s() {
 
 // --- CellLatch -------------------------------------------------------------
 
-void test_latch_reports_nothing_until_enough_readings_agree() {
+void test_latch_reports_nothing_until_the_window_elapses() {
   CellLatch l;
-  for (uint8_t i = 1; i < kCellConfirmSamples; i++)
-    TEST_ASSERT_EQUAL_UINT8(0, l.update(16800));
-  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800));
+  TEST_ASSERT_EQUAL_UINT8(0, l.update(16800, 0));
+  TEST_ASSERT_EQUAL_UINT8(0, l.update(16800, kCellConfirmMs - 1));
+  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800, kCellConfirmMs));
 }
 
 void test_latch_keeps_reporting_once_confirmed() {
   CellLatch l;
-  for (uint8_t i = 0; i < kCellConfirmSamples; i++) l.update(16800);
-  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800));
-  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800));
+  l.update(16800, 0);
+  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800, kCellConfirmMs));
+  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800, kCellConfirmMs + 5000));
 }
 
-// The defect this exists to prevent: one spurious sample latching a count the
-// driver then never revisits.
-void test_latch_ignores_a_lone_transient() {
+// The failure this exists to prevent. Plugging a pack in ramps the reading up
+// from the board's standing no-pack level through the lower cell bands, and
+// bounces the connector on the way. At loop rate that is thousands of samples
+// reading 2S, none of which may latch.
+void test_latch_survives_a_pack_being_plugged_in() {
   CellLatch l;
-  TEST_ASSERT_EQUAL_UINT8(0, l.update(8400));    // a single 2S-looking blip
-  for (uint8_t i = 0; i < 20; i++)
-    TEST_ASSERT_EQUAL_UINT8(0, l.update(4600));  // then the usual standing read
+  uint32_t t = 0;
+  for (; t < 60; t++)                                    // 60ms passing through 2S
+    TEST_ASSERT_EQUAL_UINT8(0, l.update(7000, t));
+  for (; t < 90; t++)                                    // then 3S on the way up
+    TEST_ASSERT_EQUAL_UINT8(0, l.update(11000, t));
+  const uint32_t settled = t;
+  for (; t < settled + kCellConfirmMs; t++)              // settled 4S, still short
+    TEST_ASSERT_EQUAL_UINT8(0, l.update(16800, t));
+  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800, t));
 }
 
-void test_latch_restarts_its_run_when_a_reading_disagrees() {
+void test_latch_restarts_its_window_when_a_reading_disagrees() {
   CellLatch l;
-  for (uint8_t i = 1; i < kCellConfirmSamples; i++) l.update(16800);
-  l.update(12600);                                // 3S disagrees, run restarts
-  for (uint8_t i = 1; i < kCellConfirmSamples; i++)
-    TEST_ASSERT_EQUAL_UINT8(0, l.update(16800));
-  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800));
+  l.update(16800, 0);
+  l.update(12600, kCellConfirmMs - 1);                   // 3S disagrees
+  TEST_ASSERT_EQUAL_UINT8(0, l.update(16800, kCellConfirmMs));
+  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800, kCellConfirmMs * 2));
 }
 
-void test_latch_run_is_broken_by_an_invalid_reading() {
+void test_latch_window_is_broken_by_an_invalid_reading() {
   CellLatch l;
-  for (uint8_t i = 1; i < kCellConfirmSamples; i++) l.update(16800);
-  TEST_ASSERT_EQUAL_UINT8(0, l.update(0));
-  TEST_ASSERT_EQUAL_UINT8(0, l.update(16800));
+  l.update(16800, 0);
+  TEST_ASSERT_EQUAL_UINT8(0, l.update(0, kCellConfirmMs - 1));
+  TEST_ASSERT_EQUAL_UINT8(0, l.update(16800, kCellConfirmMs));
 }
 
 void test_latch_reset_discards_a_confirmed_count() {
   CellLatch l;
-  for (uint8_t i = 0; i < kCellConfirmSamples; i++) l.update(16800);
+  l.update(16800, 0);
+  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800, kCellConfirmMs));
   l.reset();
-  TEST_ASSERT_EQUAL_UINT8(0, l.update(16800));
+  TEST_ASSERT_EQUAL_UINT8(0, l.update(16800, kCellConfirmMs));
+}
+
+// millis() wraps at ~49 days. Unsigned subtraction has to carry the window
+// across the wrap rather than latching instantly or never.
+void test_latch_window_survives_a_millis_wrap() {
+  CellLatch l;
+  const uint32_t nearEnd = 0xFFFFFFFFu - 100u;
+  l.update(16800, nearEnd);
+  TEST_ASSERT_EQUAL_UINT8(0, l.update(16800, nearEnd + kCellConfirmMs - 1));
+  TEST_ASSERT_EQUAL_UINT8(4, l.update(16800, nearEnd + kCellConfirmMs));
 }
 
 // --- remainingPct ----------------------------------------------------------
@@ -150,12 +168,13 @@ int main() {
   RUN_TEST(test_validity_floor_admits_a_flat_two_s_but_not_a_bec_backfeed);
   RUN_TEST(test_detect_cells_holds_a_four_s_down_to_its_low_voltage_cutoff);
   RUN_TEST(test_detect_cells_misreads_a_part_drained_six_s);
-  RUN_TEST(test_latch_reports_nothing_until_enough_readings_agree);
+  RUN_TEST(test_latch_reports_nothing_until_the_window_elapses);
   RUN_TEST(test_latch_keeps_reporting_once_confirmed);
-  RUN_TEST(test_latch_ignores_a_lone_transient);
-  RUN_TEST(test_latch_restarts_its_run_when_a_reading_disagrees);
-  RUN_TEST(test_latch_run_is_broken_by_an_invalid_reading);
+  RUN_TEST(test_latch_survives_a_pack_being_plugged_in);
+  RUN_TEST(test_latch_restarts_its_window_when_a_reading_disagrees);
+  RUN_TEST(test_latch_window_is_broken_by_an_invalid_reading);
   RUN_TEST(test_latch_reset_discards_a_confirmed_count);
+  RUN_TEST(test_latch_window_survives_a_millis_wrap);
   RUN_TEST(test_remaining_is_full_at_four_point_two_volts_per_cell);
   RUN_TEST(test_remaining_is_empty_at_three_point_three_volts_per_cell);
   RUN_TEST(test_remaining_is_linear_between_the_endpoints);

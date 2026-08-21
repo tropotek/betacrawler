@@ -32,8 +32,8 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   registry. `vbat.source` offers `off`, `adc` and `sim`, mirroring `rx.source` — `off`
   publishes nothing at all rather than a zero, and `sim` sweeps a synthetic pack so the
   reading, the display and the uplink can be exercised with no divider fitted, saying so in
-  the boot log. `vbat.cells` takes an explicit count or `auto`, which latches once five
-  consecutive readings agree and never revisits it; recomputing per tick would let a pack
+  the boot log. `vbat.cells` takes an explicit count or `auto`, which latches once a count
+  has held for 500ms and never revisits it; recomputing per tick would let a pack
   sagging under load flip the count mid-drive, while latching on a single sample lets one
   transient fix a count nothing ever corrects. The validity floor is 6000mV — a 2S at its
   3.0V/cell floor, and the lowest reading that can be a real pack — because a USB-powered

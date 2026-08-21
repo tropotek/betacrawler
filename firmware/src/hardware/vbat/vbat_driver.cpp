@@ -52,9 +52,17 @@ void VbatDriver::onParamChanged(uint8_t local, const core::Params& p) {
       source_ = v;
       break;
     }
-    case P_SCALE:
-      scale_ = p.num(globalParam(P_SCALE));
+    case P_SCALE: {
+      const int32_t v = p.num(globalParam(P_SCALE));
+      // Every reading so far was scaled by the old multiplier, so a cell count
+      // derived from them no longer follows -- calibrating must re-detect.
+      if (v != scale_) {
+        latch_.reset();
+        if (cellsSel_ == CELLS_AUTO) cells_ = 0;
+      }
+      scale_ = v;
       break;
+    }
     case P_CELLS:
       // An explicit selection replaces the latch at once; returning to auto
       // re-arms detection on the next valid reading.
@@ -91,7 +99,7 @@ void VbatDriver::publish(uint16_t packMv, uint32_t nowMs) {
   // Latch once and never re-evaluate: a pack sagging under load would
   // otherwise flip the cell count mid-drive and make percent jump. The latch
   // only yields a count once several readings have agreed on it.
-  if (cells_ == 0) cells_ = latch_.update(packMv);
+  if (cells_ == 0) cells_ = latch_.update(packMv, nowMs);
   pct_ = remainingPct(mv_, cells_);
   out_.set(mv_, cells_, pct_);
   out_.markFresh(nowMs);
