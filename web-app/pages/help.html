@@ -12,16 +12,16 @@
             <dd class="col-sm-9"><span x-text="$store.app.fwSummary"></span></dd>
           </dl>
 
-          <p><strong>The board doesn't appear in the port dropdown</strong></p>
+          <p><strong>The board doesn't appear in the browser's device picker</strong></p>
           <ul>
             <li>Check the USB cable is a data cable, not a charge-only cable.</li>
             <li>Make sure the board is powered — you should see LED activity on it.</li>
-            <li>Try unplugging and replugging the cable, then check the dropdown again.</li>
+            <li>Try unplugging and replugging the cable, then click <strong>Connect</strong> again.</li>
           </ul>
 
           <p><strong>Connect fails or times out</strong></p>
           <ul>
-            <li>Confirm you selected the right port — a detected STM32 board is marked "(STM32)" in the dropdown.</li>
+            <li>Confirm you selected the right device in the browser's picker.</li>
             <li>Make sure no other program (a serial monitor, another instance of this app) already has the port open.</li>
             <li>Try disconnecting and reconnecting.</li>
           </ul>
@@ -76,35 +76,7 @@
 
           <p><strong>Updating the firmware</strong></p>
           <ul>
-            <li>The <strong>Firmware</strong> page flashes the images this app shipped with, so the
-                firmware and the app always match.</li>
-            <li>The board has to be in <em>DFU mode</em> first. If it's running and connected,
-                <strong>Reboot to DFU</strong> does it for you. Otherwise: hold <strong>BOOT0</strong>,
-                tap <strong>NRST</strong>, release <strong>BOOT0</strong>.</li>
-            <li>The button is greyed out on firmware built without DFU support — use the
-                BOOT0 method for those.</li>
-          </ul>
-
-          <p><strong>The board doesn't show up as a DFU device</strong></p>
-          <ul>
-            <li>Check the badge at the top of the Firmware page. If it says "no DFU device"
-                after the BOOT0 sequence, the sequence didn't take — the order matters: BOOT0
-                held down <em>first</em>, then NRST tapped, then BOOT0 released.</li>
-            <li>A board in DFU mode disappears from the port dropdown. Seeing it in both places
-                at once means it never left normal mode.</li>
-          </ul>
-
-          <p><strong>The flash failed partway through</strong></p>
-          <ul>
-            <li>The board is half-written, not bricked. Put it back into DFU mode with BOOT0 +
-                NRST and flash again — the whole image is rewritten each time.</li>
-            <li>If the board no longer enumerates as anything at all, BOOT0 + NRST still reaches
-                the ROM bootloader; it lives in read-only memory and cannot be erased.</li>
-          </ul>
-
-          <p><strong>It flashed, but the board stayed in DFU mode</strong></p>
-          <ul>
-            <li>Tap <strong>NRST</strong>. The flasher asks the bootloader to restart into the new
-                firmware when it finishes, and that request is occasionally ignored.</li>
+            <li>This app talks to a board over Web Serial and cannot flash it. Use the
+                desktop app to update firmware, then come back here to configure it.</li>
           </ul>
           <p>&nbsp;</p>
