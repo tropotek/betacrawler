@@ -186,13 +186,19 @@ with that module's own local index" is the invariant most worth preserving in `d
 **Observers are const** — `Module::attach()` hands out const access on purpose. A module must
 never reconfigure another behind `dispatch`'s back. Resolve keys once in `attach()`, never per tick.
 
-**The `Api` seam** — no `fetch`/`WebSocket` outside `Api` for anything that talks to the device or
-backend; no browser-only types (`File`, `Blob`, the socket itself) in or out; every such path
-through `Api.base`; the push channel stays `Api.subscribe(handler) -> unsubscribe` and owns its own
-reconnection. One documented exception: `showPage()`'s `fetch('pages/<name>.html')` in `app.js`
-loads this app's own static page markup, not a device/backend request — it isn't part of the
-porting surface this seam exists to isolate for a hypothetical Electron rewrite, so it's exempt.
-Any fetch that *does* talk to the device or backend has no excuse to live outside `Api`.
+**The `Api` seam** — no `fetch`/`WebSocket`/serial call outside `Api` for anything that talks to
+the device or backend; no browser-only types (`File`, `Blob`, the socket itself) in or out; the
+push channel stays `Api.subscribe(handler) -> unsubscribe`, delivering `{type, data}` frames
+(`tlm`, `log`, `state`, `raw`) regardless of what transport produced them, and owns its own
+reconnection. Two implementations satisfy it: `app/web/app.js` (fetch/WebSocket against the
+FastAPI backend, every path through `Api.base`) and `web-app/js/api.js` (Web Serial, no backend,
+no `Api.base`). Two documented exceptions to "no browser-only types": `showPage()`'s
+`fetch('pages/<name>.html')` loads this app's own static page markup, not a device/backend
+request, in both builds; `web-app/js/api.js`'s `Api.connect()` takes a Web Serial `SerialPort`
+object, because Web Serial's permission model has no other way to name a port. Neither is part
+of the porting surface this seam exists to isolate for a hypothetical Electron rewrite, so both
+are exempt. Any fetch, socket or serial call that *does* talk to the device or backend has no
+excuse to live outside `Api`.
 
 **Validation stays schema-driven, curation doesn't** — `div`/`dec`/`showIf` are **display hints
 only**: the wire always carries native units, and firmware/backend still validate a hidden
