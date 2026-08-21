@@ -24,17 +24,16 @@ uint8_t remainingPct(uint16_t packMv, uint8_t cells) {
 
 uint8_t CellLatch::update(uint16_t packMv, uint32_t nowMs) {
   const uint8_t n = detectCells(packMv);
-  if (n == 0) { reset(); return 0; }
   if (n != candidate_) {
     candidate_ = n;
     since_ = nowMs;
-    return 0;
+    return kUnsettled;
   }
-  return (nowMs - since_ >= kCellConfirmMs) ? candidate_ : 0;
+  return (nowMs - since_ >= kCellConfirmMs) ? candidate_ : kUnsettled;
 }
 
 void CellLatch::reset() {
-  candidate_ = 0;
+  candidate_ = kUnsettled;
   since_ = 0;
 }
 

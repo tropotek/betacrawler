@@ -13,7 +13,9 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   JavaScript would let the app and the handset disagree about the same pack. Volts per cell stays
   a browser-side division — it is exact arithmetic over two readings the schema already carries,
   with no policy to duplicate. The four readings move out of the System card, which had grown to
-  carry two of them already. `FW_MAX_TLM` goes 40 → 48: this build now publishes 40 fields and a
+  carry two of them already. With no pack connected the card says so outright, and gives the
+  sense input's reading underneath rather than presenting a few volts of BEC back-feed as though
+  it were a battery. `FW_MAX_TLM` goes 40 → 48: this build now publishes 40 fields and a
   bare fit leaves nothing for the next one, at a cost of 32 bytes of static RAM.
 
 - **fix: CRSF receive moves from PA10 to PB7, so USB DFU works with a receiver connected.**
@@ -44,7 +46,7 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   publishes nothing at all rather than a zero, and `sim` sweeps a synthetic pack so the
   reading, the display and the uplink can be exercised with no divider fitted, saying so in
   the boot log. `vbat.cells` takes an explicit count or `auto`, which latches once a count
-  has held for 500ms and never revisits it; recomputing per tick would let a pack
+  has held for 500ms and is revisited only when the pack goes away; recomputing per tick would let a pack
   sagging under load flip the count mid-drive, while latching on a single sample lets one
   transient fix a count nothing ever corrects. The validity floor is 6000mV — a 2S at its
   3.0V/cell floor, and the lowest reading that can be a real pack — because a USB-powered

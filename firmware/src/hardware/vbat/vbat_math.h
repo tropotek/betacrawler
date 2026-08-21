@@ -36,17 +36,22 @@ uint8_t remainingPct(uint16_t packMv, uint8_t cells);
 // through the lower cell bands and bounces the connector for far longer.
 constexpr uint32_t kCellConfirmMs = 500;
 
-// Confirms detectCells() over time. The driver latches a count once and never
-// revisits it, so a reading that is merely passing through must not fix it.
-// update() returns 0 until the same non-zero count has held for kCellConfirmMs;
-// any disagreeing or invalid reading restarts the window.
+// Confirms detectCells() over time, in both directions. The driver latches a
+// count once and never revisits it, so a reading merely passing through must
+// not fix it -- and a pack that has actually gone away has to clear it, or the
+// next pack inherits the old count.
 class CellLatch {
  public:
+  // Returned while the current reading has not yet held for kCellConfirmMs.
+  // Distinct from a settled 0, which means the reading is below the validity
+  // floor: no pack.
+  static constexpr uint8_t kUnsettled = 0xFF;
+
   uint8_t update(uint16_t packMv, uint32_t nowMs);
   void    reset();
 
  private:
-  uint8_t  candidate_ = 0;
+  uint8_t  candidate_ = kUnsettled;
   uint32_t since_     = 0;
 };
 

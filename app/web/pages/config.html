@@ -25,7 +25,7 @@
           <template x-if="$store.telemetry.field('vbat').def">
             <div class="card mb-3" x-data>
               <div class="card-header h6 text-secondary mb-0 py-2">Battery</div>
-              <div class="card-body row g-3">
+              <div class="card-body row g-3" x-show="$store.telemetry.raw['cells']">
                 <div class="col-6 col-md-3">
                   <div class="text-secondary small">Pack (V)</div>
                   <div class="fs-4" x-text="$store.telemetry.field('vbat').value ?? '–'"></div>
@@ -46,6 +46,14 @@
                     <div class="fs-4" x-text="$store.telemetry.field('cells').value ?? '–'"></div>
                   </div>
                 </template>
+              </div>
+              <div class="card-body" x-show="!$store.telemetry.raw['cells']">
+                <div class="fs-5 text-secondary">No pack connected</div>
+                <div class="small text-secondary">
+                  Sense input reads
+                  <span class="font-monospace" x-text="$store.telemetry.field('vbat').value ?? '–'"></span> V.
+                  A board powered over USB sits a few volts here from the BEC, with no pack present.
+                </div>
               </div>
             </div>
           </template>

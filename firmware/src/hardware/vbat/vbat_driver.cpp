@@ -97,9 +97,12 @@ uint16_t VbatDriver::adcMv() {
 void VbatDriver::publish(uint16_t packMv, uint32_t nowMs) {
   mv_ = packMv;
   // Latch once and never re-evaluate: a pack sagging under load would
-  // otherwise flip the cell count mid-drive and make percent jump. The latch
-  // only yields a count once several readings have agreed on it.
-  if (cells_ == 0) cells_ = latch_.update(packMv, nowMs);
+  // otherwise flip the cell count mid-drive and make percent jump. A settled 0
+  // is different -- the pack is gone, so the count goes with it rather than
+  // being inherited by whatever is connected next.
+  const uint8_t settled = latch_.update(packMv, nowMs);
+  if (settled == 0) cells_ = 0;
+  else if (settled != CellLatch::kUnsettled && cells_ == 0) cells_ = settled;
   pct_ = remainingPct(mv_, cells_);
   out_.set(mv_, cells_, pct_);
   out_.markFresh(nowMs);

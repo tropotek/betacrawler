@@ -398,6 +398,10 @@ class SimModel:
         sel = self.text("vbat.cells")
         if sel != "auto":
             self._vbat_cells = int(sel)
+        elif mv < VBAT_MIN_VALID_MV:
+            # No pack: the count goes with it, so the next one is detected on
+            # its own terms rather than inheriting this one's.
+            self._vbat_cells = 0
         elif self._vbat_cells == 0:
             self._vbat_cells = detect_cells(mv)
         return {"vbat": mv, "cells": self._vbat_cells,
