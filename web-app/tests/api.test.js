@@ -72,6 +72,13 @@ const { Api } = await import('../js/api.js');
 
 test('isSupported() reports whether this browser has Web Serial at all', () => {
   assert.equal(Api.isSupported(), true);
+  const saved = navigator.serial;
+  delete navigator.serial;
+  try {
+    assert.equal(Api.isSupported(), false);
+  } finally {
+    navigator.serial = saved;
+  }
 });
 
 test('requestPort() and connect() bring the device online', async () => {

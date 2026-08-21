@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>betacrawler configurator</title>
+  <link rel="icon" href="favicon.ico">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="vendor/bootstrap.min.css">
+  <style>
+    /* Adapted from Bootstrap's Dashboard example (getbootstrap.com/docs/5.3/examples/dashboard/) */
+    .bi { display: inline-block; width: 1rem; height: 1rem; vertical-align: -0.125em; fill: currentColor; }
+    .sidebar .nav-link { font-size: .875rem; font-weight: 500; color: var(--bs-body-color); }
+    .sidebar .nav-link.active { color: #2470dc; }
+    /* Bootstrap's own .nav-link.disabled color rule loses to the override
+       above -- same specificity, but this block comes later in the cascade
+       -- so the disabled state needs its own explicit rule here instead. */
+    .sidebar .nav-link.disabled { color: var(--bs-secondary-color); }
+    .navbar-brand { padding-top: .75rem; padding-bottom: .75rem; }
+    /* Bootstrap's width utilities (unlike margin/display) have no responsive
+       breakpoint variants in the default build -- "w-md-auto" isn't a real
+       class, so this override has to be a real media query instead. */
+    #connection-controls { width: 100%; }
+    @media (min-width: 768px) {
+      #connection-controls { width: auto; }
+    }
+    /* Three buttons share the terminal's command row; on a phone they squeeze
+       the input down to a couple of characters. Giving the input a real flex
+       basis makes it wrap onto its own line instead of collapsing. */
+    #term-command-row { flex-wrap: wrap; }
+    #term-input { flex: 1 1 14rem; }
+
+    /* Hardware wiring diagrams (Examples page). The format: the STM board
+       shows its own pin names inside its own border, each module card shows
+       only that module's own pin names inside its border, every wire is
+       color-coded per module and ends in a solid connector dot at both the
+       board and the module, and each card gets a rule under its header and
+       another above its footnote. Reuse this pattern for future diagrams
+       rather than re-deriving a layout. */
+    .wiring-diagram {
+      --wd-copper: #b5652f;
+      --wd-receiver: #7358b8;
+      --wd-esc: #4c8c3c;
+      --wd-motor: #2b4a8c;
+      --wd-pdb: #14707f;
+      --wd-vbat: #a8377a;
+      --wd-power: #c23f34;
+      --wd-ink: #161b22;
+      --wd-muted: #5b6673;
+      --wd-surface: #fff;
+      --wd-surface-2: #f5f7fa;
+      --wd-border: rgba(22, 27, 34, 0.14);
+      --wd-font-heading: "Archivo Narrow", "Roboto Condensed", "Arial Narrow", sans-serif;
+      --wd-font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    }
+    .wiring-diagram .diagram-card {
+      background: var(--wd-surface-2);
+      border: 1px solid var(--wd-border);
+      border-radius: .5rem;
+      padding: .5rem;
+      overflow-x: auto;
+    }
+    .wiring-diagram svg { display: block; width: 100%; height: auto; min-width: 720px; }
+    .wiring-diagram .lbl-mono { font-family: var(--wd-font-mono); }
+    .wiring-diagram .lbl-heading { font-family: var(--wd-font-heading); font-weight: 700; }
+    .wiring-diagram .fill-ink { fill: var(--wd-ink); }
+    .wiring-diagram .fill-muted { fill: var(--wd-muted); }
+    .wiring-diagram .fill-copper { fill: var(--wd-copper); }
+    .wiring-diagram .fill-receiver { fill: var(--wd-receiver); }
+    .wiring-diagram .fill-esc { fill: var(--wd-esc); }
+    .wiring-diagram .fill-motor { fill: var(--wd-motor); }
+    .wiring-diagram .fill-pdb { fill: var(--wd-pdb); }
+    .wiring-diagram .fill-vbat { fill: var(--wd-vbat); }
+    .wiring-diagram .fill-power { fill: var(--wd-power); }
+    .wiring-diagram .fill-surface { fill: var(--wd-surface); }
+    .wiring-diagram .fill-surface2 { fill: var(--wd-surface-2); }
+    .wiring-diagram .stroke-border { stroke: var(--wd-border); }
+    .wiring-diagram .wire-receiver { stroke: var(--wd-receiver); stroke-width: 1.75; fill: none; }
+    .wiring-diagram .wire-esc { stroke: var(--wd-esc); stroke-width: 1.75; fill: none; }
+    .wiring-diagram .wire-motor { stroke: var(--wd-motor); stroke-width: 1.75; fill: none; }
+    .wiring-diagram .wire-pdb { stroke: var(--wd-pdb); stroke-width: 2.25; fill: none; }
+    .wiring-diagram .wire-vbat { stroke: var(--wd-vbat); stroke-width: 1.75; fill: none; }
+    .wiring-diagram .wire-copper { stroke: var(--wd-copper); stroke-width: 1.75; fill: none; }
+    .wiring-diagram .wire-reserved { stroke-dasharray: 3 3; opacity: 0.55; }
+
+    /* Home page hero: a hand-drawn comic/arcade-poster illustration
+       (app/web/tank-hero.svg). object-fit:contain (not cover) so nothing is
+       ever cropped off the top/bottom on wide screens, where the main
+       column can get much wider than the artwork's own 1200x500 aspect
+       ratio -- the background color matches the SVG's own so letterboxing
+       on ultra-wide screens is invisible instead of showing bars. */
+    .tank-hero { height: 340px; overflow: hidden; border-radius: .5rem; margin-bottom: 1rem; background: #13230f; }
+    .tank-hero img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+    /* Modes page: one row per function -- a name plate, its channel select,
+       then the slider. Rows sit in a single panel, split only by margin. */
+    .mode-row + .mode-row { margin-top: 1.75rem; }
+    .mode-name {
+      flex: 0 0 11rem; padding: .5rem;
+      border: 1px solid var(--bs-border-color); border-radius: .375rem;
+      background: var(--bs-tertiary-bg);
+    }
+    .mode-title {
+      font-size: .8125rem; font-weight: 700; text-align: center;
+      letter-spacing: .04em; text-transform: uppercase;
+    }
+    .mode-channel { flex: 0 0 8rem; }
+
+    /* Dual-handle range slider (the `rangeSlider` Alpine component). Built
+       from plain elements rather than native range inputs, whose track can
+       only be reached through vendor pseudo-elements -- --range-accent colors
+       the fill and both handles as one. The side padding is what lets the end
+       labels centre on their own ticks rather than tuck inside the track. */
+    .range-slider { --range-accent: #0d6efd; min-width: 0; padding: 0 1.5rem; }
+    .range-slider-disabled { --range-accent: var(--bs-secondary-color); }
+    .range-track {
+      position: relative; height: .5rem; margin-top: .75rem;
+      background: var(--bs-secondary-bg); border-radius: 1rem;
+    }
+    .range-fill {
+      position: absolute; top: 0; height: 100%;
+      background: var(--range-accent); border-radius: 1rem;
+    }
+    .range-thumb {
+      position: absolute; top: 50%; width: 1.25rem; height: 1.25rem;
+      margin: -.625rem 0 0 -.625rem; background: var(--bs-body-bg);
+      border: 3px solid var(--range-accent); border-radius: 50%;
+      cursor: grab; touch-action: none;
+    }
+    .range-thumb:active { cursor: grabbing; }
+    .range-thumb:focus-visible { outline: 0; box-shadow: 0 0 0 .25rem rgba(13, 110, 253, .25); }
+    .range-slider-disabled .range-thumb { cursor: default; }
+
+    /* Ruler under the track: a tick every tenth, each labelled, with the ends
+       and midpoint drawn taller. Labels centre on their own tick. */
+    .range-ruler { position: relative; height: 1.75rem; margin-top: .5rem; }
+    .range-tick { position: absolute; top: 0; width: 1px; height: .3125rem; background: var(--bs-border-color); }
+    .range-tick-major { height: .5rem; }
+    .range-tick span {
+      position: absolute; top: .625rem; left: 50%; transform: translateX(-50%);
+      font-size: .6875rem; color: var(--bs-secondary-color);
+    }
+
+    /* Live RC position for this function's channel, sitting on the ruler.
+       Keeps its own color so it stays readable on a row with no range. */
+    .range-live {
+      position: absolute; top: -.1875rem; width: .3125rem; height: .875rem;
+      margin-left: -.15625rem; border-radius: .1875rem;
+      background: #0d6efd;
+    }
+    .range-slider-disabled .range-live { background: var(--bs-secondary-color); }
+
+    /* Controller page's RC Channel bars: a lighter blue than Bootstrap's
+       default .progress-bar so the centered bold-black value stays legible
+       against the fill, not just the empty track. */
+    .ch-bar { background-color: #6ea8fe; }
+  </style>
+</head>
+<body class="bg-body-tertiary">
+  <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
+    <symbol id="house-fill" viewBox="0 0 16 16">
+      <path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L8 2.207l6.646 6.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.707 1.5Z"/>
+      <path d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293l6-6Z"/>
+    </symbol>
+    <symbol id="gear-wide-connected" viewBox="0 0 16 16">
+      <path d="M7.068.727c.243-.97 1.62-.97 1.864 0l.071.286a.96.96 0 0 0 1.622.434l.205-.211c.695-.719 1.888-.03 1.613.931l-.08.284a.96.96 0 0 0 1.187 1.187l.283-.081c.96-.275 1.65.918.931 1.613l-.211.205a.96.96 0 0 0 .434 1.622l.286.071c.97.243.97 1.62 0 1.864l-.286.071a.96.96 0 0 0-.434 1.622l.211.205c.719.695.03 1.888-.931 1.613l-.284-.08a.96.96 0 0 0-1.187 1.187l.081.283c.275.96-.918 1.65-1.613.931l-.205-.211a.96.96 0 0 0-1.622.434l-.071.286c-.243.97-1.62.97-1.864 0l-.071-.286a.96.96 0 0 0-1.622-.434l-.205.211c-.695.719-1.888.03-1.613-.931l.08-.284a.96.96 0 0 0-1.186-1.187l-.284.081c-.96.275-1.65-.918-.931-1.613l.211-.205a.96.96 0 0 0-.434-1.622l-.286-.071c-.97-.243-.97-1.62 0-1.864l.286-.071a.96.96 0 0 0 .434-1.622l-.211-.205c-.719-.695-.03-1.888.931-1.613l.284.08a.96.96 0 0 0 1.187-1.186l-.081-.284c-.275-.96.918-1.65 1.613-.931l.205.211a.96.96 0 0 0 1.622-.434l.071-.286zM12.973 8.5H8.25l-2.834 3.779A4.998 4.998 0 0 0 12.973 8.5zm0-1a4.998 4.998 0 0 0-7.557-3.779l2.834 3.78h4.723zM5.048 3.967c-.03.021-.058.043-.087.065l.087-.065zm-.431.355A4.984 4.984 0 0 0 3.002 8c0 1.455.622 2.765 1.615 3.678L7.375 8 4.617 4.322zm.344 7.646.087.065-.087-.065z"/>
+    </symbol>
+    <symbol id="graph-up" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M0 0h1v15h15v1H0V0Zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07Z"/>
+    </symbol>
+    <symbol id="terminal-fill" viewBox="0 0 16 16">
+      <path d="M0 3a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2.646 2.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 1 1-.708-.708L5.293 8 2.646 5.354a.5.5 0 0 1 0-.708M7 9.5a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1z"/>
+    </symbol>
+    <symbol id="cpu" viewBox="0 0 16 16">
+      <path d="M5 0a.5.5 0 0 1 .5.5V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2h1V.5a.5.5 0 0 1 1 0V2A2.5 2.5 0 0 1 14 4.5h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14v1h1.5a.5.5 0 0 1 0 1H14a2.5 2.5 0 0 1-2.5 2.5v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14h-1v1.5a.5.5 0 0 1-1 0V14A2.5 2.5 0 0 1 2 11.5H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2v-1H.5a.5.5 0 0 1 0-1H2A2.5 2.5 0 0 1 4.5 2V.5A.5.5 0 0 1 5 0m-.5 3A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 11.5 3zM5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5zM6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5z"/>
+    </symbol>
+    <symbol id="question-circle" viewBox="0 0 16 16">
+      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+      <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286m1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94"/>
+    </symbol>
+    <symbol id="image-fill" viewBox="0 0 16 16">
+      <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
+      <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1z"/>
+    </symbol>
+    <symbol id="eye" viewBox="0 0 16 16">
+      <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+      <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+    </symbol>
+    <symbol id="eye-slash" viewBox="0 0 16 16">
+      <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7 7 0 0 0-1.66.205l1.144 1.143a6 6 0 0 1 .516-.022c2.12 0 3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755q-.247.248-.517.486zM11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/>
+      <path d="M3.35 5.47q-.27.24-.518.487A13 13 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.77A7 7 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12z"/>
+    </symbol>
+    <symbol id="sliders" viewBox="0 0 16 16">
+      <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3h9.05zM4.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM2.05 8a2.5 2.5 0 0 1 4.9 0H16v1H6.95a2.5 2.5 0 0 1-4.9 0H0V8h2.05zm9.45 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-2.45 1a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0v-1h9.05z"/>
+    </symbol>
+  </svg>
+
+  <header class="navbar navbar-dark sticky-top bg-dark p-0 shadow">
+    <div class="container-fluid flex-wrap gap-2 py-2">
+      <span class="navbar-brand me-0 px-3 flex-shrink-0">
+        betacrawler
+        <!-- The APP's version (this UI + the Python backend), filled in from
+             APP_VERSION in app.js. The FIRMWARE's version is separate and
+             appears in #fw once connected. -->
+        <span id="app-version" class="fs-6 fw-normal text-secondary"></span>
+      </span>
+
+      <button class="navbar-toggler ms-auto flex-shrink-0 d-md-none" type="button" data-bs-toggle="offcanvas"
+              data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <!-- One flex item, so it wraps to its own row as a unit on narrow
+           screens instead of each control wrapping independently. Width is
+           set via the #connection-controls media query above, not a
+           w-md-auto utility class (doesn't exist -- see that comment). -->
+      <div id="connection-controls" class="d-flex align-items-center gap-2 flex-wrap ms-md-auto">
+        <span id="fw" class="text-secondary small d-none d-md-inline"></span>
+        <span id="state" class="badge text-bg-secondary">disconnected</span>
+        <button id="connect" class="btn btn-sm btn-primary">Connect</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container-fluid">
+    <div class="row">
+      <div class="sidebar border-end col-md-3 col-lg-2 p-0 bg-body-tertiary">
+        <div class="offcanvas-md offcanvas-start bg-body-tertiary" tabindex="-1" id="sidebarMenu"
+             aria-labelledby="sidebarMenuLabel">
+          <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="sidebarMenuLabel">betacrawler</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"
+                    data-bs-target="#sidebarMenu" aria-label="Close"></button>
+          </div>
+          <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto">
+            <ul class="nav flex-column">
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2 active" data-page="home"
+                        aria-current="page">
+                  <svg class="bi"><use href="#house-fill"/></svg>
+                  Home
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="config">
+                  <svg class="bi"><use href="#cpu"/></svg>
+                  Configuration
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="controller">
+                  <svg class="bi"><use href="#gear-wide-connected"/></svg>
+                  Controller
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="modes">
+                  <svg class="bi"><use href="#sliders"/></svg>
+                  Modes
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="terminal">
+                  <svg class="bi"><use href="#terminal-fill"/></svg>
+                  Terminal
+                </button>
+              </li>
+            </ul>
+            <hr class="my-3">
+            <ul class="nav flex-column mb-auto">
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="wiring">
+                  <svg class="bi"><use href="#image-fill"/></svg>
+                  Wiring
+                </button>
+              </li>
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="help">
+                  <svg class="bi"><use href="#question-circle"/></svg>
+                  Help
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div id="alert" class="alert alert-danger d-none mt-3" role="alert"></div>
+
+        <div id="save-bar" class="d-flex gap-2 align-items-center mt-3" x-show="$store.app.connected" x-data>
+          <button id="save" class="btn btn-success btn-sm">Save to flash</button>
+          <button id="revert" class="btn btn-outline-secondary btn-sm">Discard changes</button>
+          <button id="defaults" class="btn btn-outline-secondary btn-sm">Load defaults</button>
+          <span class="text-warning-emphasis small" x-show="$store.app.dirty">applied — not saved to flash</span>
+          <span class="text-warning-emphasis small" x-show="$store.app.revertNote">no saved settings on this board — loaded defaults instead</span>
+        </div>
+
+        <div id="page-mount" x-data></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="vendor/bootstrap.bundle.min.js"></script>
+  <!-- A module script executes deferred, same as Alpine's own defer tag below --
+       both run in document order once parsing finishes. app.js's
+       document.addEventListener('alpine:init', ...) has to be registered
+       before Alpine's script runs Alpine.start(), so this tag stays first. -->
+  <script type="module" src="js/app.js"></script>
+  <script defer src="vendor/alpine.min.js"></script> <!-- Alpine.js v3.15.12, MIT, alpinejs.dev -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
+    }
+  </script>
+</body>
+</html>
