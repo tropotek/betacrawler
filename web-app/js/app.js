@@ -659,7 +659,11 @@ function updateNavAvailability() {
 }
 
 document.querySelectorAll('[data-page]').forEach((btn) => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', (event) => {
+    // preventDefault() is a no-op for the plain <button> nav items; it's
+    // here for the navbar-brand link (an <a href="#">), so clicking it
+    // doesn't also jump the page to the top or append "#" to the URL.
+    event.preventDefault();
     if (btn.classList.contains('disabled')) return;
     showPage(btn.dataset.page);
   });
