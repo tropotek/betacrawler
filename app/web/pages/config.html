@@ -68,14 +68,6 @@
                        x-model="$store.config.values['device.name']"
                        @change="$store.config.commit($store.config.field('device.name').def)">
               </div>
-              <div class="col-md-6">
-                <label class="form-label" for="f-tlm-rate">UI Telemetry Rate (Hz)</label>
-                <input type="number" class="form-control" id="f-tlm-rate"
-                       :min="$store.config.field('tlm.rate').def?.min" :max="$store.config.field('tlm.rate').def?.max"
-                       :class="{ 'is-invalid': $store.config.invalid['tlm.rate'] }"
-                       x-model="$store.config.values['tlm.rate']"
-                       @change="$store.config.commit($store.config.field('tlm.rate').def)">
-              </div>
             </div>
           </fieldset>
           <template x-if="$store.config.field('esc0.rate').def">
