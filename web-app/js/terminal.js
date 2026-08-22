@@ -1,7 +1,6 @@
-// Parses Terminal page commands into DeviceModel calls. Mirrors
-// app/backend/terminal.py's run(). No generic passthrough op exists on the
-// wire, so every command is dispatched through DeviceModel's schema-
-// validated terminal* methods rather than a raw byte passthrough.
+// Parses Terminal page commands into DeviceModel calls. No generic
+// passthrough op exists on the wire, so every command is dispatched through
+// DeviceModel's schema-validated terminal* methods rather than raw bytes.
 import { DeviceError } from './device-model.js';
 import { dumpIni } from './settings-ini.js';
 

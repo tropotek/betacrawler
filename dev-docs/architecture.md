@@ -6,20 +6,25 @@ the detail and `CLAUDE.md` has the rule.
 
 ## The `Api` seam
 
-`app/web/` talks to the backend exclusively through the `Api` object in `app.js`. That object is
-the entire porting surface for a hypothetical future Electron rewrite, and the rules are cheap to
-keep and expensive to retrofit:
+`web-app/`'s UI reaches the device exclusively through the `Api` object in `js/api.js`. That
+object is the entire porting surface for a hypothetical future Electron rewrite, and the rules are
+cheap to keep and expensive to retrofit:
 
-- No `fetch`/`WebSocket` anywhere outside it.
-- No `Api` method may take or return a browser-only type (a `File`, a `Blob`, the `WebSocket`
-  itself) — bytes, strings, plain objects and callbacks only.
-- Every path goes through `Api.base`, so nothing assumes an origin.
-- The push channel stays `Api.subscribe(handler) -> unsubscribe`, owning its own reconnection,
-  rather than handing a socket back to a caller that would touch `.onclose`.
+- No serial, WebUSB or network call anywhere outside it.
+- No `Api` method may take or return a browser-only type (a `File`, a `Blob`, a stream) — bytes,
+  strings, plain objects and callbacks only.
+- The push channel stays `Api.subscribe(handler) -> unsubscribe`, delivering `{type, data}` frames
+  and owning its own reconnection, rather than handing a transport back to a caller that would
+  touch its lifecycle events.
 
-`flashUpload` really did take a DOM `File` once, because `fetch` accepts one — which is exactly
-how this kind of coupling gets in. Full contract, plus a grep check for the mechanical part:
-`_notes/_archive/review-electron-port-readiness.md`.
+Two exceptions are deliberate and documented rather than accidental. `showPage()` fetches
+`pages/<name>.html` — this app's own static markup, not a device request. And `Api.connect()`
+takes a Web Serial `SerialPort` object, because Web Serial's permission model has no other way to
+name a port: a port only exists as the object the browser's own chooser handed back.
+
+`flashUpload` really did take a DOM `File` once, because the API it fed accepted one — which is
+exactly how this kind of coupling gets in. Full contract, plus a grep check for the mechanical
+part: `_notes/_archive/review-electron-port-readiness.md`.
 
 ## Modules
 
@@ -182,7 +187,7 @@ The panic handler overrides the Arduino core's weak `HardFault_Handler`, which o
 through to a silent infinite loop. It cannot use `delay()` or `millis()`: HardFault runs at
 priority −1 and masks every interrupt that advances the tick, so the wait is a bare counting loop.
 
-See [Status LED](status-led.md) for the patterns and fault codes themselves.
+See [Status LED](../docs/reference/status-led.md) for the patterns and fault codes themselves.
 
 ## The config-hash build gotcha
 
@@ -210,16 +215,16 @@ board that had never seen it.
 One JSON object per line, `\n`-terminated, over USB CDC serial (115200). Requests carry an `id`;
 responses echo it. Messages with no `id` are unsolicited (telemetry, log) — that's what lets push
 telemetry interleave safely with request/response on one connection. Firmware validates every
-input independently of the backend and never trusts the host. Full spec in
-`_notes/_archive/spec-configurator-core.md`; live contract in `docs/api.md`.
+input itself and never trusts the host. Full spec in
+`_notes/_archive/spec-configurator-core.md`; live contract in [`protocol.md`](protocol.md).
 
 The registered modules' descriptors are the single source of truth for **validation** — type,
-bounds, options — everywhere a value crosses into the device: `DeviceModel` (backend) caches the
+bounds, options — everywhere a value crosses into the device: `device-model.js` caches the
 `schema` wire op's response (`{params, tlm}`) and validates `set()` calls against it before ever
 touching the wire, and Terminal `set`/INI restore go through the same path regardless of what any
 page shows.
 
-What the UI *displays* is not generated from the descriptor. `app/web/pages/{config,controller,
+What the UI *displays* is not generated from the descriptor. `web-app/pages/{config,controller,
 modes}.html` are hand-curated: each names the specific keys it shows, in whatever order and
 grouping reads best for that page, via `Alpine.store('config').field(key)` /
 `Alpine.store('telemetry').field(key)` — a lookup by key, not an iteration. Adding a firmware
@@ -232,13 +237,13 @@ Display hints never change what goes over the wire:
 - `div`/`dec` — the wire always carries the device's native units (`vdd` is integer millivolts);
   only the browser divides and rounds.
 - `showIf` (`{"key":...,"val":...}`) — `app.js` hides a parameter whose condition is unmet, but
-  firmware and backend still validate and accept it, so Terminal `set` and INI restore keep
-  working on a hidden parameter. This is what gives `rx.protocol` its per-protocol settings groups
-  without `app.js` learning any protocol name.
+  the firmware still validates and accepts it, so Terminal `set` and INI restore keep working on a
+  hidden parameter. This is what gives `rx.protocol` its per-protocol settings groups without
+  `app.js` learning any protocol name.
 
 `firmware/test/golden/schema.json` is a checked-in fixture, regenerated and diffed by a native
-test (`test_schema_golden_fixture_matches_firmware`) and loaded directly by the Python tests, so a
-firmware schema change that isn't reflected there fails a test instead of drifting silently.
+test (`test_schema_golden_fixture_matches_firmware`), so a firmware schema change that isn't
+reflected there fails a test instead of drifting silently.
 
 ## Persistence
 
@@ -272,36 +277,33 @@ detail: `_notes/_archive/spec-config-revert.md`.
 
 ## Firmware bundling and in-app updates
 
-The app ships the firmware that matches it: built images live in `app/firmware/` with a
+The app ships the firmware that matches it: built images live in `web-app/firmware/` with a
 `manifest.json`, produced by `app/tools/bundle_firmware.py` at release time (it builds first, then
 derives every manifest field from the sources and the binary — nothing is typed in). A file picker
 survives only as a collapsed *Advanced* path, where a vector-table check is all that stands
 between picking `firmware.elf` out of `.pio/build` and a board that no longer enumerates.
 
-**`app/firmware/` is gitignored build output, not source — the current, deliberate decision,
-reversed from the opposite one.** The binaries used to be committed so that app/firmware pairing
-was a checked-in fact; they now aren't, because the folder is what a release *produces* on the way
-to a packaged executable, and committing a binary per firmware change per board does not scale
-past one board. The pairing guarantee did not go away, it moved: the script is the only thing that
-writes there, and it derives every field from the tree it just built. The manifest is ignored
-alongside the binaries on purpose — a committed manifest whose `sha256` fields describe absent
-files is precisely the drift the script exists to prevent. A source checkout having no firmware
-until someone runs the script is the expected state, and only a developer ever sees it; a packaged
-app is built after the script has run.
+**Those binaries are committed**, unlike most build output: a static site has no server to build
+an image on demand, so what it flashes has to travel with the deployment. The guarantee that they
+match their sources is a test rather than a convention — the manifest carries `fw_source_sha256`,
+a path-sensitive hash of `firmware/{include,src}` and `platformio.ini`, and
+`web-app/tests/firmware-bundle.test.js` recomputes it. That guard exists because the failure it
+catches is silent: both versions stay `1.0.0` in this template, so binaries that have fallen
+behind their sources still checksum perfectly against a manifest that is equally stale.
 
 A multi-board run is **all-or-nothing**: `plan_entry()` builds and validates every env before
 `release()` writes anything, so a second board failing to compile cannot leave a manifest that
 looks like a complete release and isn't. By default the manifest describes exactly the envs named
 in that one command and images from a previous run are pruned; `--add` merges instead. Pruning
 only ever deletes files a *previous manifest listed* — never a wildcard sweep of the directory,
-which would take a binary someone had put there by hand. `app/tests/test_bundle_firmware.py`
-covers those invariants against a fixture tree with the `pio run` call injected out.
+which would take a binary someone had put there by hand. The bundler's own test suite covers those
+invariants against a fixture tree with the `pio run` call injected out.
 
 ## DFU
 
-The STM32 flashing mechanism, and the only one until the ESP32 target grew one (see the next
-section). Which mechanism an image uses is not inferred anywhere — it is the manifest's `method`
-field.
+How a board is flashed. Which mechanism an image uses is not inferred from its board name
+anywhere — it is the manifest's `method` field, derived once by the bundler, so a second mechanism
+would be a manifest value rather than a special case spread through the app.
 
 Getting into DFU has two paths, and **both must keep working**: the `dfu` wire op (one click) and
 BOOT0+NRST by hand (for a board whose firmware is broken). That is also why the Firmware page,
@@ -322,9 +324,9 @@ this wall first.
 
 ## DFU in the browser
 
-`web-app/` flashes the same boards with no backend at all: `js/dfu.js` speaks DfuSe directly over
-WebUSB. It takes an injected `USBDevice`-shaped object and never touches `navigator.usb` itself,
-the same shape as `webserial-link.js` and for the same reason — the whole protocol tests against a
+Flashing happens in the page itself: `js/dfu.js` speaks DfuSe directly over WebUSB, with no host
+tool involved. It takes an injected `USBDevice`-shaped object and never touches `navigator.usb`
+itself, the same shape as `webserial-link.js` and for the same reason — the whole protocol tests against a
 fake, and overwriting a device's flash is not something to leave covered only by hardware runs.
 
 Three details are measured rather than assumed, and each is load-bearing:
@@ -338,11 +340,11 @@ Three details are measured rather than assumed, and each is load-bearing:
 - **The device detaches during the leave that ends a successful flash**, so the final transfer and
   status read may go unanswered. That is success, not a transfer failure.
 
-Errors split along the line the backend build's HTTP/WS split already draws: pre-flight failures
-(no device, a flash already running, a bad image, a checksum mismatch) throw from `Api`, while a
-failure once writing has begun arrives as a `{type:'flash'}` frame on the `subscribe` channel —
-the same frame shape the FastAPI build pushes over its WebSocket, so the page's handler is
-identical in both.
+Errors split by when they happen, not by kind: pre-flight failures (no device, a flash already
+running, a bad image, a checksum mismatch) throw from the `Api` call the page made, while a
+failure once writing has begun arrives as a `{type:'flash'}` frame on the `subscribe` channel.
+A flash outlives the page that started it — the user can navigate away mid-write — so past that
+point the progress channel is the only place a result can reliably land.
 
 ### The permission ladder
 
@@ -370,123 +372,18 @@ So `api.js` climbs three rungs, the same shape Betaflight Configurator uses:
 The modal's markup lives in `index.html`, not `pages/firmware.html`: a flash keeps running while
 another page is mounted, so it has to exist wherever the frame arrives.
 
-`web-app/firmware/` is committed, unlike `app/firmware/`: a static site has no backend to build an
-image on demand, so the bundle travels with the deployment. The manifest carries
-`fw_source_sha256`, a path-sensitive hash of `firmware/{include,src}` and `platformio.ini`, and
-`web-app/tests/firmware-bundle.test.js` recomputes it. That guard exists because the failure it
-catches is silent: both versions stay `1.0.0` in this template, so binaries that have fallen
-behind their sources still checksum perfectly against a manifest that is equally stale.
-
-## Flashing an ESP32 (esptool)
-
-The second flashing mechanism, dispatched off the manifest's `method` field (`"dfu"` /
-`"esptool"`). Four decisions here are worth the reasoning:
-
-**`method` lives in the manifest, not in a board-name check.** The bundler derives it once, from
-the env's `-D FW_MCU_ESP32=1` build flag in `platformio.ini` — the same macro the firmware already
-uses to guard ESP32-only driver bodies, so exactly one place in the tree says "this env is an
-ESP32". Everything downstream (bundler validation, backend flasher choice, the UI's port picker)
-reads the field. Inferring from `board` would put that knowledge in three places and let them
-drift.
-
-**An ESP32 flash needs an explicit port; a DFU flash does not.** A Black Pill in DFU mode leaves
-its serial port and reappears as a distinct USB device (`0483:df11`) that `dfu-util` finds by
-scanning USB, so the app never has to know where it was. An ESP32 never changes identity —
-`esptool` resets it into its ROM bootloader over DTR/RTS on the *same* port it speaks JSON on.
-There is nothing to poll for, so the port comes from the user, via a picker, and the `waiting`
-phase is skipped entirely. Nothing is auto-selected unless `link.py`'s `_KNOWN_BOARDS` recognizes
-it: guessing a port for a destructive write is worse than a disabled button and a hint. And
-because the app may itself be holding that port open, the route releases the link first when the
-requested port is the connected one (a connection on a *different* port is left alone).
-
-**One `FlashSession` serves both.** The invariant it exists to enforce is "one flash at a time in
-this app", not one per mechanism — two overlapping writes to a device's flash must be impossible,
-whichever tool performs them. So the flasher is chosen per call (`start(..., flasher=, wait=)`)
-rather than bound at construction, and both mechanisms share the one busy lock, the one event
-stream, and the one `{"op", "pct", "line"}` progress shape the UI already renders.
-`EsptoolFlasher` and `DfuFlasher` stay separate classes on purpose: same injected-`runner` testing
-seam, but different argv shapes, different progress formats, and independent upstream release
-cycles.
-
-**The bundler merges four artifacts into one image.** An Arduino-framework ESP32 build emits
-`bootloader.bin`, `partitions.bin`, `boot_app0.bin` and `firmware.bin` at four flash offsets.
-Shipping them as four manifest entries would push ESP32-shaped special cases into the manifest
-schema, the `Catalog`, and the UI; instead `esptool merge-bin` folds them into one file at release
-time, so an ESP32 entry has the same one-file/one-sha256 shape as an STM32 one. The cost is
-padding: the merged image is **sparse**, with `0xFF` from `0x0` to `0xFFF`, which is why its
-magic-byte check reads offset `0x1000` and not `0` — `blob[0] == 0xE9` would reject every genuine
-merged image *and* accept a bare, unbootable `firmware.bin`. The offsets and flash settings are
-hardcoded to today's `esp32dev`/4MB/DIO/40MHz config; changing the partition table means updating
-that table by hand.
-
-**Neither `esptool` invocation may rely on `PATH`.** It is a pip dependency of `app/.venv/`, and
-neither documented entry point puts that venv on `PATH` — the backend runs as
-`app/.venv/bin/uvicorn ...` (only `activate` sets `PATH`) and the bundler runs under the *system*
-`python3`. So the backend invokes the running interpreter's own `-m esptool`, and the bundler
-resolves `app/.venv/bin/esptool` before falling back to `PATH`, the same way `find_pio()` resolves
-PlatformIO's own venv copy first. A bare `"esptool"` argv[0] fails on a machine where esptool is
-installed perfectly correctly.
-
 ## Disconnect detection
 
-Two independent layers. The backend's `SerialLink` detects OS-level port loss (unplug)
-immediately. The frontend watchdog additionally declares a distinct "stale" badge state if
-telemetry hasn't arrived in 3x the configured interval while the port is still OS-connected —
-catching a wedged-but-still-enumerated board. The 3x threshold is deliberate slack: a `save`'s ~1s
+Two independent layers. `webserial-link.js` detects port loss (unplug) as soon as the browser
+reports the stream closed. The UI watchdog additionally declares a distinct "stale" badge state if
+telemetry hasn't arrived in 3x the configured interval while the port is still open — catching a
+wedged-but-still-enumerated board. The 3x threshold is deliberate slack: a `save`'s ~1s
 flash stall must never look like a disconnect.
-
-## The simulated board
-
-`sim://board` is a reserved port string that `SerialLink._default_open()` answers with a
-`SimSerial` instead of a `serial.Serial`. That is the whole integration: the simulator sits at the
-same seam the test suite already injects through, so `DeviceModel`, the HTTP routes, the WebSocket
-push, the Terminal and INI restore run against it unmodified, and the `Api` seam is untouched.
-
-Its schema is `app/backend/sim_profile.json`, a verbatim copy of `firmware/test/golden/schema.json`
-— the fixture the native firmware test generates from a real `Dispatcher::handle("schema")` call.
-`test_simulator.py` asserts the two are equal, so a firmware schema change fails the backend suite
-rather than shipping a stale simulator. Refresh it with `pio test -e native` followed by a copy.
-
-Telemetry is reactive, not canned: `sim_model.py` ports the firmware's own `mix()`, ESC arm state
-machine and RC sweep, so changing a ratio, a source or a PWM rate moves the same readings it would
-move on hardware. The ports use `trunc_div()` wherever the C divides, because C truncates toward
-zero where Python's `//` floors — the two disagree on negative offsets, which is most of the mixer.
-
-Two things differ from a real board on purpose. `rx.source` boots at `sim` rather than `uart`: a
-simulated board has no UART to receive on, so `uart` would report a link that cannot exist. And the
-system readings follow fixed triangles rather than a random walk, which keeps the model
-reproducible and unit-testable. Selecting `uart` still correctly drops the link and zeroes the
-channels, so the fidelity holds in both directions.
-
-The board reports `board: "simulator"` and no `caps`. That keeps `/api/firmware/catalog` from
-recommending a real flash image for a board that cannot be flashed, and leaves "Reboot to DFU"
-honestly greyed out. Simulating DFU is deliberately out of scope: it would mean faking `dfu-util`'s
-enumeration, which lives behind a different seam entirely.
-
-A simulator session must never overwrite the remembered hardware identity. `DeviceModel` keeps
-`_last_real_board` alongside `_info`, updated only when the connected port is not `sim://board`,
-and the firmware catalog recommends from that rather than from `status()["board"]`. A board in DFU
-mode cannot identify itself, so the recommendation rests entirely on the last `hello` — and
-connecting the simulator between unplugging a board and flashing it would otherwise destroy the
-recommendation at exactly the moment it matters, on a destructive operation.
-
-Because the picker can now be showing a device that is not a port, the port scan runs on every
-watchdog tick rather than only while disconnected. "Connected" no longer implies the port list is
-settled: a board plugged in during a simulator session still has to appear in it. For the same
-reason the simulator is only ever a provisional selection — the picker adopts a recognized board as
-the desired port, so a board appearing later displaces the simulator, while choosing it by hand
-makes it stick.
-
-The default `tank_drive.arm_src` is `ch5`, which the sweep holds at a constant value below the
-default 1700–2000µs arm window, so the ESCs sit at neutral in `ARM_ARMING`. Set `arm_src` to `none`
-to arm whenever the link is fresh, to one of the high static channels near the top of the sweep's
-spread to arm continuously, or to `ch1`/`ch2` to watch it arm and disarm as the sweeping stick
-passes through the window.
 
 ## Versioning
 
 Firmware and app are separate projects with independent version numbers that are not meant to
 track each other. Firmware: `FW_VERSION` in `firmware/include/config.h`, reported over the wire by
-`hello` (`name`/`ver`/`built`/`mods`, alongside the unchanged `fw` display string). App (backend +
-web UI): `APP_VERSION` at the top of `app/web/app.js`. **Both stay 1.0.0 in this template** —
+`hello` (`name`/`ver`/`built`/`mods`, alongside the unchanged `fw` display string). App:
+`APP_VERSION` at the top of `web-app/js/app.js`. **Both stay 1.0.0 in this template** —
 bumps happen in real forked projects, not here.

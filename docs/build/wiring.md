@@ -23,6 +23,10 @@ position on the diagram.
 | Battery sense *(optional)* | PA1 | The sense divider's output |
 | Status LED | PC13 | On the board already, nothing to wire |
 
+The two Black Pill variants are pin-compatible, so everything here is the same whether your board
+carries an STM32F411CE or an STM32F401CE. Only the firmware image differs — see
+[Which Black Pill](what-you-need.md#which-black-pill).
+
 PA9 is the board's CRSF transmit line. It carries telemetry back to your handset &mdash; pack
 voltage today, and anything added later.
 

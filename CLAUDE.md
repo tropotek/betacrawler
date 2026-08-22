@@ -7,16 +7,17 @@ in `dev-docs/architecture.md`, `CHANGELOG.md`, or commit messages, not here. Kee
 
 ## What this is
 
-A Betaflight-Configurator-style tool for an STM32 Black Pill (STM32F411CE): firmware exposes
-device config/telemetry over USB serial as JSON lines, a Python/FastAPI backend bridges that to
-HTTP+WebSocket, and a static Bootstrap web UI drives it.
+A Betaflight-Configurator-style tool for an STM32 Black Pill (STM32F411CE or STM32F401CE, one
+build env each): firmware exposes device config/telemetry over USB serial as JSON lines, and a
+static Bootstrap web app (`web-app/`) drives it straight from the browser over Web Serial, with
+WebUSB for DFU flashing. No backend, no build step, no npm.
 
 | Where | What |
 |---|---|
 | `_notes/todo.md` | the live document — what's next. Read it first in any new session |
 | `CHANGELOG.md` | what has shipped, one summary per change |
 | `dev-docs/architecture.md` | the reasoning behind every rule below — read the relevant section before changing that area |
-| `dev-docs/api.md` | the HTTP/WS contract |
+| `dev-docs/protocol.md` | the device wire protocol and the `Api` seam's push frames |
 | `_notes/_archive/` | history, not documentation (see below) |
 
 **`_notes/_archive/` holds superseded specs, implementation plans and the retired `progress.md`.**
@@ -48,42 +49,30 @@ removed from `platformio.ini`. `boards/esp32_wroom32.h` and `hardware/wifi/wifi_
 are left in place as unused dead code, so support is cheap to resurrect later; see
 `firmware/platformio.ini`'s comment where the env used to be.
 
-**Backend** (from `app/`, venv already at `app/.venv/`):
-```
-.venv/bin/pytest -v                                      # no board needed
-.venv/bin/pytest tests/test_link.py -v                   # one file only
-.venv/bin/uvicorn backend.main:app --port 8080           # serves API + app/web/ together
-```
-
-Building and bundling release firmware images (`app/firmware/`) is covered by the
-`bundle-firmware` skill — invoke it rather than reading this file for those steps.
+Building and bundling release firmware images is covered by the `bundle-firmware` skill —
+invoke it rather than reading this file for those steps.
 
 **web-app** (from `web-app/`):
 ```
 python3 -m http.server 9091   # serves the static site; open http://localhost:9091
-node --test                   # runs the ported logic's unit tests, no board needed
+node --test                   # unit tests for js/*.js, no board needed
 ```
-Web Serial and service workers both require a secure context — `localhost` or HTTPS. Serving
-this tree from a LAN IP over plain HTTP will not work, and it needs a Chromium-based browser
-(Chrome, Edge, Brave, Opera); Firefox and Safari have no Web Serial API.
+Web Serial, WebUSB and service workers all require a secure context — `localhost` or HTTPS.
+Serving this tree from a LAN IP over plain HTTP will not work, and it needs a Chromium-based
+browser (Chrome, Edge, Brave, Opera); Firefox and Safari have no Web Serial API.
 
-**Web UI**: no build step. `app/web/{index.html,app.js}` are static files served directly by the
-FastAPI app above (`main.py` mounts `app/web/` at `/`). No automated UI test suite exists, by
-design — but "therefore you cannot check the UI" does not follow, and believing it has cost real
-defects. **A working headless browser is installed at `~/.pwvenv`** (Playwright + Chromium):
+There is no build step, and no automated test suite for the *rendered* UI, by design — but
+"therefore you cannot check the UI" does not follow, and believing it has cost real defects.
+**A working headless browser is installed at `~/.pwvenv`** (Playwright + Chromium):
 
 ```
 ~/.pwvenv/bin/python3 script.py    # sync_playwright(), p.chromium.launch(headless=True)
 ```
 
 Use it to read rendered text, click through a page and collect console/`pageerror` events before
-claiming a UI change works. Two techniques, both already used here:
-
-- Point it at the real server against the **real board** for the normal path.
-- For a state the hardware cannot be made to produce, build the app around a fake device —
-  `create_app(DeviceModel(SerialLink(open_port=lambda p: FakeSerial(responder=...))))` from
-  `app/tests/`, served with uvicorn on its own port. That is how the `revert` fallback branch was
-  verified: no real board reports it without a corrupt flash record.
+claiming a UI change works. Point it at `http://localhost:9091`; for a state the hardware cannot
+be made to produce, install a fake `navigator.serial` with `add_init_script()` before the page
+loads and answer the wire protocol from it.
 
 Do NOT try apt's `python3-playwright` (its client and the packaged Node driver speak incompatible
 protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer mapping here).
@@ -91,7 +80,6 @@ protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer ma
 **Environment facts already resolved — don't redo this work:**
 - udev/permissions are already correct system-wide (PlatformIO's own `0483` vendor rule covers
   VCP/ST-Link/DFU and tells ModemManager to ignore them). No `dialout` group, no custom udev rules.
-- System Python is 3.14.4 and all backend deps install and import cleanly on it.
 - Git commits use `feat:`/`fix:`/`docs:`/`chore:` prefixes.
 
 ## Code style
@@ -102,7 +90,7 @@ protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer ma
 - Never reference a line number or a spec/design-doc file in a comment — both go stale the moment
   either file changes. If the reasoning matters, it belongs in the commit message or PR
   description, not inline.
-- Comments and documentation (`dev-docs/architecture.md`, `dev-docs/api.md`, this file) describe the
+- Comments and documentation (`dev-docs/architecture.md`, `dev-docs/protocol.md`, this file) describe the
   project as it currently is, never as a narrative of what changed — no "no longer exists", "used
   to be", "the old X page", "retired". `CHANGELOG.md` is the one place that history belongs; a
   living doc a reader hits later has no time context for a change narrative. This holds even more
@@ -110,7 +98,7 @@ protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer ma
 
 ## Layout
 
-**Three tiers, deliberately isolated so most of the stack tests without hardware:**
+**Two tiers, deliberately isolated so most of the stack tests without hardware:**
 
 ```
 firmware/include/      config.h (project name/version/baud/capacity limits) and
@@ -128,49 +116,27 @@ firmware/src/          Arduino glue: main.cpp, storage.cpp (flash), dfu.cpp,
 firmware/docs/          placeholder templates (BOM.md, ASSEMBLY.md) for a fork's own bill of
                         materials and assembly instructions
 
-app/backend/           protocol.py (codec) -> link.py (threaded serial, id correlation) ->
-                        device.py (schema cache + validation) -> main.py (FastAPI routes/WS).
-                        terminal.py parses the Terminal page's commands; settings_ini.py is a
-                        pure INI codec for settings backup/restore (no device, no coercion);
-                        firmware.py is the bundle catalog + dfu-util wrapper.
-                        simulator.py + sim_model.py + sim_profile.json are the
-                        `sim://board` port: an in-process fake device behind the
-                        real wire protocol, schema copied from the firmware's
-                        golden fixture.
-                        pytest-tested against a fake serial port (app/tests/fake_serial.py),
-                        no board needed
-app/firmware/          the firmware images this app version ships with, plus manifest.json.
-                        GITIGNORED build output — produced by the script above, not committed.
-app/tools/             bundle_firmware.py, run by hand at release time to produce the above
-
-app/web/                static HTML/JS only, talks to the backend exclusively through the
-                        `Api` object in app.js — that object is the ENTIRE porting surface
-                        for a hypothetical future Electron rewrite. `index.html` is a shell
-                        (header/sidebar/mount point); each page's markup is its own file
-                        under `pages/`, fetched and injected into the mount point on
-                        navigation — adding a page means adding one `pages/<name>.html` and
-                        a nav button, not editing every other page's markup.
-app/docs/               placeholder template (USER_GUIDE.md) for a fork's own user guide
-
-web-app/                a second, fully static front end for the same board, talking to it
-                        directly over the Web Serial API instead of through a backend. Above
-                        the `Api` seam it is a copy of `app/web/`; below it, `js/*.js` ports
-                        `app/backend/`'s protocol/link/device/terminal/settings_ini logic to
-                        vanilla ES modules. No build step, no npm dependencies, no Python.
-                        Unit-tested with `node --test`, run from `web-app/` (it discovers
-                        `tests/*.test.js` itself); `tests/parity.test.js` holds the copied
-                        page fragments and vendor files to `app/web/`.
-web-app/firmware/       the firmware images this site flashes, plus manifest.json.
-                        COMMITTED, unlike app/firmware/ — a static site has no backend
-                        to build one on demand. Written by app/tools/bundle_firmware.py
-                        alongside app/firmware/, in the same run.
+web-app/                the configurator: static HTML/JS, talking to the board directly over
+                        the Web Serial API. `index.html` is a shell (header/sidebar/mount
+                        point); each page's markup is its own file under `pages/`, fetched
+                        and injected on navigation — adding a page means adding one
+                        `pages/<name>.html` and a nav button, not editing every other page's
+                        markup. `js/*.js` is the logic below the `Api` seam:
+                        protocol/webserial-link/device-model/terminal/settings-ini/dfu,
+                        vanilla ES modules with no build step, no npm dependencies and no
+                        Python. Unit-tested with `node --test`, run from `web-app/` (it
+                        discovers `tests/*.test.js` itself).
+web-app/firmware/       the firmware images this site flashes, plus manifest.json. COMMITTED:
+                        a static site has no server to build one on demand. Written at
+                        release time by the `bundle-firmware` skill's script, which the
+                        tests guard against drifting from the firmware sources.
 ```
 
-**`hardware/`** sits outside those three tiers — KiCad schematic/PCB source for the wiring
-diagrams shown on the Examples page (`app/web/index.html`'s inline SVGs, format documented in the
-`wiring-diagram-svg` skill). Reference material only: nothing in `firmware/`, `app/`, or the build
-reads it, and it is opened directly in KiCad, not through either tested tier. Registered as its own
-folder in `betacrawler.code-workspace`, same pattern as `firmware/`.
+**`hardware/`** sits outside both tiers — KiCad schematic/PCB source for the wiring
+diagrams shown on the Wiring page (`web-app/pages/wiring.html`'s inline SVGs, format documented in
+the `wiring-diagram-svg` skill). Reference material only: nothing in `firmware/`, `web-app/`, or the
+build reads it, and it is opened directly in KiCad, not through either tested tier. Registered as its
+own folder in `betacrawler.code-workspace`, same pattern as `firmware/`.
 
 ## Rules that must not be undone
 
@@ -190,24 +156,21 @@ with that module's own local index" is the invariant most worth preserving in `d
 **Observers are const** — `Module::attach()` hands out const access on purpose. A module must
 never reconfigure another behind `dispatch`'s back. Resolve keys once in `attach()`, never per tick.
 
-**The `Api` seam** — no `fetch`/`WebSocket`/serial call outside `Api` for anything that talks to
-the device or backend; no browser-only types (`File`, `Blob`, the socket itself) in or out; the
+**The `Api` seam** — no serial, WebUSB or network call outside `Api` (`web-app/js/api.js`) for
+anything that talks to the device; no browser-only types (`File`, `Blob`, a stream) in or out; the
 push channel stays `Api.subscribe(handler) -> unsubscribe`, delivering `{type, data}` frames
-(`tlm`, `log`, `state`, `raw`) regardless of what transport produced them, and owns its own
-reconnection. Two implementations satisfy it: `app/web/app.js` (fetch/WebSocket against the
-FastAPI backend, every path through `Api.base`) and `web-app/js/api.js` (Web Serial, no backend,
-no `Api.base`). Two documented exceptions to "no browser-only types": `showPage()`'s
-`fetch('pages/<name>.html')` loads this app's own static page markup, not a device/backend
-request, in both builds; `web-app/js/api.js`'s `Api.connect()` takes a Web Serial `SerialPort`
-object, because Web Serial's permission model has no other way to name a port. Neither is part
-of the porting surface this seam exists to isolate for a hypothetical Electron rewrite, so both
-are exempt. Any fetch, socket or serial call that *does* talk to the device or backend has no
-excuse to live outside `Api`.
+(`tlm`, `log`, `state`, `raw`, `flash`, `dfu`) regardless of what transport produced them, and owns
+its own reconnection. Two documented exceptions: `showPage()`'s `fetch('pages/<name>.html')` loads
+this app's own static page markup, not a device request; and `Api.connect()` takes a Web Serial
+`SerialPort` object, because Web Serial's permission model has no other way to name a port.
+Neither is part of the porting surface this seam exists to isolate for a hypothetical Electron
+rewrite, so both are exempt. Any call that *does* talk to the device has no excuse to live outside
+`Api`.
 
 **Validation stays schema-driven, curation doesn't** — `div`/`dec`/`showIf` are **display hints
-only**: the wire always carries native units, and firmware/backend still validate a hidden
-parameter so Terminal `set` and INI restore keep working, regardless of whether any page shows that
-parameter at all. Beyond that, `app/web/pages/{config,controller,modes}.html` hand-pick which keys
+only**: the wire always carries native units, and the firmware still validates a hidden parameter
+so Terminal `set` and INI restore keep working, regardless of whether any page shows that
+parameter at all. Beyond that, `web-app/pages/{config,controller,modes}.html` hand-pick which keys
 they show, their label, their order and their page placement via `Alpine.store('config').field(key)`
 /`Alpine.store('telemetry').field(key)` (a per-key lookup, not an iteration). Adding a firmware
 parameter needs a page decision and a written label before it appears anywhere in the UI. A curated
@@ -249,12 +212,8 @@ clocking SCL. `RX_TX_PIN` stays PA9 deliberately: it is outbound only so it neve
 detection, and leaving PB6 (I2C1_SCL) connected to nothing keeps that guarantee absolute — which
 is also why esc1 keeps PB6. PA2/PA3 are no escape: USART2 is a bootloader interface too.
 
-**`app/firmware/` stays gitignored** — don't re-commit the binaries and don't "fix" the
-`.gitignore` entry. A checkout with no firmware until the script runs is the expected state.
-
-**`web-app/firmware/` stays committed** — the opposite call, for the opposite reason: the static
-build has no backend, so the images it flashes have to be in the deployed tree.
-`bundle_firmware.py` writes it alongside `app/firmware/` in the same run, and
+**`web-app/firmware/` stays committed** — unlike most build output: the site has no server, so
+the images it flashes have to be in the deployed tree.
 `web-app/tests/firmware-bundle.test.js` fails when those binaries no longer match the firmware
 sources (the manifest's `fw_source_sha256`). Re-bundle and commit after any firmware source
 change.
@@ -264,6 +223,6 @@ change.
 **Both versions stay 1.0.0 in this template** — firmware (`FW_VERSION`) and app (`APP_VERSION`)
 version independently, and bumps happen in forked projects, not here.
 
-**Page convention** — every `<div id="page-*">` section ends with a `<p>&nbsp;</p>` spacer as its
-last child so content doesn't sit flush against the viewport bottom. Add one when you add a page;
-don't strip them as "empty markup". All six pages have one deliberately.
+**Page convention** — every page fragment under `web-app/pages/` ends with a `<p>&nbsp;</p>`
+spacer as its last child so content doesn't sit flush against the viewport bottom. Add one when you
+add a page; don't strip them as "empty markup". All eight pages have one deliberately.

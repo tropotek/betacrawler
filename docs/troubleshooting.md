@@ -2,7 +2,16 @@
 
 Symptoms in roughly the order you are likely to hit them.
 
-## The port does not appear in the dropdown
+## The app will not open, or says the browser is unsupported
+
+The configurator needs a Chromium-based browser — Chrome, Edge, Brave or Opera. Firefox and
+Safari have no Web Serial API and cannot talk to a board at all.
+
+If you are running your own copy of the app rather than the hosted one, it also has to be served
+from `localhost` or over HTTPS. A page served from a LAN address over plain HTTP loads, but the
+browser withholds the USB APIs and **Connect** does nothing useful.
+
+## The board does not appear in the browser's device picker
 
 Most often the cable. Plenty of USB cables carry power only, and a charge-only cable makes the
 board look dead while the LED blinks away happily.
@@ -10,7 +19,19 @@ board look dead while the LED blinks away happily.
 Check the LED first: if it is blinking once a second, the board is fine and the problem is
 between it and your computer. Try another cable, then another port.
 
-A board running Betacrawler is labelled **(STM32)** in the dropdown.
+The board shows up as an STMicroelectronics virtual COM port — `/dev/ttyACM0` on Linux, a `COM`
+port on Windows. If it is listed but connecting fails, something else probably has the port open:
+a serial monitor, or another tab running the app.
+
+## The board went dark after its first flash and never appears
+
+You flashed the wrong chip's image. An F411 build on an F401 hard-faults before USB comes up, so
+the board neither enumerates nor blinks — see
+[Which Black Pill](build/what-you-need.md#which-black-pill).
+
+Read the marking on the chip, then flash the matching build. You do not need the ST-Link back for
+this: hold **BOOT0**, tap **NRST**, release **BOOT0**, and flash the right image from the
+**Firmware** page.
 
 ## The board connects, then drops out when the motors run
 
@@ -74,7 +95,15 @@ Reach the built-in bootloader by hand: hold **BOOT0**, tap **NRST**, release **B
 **Firmware** page stays available even with nothing connected, which is exactly when you need it.
 
 One thing to know: every STM32F4 in bootloader mode identifies itself the same way, so a board in
-that state cannot be told apart from any other. Only have the one you are flashing plugged in.
+that state cannot be told apart from any other. Only have the one you are flashing plugged in, and
+pick the image for your own chip yourself — the app cannot recommend one for a board it has not
+spoken to.
+
+## A board in bootloader mode is invisible on Windows
+
+Windows binds it to ST's own DfuSe driver, which a browser cannot use. Run
+[Zadig](https://zadig.akeo.ie/) once against the `STM32 BOOTLOADER` device and replace that driver
+with **WinUSB**. Linux and macOS need nothing.
 
 ## My receiver is not ELRS or Crossfire
 

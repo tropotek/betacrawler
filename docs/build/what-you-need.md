@@ -8,7 +8,7 @@ you picked.
 
 | Part | Qty | What matters |
 |---|---|---|
-| WeAct Black Pill, STM32F411CE | 1 | The USB-C revision. This is the board the firmware is built for. |
+| WeAct Black Pill, STM32F411CE or STM32F401CE | 1 | The USB-C revision. Both chips are supported — see [Which Black Pill](#which-black-pill) below. |
 | ELRS receiver | 1 | Must expose a CRSF-capable output pad. Crossfire works too. |
 | Brushless ESC, BLHeli-S | 2 | Must support **bidirectional** mode. One per track. |
 | Brushless motor | 2 | Sized for your chassis, matched to the ESCs' current rating. |
@@ -16,6 +16,29 @@ you picked.
 | LiPo battery | 1 | Sized for the motors. Feeds the PDB, **not** the board directly. |
 | USB-C cable | 1 | A data cable. Charge-only cables are a common and confusing failure. |
 | ST-Link/V2 | 1 | For the first flash only. You can borrow one — it is not needed again. |
+
+You also need a computer running a Chromium-based browser — Chrome, Edge, Brave or Opera. That is
+what the configurator runs in, and it is the only kind of browser that can talk to the board.
+
+## Which Black Pill
+
+WeAct sells the same board with either an **STM32F411CE** or an **STM32F401CE** on it. Betacrawler
+supports both, and ships a firmware image for each. The pinout, the wiring and every setting in
+this documentation are identical — the F401 is the smaller chip (96 KB of RAM at 84 MHz against
+the F411's 128 KB at 100 MHz), and nothing here needs the difference.
+
+What you cannot do is flash one chip's image onto the other. The two have different memory maps,
+and an F411 image on an F401 hard-faults before USB even comes up: the board goes dark and never
+appears to your computer at all.
+
+So check which one you have before the first flash. The chip's own marking is the only reliable
+answer — read the top line on the square chip in the middle of the board, `STM32F411CEU6` or
+`STM32F401CEU6`, with a magnifier if you need one. Boards sold as F411 that turn out to be
+populated with an F401 are common enough to be worth ruling out; the silkscreen and the listing
+are not evidence.
+
+Once the board is running Betacrawler, the **Help** page reports which chip its firmware was built
+for, and the **Firmware** page offers the matching image by default.
 
 ## Why the ESCs must be bidirectional
 

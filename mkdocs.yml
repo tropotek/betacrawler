@@ -26,12 +26,13 @@ theme:
 
 nav:
   - Home: index.md
+  - Open the configurator: https://tropotek.github.io/betacrawler/app/
   - Build:
       - What you need: build/what-you-need.md
       - Wiring: build/wiring.md
       - Flashing the firmware: build/flashing.md
   - Drive it:
-      - Install and connect: drive/install-and-connect.md
+      - Connect to the board: drive/install-and-connect.md
       - First setup: drive/first-setup.md
       - Tuning: drive/tuning.md
   - Reference:

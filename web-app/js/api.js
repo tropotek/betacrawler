@@ -1,8 +1,7 @@
-// The Api object: same method names/shapes as app/web/app.js's Api, backed by
-// a Web-Serial DeviceModel instead of fetch/WebSocket. Three methods have no
-// backend equivalent -- requestPort()/knownPorts()/isSupported() -- because
-// Web Serial cannot enumerate ports before one is granted, and does not
-// exist at all outside Chromium.
+// The Api object: the UI's entire device surface, backed by a Web-Serial
+// DeviceModel. requestPort()/knownPorts()/isSupported() exist because Web
+// Serial cannot enumerate ports before one is granted, and does not exist at
+// all outside Chromium.
 import { SerialLink } from './webserial-link.js';
 import { DeviceModel, DeviceError } from './device-model.js';
 import { run as terminalRun } from './terminal.js';
@@ -10,7 +9,7 @@ import { parseIni } from './settings-ini.js';
 import { flash as dfuFlash, validateImage } from './dfu.js';
 
 // STM32 Black Pill's native USB CDC, and the CP2102 bridge some ESP32
-// devkits use -- the same pairs app/backend/link.py's _KNOWN_BOARDS lists.
+// devkits use.
 const KNOWN_BOARD_FILTERS = [
   { usbVendorId: 0x0483, usbProductId: 0x5740 },
   { usbVendorId: 0x10c4, usbProductId: 0xea60 },
@@ -206,9 +205,9 @@ async function sha256Hex(bytes) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Pre-flight failures (no device, busy, bad image, bad checksum) throw, the way
-// the backend build answers a rejected POST. A failure once writing has begun
-// arrives as an error frame instead, the way its WS progress does.
+// Pre-flight failures (no device, busy, bad image, bad checksum) throw to the
+// caller. A failure once writing has begun arrives as an error frame instead:
+// a flash outlives the page that started it.
 // Betaflight's shape: poll for the bootloader only while a reboot we triggered
 // is in flight, bounded, and never as a background habit. "Arrived" means a
 // granted device that actually opens -- ground truth, not the grant list.
@@ -226,8 +225,8 @@ async function waitForDfuArrival(timeoutMs) {
 // Betaflight-style sequence -- reboot into DFU, wait for the bootloader,
 // write -- so the page needs no reboot/select choreography on the normal path.
 // From a board already in DFU it just writes. Failures before anything has
-// been published throw, like a rejected POST; failures after that arrive as
-// error frames, like the backend build's FlashSession.
+// been published throw to the caller; failures after that arrive as error
+// frames on the subscribe channel.
 async function runFlash(bytes, label, { waitMs = DFU_WAIT_MS } = {}) {
   if (flashBusy) throw new DeviceError('busy', 'a firmware flash is already in progress');
 
