@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 It documents development procedures and practices only — build/test commands, layout, and rules
 that must not be undone. It is not a memory file: decision history, rationale, and narrative belong
-in `dev-docs/architecture.md`, `CHANGELOG.md`, or commit messages, not here. Keep this file minimal.
+in `docs/development/architecture.md`, `CHANGELOG.md`, or commit messages, not here. Keep this file minimal.
 
 ## What this is
 
@@ -16,8 +16,8 @@ WebUSB for DFU flashing. No backend, no build step, no npm.
 |---|---|
 | `_notes/todo.md` | the live document — what's next. Read it first in any new session |
 | `CHANGELOG.md` | what has shipped, one summary per change |
-| `dev-docs/architecture.md` | the reasoning behind every rule below — read the relevant section before changing that area |
-| `dev-docs/protocol.md` | the device wire protocol and the `Api` seam's push frames |
+| `docs/development/architecture.md` | the reasoning behind every rule below — read the relevant section before changing that area |
+| `docs/development/protocol.md` | the device wire protocol and the `Api` seam's push frames |
 | `_notes/_archive/` | history, not documentation (see below) |
 
 **`_notes/_archive/` holds superseded specs, implementation plans and the retired `progress.md`.**
@@ -27,7 +27,8 @@ a description of the code today. Where it and the code disagree, the code is rig
 
 **Specs, plans and research are never committed.** `_notes/` is gitignored; write new specs/plans
 under `_notes/docs/plans` and research under `_notes/docs/research`, not `docs/` — `docs/` is
-user-facing project documentation only, and anything placed there gets committed.
+published project documentation (both the user-facing pages and, under `docs/development/`, the
+contributor-facing ones), and anything placed there gets committed.
 
 ## Commands
 
@@ -90,7 +91,7 @@ protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer ma
 - Never reference a line number or a spec/design-doc file in a comment — both go stale the moment
   either file changes. If the reasoning matters, it belongs in the commit message or PR
   description, not inline.
-- Comments and documentation (`dev-docs/architecture.md`, `dev-docs/protocol.md`, this file) describe the
+- Comments and documentation (`docs/development/architecture.md`, `docs/development/protocol.md`, this file) describe the
   project as it currently is, never as a narrative of what changed — no "no longer exists", "used
   to be", "the old X page", "retired". `CHANGELOG.md` is the one place that history belongs; a
   living doc a reader hits later has no time context for a change narrative. This holds even more
@@ -132,15 +133,9 @@ web-app/firmware/       the firmware images this site flashes, plus manifest.jso
                         tests guard against drifting from the firmware sources.
 ```
 
-**`hardware/`** sits outside both tiers — KiCad schematic/PCB source for the wiring
-diagrams shown on the Wiring page (`web-app/pages/wiring.html`'s inline SVGs, format documented in
-the `wiring-diagram-svg` skill). Reference material only: nothing in `firmware/`, `web-app/`, or the
-build reads it, and it is opened directly in KiCad, not through either tested tier. Registered as its
-own folder in `betacrawler.code-workspace`, same pattern as `firmware/`.
-
 ## Rules that must not be undone
 
-Each of these has cost real defects or real rework. The reasoning is in `dev-docs/architecture.md`
+Each of these has cost real defects or real rework. The reasoning is in `docs/development/architecture.md`
 under the named section — read it before changing that area, not after.
 
 **Modules** — `core/` never names a feature. Each module is `<name>_params.cpp` (its `ModuleDesc`;
@@ -201,7 +196,7 @@ chooser in case the flash's original click still counts, then park the flash beh
 own button opens it. Chrome gives a click 5 seconds of activation and a flash spends more than that
 before it knows it needs permission, so rung two alone strands the user. `promptForDfuDevice()`
 must keep reporting `SecurityError` distinctly, and `DFU_WAIT_MS` must stay short enough for rung
-two to have a chance: `dev-docs/architecture.md`, "The permission ladder".
+two to have a chance: `docs/development/architecture.md`, "The permission ladder".
 
 **CRSF receive stays off the ROM bootloader's UART pins** — `RX_RX_PIN` is PB7, not USART1's
 usual PA10, and moving it back breaks both DFU paths. The bootloader picks its host interface by

@@ -27,27 +27,11 @@ that talks to the board over USB. Nothing to install, no server to run; it needs
 browser (Chrome, Edge, Brave, Opera), because Web Serial and WebUSB are what it drives the board
 with.
 
-## Quickstart
+## Contributing
 
-```bash
-git clone <your-repo-url> betacrawler
-cd betacrawler
-code betacrawler.code-workspace
-```
-
-Install the recommended PlatformIO extension when VS Code offers it, then follow
-**[Build](https://tropotek.github.io/betacrawler/build/what-you-need/)** in the docs for the full
-walkthrough — wiring, flashing the firmware, and getting the app talking to the board.
-
-To serve the configurator from your own checkout:
-
-```bash
-cd web-app
-python3 -m http.server 9091
-```
-
-Then open <http://localhost:9091>. It has to be `localhost` or HTTPS — the browser withholds its
-USB APIs from anything else.
+Want to work on the firmware, the web app, or these docs?
+**[Contributing →](https://tropotek.github.io/betacrawler/development/contributing/)** covers
+setup, filing issues, and opening a PR.
 
 ## License
 

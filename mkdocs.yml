@@ -31,6 +31,7 @@ nav:
       - What you need: build/what-you-need.md
       - Wiring: build/wiring.md
       - Flashing the firmware: build/flashing.md
+      - Model Examples: build/models.md
   - Drive it:
       - Connect to the board: drive/install-and-connect.md
       - First setup: drive/first-setup.md
@@ -41,6 +42,11 @@ nav:
       - Status LED: reference/status-led.md
       - Terminal and backup: reference/terminal-and-backup.md
   - Troubleshooting: troubleshooting.md
+  - Development:
+      - Setup: development/setup.md
+      - Contributing: development/contributing.md
+      - Architecture: development/architecture.md
+      - Protocol: development/protocol.md
 
 markdown_extensions:
   - admonition
