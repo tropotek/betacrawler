@@ -66,16 +66,6 @@
                     :disabled="!$store.firmware.canEnterDfu"
                     x-text="$store.firmware.dfuPresent ? 'Already in DFU mode' : 'Reboot to DFU'"></button>
 
-            <!-- The browser cannot see an ungranted bootloader at all, so this
-                 is the only way to reach one. Hidden only while a device is
-                 connected over serial: that board is demonstrably running its
-                 firmware, so there is nothing to pick. Deliberately NOT hidden
-                 when a bootloader is believed present -- picking again is the
-                 way out if that belief is ever wrong. -->
-            <button id="fw-select-dfu" class="btn btn-outline-secondary"
-                    x-show="!$store.firmware.deviceConnected"
-                    :disabled="$store.firmware.busy">Select DFU device…</button>
-
             <button id="fw-flash" class="btn btn-danger"
                     :disabled="!$store.firmware.canFlash">Flash selected firmware</button>
             <span class="text-secondary small"
@@ -126,10 +116,21 @@
           </ol>
           <p class="text-secondary small">
             The board then disappears as a serial port and shows up as a DFU device instead —
-            click <strong>Select DFU device…</strong> to pick it, and the badge at the top of this
-            page turns amber. This page keeps working while disconnected, which is the whole
-            point: a board that needs re-flashing often can't be talked to.
+            pick it below, and the badge at the top of this page turns amber. This page keeps
+            working while disconnected, which is the whole point: a board that needs re-flashing
+            often can't be talked to.
           </p>
+          <!-- The browser cannot see an ungranted bootloader at all, so this is
+               the only way to reach one: the first flash ever, and a board whose
+               firmware cannot reboot itself. The normal path never needs it --
+               after the first grant, Flash finds the bootloader on its own.
+               Hidden only while a device is connected over serial (that board is
+               demonstrably running its firmware); deliberately NOT hidden when a
+               bootloader is believed present -- picking again is the way out if
+               that belief is ever wrong. -->
+          <button id="fw-select-dfu" class="btn btn-outline-secondary"
+                  x-show="!$store.firmware.deviceConnected"
+                  :disabled="$store.firmware.busy">Select DFU device…</button>
 
           <details class="mt-4">
             <summary class="h6">Advanced: flash a local file</summary>
