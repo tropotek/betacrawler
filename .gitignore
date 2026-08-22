@@ -4,12 +4,17 @@
 .piolibdeps/
 .idea/
 
-# Firmware the app ships with: build output, not source. Produced by
+# Firmware the desktop app ships with: build output, not source. Produced by
 # `python3 app/tools/bundle_firmware.py <board>` at release time, and by
 # nothing else. The manifest is ignored along with the binaries on purpose --
 # committing one without the others gives you a manifest whose sha256 fields
 # describe files that aren't there, which is the exact drift that script
 # exists to prevent.
+#
+# The same run also writes web-app/firmware/, which IS committed: the static
+# site has no backend to build an image on demand, so what it flashes travels
+# with it. web-app/tests/firmware-bundle.test.js fails if those binaries drift
+# from the firmware sources.
 app/firmware/
 
 # Python
