@@ -258,12 +258,23 @@ export const Api = {
   dfuSupported() {
     return typeof navigator !== 'undefined' && 'usb' in navigator;
   },
+  // A pick is a claim, not a fact: the chooser lists entries for bootloaders
+  // that no longer exist, and believing one puts the page in DFU mode with no
+  // board there. Verified before it is allowed to mean anything.
   async requestDfuDevice() {
-    dfuDevice = await navigator.usb.requestDevice({
+    const picked = await navigator.usb.requestDevice({
       filters: [{ vendorId: DFU_VID, productId: DFU_PID }],
     });
+    if (!await isOnTheBus(picked)) {
+      throw new DeviceError(
+        'nodfu',
+        'that device is no longer connected -- the entry is left over from an '
+        + 'earlier DFU session. Put the board into DFU mode and pick the one '
+        + 'that appears.');
+    }
+    dfuDevice = picked;
     publishDfu();
-    return { label: 'STM32 bootloader (0483:df11)', serial: dfuDevice.serialNumber || null };
+    return { label: 'STM32 bootloader (0483:df11)', serial: picked.serialNumber || null };
   },
   async dfuStatus() {
     if (!this.dfuSupported()) return { present: false, busy: flashBusy };

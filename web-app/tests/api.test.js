@@ -578,7 +578,9 @@ test('a flash falls back when the tracked handle will not open', async () => {
   const dead = fakeDfuDevice({ onBus: false, openError: 'SecurityError', serial: 'DEAD' });
   const live = fakeDfuDevice({ serial: 'LIVE' });
   setFakeUsbDevices([dead, live]);
-  await Api.requestDfuDevice();          // picks the dead one -- it is listed first
+  // The browser announced this one, so it is tracked unverified -- and by the
+  // time a flash starts it has gone (no disconnect event reached us).
+  fireUsbConnect(dead);
   const { frames, off } = collectFlashFrames();
   await Api.flashUpload(validBytes(), 'a.bin');
   off();
@@ -599,14 +601,50 @@ test('the tracked handle is tried first when it does open', async () => {
   const other = fakeDfuDevice({ serial: 'OTHER' });
   const picked = fakeDfuDevice({ serial: 'PICKED' });
   setFakeUsbDevices([other, picked]);
-  await Api.requestDfuDevice();
-  // requestDevice hands back fakeUsbDevices[0]; point the tracked handle at the
-  // second one instead, then confirm the flash follows it rather than the list.
-  setFakeUsbDevices([other, picked]);
+  // Track the second one, then confirm the flash follows it rather than simply
+  // taking the first entry the browser lists.
   fireUsbConnect(picked);
   const { off } = collectFlashFrames();
   await Api.flashUpload(validBytes(), 'a.bin');
   off();
   assert.ok(picked.opens > 0);
   assert.equal(other.opens, 0, 'no need to touch other devices when the tracked one works');
+});
+
+// --- a pick is a claim to be checked, not believed --------------------------
+// The chooser offers entries for bootloaders that no longer exist. Believing
+// one puts the page in DFU mode with no board there, which used to disable
+// Reboot to DFU and hide the picker -- a state only a reload escaped.
+
+test('picking a device that is not there does not claim DFU mode', async () => {
+  setFakeUsbDevices([fakeDfuDevice({ onBus: false, serial: 'STALE' })]);
+  await assert.rejects(() => Api.requestDfuDevice(), /no longer connected|not connected/);
+  assert.equal((await Api.dfuStatus()).present, false,
+               'a pick that cannot be opened must not turn the badge on');
+});
+
+test('picking a device that is there claims DFU mode', async () => {
+  setFakeUsbDevices([fakeDfuDevice({ serial: 'LIVE' })]);
+  const chosen = await Api.requestDfuDevice();
+  assert.equal(chosen.serial, 'LIVE');
+  assert.equal((await Api.dfuStatus()).present, true);
+});
+
+test('a rejected pick leaves the previous state alone', async () => {
+  setFakeUsbDevices([fakeDfuDevice({ serial: 'LIVE' })]);
+  await Api.requestDfuDevice();
+  assert.equal((await Api.dfuStatus()).present, true);
+
+  // A second pick that is stale must not tear down a working one.
+  const live = fakeUsbDevices[0];
+  setFakeUsbDevices([fakeDfuDevice({ onBus: false, serial: 'STALE' }), live]);
+  await assert.rejects(() => Api.requestDfuDevice());
+  assert.equal((await Api.dfuStatus()).present, true);
+});
+
+test('verifying a pick leaves the device closed', async () => {
+  const live = fakeDfuDevice({ serial: 'LIVE' });
+  setFakeUsbDevices([live]);
+  await Api.requestDfuDevice();
+  assert.equal(live.opens, live.closes, 'the verification open() must be closed again');
 });
