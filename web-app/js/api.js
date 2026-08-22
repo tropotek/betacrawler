@@ -90,29 +90,6 @@ async function isOnTheBus(device) {
   return true;
 }
 
-async function forgetDevice(device) {
-  try { await device.forget?.(); } catch { /* older browsers have no forget() */ }
-}
-
-// One grant per physical board. A DFU session can leave another permission
-// entry behind for a device already granted, and they pile up in the browser's
-// chooser; entries sharing a serial are the same bootloader, so the extras are
-// interchangeable and only one is worth keeping. Deliberately decided by
-// identity rather than by why an open() failed -- the error a browser reports
-// for an absent device is not something to depend on.
-async function pruneDuplicateGrants(granted, keep) {
-  const seen = new Set();
-  if (keep) seen.add(keep.serialNumber);
-  for (const device of granted) {
-    if (device === keep) continue;
-    if (!seen.has(device.serialNumber)) {
-      seen.add(device.serialNumber);
-      continue;
-    }
-    await forgetDevice(device);
-  }
-}
-
 // Presence means "on the bus now", never "granted at some point". A grant
 // outlives the device it was given for, so a board that has been reset -- by
 // NRST, by BOOT0, or by the flash that just finished -- would otherwise report
@@ -135,10 +112,6 @@ async function firstDfuDevice() {
   for (const device of candidates) {
     if (await isOnTheBus(device)) { found = device; break; }
   }
-  // Keeping one grant per board is what lets a bootloader returning to DFU be
-  // found without another pick.
-  await pruneDuplicateGrants(granted, found);
-
   dfuDevice = found;
   return found;
 }
