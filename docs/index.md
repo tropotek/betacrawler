@@ -13,10 +13,16 @@ the app builds the controls from that.
 ## How the parts fit together
 
 ```
-  STM32 board  ──USB serial──  backend  ──HTTP+WebSocket──  browser
-  reads the receiver,          bridges the                  the app you
-  drives the ESCs              serial link                  configure with
+  STM32 board  ──USB serial──  browser
+  reads the receiver,          the configurator,
+  drives the ESCs              running as a web page
 ```
+
+The configurator talks to the board directly, from the page:
+**[tropotek.github.io/betacrawler/app/](https://tropotek.github.io/betacrawler/app/)**. There is
+nothing to install and no server to run — but it needs a Chromium-based browser (Chrome, Edge,
+Brave, Opera), because Chromium is the only engine that has the USB APIs it uses. Firefox and
+Safari cannot drive a board, and the app says so on load rather than failing later.
 
 ## What you can do from the app
 
@@ -32,7 +38,7 @@ the app builds the controls from that.
 
 Work through the Build section in order — [What you need](build/what-you-need.md),
 [Wiring](build/wiring.md), [Flashing the firmware](build/flashing.md) — then Drive it, where
-[Install and connect](drive/install-and-connect.md) gets the app talking to the board and
-[First setup](drive/first-setup.md) decides whether the vehicle actually drives.
+[Connect to the board](drive/install-and-connect.md) opens the app and finds your vehicle, and
+[First setup](drive/first-setup.md) decides whether it actually drives.
 
 If something is not behaving, [Troubleshooting](troubleshooting.md) lists the usual causes.

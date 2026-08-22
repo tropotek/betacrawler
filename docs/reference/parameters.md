@@ -12,8 +12,8 @@ flash**.
 |---|---|---|---|
 | Device Name | `device.name` | `betacrawler` | up to 31 characters |
 
-A label for your own benefit, shown in the app's header. Useful if you have more than one
-vehicle.
+A label for your own benefit, on the **Configuration** page and in a settings backup. Useful if
+you have more than one vehicle.
 
 ## Telemetry
 
