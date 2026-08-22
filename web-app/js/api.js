@@ -75,27 +75,24 @@ function publish(frame) {
   for (const handler of subscribers) handler(frame);
 }
 
-// Whether a device is actually plugged in. getDevices() lists everything this
+// Where a granted device actually stands. getDevices() lists everything this
 // origin has ever been granted, connected or not -- a board running its
 // firmware was measured returning two stale 0483:df11 entries -- and only a
-// device that is really there will open.
-async function isOnTheBus(device) {
+// device that is really there will open. 'held' is a device that exists but
+// something else has it: another tab, or a running dfu-util.
+async function probeDevice(device) {
   try {
     await device.open();
   } catch (exc) {
-    // A device that is really gone leaves a permission entry behind, and every
-    // DFU session adds another to the browser's chooser. Dropping it here keeps
-    // that list to what exists. Only NotFoundError means gone: any other
-    // failure (another tab, a running dfu-util) is a device still present, and
-    // forgetting it would cost a grant for nothing.
-    if (exc.name === 'NotFoundError') {
-      try { await device.forget?.(); } catch { /* older browsers have no forget() */ }
-    }
-    return false;
+    return exc.name === 'NotFoundError' ? 'gone' : 'held';
   }
   // Left as we found it: opening is the test, not a claim on the device.
   try { await device.close(); } catch { /* it answered open(), that is enough */ }
-  return true;
+  return 'live';
+}
+
+async function forgetDevice(device) {
+  try { await device.forget?.(); } catch { /* older browsers have no forget() */ }
 }
 
 // Presence means "on the bus now", never "granted at some point". A grant
@@ -115,14 +112,25 @@ async function firstDfuDevice() {
   const candidates = granted.includes(dfuDevice)
     ? [dfuDevice, ...granted.filter((d) => d !== dfuDevice)]
     : granted;
+
+  let found = null;
+  const gone = [];
   for (const device of candidates) {
-    if (await isOnTheBus(device)) {
-      dfuDevice = device;
-      return device;
-    }
+    const state = await probeDevice(device);
+    if (state === 'live') { found = device; break; }
+    if (state === 'gone') gone.push(device);
   }
-  dfuDevice = null;
-  return null;
+
+  // Every 0483:df11 entry is the same bootloader reporting the same serial, so
+  // duplicate grants for it are interchangeable. Keep one -- a board returning
+  // to DFU is then found without another pick -- and forget the rest, which is
+  // what stops the browser's chooser gaining an entry per DFU session. Once a
+  // live device is in hand there is nothing left worth keeping.
+  const surplus = found ? gone : gone.slice(1);
+  for (const device of surplus) await forgetDevice(device);
+
+  dfuDevice = found;
+  return found;
 }
 
 async function sha256Hex(bytes) {

@@ -533,35 +533,63 @@ test('presence goes false after a flash without a new grant', async () => {
 // Each DFU session leaves another entry in the chooser. A grant for a device
 // that is definitively gone is worth nothing, so the probe drops it.
 
-test('a grant for a vanished device is forgotten', async () => {
+test('the last grant is kept, so a board returning to DFU needs no new pick', async () => {
   const stale = fakeDfuDevice({ onBus: false });
   setFakeUsbDevices([stale]);
   await Api.dfuStatus();
-  assert.equal(stale.forgotten, 1);
+  assert.equal(stale.forgotten, 0, 'one grant is worth keeping for auto-detect');
+});
+
+test('surplus grants for the same bootloader are forgotten', async () => {
+  // Every 0483:df11 entry is the same physical device reporting the same
+  // serial, so duplicates are interchangeable -- keep one, drop the rest.
+  const stale = [
+    fakeDfuDevice({ onBus: false, serial: 'S' }),
+    fakeDfuDevice({ onBus: false, serial: 'S' }),
+    fakeDfuDevice({ onBus: false, serial: 'S' }),
+  ];
+  setFakeUsbDevices(stale);
+  assert.equal((await Api.dfuStatus()).present, false);
+  assert.equal(stale.filter((d) => d.forgotten === 0).length, 1, 'exactly one survives');
+  assert.equal(stale.filter((d) => d.forgotten === 1).length, 2);
+});
+
+test('a live bootloader makes every dead grant surplus', async () => {
+  const stale = fakeDfuDevice({ onBus: false, serial: 'OLD' });
+  const live = fakeDfuDevice({ serial: 'LIVE' });
+  setFakeUsbDevices([stale, live]);
+  assert.equal((await Api.dfuStatus()).present, true);
+  assert.equal(stale.forgotten, 1, 'nothing to keep once a live grant is in hand');
+  assert.equal(live.forgotten, 0);
+});
+
+test('the chooser list stops growing across repeated DFU sessions', async () => {
+  // Each session leaves another entry behind; the poll must not let them pile
+  // up without bound.
+  const list = [];
+  for (let session = 0; session < 4; session += 1) {
+    list.push(fakeDfuDevice({ onBus: false, serial: 'S' }));
+    setFakeUsbDevices(list.filter((d) => d.forgotten === 0));
+    await Api.dfuStatus();
+  }
+  assert.equal(list.filter((d) => d.forgotten === 0).length, 1,
+               'four sessions must not leave four grants behind');
 });
 
 test('a grant is kept when open() fails for any other reason', async () => {
   // Another tab, or a running dfu-util, holds the device. It is still there,
   // and forgetting it would cost the user their grant for no reason.
   const held = fakeDfuDevice({ onBus: false, openError: 'SecurityError' });
-  setFakeUsbDevices([held]);
+  const stale = fakeDfuDevice({ onBus: false, serial: 'S' });
+  setFakeUsbDevices([held, stale, fakeDfuDevice({ onBus: false, serial: 'S' })]);
   assert.equal((await Api.dfuStatus()).present, false);
-  assert.equal(held.forgotten, 0);
+  assert.equal(held.forgotten, 0, 'a device that is present but held keeps its grant');
 });
 
 test('a live device is never forgotten', async () => {
   const live = fakeDfuDevice();
   setFakeUsbDevices([live]);
   await Api.dfuStatus();
-  assert.equal(live.forgotten, 0);
-});
-
-test('the live device survives while its stale neighbours are pruned', async () => {
-  const stale = fakeDfuDevice({ onBus: false, serial: 'OLD' });
-  const live = fakeDfuDevice({ serial: 'LIVE' });
-  setFakeUsbDevices([stale, live]);
-  assert.equal((await Api.dfuStatus()).present, true);
-  assert.equal(stale.forgotten, 1);
   assert.equal(live.forgotten, 0);
 });
 

@@ -1,7 +1,7 @@
 // Bump this whenever a cache-first file below changes (js/*, vendor/*,
 // icons/*, favicon.ico, tank-hero.svg) -- installed clients only refetch
 // them once the browser detects service-worker.js itself has new bytes.
-const CACHE_NAME = 'betacrawler-web-app-v7';
+const CACHE_NAME = 'betacrawler-web-app-v8';
 const SHELL_FILES = [
   './', './index.html', './manifest.json',
   './js/app.js', './js/api.js', './js/webserial-link.js', './js/device-model.js',
