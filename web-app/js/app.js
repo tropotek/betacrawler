@@ -537,12 +537,17 @@ document.addEventListener('alpine:init', () => {
       } catch (e) { showError(e.message); }
     },
 
-    async pollDfu() {
+    // Read once on entering the page: the browser announces every arrival and
+    // departure after that, so there is nothing to poll for.
+    async readDfu() {
       try {
-        const st = await Api.dfuStatus();
-        this.dfuPresent = st.present;
-        this.busy = st.busy;
-      } catch { /* the next tick retries */ }
+        this.applyDfu(await Api.dfuStatus());
+      } catch { /* the next visit retries */ }
+    },
+
+    applyDfu(st) {
+      this.dfuPresent = st.present;
+      this.busy = st.busy;
     },
 
     onFlashEvent(ev) {
@@ -759,8 +764,7 @@ async function showPage(page) {
   // loadDevice() already relies on for its own direct Alpine.store() calls.
   Alpine.initTree(el('page-mount'));
   PAGE_INIT[page]?.();
-  // Polling only while the page that shows it is mounted.
-  setDfuPolling(page === 'firmware');
+  if (page === 'firmware') enterFirmwarePage();
   // Save/Discard/Load defaults act on the device's config -- only the pages
   // that edit it need the bar at all. It stays mounted in the shell rather
   // than each page's own fragment so it survives navigation without losing
@@ -828,7 +832,6 @@ function flushLogBuffer(buf, elId) {
 
 // --- firmware page -----------------------------------------------------------
 const FW_MAX_LINES = 400;
-let dfuPollTimer = null;
 
 const fwLog = makeLogBuffer(FW_MAX_LINES);   // #fw-log's content, kept alive across unmount
 
@@ -837,20 +840,16 @@ function firmwareLog(text) {
   flushLogBuffer(fwLog, 'fw-log');
 }
 
-// Polls whether a bootloader is on the bus. Plugging one in AFTER opening this
-// page is the normal sequence, so this rides a timer rather than page entry
-// alone.
-function setDfuPolling(on) {
+// Entering the page reads the catalog and the current DFU state once. A
+// bootloader arriving or leaving afterwards comes through as a `dfu` frame, so
+// nothing here polls -- and nothing opens a device to find out, which on a
+// stateful bootloader is interference rather than observation.
+function enterFirmwarePage() {
   const store = window.Alpine?.store('firmware');
-  if (on && store && !dfuPollTimer) {
-    store.syncDevice(connected, deviceInfo);
-    store.refresh();
-    store.pollDfu();
-    dfuPollTimer = setInterval(() => store.pollDfu(), 1500);
-  } else if (!on && dfuPollTimer) {
-    clearInterval(dfuPollTimer);
-    dfuPollTimer = null;
-  }
+  if (!store) return;
+  store.syncDevice(connected, deviceInfo);
+  store.refresh();
+  store.readDfu();
 }
 
 function initFirmwarePage() {
@@ -860,7 +859,7 @@ function initFirmwarePage() {
     try {
       const chosen = await Api.requestDfuDevice();
       firmwareLog(`selected ${chosen.label}`);
-      Alpine.store('firmware').pollDfu();
+      Alpine.store('firmware').readDfu();
     } catch (e) {
       // A cancelled chooser is a NotFoundError, not a fault worth alerting on.
       if (e.name !== 'NotFoundError') showError(e.message);
@@ -876,8 +875,9 @@ function initFirmwarePage() {
       // notice and report it as a fault.
       setState('disconnected');
       firmwareLog('device acknowledged the DFU request and is rebooting');
-      // The ROM bootloader takes a moment to enumerate.
-      setTimeout(() => store.pollDfu(), 1200);
+      // The bootloader announces itself when it enumerates; this only covers a
+      // browser that never granted it, where no event can arrive.
+      setTimeout(() => store.readDfu(), 1500);
     } catch (e) {
       showError(e.message);
       firmwareLog(`ERROR: ${e.message}`);
@@ -1074,6 +1074,9 @@ function subscribeEvents() {
     }
     else if (msg.type === 'flash') {
       Alpine.store('firmware').onFlashEvent(msg.data);
+    }
+    else if (msg.type === 'dfu') {
+      Alpine.store('firmware').applyDfu(msg.data);
     }
     else if (msg.type === 'state') {
       const d = msg.data;

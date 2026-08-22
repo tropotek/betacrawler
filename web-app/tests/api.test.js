@@ -54,8 +54,12 @@ const disconnectListeners = [];
 let fakeUsbDevices = [];
 const setFakeUsbDevices = (devices) => { fakeUsbDevices = devices; };
 const usbDisconnectListeners = [];
+const usbConnectListeners = [];
 const fireUsbDisconnect = (device) => {
   for (const cb of usbDisconnectListeners) cb({ device });
+};
+const fireUsbConnect = (device) => {
+  for (const cb of usbConnectListeners) cb({ device });
 };
 
 Object.defineProperty(globalThis, 'navigator', {
@@ -63,7 +67,10 @@ Object.defineProperty(globalThis, 'navigator', {
   value: {
     usb: {
       getDevices: async () => fakeUsbDevices,
-      addEventListener: (type, cb) => { if (type === 'disconnect') usbDisconnectListeners.push(cb); },
+      addEventListener: (type, cb) => {
+        if (type === 'disconnect') usbDisconnectListeners.push(cb);
+        if (type === 'connect') usbConnectListeners.push(cb);
+      },
       removeEventListener: () => {},
       requestDevice: async () => {
         if (!fakeUsbDevices.length) {
@@ -403,16 +410,17 @@ test('unsubscribing stops both frame sources', async () => {
 
 // --- a bootloader that has left the bus ---------------------------------------
 
-test('dfuStatus() stops reporting a granted device once it leaves the bus', async () => {
-  // The board is reset (BOOT0 released, NRST tapped, or a flash completes), so
-  // the bootloader is gone even though the grant survives.
-  setFakeUsbDevices([fakeDfuDevice()]);
+test('the board leaving the bus ends its presence', async () => {
+  // Reset by NRST, by BOOT0, or by a finished flash: the grant survives, the
+  // device does not, and the browser says so.
+  const dev = fakeDfuDevice();
+  setFakeUsbDevices([dev]);
   await Api.requestDfuDevice();
   assert.equal((await Api.dfuStatus()).present, true);
 
   setFakeUsbDevices([]);
-  assert.equal((await Api.dfuStatus()).present, false,
-               'a granted handle must not outlive the device on the bus');
+  fireUsbDisconnect(dev);
+  assert.equal((await Api.dfuStatus()).present, false);
 });
 
 test('a usb disconnect event drops the granted device immediately', async () => {
@@ -426,6 +434,16 @@ test('a usb disconnect event drops the granted device immediately', async () => 
   assert.equal((await Api.dfuStatus()).present, false);
 });
 
+test('a disconnect for the same board as a different object still counts', async () => {
+  // The same physical bootloader can be handed back as a new USBDevice.
+  const granted = fakeDfuDevice({ serial: 'BOARD1' });
+  setFakeUsbDevices([granted]);
+  await Api.requestDfuDevice();
+  fireUsbDisconnect(fakeDfuDevice({ serial: 'BOARD1' }));
+  setFakeUsbDevices([]);
+  assert.equal((await Api.dfuStatus()).present, false);
+});
+
 test('a usb disconnect for a different device leaves the grant alone', async () => {
   setFakeUsbDevices([fakeDfuDevice()]);
   await Api.requestDfuDevice();
@@ -435,19 +453,26 @@ test('a usb disconnect for a different device leaves the grant alone', async () 
 
 test('flashing after the bootloader has gone throws instead of writing', async () => {
   fakeBundle();
-  setFakeUsbDevices([fakeDfuDevice()]);
+  const dev = fakeDfuDevice();
+  setFakeUsbDevices([dev]);
   await Api.requestDfuDevice();
   setFakeUsbDevices([]);
+  fireUsbDisconnect(dev);
   await assert.rejects(() => Api.flashBundled(F411.id), /no device in DFU mode/);
 });
 
 test('a re-entered bootloader is picked up without a second grant', async () => {
-  // The grant is per-device and persists, so returning to DFU must simply work.
-  setFakeUsbDevices([fakeDfuDevice()]);
+  const first = fakeDfuDevice();
+  setFakeUsbDevices([first]);
   await Api.requestDfuDevice();
   setFakeUsbDevices([]);
+  fireUsbDisconnect(first);
   assert.equal((await Api.dfuStatus()).present, false);
-  setFakeUsbDevices([fakeDfuDevice()]);
+
+  // Back into DFU: the browser announces it, no pick required.
+  const again = fakeDfuDevice();
+  setFakeUsbDevices([again]);
+  fireUsbConnect(again);
   assert.equal((await Api.dfuStatus()).present, true);
 });
 

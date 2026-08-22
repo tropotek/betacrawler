@@ -54,11 +54,28 @@ navigator.serial?.addEventListener('disconnect', (event) => {
   if (event.target === currentPort) link.handleDisconnect();
 });
 
-// Drops the granted bootloader the moment it leaves the bus, rather than
-// waiting for the next poll to notice. Optional-chained for the browsers with
-// no WebUSB at all, exactly as the serial listener above is.
+const isDfuDevice = (d) => d.vendorId === DFU_VID && d.productId === DFU_PID;
+
+// Presence is what the browser tells us, not something to go asking about. A
+// bootloader arriving or leaving is an event; between events the answer does
+// not change, so nothing here polls or opens a device to find out.
+// Optional-chained for the browsers with no WebUSB at all, exactly as the
+// serial listener above is.
+navigator.usb?.addEventListener('connect', (event) => {
+  if (!isDfuDevice(event.device)) return;
+  dfuDevice = event.device;
+  publishDfu();
+});
+
 navigator.usb?.addEventListener('disconnect', (event) => {
-  if (event.device === dfuDevice) dfuDevice = null;
+  if (!isDfuDevice(event.device) || !dfuDevice) return;
+  // Matched on serial as well as identity: the same board can come back as a
+  // different USBDevice object.
+  const ours = event.device === dfuDevice
+    || (!!dfuDevice.serialNumber && event.device.serialNumber === dfuDevice.serialNumber);
+  if (!ours) return;
+  dfuDevice = null;
+  publishDfu();
 });
 
 // The link publishes what the device said; app.js consumes {type, data}
@@ -73,6 +90,10 @@ function toFrame(msg) {
 
 function publish(frame) {
   for (const handler of subscribers) handler(frame);
+}
+
+function publishDfu() {
+  publish({ type: 'dfu', data: { present: !!dfuDevice, busy: flashBusy } });
 }
 
 // Whether a granted device is actually plugged in. getDevices() lists
@@ -90,30 +111,29 @@ async function isOnTheBus(device) {
   return true;
 }
 
-// Presence means "on the bus now", never "granted at some point". A grant
-// outlives the device it was given for, so a board that has been reset -- by
-// NRST, by BOOT0, or by the flash that just finished -- would otherwise report
-// DFU mode forever.
+// Events cannot report a device that was already plugged in before the page
+// loaded, and getDevices() alone cannot tell a live bootloader from a
+// permission an old one left behind -- so exactly one probe resolves the
+// starting position. Only ever runs while nothing is known to be present: once
+// a device is in hand, events own the answer.
 async function firstDfuDevice() {
   if (!navigator.usb) return null;
-  // Never probe while a flash owns the device: open()/close() underneath an
-  // in-flight write is exactly the kind of interference this poll must not
-  // cause. The handle in hand is the answer for as long as it is being used.
   if (usbBusy) return dfuDevice;
 
-  const granted = (await navigator.usb.getDevices())
-    .filter((d) => d.vendorId === DFU_VID && d.productId === DFU_PID);
-  // The one the user picked goes first, so a probe normally costs one open().
-  const candidates = granted.includes(dfuDevice)
-    ? [dfuDevice, ...granted.filter((d) => d !== dfuDevice)]
-    : granted;
+  const granted = (await navigator.usb.getDevices()).filter(isDfuDevice);
+  // Free sanity check: a device the browser no longer lists at all is gone,
+  // whatever events did or did not arrive. It cannot false-negative -- a device
+  // that is present and granted is always listed.
+  if (dfuDevice && !granted.includes(dfuDevice)) dfuDevice = null;
+  if (dfuDevice) return dfuDevice;
 
-  let found = null;
-  for (const device of candidates) {
-    if (await isOnTheBus(device)) { found = device; break; }
+  for (const device of granted) {
+    if (await isOnTheBus(device)) {
+      dfuDevice = device;
+      break;
+    }
   }
-  dfuDevice = found;
-  return found;
+  return dfuDevice;
 }
 
 async function sha256Hex(bytes) {
@@ -143,11 +163,13 @@ async function runFlash(bytes, label) {
   } catch (exc) {
     publish({ type: 'flash', data: { phase: 'error', line: exc.message } });
   } finally {
-    // The handle dies with the reset that ends a successful flash; getDevices()
-    // still finds the board after a failed one, since the grant persists.
+    // The handle dies with the reset that ends a successful flash. A failed one
+    // leaves the board in DFU, and its disconnect event never fires -- so the
+    // next status call probes afresh rather than assuming either way.
     flashBusy = false;
     usbBusy = false;
     dfuDevice = null;
+    publishDfu();
   }
 }
 
@@ -219,6 +241,7 @@ export const Api = {
     dfuDevice = await navigator.usb.requestDevice({
       filters: [{ vendorId: DFU_VID, productId: DFU_PID }],
     });
+    publishDfu();
     return { label: 'STM32 bootloader (0483:df11)', serial: dfuDevice.serialNumber || null };
   },
   async dfuStatus() {
