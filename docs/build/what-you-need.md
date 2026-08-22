@@ -15,10 +15,12 @@ you picked.
 | Power distribution board | 1 | With a 5V BEC. The reference build uses a Matek PDB with 5V and 12V outputs. |
 | LiPo battery | 1 | Sized for the motors. Feeds the PDB, **not** the board directly. |
 | USB-C cable | 1 | A data cable. Charge-only cables are a common and confusing failure. |
-| ST-Link/V2 | 1 | For the first flash only. You can borrow one — it is not needed again. |
 
 You also need a computer running a Chromium-based browser — Chrome, Edge, Brave or Opera. That is
 what the configurator runs in, and it is the only kind of browser that can talk to the board.
+
+No programmer, and nothing to install. The board is flashed from that browser, first time
+included — see [Flashing the firmware](flashing.md).
 
 ## Which Black Pill
 

@@ -5,6 +5,9 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **docs: flashing needs no programmer, first flash included.** BOOT0+NRST reaches the ROM
+  bootloader on a blank board, so the Firmware page writes it; the ST-Link leaves the parts list.
+
 - **feat: the configurator is published with the docs.** The docs workflow copies `web-app/` into
   the built site, so the app is served from `https://tropotek.github.io/betacrawler/app/`.
 

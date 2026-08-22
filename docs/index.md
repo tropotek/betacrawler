@@ -30,8 +30,8 @@ Safari cannot drive a board, and the app says so on load rather than failing lat
   calibrate both ESCs.
 - **Tune it** — cap forward speed, reverse speed and steering authority, each independently.
 - **Watch it live** — every receiver channel, link quality, and what each ESC is being told to do.
-- **Update the firmware** — over USB, without a programmer, once the board has been flashed the
-  first time.
+- **Flash and update the firmware** — over USB, from the browser, without a programmer. A blank
+  board included.
 - **Back up your settings** to a file, and restore them.
 
 ## Where to start

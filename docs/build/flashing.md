@@ -1,86 +1,81 @@
 # Flashing the firmware
 
-The first flash needs an ST-Link. After that, the configurator updates the board over USB and you
-will not need the programmer again.
+You do not need a programmer. Every STM32 carries a USB bootloader in ROM, and the configurator
+writes to it directly from the browser — including the very first time, on a board whose flash is
+still empty.
 
-## Why the first one is different
+## Put the board in bootloader mode
 
-The one-click firmware update works by asking the running firmware to reboot into the STM32's
-built-in USB bootloader. A blank board has no firmware to ask, so the first image has to go in
-over SWD with a programmer.
+Hold **BOOT0**, tap **NRST**, release **BOOT0**.
 
-## Wiring the ST-Link
+Both buttons are on the board. It then disappears as a serial port and appears as a DFU device
+instead. Nothing about this depends on what is in flash, which is why the same three keystrokes
+are also how you rescue a board whose firmware is broken.
 
-Four wires from the ST-Link/V2 to the header on the short edge of the board:
+## Flash it
 
-| ST-Link | Board |
-|---|---|
-| SWDIO | PA13 |
-| SWCLK | PA14 |
-| GND | GND |
-| 3.3V | 3V3 |
+Open **[the configurator](https://tropotek.github.io/betacrawler/app/)** and go to the
+**Firmware** page. It works with nothing connected, on purpose.
 
-## Pick the build for your chip
+![The configurator's Firmware page, offering an image for each supported board](../assets/screenshots/firmware.png)
 
-There is one build environment per Black Pill variant, and they are not interchangeable:
+1. Click **Select DFU device…** and pick the STM32 bootloader in the browser's chooser. It is
+   remembered after the first time.
+2. Choose the image for your chip — `blackpill_f411ce` or `blackpill_f401ce`. **Pick this
+   yourself.** A board in DFU mode cannot say what it is: every STM32F4 bootloader reports the
+   same USB identity, so the app has nothing to recommend from until it has spoken to the board
+   over serial. See [Which Black Pill](what-you-need.md#which-black-pill) if you are not sure
+   which one you have.
+3. Click **Flash selected firmware**. The board resets into the new firmware on its own.
+
+Only have the one board you are flashing plugged in — for the same reason the app cannot pick the
+image for you, it cannot tell two bootloaders apart either.
+
+On Windows, a board in bootloader mode has to be bound to the WinUSB driver before a browser can
+see it. Use [Zadig](https://zadig.akeo.ie/) once, on the `STM32 BOOTLOADER` device. Linux and
+macOS need nothing.
+
+## Checking it worked
+
+The onboard LED should settle into an even one-beat-per-second blink — that is the firmware
+reporting itself healthy. Anything faster means a fault; see
+[Status LED](../reference/status-led.md).
+
+Then connect the configurator and open the **Help** page: it names the board the running firmware
+was built for, which is the confirmation that you flashed the right image.
+
+## Updating later
+
+Once the board runs Betacrawler you do not need BOOT0 and NRST either. With the board connected,
+the **Firmware** page offers the image matching it, reboots it into the bootloader itself, writes
+the image and lets it restart — one click, no buttons.
+
+The manual route above stays the fallback, and it is the one that works when the firmware on the
+board is too broken to reboot itself.
+
+## Building the firmware yourself
+
+Only needed if you are changing the firmware. There is one build environment per Black Pill
+variant, and they are not interchangeable:
 
 | Your chip | Environment |
 |---|---|
 | STM32F411CE | `blackpill_f411ce` |
 | STM32F401CE | `blackpill_f401ce` |
 
-Read the marking on the chip itself rather than trusting the listing you bought it from — see
-[Which Black Pill](what-you-need.md#which-black-pill). An F411 image on an F401 hard-faults at
-boot and the board never enumerates over USB at all, which looks exactly like a dead board.
-
-## Build and upload
-
-PlatformIO does both. It is not on your `PATH` by default, so call it by its full path, and
-substitute your own environment for `blackpill_f411ce` if you have the F401:
+PlatformIO does the build. It is not on your `PATH` by default, so call it by its full path:
 
 ```bash
 cd firmware
 ~/.platformio/penv/bin/pio run -e blackpill_f411ce
-~/.platformio/penv/bin/pio run -e blackpill_f411ce -t upload
 ```
 
-The first command compiles and the second flashes. If you have two ST-Link units plugged in and
-it grabs the wrong one, add `upload_port = <device>` under `[env:blackpill_f411ce]` in
-`firmware/platformio.ini`.
+That writes `.pio/build/blackpill_f411ce/firmware.bin`. Flash it the same way as a shipped image:
+put the board in DFU, then use **Advanced: flash a local file** on the Firmware page. Pick the
+`.bin` — an `.elf` or `.hex` from the same folder is rejected, since flashing one would leave the
+board unbootable.
 
-## Checking it worked
-
-Unplug the ST-Link and power the board over USB. The onboard LED should settle into an even
-one-beat-per-second blink — that is the firmware reporting itself healthy. Anything faster means
-a fault; see [Status LED](../reference/status-led.md).
-
-Connect the configurator and open the **Help** page: it names the board the running firmware was
-built for, which is the confirmation that you flashed the right one.
-
-## Updating later
-
-![The configurator's Firmware page, offering an image for each supported board](../assets/screenshots/firmware.png)
-
-Once the board runs Betacrawler, updates go through the **Firmware** page in the configurator, over
-USB. No programmer, no wires to move. The app carries an image for each supported board and offers
-the one matching the board you last connected; it reboots the board into its bootloader, writes the
-image and lets the board restart itself.
-
-The first flash from a given browser asks you to pick the STM32 bootloader in a device picker, the
-same way connecting does. After that it is remembered.
-
-On Windows, a board in bootloader mode has to be bound to the WinUSB driver before a browser can
-see it. Use [Zadig](https://zadig.akeo.ie/) once, on the `STM32 BOOTLOADER` device. Linux and
-macOS need nothing.
-
-That page stays available even when no device is connected, on purpose: it is the recovery tool,
-so gating it on a working device would be backwards.
-
-## Recovering a board that will not come back
-
-The bootloader lives in ROM and runs whatever state the firmware is in — including a board flashed
-with the wrong chip's image. Reach it by hand: hold **BOOT0**, tap **NRST**, release **BOOT0**.
-The board then appears as a DFU device, and the **Firmware** page can write to it with nothing
-else connected.
+An ST-Link on SWD (PA13/PA14) is worth having if you want to step through firmware in a debugger.
+It is not needed to flash.
 
 Next: [Connect to the board](../drive/install-and-connect.md).

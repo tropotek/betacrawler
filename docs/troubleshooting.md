@@ -29,9 +29,8 @@ You flashed the wrong chip's image. An F411 build on an F401 hard-faults before 
 the board neither enumerates nor blinks — see
 [Which Black Pill](build/what-you-need.md#which-black-pill).
 
-Read the marking on the chip, then flash the matching build. You do not need the ST-Link back for
-this: hold **BOOT0**, tap **NRST**, release **BOOT0**, and flash the right image from the
-**Firmware** page.
+Read the marking on the chip, then flash the matching build: hold **BOOT0**, tap **NRST**, release
+**BOOT0**, and pick the right image on the **Firmware** page.
 
 ## The board connects, then drops out when the motors run
 
