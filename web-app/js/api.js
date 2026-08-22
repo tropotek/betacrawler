@@ -31,6 +31,23 @@ function portLabel(serialPort) {
 // the UI has to carry the board identity forward from the last `hello`.
 const DFU_VID = 0x0483, DFU_PID = 0xdf11;
 
+// Which board was last connected, remembered across reloads. A bootloader
+// cannot be asked what board it is -- every STM32F4 in DFU reports 0483:df11 --
+// so without this a page loaded with the board already in DFU can recommend
+// nothing, and the Flash button stays disabled with nothing selected.
+const LAST_BOARD_KEY = 'betacrawler.lastBoard';
+
+function rememberBoard(board) {
+  if (!board) return;
+  try { localStorage.setItem(LAST_BOARD_KEY, board); } catch { /* private mode */ }
+}
+
+function lastBoard() {
+  const live = device.lastRealBoard();
+  if (live) return live;
+  try { return localStorage.getItem(LAST_BOARD_KEY); } catch { return null; }
+}
+
 const link = new SerialLink();
 const device = new DeviceModel(link);
 let currentPort = null;
@@ -211,6 +228,7 @@ export const Api = {
   async connect(serialPort) {
     currentPort = serialPort;
     await device.connect(serialPort, portLabel(serialPort));
+    rememberBoard(device.status().board);
     return device.status();
   },
   async disconnect() {
@@ -287,7 +305,7 @@ export const Api = {
       throw new DeviceError('firmware', `could not read the firmware manifest (${r.status})`);
     }
     const data = await r.json();
-    const board = device.lastRealBoard();
+    const board = lastBoard();
     const match = board && data.images.find((img) => img.board === board);
     return {
       app_version: data.app_version,
