@@ -55,3 +55,32 @@ two bounds cannot cross.
 **UI Telemetry Rate** (`tlm.rate`, 1–50 Hz, default 10) on the **Configuration** page controls
 how often the board pushes live values to the app. It affects the display only, never how the
 vehicle drives.
+
+## Radio setup (EdgeTX)
+
+These settings live on your handset, not in Betacrawler — but they change how the vehicle feels
+to drive just as much as anything on the Controller page.
+
+### Expo
+
+A tracked vehicle is twitchy right around centre stick, where the full stick throw doesn't leave
+much room for fine control. Adding **exponential** to the Throttle and Steer inputs softens the
+response near centre while still reaching full authority at the stick's ends.
+
+On the **Inputs** page for your model, edit the Throttle and Steer inputs and set their curve to
+**Expo**, with a value around **80–95**. Higher is gentler near centre. Menu names vary slightly
+between EdgeTX versions, but every version has an Expo curve on the input line.
+
+### Battery and link quality on the home screen
+
+ELRS/Crossfire receivers report telemetry back to the handset — battery voltage and link quality
+among it — but EdgeTX only shows sensors it already knows about.
+
+1. On the **Telemetry** page for your model, run **Discover new sensors**. With the vehicle
+   powered on and bound, this finds the receiver's sensors — battery voltage (`RxBt`) and link
+   quality (`RQly`) included.
+2. On the **Screens** page, add a telemetry widget to your home screen and point it at `RxBt` and
+   `RQly` so both are visible without leaving the main display.
+
+This is a one-time setup per model on the handset — it has nothing to do with the live telemetry
+Betacrawler's own app shows over USB.
