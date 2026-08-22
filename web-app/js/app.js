@@ -596,12 +596,22 @@ async function loadDevice() {
   setTelemetryPeriodFrom(values);
 }
 
+// Guards the click while a connect is in flight. Opening a port can take
+// seconds on a board that is slow to enumerate, and a second open() on the same
+// port throws "a call to open() is already in progress" -- so the button says
+// what it is doing and refuses to start twice.
+let connecting = false;
+
 el('connect').addEventListener('click', async () => {
+  if (connecting) return;
   try {
     if (connected) {
       setState((await Api.disconnect()).state);
       return;
     }
+    connecting = true;
+    el('connect').disabled = true;
+    el('connect').textContent = 'Connecting…';
     // Web Serial remembers a granted port, so a board connected once
     // reconnects on one click. Anything else -- nothing granted yet, or
     // several -- still goes through the browser's own picker.
@@ -619,6 +629,10 @@ el('connect').addEventListener('click', async () => {
     // Dismissing the picker rejects with NotFoundError. That is a choice,
     // not a failure, and must not raise an error banner.
     if (e.name !== 'NotFoundError') showError(e.message);
+  } finally {
+    connecting = false;
+    el('connect').disabled = false;
+    el('connect').textContent = connected ? 'Disconnect' : 'Connect';
   }
 });
 
