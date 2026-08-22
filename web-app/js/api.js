@@ -7,6 +7,7 @@ import { SerialLink } from './webserial-link.js';
 import { DeviceModel, DeviceError } from './device-model.js';
 import { run as terminalRun } from './terminal.js';
 import { parseIni } from './settings-ini.js';
+import { flash as dfuFlash, validateImage } from './dfu.js';
 
 // STM32 Black Pill's native USB CDC, and the CP2102 bridge some ESP32
 // devkits use -- the same pairs app/backend/link.py's _KNOWN_BOARDS lists.
@@ -25,9 +26,18 @@ function portLabel(serialPort) {
   return 'serial device';
 }
 
+// The STM32 ROM bootloader's USB identity. Every STM32F4 in DFU mode presents
+// exactly this, which is why nothing here can tell one board from another and
+// the UI has to carry the board identity forward from the last `hello`.
+const DFU_VID = 0x0483, DFU_PID = 0xdf11;
+
 const link = new SerialLink();
 const device = new DeviceModel(link);
 let currentPort = null;
+// The granted bootloader, held here so no USBDevice crosses the Api seam.
+let dfuDevice = null;
+let flashBusy = false;
+const subscribers = new Set();
 
 // The read loop already notices a physical unplug when the next read fails
 // or the stream closes -- but navigator.serial's own "disconnect" event
@@ -49,6 +59,49 @@ function toFrame(msg) {
   if ('log' in msg) return { type: 'log', data: msg.log };
   if ('state' in msg) return { type: 'state', data: msg.state };
   return { type: 'raw', data: msg };
+}
+
+function publish(frame) {
+  for (const handler of subscribers) handler(frame);
+}
+
+async function firstDfuDevice() {
+  if (dfuDevice) return dfuDevice;
+  const devices = await navigator.usb.getDevices();
+  return devices.find((d) => d.vendorId === DFU_VID && d.productId === DFU_PID) || null;
+}
+
+async function sha256Hex(bytes) {
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Pre-flight failures (no device, busy, bad image, bad checksum) throw, the way
+// the backend build answers a rejected POST. A failure once writing has begun
+// arrives as an error frame instead, the way its WS progress does.
+async function runFlash(bytes, label) {
+  if (flashBusy) throw new DeviceError('busy', 'a firmware flash is already in progress');
+  const dev = await firstDfuDevice();
+  if (!dev) {
+    throw new DeviceError(
+      'nodfu',
+      'no device in DFU mode. Hold BOOT0, tap NRST, release BOOT0, then choose the device.');
+  }
+  flashBusy = true;
+  publish({ type: 'flash', data: { phase: 'flashing', pct: 0, line: `writing ${label}` } });
+  try {
+    await dfuFlash(dev, bytes, {
+      onProgress: (ev) => publish({ type: 'flash', data: { phase: 'flashing', ...ev } }),
+    });
+    publish({ type: 'flash', data: { phase: 'done', pct: 100, line: 'flash complete' } });
+  } catch (exc) {
+    publish({ type: 'flash', data: { phase: 'error', line: exc.message } });
+  } finally {
+    // The handle dies with the reset that ends a successful flash; getDevices()
+    // still finds the board after a failed one, since the grant persists.
+    flashBusy = false;
+    dfuDevice = null;
+  }
 }
 
 export const Api = {
@@ -112,5 +165,69 @@ export const Api = {
     }
     return { ok: applied.length > 0 && skipped.length === 0, applied, skipped, vals: device.values() };
   },
-  subscribe(handler) { return device.subscribe((msg) => handler(toFrame(msg))); },
+  dfuSupported() {
+    return typeof navigator !== 'undefined' && 'usb' in navigator;
+  },
+  async requestDfuDevice() {
+    dfuDevice = await navigator.usb.requestDevice({
+      filters: [{ vendorId: DFU_VID, productId: DFU_PID }],
+    });
+    return { label: 'STM32 bootloader (0483:df11)', serial: dfuDevice.serialNumber || null };
+  },
+  async dfuStatus() {
+    if (!this.dfuSupported()) return { present: false, busy: flashBusy };
+    return { present: !!(await firstDfuDevice()), busy: flashBusy };
+  },
+  async enterDfu() { await device.enterDfu(); },
+  async firmwareCatalog() {
+    const r = await fetch('firmware/manifest.json', { cache: 'no-cache' });
+    if (!r.ok) {
+      throw new DeviceError('firmware', `could not read the firmware manifest (${r.status})`);
+    }
+    const data = await r.json();
+    const board = device.lastRealBoard();
+    const match = board && data.images.find((img) => img.board === board);
+    return {
+      app_version: data.app_version,
+      images: data.images.map((img) => ({ ...img, available: true })),
+      recommended: match ? match.id : null,
+      board,
+    };
+  },
+  async flashBundled(id) {
+    const cat = await this.firmwareCatalog();
+    const img = cat.images.find((i) => i.id === id);
+    if (!img) throw new DeviceError('firmware', `no firmware image '${id}' in the bundle`);
+    const r = await fetch(`firmware/${img.file}`, { cache: 'no-cache' });
+    if (!r.ok) {
+      throw new DeviceError(
+        'firmware',
+        `${img.file} is missing from the bundle -- the manifest lists it but the `
+        + 'file is not there');
+    }
+    // Re-checked here rather than trusted from the manifest: the two are
+    // separate files that a bad merge or a partial copy can drift apart.
+    const bytes = new Uint8Array(await r.arrayBuffer());
+    if (bytes.length !== img.size) {
+      throw new DeviceError(
+        'firmware', `${img.file} is ${bytes.length} bytes, manifest says ${img.size}`);
+    }
+    if (await sha256Hex(bytes) !== img.sha256) {
+      throw new DeviceError(
+        'firmware',
+        `${img.file} failed its checksum -- the bundled file does not match the `
+        + 'manifest and will not be flashed');
+    }
+    await runFlash(bytes, `${img.name} ${img.version} (${img.board})`);
+  },
+  async flashUpload(bytes, name) {
+    const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    validateImage(data);
+    await runFlash(data, name);
+  },
+  subscribe(handler) {
+    subscribers.add(handler);
+    const off = device.subscribe((msg) => handler(toFrame(msg)));
+    return () => { subscribers.delete(handler); off(); };
+  },
 };
