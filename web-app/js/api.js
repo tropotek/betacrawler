@@ -37,6 +37,9 @@ let currentPort = null;
 // The granted bootloader, held here so no USBDevice crosses the Api seam.
 let dfuDevice = null;
 let flashBusy = false;
+// Set for the whole flash, including the moment before it starts, so the
+// presence poll never opens a device a write is about to take over.
+let usbBusy = false;
 const subscribers = new Set();
 
 // The read loop already notices a physical unplug when the next read fails
@@ -72,16 +75,46 @@ function publish(frame) {
   for (const handler of subscribers) handler(frame);
 }
 
-// Presence means "on the bus now", never "granted at some point". A WebUSB
-// grant outlives the device it was given for, so a board that has been reset
-// -- by NRST, by BOOT0, or by the flash that just finished -- leaves a handle
-// behind that would otherwise report DFU mode forever.
+// Whether a device is actually plugged in. getDevices() lists everything this
+// origin has ever been granted, connected or not -- a board running its
+// firmware was measured returning two stale 0483:df11 entries -- and only a
+// device that is really there will open.
+async function isOnTheBus(device) {
+  try {
+    await device.open();
+  } catch {
+    return false;
+  }
+  // Left as we found it: opening is the test, not a claim on the device.
+  try { await device.close(); } catch { /* it answered open(), that is enough */ }
+  return true;
+}
+
+// Presence means "on the bus now", never "granted at some point". A grant
+// outlives the device it was given for, so a board that has been reset -- by
+// NRST, by BOOT0, or by the flash that just finished -- would otherwise report
+// DFU mode forever.
 async function firstDfuDevice() {
   if (!navigator.usb) return null;
-  const live = (await navigator.usb.getDevices())
+  // Never probe while a flash owns the device: open()/close() underneath an
+  // in-flight write is exactly the kind of interference this poll must not
+  // cause. The handle in hand is the answer for as long as it is being used.
+  if (usbBusy) return dfuDevice;
+
+  const granted = (await navigator.usb.getDevices())
     .filter((d) => d.vendorId === DFU_VID && d.productId === DFU_PID);
-  if (dfuDevice && !live.includes(dfuDevice)) dfuDevice = null;
-  return dfuDevice || live[0] || null;
+  // The one the user picked goes first, so a probe normally costs one open().
+  const candidates = granted.includes(dfuDevice)
+    ? [dfuDevice, ...granted.filter((d) => d !== dfuDevice)]
+    : granted;
+  for (const device of candidates) {
+    if (await isOnTheBus(device)) {
+      dfuDevice = device;
+      return device;
+    }
+  }
+  dfuDevice = null;
+  return null;
 }
 
 async function sha256Hex(bytes) {
@@ -101,6 +134,7 @@ async function runFlash(bytes, label) {
       'no device in DFU mode. Hold BOOT0, tap NRST, release BOOT0, then choose the device.');
   }
   flashBusy = true;
+  usbBusy = true;
   publish({ type: 'flash', data: { phase: 'flashing', pct: 0, line: `writing ${label}` } });
   try {
     await dfuFlash(dev, bytes, {
@@ -113,6 +147,7 @@ async function runFlash(bytes, label) {
     // The handle dies with the reset that ends a successful flash; getDevices()
     // still finds the board after a failed one, since the grant persists.
     flashBusy = false;
+    usbBusy = false;
     dfuDevice = null;
   }
 }

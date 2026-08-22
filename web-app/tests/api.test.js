@@ -210,22 +210,34 @@ function fakeBundle({ corrupt = false, missing = false } = {}) {
   return { blob, img };
 }
 
-function fakeDfuDevice() {
-  return {
-    vendorId: 0x0483, productId: 0xdf11, serialNumber: 'FAKE123',
+// `onBus: false` models what Brave actually returns: a device this origin was
+// granted at some point, which is no longer plugged in. Its open() rejects the
+// way a real absent device's does.
+function fakeDfuDevice({ onBus = true, serial = 'FAKE123' } = {}) {
+  const dev = {
+    vendorId: 0x0483, productId: 0xdf11, serialNumber: serial,
+    opens: 0, closes: 0, get open_() { return dev.opens; },
     configuration: {
       interfaces: [{ interfaceNumber: 0, alternates: [{ alternateSetting: 0, interfaceName: null }] }],
     },
-    open: async () => {},
+    open: async () => {
+      dev.opens += 1;
+      if (!onBus) {
+        const err = new Error('The device was disconnected.');
+        err.name = 'NotFoundError';
+        throw err;
+      }
+    },
     selectConfiguration: async () => {},
     claimInterface: async () => {},
     selectAlternateInterface: async () => {},
-    close: async () => {},
+    close: async () => { dev.closes += 1; },
     controlTransferOut: async () => ({ status: 'ok', bytesWritten: 0 }),
     controlTransferIn: async () => ({
       status: 'ok', data: new DataView(new Uint8Array([0, 0, 0, 0, 5, 0]).buffer),
     }),
   };
+  return dev;
 }
 
 function collectFlashFrames() {
@@ -333,7 +345,10 @@ test('flashUpload() accepts an ArrayBuffer as well as a Uint8Array', async () =>
 test('a second concurrent flash is refused', async () => {
   let release;
   const dev = fakeDfuDevice();
-  dev.open = () => new Promise((r) => { release = r; });
+  // Stalls the flash, not the liveness probe -- the probe only opens and
+  // closes, so holding open() here would deadlock before the flash begins.
+  dev.configuration = null;
+  dev.selectConfiguration = () => new Promise((r) => { release = r; });
   setFakeUsbDevices([dev]);
   const first = Api.flashUpload(validBytes(), 'a.bin');
   // A macrotask, not a microtask: runFlash awaits getDevices() before it sets
@@ -431,4 +446,81 @@ test('a re-entered bootloader is picked up without a second grant', async () => 
   assert.equal((await Api.dfuStatus()).present, false);
   setFakeUsbDevices([fakeDfuDevice()]);
   assert.equal((await Api.dfuStatus()).present, true);
+});
+
+
+// --- presence is "on the bus", not "granted once" -----------------------------
+// Brave returns every device this origin was ever granted, connected or not --
+// two stale 0483:df11 entries were observed on a board running its firmware.
+
+test('dfuStatus() ignores a granted device that no longer opens', async () => {
+  setFakeUsbDevices([fakeDfuDevice({ onBus: false })]);
+  assert.equal((await Api.dfuStatus()).present, false);
+});
+
+test('dfuStatus() ignores several stale grants at once', async () => {
+  setFakeUsbDevices([
+    fakeDfuDevice({ onBus: false, serial: 'OLD1' }),
+    fakeDfuDevice({ onBus: false, serial: 'OLD2' }),
+  ]);
+  assert.equal((await Api.dfuStatus()).present, false);
+});
+
+test('dfuStatus() finds the live bootloader among stale grants', async () => {
+  const live = fakeDfuDevice({ serial: 'LIVE' });
+  setFakeUsbDevices([fakeDfuDevice({ onBus: false, serial: 'OLD1' }), live]);
+  assert.equal((await Api.dfuStatus()).present, true);
+});
+
+test('probing leaves the device closed', async () => {
+  const live = fakeDfuDevice();
+  setFakeUsbDevices([live]);
+  await Api.dfuStatus();
+  assert.equal(live.opens, live.closes, 'every probe open() must be closed again');
+});
+
+test('a flash writes to the live device, not a stale grant', async () => {
+  const live = fakeDfuDevice({ serial: 'LIVE' });
+  setFakeUsbDevices([fakeDfuDevice({ onBus: false, serial: 'OLD1' }), live]);
+  const { frames, off } = collectFlashFrames();
+  await Api.flashUpload(validBytes(), 'a.bin');
+  off();
+  assert.equal(frames.at(-1).phase, 'done');
+  assert.ok(live.opens > 0, 'the live device is the one written to');
+});
+
+test('polling does not touch the device while a flash is running', async () => {
+  let release;
+  const live = fakeDfuDevice();
+  setFakeUsbDevices([live]);
+  // Stall inside the flash, then poll: a probe here would open (and close) the
+  // device mid-write. configuration is nulled so flash() actually reaches
+  // selectConfiguration().
+  live.configuration = null;
+  live.selectConfiguration = () => new Promise((r) => { release = r; });
+  const flashing = Api.flashUpload(validBytes(), 'a.bin');
+  await new Promise((r) => setTimeout(r, 0));
+  // Baselines taken mid-flash: the liveness probe that ran BEFORE the flash
+  // started legitimately opened and closed the device once.
+  const opensBefore = live.opens;
+  const closesBefore = live.closes;
+  const status = await Api.dfuStatus();
+  assert.equal(status.busy, true);
+  assert.equal(live.opens, opensBefore, 'no probe while the flash holds the device');
+  assert.equal(live.closes, closesBefore,
+               'the flash\'s device must not be closed underneath it');
+  release();
+  await flashing;
+});
+
+test('presence goes false after a flash without a new grant', async () => {
+  // The board resets into its application, so the bootloader stops opening --
+  // but the grant, and getDevices()\'s entry for it, both remain.
+  const dev = fakeDfuDevice();
+  setFakeUsbDevices([dev]);
+  const { off } = collectFlashFrames();
+  await Api.flashUpload(validBytes(), 'a.bin');
+  off();
+  setFakeUsbDevices([fakeDfuDevice({ onBus: false })]);
+  assert.equal((await Api.dfuStatus()).present, false);
 });
