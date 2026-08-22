@@ -762,7 +762,14 @@ document.querySelectorAll('[data-page]').forEach((btn) => {
 // being forced to connect first and navigate second is exactly the moment
 // you would miss it. Its controls are disabled instead (Alpine-bound to
 // $store.app.connected, see pages/terminal.html).
-const CONNECTION_REQUIRED_PAGES = new Set(['config', 'controller', 'modes']);
+// Every page that needs a live device. They are also exactly the pages that
+// can dirty the device's config, so the Save/Discard/Load-defaults bar rides
+// the same set.
+const CONNECTION_REQUIRED_PAGES = new Set(['config', 'controller', 'modes', 'terminal']);
+
+// What is mounted right now, so a dropped connection can navigate away from a
+// page that needs one. The nav's `active` class is otherwise the only record.
+let currentPage = 'home';
 
 // Bumped on every call, checked after the (possibly slow, first-visit-only)
 // fragment fetch below -- two overlapping navigations otherwise let whichever
@@ -792,6 +799,7 @@ async function showPage(page) {
   // finished) while this fetch was in flight -- drop this stale result
   // rather than clobbering whatever the user actually navigated to since.
   if (generation !== showPageGeneration) return;
+  currentPage = page;
   el('page-mount').innerHTML = html;
   // Safe unguarded: this always runs after an awaited fetch, and even a
   // same-origin static-file fetch resolves as a browser task, never
@@ -820,12 +828,12 @@ async function showPage(page) {
 }
 
 function updateNavAvailability() {
-  document.querySelectorAll('[data-page]').forEach((btn) => {
-    const needsConnection = CONNECTION_REQUIRED_PAGES.has(btn.dataset.page);
-    const disabled = needsConnection && !connected;
-    btn.classList.toggle('disabled', disabled);
-    btn.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-  });
+  el('nav-device')?.classList.toggle('d-none', !connected);
+  // Losing the link while standing on one of those pages leaves the user on
+  // markup that can no longer do anything, and whose nav entry has just gone.
+  if (!connected && CONNECTION_REQUIRED_PAGES.has(currentPage)) {
+    showPage('home').catch((e) => showError(`Failed to load the app: ${e.message}`));
+  }
 }
 
 document.querySelectorAll('[data-page]').forEach((btn) => {
@@ -834,7 +842,6 @@ document.querySelectorAll('[data-page]').forEach((btn) => {
     // here for the navbar-brand link (an <a href="#">), so clicking it
     // doesn't also jump the page to the top or append "#" to the URL.
     event.preventDefault();
-    if (btn.classList.contains('disabled')) return;
     showPage(btn.dataset.page);
   });
 });
@@ -1121,25 +1128,6 @@ function initTerminalPage() {
     }
   });
 
-  el('term-save').addEventListener('click', async () => {
-    termAppend('> save to flash');
-    el('term-save').disabled = true;      // the write stalls the board ~1s
-    try {
-      await saveToFlash();
-      termAppend('OK: saved to flash');
-    } catch (e) {
-      termAppend(`ERROR: ${e.message}`);
-      setDirty(true);                     // still unsaved — let them retry
-      // setDirty(true) above is a same-value write when dirty was already
-      // true (it was, or Save couldn't have been clicked) -- Alpine's
-      // :disabled="!$store.app.dirty" binding skips re-firing on an
-      // unchanged value, so the imperative disable set above has to be
-      // cleared by hand too. Guarded: Terminal may no longer be the mounted
-      // page by the time a save that stalls the board ~1s comes back.
-      const saveBtn = el('term-save');
-      if (saveBtn) saveBtn.disabled = false;
-    }
-  });
 }
 
 // One handler for every frame the backend pushes. Nothing here knows there is

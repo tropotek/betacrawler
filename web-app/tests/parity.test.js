@@ -12,9 +12,11 @@ const appWeb = `${here}../../app/web`;
 // port dropdown, and firmware updates happen in this build rather than a
 // desktop app), and firmware.html differs too -- this one is DFU-only over
 // WebUSB, with a device-grant button the backend build has no need for.
+// terminal.html is out for the same kind of reason: this build reaches Save to
+// flash through the shell's save bar, which its command row no longer repeats.
 const COPIED = [
   'pages/config.html', 'pages/controller.html', 'pages/modes.html',
-  'pages/terminal.html', 'pages/wiring.html',
+  'pages/wiring.html',
   'vendor/bootstrap.min.css', 'vendor/bootstrap.bundle.min.js', 'vendor/alpine.min.js',
   'favicon.ico', 'tank-hero.svg',
 ];

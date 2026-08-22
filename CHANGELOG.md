@@ -5,6 +5,16 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **feat: the pages that need a board are a sidebar section of their own.** Configuration,
+  Controller, Modes and Terminal — Terminal joins them, having previously been reachable with
+  nothing connected — now live in one group that is hidden outright while disconnected, rather
+  than shown greyed out. Losing the link while standing on one of them returns you to Home, so
+  nobody is left on a page whose nav entry has just disappeared. Home, Firmware, Wiring and Help
+  are unaffected; Firmware stays deliberately ungated, because a board that needs re-flashing is
+  frequently one you cannot talk to. Terminal gains the shell's Save/Discard/Load-defaults bar,
+  which its command row used to duplicate with a Save button of its own — a `set` there dirties
+  the config like any other page, so it now offers the same one way to write it to flash.
+
 - **feat: `web-app/` says so up front when the browser cannot drive a board.** A modal on load,
   replacing a banner that cleared itself after five seconds — no use to someone who arrived to
   flash a board and cannot. Feature detection decides; the user agent only picks the wording, so

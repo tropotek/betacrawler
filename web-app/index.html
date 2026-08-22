@@ -241,30 +241,6 @@
                   Home
                 </button>
               </li>
-              <li class="nav-item">
-                <button class="nav-link d-flex align-items-center gap-2" data-page="config">
-                  <svg class="bi"><use href="#cpu"/></svg>
-                  Configuration
-                </button>
-              </li>
-              <li class="nav-item">
-                <button class="nav-link d-flex align-items-center gap-2" data-page="controller">
-                  <svg class="bi"><use href="#gear-wide-connected"/></svg>
-                  Controller
-                </button>
-              </li>
-              <li class="nav-item">
-                <button class="nav-link d-flex align-items-center gap-2" data-page="modes">
-                  <svg class="bi"><use href="#sliders"/></svg>
-                  Modes
-                </button>
-              </li>
-              <li class="nav-item">
-                <button class="nav-link d-flex align-items-center gap-2" data-page="terminal">
-                  <svg class="bi"><use href="#terminal-fill"/></svg>
-                  Terminal
-                </button>
-              </li>
               <!-- Deliberately not connection-gated: a board that needs
                    re-flashing is frequently one you cannot talk to. -->
               <li class="nav-item">
@@ -275,6 +251,38 @@
               </li>
             </ul>
             <hr class="my-3">
+            <!-- Every page here needs a live device, so the whole section is
+                 hidden (with its own trailing rule) while nothing is connected,
+                 and app.js navigates away from one if the link drops. -->
+            <div id="nav-device" class="d-none">
+              <ul class="nav flex-column">
+                <li class="nav-item">
+                  <button class="nav-link d-flex align-items-center gap-2" data-page="config">
+                    <svg class="bi"><use href="#cpu"/></svg>
+                    Configuration
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button class="nav-link d-flex align-items-center gap-2" data-page="controller">
+                    <svg class="bi"><use href="#gear-wide-connected"/></svg>
+                    Controller
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button class="nav-link d-flex align-items-center gap-2" data-page="modes">
+                    <svg class="bi"><use href="#sliders"/></svg>
+                    Modes
+                  </button>
+                </li>
+                <li class="nav-item">
+                  <button class="nav-link d-flex align-items-center gap-2" data-page="terminal">
+                    <svg class="bi"><use href="#terminal-fill"/></svg>
+                    Terminal
+                  </button>
+                </li>
+              </ul>
+              <hr class="my-3">
+            </div>
             <ul class="nav flex-column mb-auto">
               <li class="nav-item">
                 <button class="nav-link d-flex align-items-center gap-2" data-page="wiring">
