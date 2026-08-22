@@ -352,19 +352,36 @@ test('flashUpload() accepts an ArrayBuffer as well as a Uint8Array', async () =>
   assert.equal(frames.at(-1).phase, 'done');
 });
 
+// Waits for a condition rather than a fixed delay: how many awaits a flash
+// takes before it marks itself busy is an implementation detail, and a timeout
+// that encodes it silently turns into a race the next time that changes.
+async function waitUntil(predicate, what, timeoutMs = 2000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await predicate()) return;
+    await new Promise((r) => setTimeout(r, 5));
+  }
+  throw new Error(`timed out waiting for ${what}`);
+}
+
 test('a second concurrent flash is refused', async () => {
   let release;
+  let stalled = false;
   const dev = fakeDfuDevice();
   // Stalls the flash, not the liveness probe -- the probe only opens and
   // closes, so holding open() here would deadlock before the flash begins.
+  // Only the first call stalls, so releasing it cannot be stolen by a second.
   dev.configuration = null;
-  dev.selectConfiguration = () => new Promise((r) => { release = r; });
+  dev.selectConfiguration = () => new Promise((resolve) => {
+    if (stalled) { resolve(); return; }
+    stalled = true;
+    release = resolve;
+  });
   setFakeUsbDevices([dev]);
+
   const first = Api.flashUpload(validBytes(), 'a.bin');
-  // A macrotask, not a microtask: runFlash awaits getDevices() before it sets
-  // the busy flag, so Promise.resolve() would race it.
-  await new Promise((r) => setTimeout(r, 0));
-  assert.equal((await Api.dfuStatus()).busy, true);
+  await waitUntil(async () => (await Api.dfuStatus()).busy, 'the flash to take the device');
+
   await assert.rejects(() => Api.flashUpload(validBytes(), 'b.bin'), /already in progress/);
   release();
   await first;
@@ -551,4 +568,45 @@ test('presence goes false after a flash without a new grant', async () => {
   off();
   setFakeUsbDevices([fakeDfuDevice({ onBus: false })]);
   assert.equal((await Api.dfuStatus()).present, false);
+});
+
+// --- picking the handle that actually opens -----------------------------------
+// A chooser can offer entries for bootloaders that no longer exist, and picking
+// one opens with "Access denied". The badge's handle is a hint, not a promise.
+
+test('a flash falls back when the tracked handle will not open', async () => {
+  const dead = fakeDfuDevice({ onBus: false, openError: 'SecurityError', serial: 'DEAD' });
+  const live = fakeDfuDevice({ serial: 'LIVE' });
+  setFakeUsbDevices([dead, live]);
+  await Api.requestDfuDevice();          // picks the dead one -- it is listed first
+  const { frames, off } = collectFlashFrames();
+  await Api.flashUpload(validBytes(), 'a.bin');
+  off();
+  assert.equal(frames.at(-1).phase, 'done');
+  assert.ok(live.opens > 0, 'the flash must land on the device that opens');
+});
+
+test('a flash explains itself when no candidate opens', async () => {
+  setFakeUsbDevices([
+    fakeDfuDevice({ onBus: false, openError: 'SecurityError', serial: 'A' }),
+    fakeDfuDevice({ onBus: false, serial: 'B' }),
+  ]);
+  await assert.rejects(() => Api.flashUpload(validBytes(), 'a.bin'),
+                       /could not be opened|no device in DFU mode/);
+});
+
+test('the tracked handle is tried first when it does open', async () => {
+  const other = fakeDfuDevice({ serial: 'OTHER' });
+  const picked = fakeDfuDevice({ serial: 'PICKED' });
+  setFakeUsbDevices([other, picked]);
+  await Api.requestDfuDevice();
+  // requestDevice hands back fakeUsbDevices[0]; point the tracked handle at the
+  // second one instead, then confirm the flash follows it rather than the list.
+  setFakeUsbDevices([other, picked]);
+  fireUsbConnect(picked);
+  const { off } = collectFlashFrames();
+  await Api.flashUpload(validBytes(), 'a.bin');
+  off();
+  assert.ok(picked.opens > 0);
+  assert.equal(other.opens, 0, 'no need to touch other devices when the tracked one works');
 });

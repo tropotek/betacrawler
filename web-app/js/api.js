@@ -136,6 +136,25 @@ async function firstDfuDevice() {
   return dfuDevice;
 }
 
+// The handle the badge tracks is a hint, not a promise: a chooser can offer an
+// entry for a bootloader that no longer exists -- the one from the previous DFU
+// session -- and picking it opens with "Access denied". So the device to write
+// to is settled by opening one, at flash time only, where an open() was about
+// to happen regardless.
+async function deviceForFlash() {
+  if (!navigator.usb) return null;
+  const granted = (await navigator.usb.getDevices()).filter(isDfuDevice);
+  // A handle the browser no longer lists is gone, so it is not a candidate at
+  // all; the one being tracked goes first when it is still listed.
+  const candidates = granted.includes(dfuDevice)
+    ? [dfuDevice, ...granted.filter((d) => d !== dfuDevice)]
+    : granted;
+  for (const device of candidates) {
+    if (await isOnTheBus(device)) return device;
+  }
+  return null;
+}
+
 async function sha256Hex(bytes) {
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -146,11 +165,13 @@ async function sha256Hex(bytes) {
 // arrives as an error frame instead, the way its WS progress does.
 async function runFlash(bytes, label) {
   if (flashBusy) throw new DeviceError('busy', 'a firmware flash is already in progress');
-  const dev = await firstDfuDevice();
+  const dev = await deviceForFlash();
   if (!dev) {
     throw new DeviceError(
       'nodfu',
-      'no device in DFU mode. Hold BOOT0, tap NRST, release BOOT0, then choose the device.');
+      'no device in DFU mode could be opened. If one was listed, it may be left '
+      + 'over from an earlier DFU session -- put the board back into DFU (hold '
+      + 'BOOT0, tap NRST, release BOOT0) and pick it again.');
   }
   flashBusy = true;
   usbBusy = true;
