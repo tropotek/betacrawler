@@ -213,18 +213,21 @@ function fakeBundle({ corrupt = false, missing = false } = {}) {
 // `onBus: false` models what Brave actually returns: a device this origin was
 // granted at some point, which is no longer plugged in. Its open() rejects the
 // way a real absent device's does.
-function fakeDfuDevice({ onBus = true, serial = 'FAKE123' } = {}) {
+function fakeDfuDevice({ onBus = true, serial = 'FAKE123', openError = 'NotFoundError' } = {}) {
   const dev = {
     vendorId: 0x0483, productId: 0xdf11, serialNumber: serial,
     opens: 0, closes: 0, get open_() { return dev.opens; },
     configuration: {
       interfaces: [{ interfaceNumber: 0, alternates: [{ alternateSetting: 0, interfaceName: null }] }],
     },
+    forgotten: 0,
+    forget: async () => { dev.forgotten += 1; },
     open: async () => {
       dev.opens += 1;
       if (!onBus) {
-        const err = new Error('The device was disconnected.');
-        err.name = 'NotFoundError';
+        const err = new Error(openError === 'NotFoundError'
+          ? 'The device was disconnected.' : 'Access denied.');
+        err.name = openError;
         throw err;
       }
     },
@@ -522,5 +525,49 @@ test('presence goes false after a flash without a new grant', async () => {
   await Api.flashUpload(validBytes(), 'a.bin');
   off();
   setFakeUsbDevices([fakeDfuDevice({ onBus: false })]);
+  assert.equal((await Api.dfuStatus()).present, false);
+});
+
+
+// --- pruning the browser's permission list ------------------------------------
+// Each DFU session leaves another entry in the chooser. A grant for a device
+// that is definitively gone is worth nothing, so the probe drops it.
+
+test('a grant for a vanished device is forgotten', async () => {
+  const stale = fakeDfuDevice({ onBus: false });
+  setFakeUsbDevices([stale]);
+  await Api.dfuStatus();
+  assert.equal(stale.forgotten, 1);
+});
+
+test('a grant is kept when open() fails for any other reason', async () => {
+  // Another tab, or a running dfu-util, holds the device. It is still there,
+  // and forgetting it would cost the user their grant for no reason.
+  const held = fakeDfuDevice({ onBus: false, openError: 'SecurityError' });
+  setFakeUsbDevices([held]);
+  assert.equal((await Api.dfuStatus()).present, false);
+  assert.equal(held.forgotten, 0);
+});
+
+test('a live device is never forgotten', async () => {
+  const live = fakeDfuDevice();
+  setFakeUsbDevices([live]);
+  await Api.dfuStatus();
+  assert.equal(live.forgotten, 0);
+});
+
+test('the live device survives while its stale neighbours are pruned', async () => {
+  const stale = fakeDfuDevice({ onBus: false, serial: 'OLD' });
+  const live = fakeDfuDevice({ serial: 'LIVE' });
+  setFakeUsbDevices([stale, live]);
+  assert.equal((await Api.dfuStatus()).present, true);
+  assert.equal(stale.forgotten, 1);
+  assert.equal(live.forgotten, 0);
+});
+
+test('forget() missing from an older browser is not fatal', async () => {
+  const stale = fakeDfuDevice({ onBus: false });
+  delete stale.forget;
+  setFakeUsbDevices([stale]);
   assert.equal((await Api.dfuStatus()).present, false);
 });

@@ -82,7 +82,15 @@ function publish(frame) {
 async function isOnTheBus(device) {
   try {
     await device.open();
-  } catch {
+  } catch (exc) {
+    // A device that is really gone leaves a permission entry behind, and every
+    // DFU session adds another to the browser's chooser. Dropping it here keeps
+    // that list to what exists. Only NotFoundError means gone: any other
+    // failure (another tab, a running dfu-util) is a device still present, and
+    // forgetting it would cost a grant for nothing.
+    if (exc.name === 'NotFoundError') {
+      try { await device.forget?.(); } catch { /* older browsers have no forget() */ }
+    }
     return false;
   }
   // Left as we found it: opening is the test, not a claim on the device.

@@ -66,10 +66,12 @@
                     :disabled="!$store.firmware.canEnterDfu"
                     x-text="$store.firmware.dfuPresent ? 'Already in DFU mode' : 'Reboot to DFU'"></button>
 
-            <!-- The browser cannot see the bootloader until the user picks it
-                 once; the grant then persists for this site. -->
+            <!-- The browser cannot see an ungranted bootloader at all, so this
+                 is the only way to reach one. Hidden while a device is
+                 connected over serial: that board is demonstrably running its
+                 firmware, so there is nothing to pick. -->
             <button id="fw-select-dfu" class="btn btn-outline-secondary"
-                    x-show="!$store.firmware.dfuPresent"
+                    x-show="!$store.firmware.dfuPresent && !$store.firmware.deviceConnected"
                     :disabled="$store.firmware.busy">Select DFU device…</button>
 
             <button id="fw-flash" class="btn btn-danger"
