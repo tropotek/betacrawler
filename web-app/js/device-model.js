@@ -105,6 +105,25 @@ export class DeviceModel {
     return resp.src || 'defaults';
   }
 
+  // The firmware answers BEFORE it resets, so `ok` means the request was
+  // accepted and the port disappearing a moment later is expected. Disconnect
+  // here rather than letting the read loop find a dead port and report it as a
+  // fault at the exact moment things are working.
+  async enterDfu() {
+    const resp = await this._send('dfu', {}, 2000);
+    if (!resp.ok) {
+      const err = resp.err || 'err';
+      if (err === 'nodfu' || err === 'badop') {
+        throw new DeviceError(
+          'nodfu',
+          'this firmware does not support rebooting to DFU. Use the BOOT0 button '
+          + 'method instead.');
+      }
+      throw new DeviceError(err, 'could not enter DFU mode');
+    }
+    await this._link.disconnect();
+  }
+
   async terminalGet(key) {
     if (!this._byKey.has(key)) throw new DeviceError('nokey', `unknown parameter '${key}'`);
     const { sent, raw, response } = await this._sendRaw('get', { key });
