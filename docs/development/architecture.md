@@ -191,7 +191,7 @@ The panic handler overrides the Arduino core's weak `HardFault_Handler`, which o
 through to a silent infinite loop. It cannot use `delay()` or `millis()`: HardFault runs at
 priority −1 and masks every interrupt that advances the tick, so the wait is a bare counting loop.
 
-See [Status LED](../docs/reference/status-led.md) for the patterns and fault codes themselves.
+See [Status LED](../reference/status-led.md) for the patterns and fault codes themselves.
 
 ## The config-hash build gotcha
 
