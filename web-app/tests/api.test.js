@@ -554,12 +554,12 @@ test('surplus grants for the same bootloader are forgotten', async () => {
   assert.equal(stale.filter((d) => d.forgotten === 1).length, 2);
 });
 
-test('a live bootloader makes every dead grant surplus', async () => {
-  const stale = fakeDfuDevice({ onBus: false, serial: 'OLD' });
-  const live = fakeDfuDevice({ serial: 'LIVE' });
+test('a live bootloader makes its own duplicate grants surplus', async () => {
+  const stale = fakeDfuDevice({ onBus: false, serial: 'SAME' });
+  const live = fakeDfuDevice({ serial: 'SAME' });
   setFakeUsbDevices([stale, live]);
   assert.equal((await Api.dfuStatus()).present, true);
-  assert.equal(stale.forgotten, 1, 'nothing to keep once a live grant is in hand');
+  assert.equal(stale.forgotten, 1, 'the same board, already in hand');
   assert.equal(live.forgotten, 0);
 });
 
@@ -576,14 +576,28 @@ test('the chooser list stops growing across repeated DFU sessions', async () => 
                'four sessions must not leave four grants behind');
 });
 
-test('a grant is kept when open() fails for any other reason', async () => {
-  // Another tab, or a running dfu-util, holds the device. It is still there,
-  // and forgetting it would cost the user their grant for no reason.
-  const held = fakeDfuDevice({ onBus: false, openError: 'SecurityError' });
-  const stale = fakeDfuDevice({ onBus: false, serial: 'S' });
-  setFakeUsbDevices([held, stale, fakeDfuDevice({ onBus: false, serial: 'S' })]);
+test('a grant for a different board is never pruned', async () => {
+  // Pruning is by identity, not by probe outcome: a second board -- or one
+  // whose open() failed because another tab holds it -- has its own serial and
+  // keeps its own grant.
+  const other = fakeDfuDevice({ onBus: false, openError: 'SecurityError', serial: 'OTHER' });
+  setFakeUsbDevices([other, fakeDfuDevice({ onBus: false, serial: 'S' }),
+                     fakeDfuDevice({ onBus: false, serial: 'S' })]);
   assert.equal((await Api.dfuStatus()).present, false);
-  assert.equal(held.forgotten, 0, 'a device that is present but held keeps its grant');
+  assert.equal(other.forgotten, 0, 'a distinct board keeps its own grant');
+});
+
+test('duplicates are pruned whatever open() failed with', async () => {
+  // The error a browser reports for an absent device is not something to
+  // depend on, so pruning must not care what it was.
+  const dupes = [
+    fakeDfuDevice({ onBus: false, openError: 'SecurityError', serial: 'S' }),
+    fakeDfuDevice({ onBus: false, openError: 'NetworkError', serial: 'S' }),
+    fakeDfuDevice({ onBus: false, openError: 'NotFoundError', serial: 'S' }),
+  ];
+  setFakeUsbDevices(dupes);
+  await Api.dfuStatus();
+  assert.equal(dupes.filter((d) => d.forgotten === 0).length, 1);
 });
 
 test('a live device is never forgotten', async () => {
