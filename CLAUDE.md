@@ -133,12 +133,6 @@ web-app/firmware/       the firmware images this site flashes, plus manifest.jso
                         tests guard against drifting from the firmware sources.
 ```
 
-**`hardware/`** sits outside both tiers — KiCad schematic/PCB source for the wiring
-diagrams shown on the Wiring page (`web-app/pages/wiring.html`'s inline SVGs, format documented in
-the `wiring-diagram-svg` skill). Reference material only: nothing in `firmware/`, `web-app/`, or the
-build reads it, and it is opened directly in KiCad, not through either tested tier. Registered as its
-own folder in `betacrawler.code-workspace`, same pattern as `firmware/`.
-
 ## Rules that must not be undone
 
 Each of these has cost real defects or real rework. The reasoning is in `docs/development/architecture.md`

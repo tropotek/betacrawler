@@ -17,12 +17,6 @@ venv/
 docs/.venv/
 site/
 
-# KiCad (hardware/) local caches & backups -- not project source
-*.kicad_prl
-*-backups/
-_autosave-*
-fp-info-cache
-
 # Docker hosting config: per-deployment secrets/ports, not source. .env.example
 # documents the variables and is committed.
 .env
