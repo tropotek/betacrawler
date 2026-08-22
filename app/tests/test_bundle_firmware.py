@@ -117,14 +117,14 @@ def tree(tmp_path, monkeypatch):
     fw = root / "firmware"
     (fw / "include" / "boards").mkdir(parents=True)
     (fw / "src" / "core").mkdir(parents=True)
-    (root / "app" / "web").mkdir(parents=True)
+    (root / "web-app" / "js").mkdir(parents=True)
 
     (fw / "include" / "config.h").write_text(
         '#define FW_PROJECT_NAME "betacrawler"\n'
         '#define FW_VERSION "1.0.0"\n')
     (fw / "src" / "core" / "types.h").write_text(
         "constexpr int kProtoVersion = 1;\n")
-    (root / "app" / "web" / "app.js").write_text("const APP_VERSION = '1.0.0';\n")
+    (root / "web-app" / "js" / "app.js").write_text("const APP_VERSION = '1.0.0';\n")
 
     ini = []
     for board in ("board_a", "board_b"):
@@ -138,7 +138,8 @@ def tree(tmp_path, monkeypatch):
 
     monkeypatch.setattr(mod, "ROOT", root)
     monkeypatch.setattr(mod, "FIRMWARE", fw)
-    monkeypatch.setattr(mod, "BUNDLE", root / "app" / "firmware")
+    monkeypatch.setattr(mod, "BUNDLES", [root / "app" / "firmware",
+                                         root / "web-app" / "firmware"])
     return mod
 
 
@@ -329,7 +330,7 @@ def test_release_bundles_an_esp32_env_as_the_merged_image(esp32_tree, monkeypatc
 
     assert entries[0]["method"] == "esptool"
     assert entries[0]["board"] == "board_c"
-    bundled = (mod.BUNDLE / entries[0]["file"]).read_bytes()
+    bundled = (mod.BUNDLES[0] / entries[0]["file"]).read_bytes()
     assert bundled[0x1000] == 0xe9
 
 
@@ -406,7 +407,7 @@ def builder_for(mod, *, fails: set[str] = frozenset(), stamps: dict | None = Non
 
 
 def manifest(mod) -> dict:
-    return json.loads(mod.manifest_path().read_text())
+    return json.loads(mod.manifest_path(mod.BUNDLES[0]).read_text())
 
 
 def ids(mod) -> list[str]:
@@ -427,7 +428,7 @@ def test_releases_every_named_env_into_one_manifest(tree):
     assert manifest(mod)["app_version"] == "1.0.0"
 
     for img in manifest(mod)["images"]:
-        blob = (mod.BUNDLE / img["file"]).read_bytes()
+        blob = (mod.BUNDLES[0] / img["file"]).read_bytes()
         assert len(blob) == img["size"]
         assert hashlib.sha256(blob).hexdigest() == img["sha256"]
 
@@ -474,8 +475,8 @@ def test_dry_run_writes_nothing(tree):
                                   builder=builder_for(mod))
     assert len(entries) == 1
     assert pruned == []
-    assert not mod.manifest_path().exists()
-    assert not (mod.BUNDLE / "board_a").exists()
+    assert not mod.manifest_path(mod.BUNDLES[0]).exists()
+    assert not (mod.BUNDLES[0] / "board_a").exists()
 
 
 # --- rebuild vs --add ---------------------------------------------------------
@@ -483,17 +484,18 @@ def test_dry_run_writes_nothing(tree):
 def test_rebuild_prunes_an_image_the_previous_release_shipped(tree):
     mod = tree
     mod.release(["board_a", "board_b"], builder=builder_for(mod))
-    assert (mod.BUNDLE / "board_b" / "betacrawler-1.0.0.bin").is_file()
+    assert (mod.BUNDLES[0] / "board_b" / "betacrawler-1.0.0.bin").is_file()
 
     _, pruned = mod.release(["board_a"], builder=builder_for(mod))
 
     assert ids(mod) == ["board_a-betacrawler-1.0.0"]
-    assert [p.name for p in pruned] == ["betacrawler-1.0.0.bin"]
-    assert not (mod.BUNDLE / "board_b" / "betacrawler-1.0.0.bin").exists()
+    # one per destination
+    assert [p.name for p in pruned] == ["betacrawler-1.0.0.bin"] * 2
+    assert not (mod.BUNDLES[0] / "board_b" / "betacrawler-1.0.0.bin").exists()
     # the board directory it emptied goes too
-    assert not (mod.BUNDLE / "board_b").exists()
+    assert not (mod.BUNDLES[0] / "board_b").exists()
     # ...while the board still shipping is untouched
-    assert (mod.BUNDLE / "board_a" / "betacrawler-1.0.0.bin").is_file()
+    assert (mod.BUNDLES[0] / "board_a" / "betacrawler-1.0.0.bin").is_file()
 
 
 def test_add_keeps_the_previous_release(tree):
@@ -503,8 +505,8 @@ def test_add_keeps_the_previous_release(tree):
 
     assert pruned == []
     assert ids(mod) == ["board_a-betacrawler-1.0.0", "board_b-betacrawler-1.0.0"]
-    assert (mod.BUNDLE / "board_a" / "betacrawler-1.0.0.bin").is_file()
-    assert (mod.BUNDLE / "board_b" / "betacrawler-1.0.0.bin").is_file()
+    assert (mod.BUNDLES[0] / "board_a" / "betacrawler-1.0.0.bin").is_file()
+    assert (mod.BUNDLES[0] / "board_b" / "betacrawler-1.0.0.bin").is_file()
 
 
 def test_re_releasing_the_same_env_replaces_its_entry_in_place(tree):
@@ -516,31 +518,31 @@ def test_re_releasing_the_same_env_replaces_its_entry_in_place(tree):
     assert manifest(mod)["images"][0]["built"] == STAMP_B
     # Rewritten, not pruned: the file is a keeper because the new manifest
     # names it too.
-    assert (mod.BUNDLE / "board_a" / "betacrawler-1.0.0.bin").is_file()
+    assert (mod.BUNDLES[0] / "board_a" / "betacrawler-1.0.0.bin").is_file()
 
 
 def test_pruning_never_touches_a_file_no_manifest_listed(tree):
     mod = tree
     mod.release(["board_a", "board_b"], builder=builder_for(mod))
-    stray = mod.BUNDLE / "board_b" / "hand-placed.bin"
+    stray = mod.BUNDLES[0] / "board_b" / "hand-placed.bin"
     stray.write_bytes(b"mine")
 
     mod.release(["board_a"], builder=builder_for(mod))
 
     assert stray.read_bytes() == b"mine"
     # and the directory survives precisely because it isn't empty
-    assert (mod.BUNDLE / "board_b").is_dir()
+    assert (mod.BUNDLES[0] / "board_b").is_dir()
 
 
 def test_prune_ignores_an_entry_pointing_outside_the_bundle(tree):
     mod = tree
     mod.release(["board_a"], builder=builder_for(mod))
-    outsider = mod.BUNDLE.parent / "not-ours.bin"
+    outsider = mod.BUNDLES[0].parent / "not-ours.bin"
     outsider.write_bytes(b"keep")
 
     data = manifest(mod)
     data["images"].append({"id": "evil", "file": "../not-ours.bin"})
-    mod.manifest_path().write_text(json.dumps(data))
+    mod.manifest_path(mod.BUNDLES[0]).write_text(json.dumps(data))
 
     mod.release(["board_b"], builder=builder_for(mod))
 
@@ -552,21 +554,21 @@ def test_prune_ignores_an_entry_pointing_outside_the_bundle(tree):
 def test_one_failed_env_leaves_the_previous_release_intact(tree):
     mod = tree
     mod.release(["board_a"], builder=builder_for(mod))
-    before = mod.manifest_path().read_text()
+    before = mod.manifest_path(mod.BUNDLES[0]).read_text()
 
     with pytest.raises(mod.BundleError, match="board_b"):
         mod.release(["board_a", "board_b"],
                     builder=builder_for(mod, fails={"board_b"}))
 
-    assert mod.manifest_path().read_text() == before
-    assert (mod.BUNDLE / "board_a" / "betacrawler-1.0.0.bin").is_file()
-    assert not (mod.BUNDLE / "board_b").exists()
+    assert mod.manifest_path(mod.BUNDLES[0]).read_text() == before
+    assert (mod.BUNDLES[0] / "board_a" / "betacrawler-1.0.0.bin").is_file()
+    assert not (mod.BUNDLES[0] / "board_b").exists()
 
 
 def test_a_binary_that_fails_validation_stops_the_whole_release(tree):
     mod = tree
     mod.release(["board_a"], builder=builder_for(mod))
-    before = mod.manifest_path().read_text()
+    before = mod.manifest_path(mod.BUNDLES[0]).read_text()
 
     def bad_builder(env, pio):
         path = mod.bin_path_for(env)
@@ -577,7 +579,7 @@ def test_a_binary_that_fails_validation_stops_the_whole_release(tree):
     with pytest.raises(mod.BundleError, match="stack pointer"):
         mod.release(["board_a", "board_b"], builder=bad_builder)
 
-    assert mod.manifest_path().read_text() == before
+    assert mod.manifest_path(mod.BUNDLES[0]).read_text() == before
 
 
 def test_identity_mismatch_is_caught_before_anything_is_written(tree):
@@ -592,7 +594,7 @@ def test_identity_mismatch_is_caught_before_anything_is_written(tree):
     with pytest.raises(mod.BundleError, match="BOARD_ID"):
         mod.release(["board_a"], builder=stale_builder)
 
-    assert not mod.manifest_path().exists()
+    assert not mod.manifest_path(mod.BUNDLES[0]).exists()
 
 
 # --- argument checking --------------------------------------------------------
@@ -614,7 +616,7 @@ def test_two_envs_producing_the_same_image_id_are_rejected(tree):
         mod.release(["board_a", "board_b"],
                     builder=lambda env, pio: build_into(mod, env, board="board_a"))
 
-    assert not mod.manifest_path().exists()
+    assert not mod.manifest_path(mod.BUNDLES[0]).exists()
 
 
 def test_unknown_env_is_reported(tree):
@@ -625,8 +627,8 @@ def test_unknown_env_is_reported(tree):
 
 def test_a_corrupt_existing_manifest_stops_the_release(tree):
     mod = tree
-    mod.BUNDLE.mkdir(parents=True)
-    mod.manifest_path().write_text("{not json")
+    mod.BUNDLES[0].mkdir(parents=True)
+    mod.manifest_path(mod.BUNDLES[0]).write_text("{not json")
 
     with pytest.raises(mod.BundleError, match="not valid JSON"):
         mod.release(["board_a"], builder=builder_for(mod))
@@ -714,3 +716,72 @@ def test_all_flag_rejects_explicit_envs_too(tree, monkeypatch, capsys):
         mod.main()
     assert exc.value.code != 0
     assert "--all" in capsys.readouterr().err
+
+
+# --- two destinations and the source fingerprint -------------------------------
+
+def test_release_writes_every_destination_identically(tree):
+    mod = tree
+    mod.release(["board_a"], builder=builder_for(mod))
+
+    texts = [mod.manifest_path(b).read_text() for b in mod.BUNDLES]
+    assert texts[0] == texts[1]
+    blobs = [(b / "board_a" / "betacrawler-1.0.0.bin").read_bytes() for b in mod.BUNDLES]
+    assert blobs[0] == blobs[1]
+
+
+def test_manifest_records_the_firmware_source_fingerprint(tree):
+    mod = tree
+    mod.release(["board_a"], builder=builder_for(mod))
+
+    data = manifest(mod)
+    assert data["fw_source_sha256"] == mod.fw_source_sha256()
+    assert list(data) == ["app_version", "fw_source_sha256", "images"]
+
+
+def test_source_fingerprint_changes_when_a_source_file_changes(tree):
+    mod = tree
+    before = mod.fw_source_sha256()
+    (mod.FIRMWARE / "src" / "extra.cpp").write_text("// new\n")
+    assert mod.fw_source_sha256() != before
+
+
+def test_source_fingerprint_changes_when_a_source_file_is_renamed(tree):
+    mod = tree
+    src = mod.FIRMWARE / "src" / "extra.cpp"
+    src.write_text("// new\n")
+    before = mod.fw_source_sha256()
+    src.rename(mod.FIRMWARE / "src" / "renamed.cpp")
+    assert mod.fw_source_sha256() != before
+
+
+def test_source_fingerprint_ignores_files_that_never_reach_the_binary(tree):
+    mod = tree
+    (mod.FIRMWARE / "test").mkdir()
+    before = mod.fw_source_sha256()
+    (mod.FIRMWARE / "test" / "test_thing.cpp").write_text("// not built into anything\n")
+    assert mod.fw_source_sha256() == before
+
+
+def test_prune_applies_to_every_destination(tree):
+    mod = tree
+    mod.release(["board_a", "board_b"], builder=builder_for(mod))
+    mod.release(["board_a"], builder=builder_for(mod))
+
+    for bundle in mod.BUNDLES:
+        assert (bundle / "board_a" / "betacrawler-1.0.0.bin").is_file()
+        assert not (bundle / "board_b").exists()
+
+
+def test_prune_removes_a_stray_image_from_one_destination_only(tree):
+    mod = tree
+    mod.release(["board_a", "board_b"], builder=builder_for(mod))
+    # Delete board_b from the second destination by hand, then re-release
+    # board_a: each destination is pruned against its OWN manifest, so the
+    # one that still has the file loses it and the other is already clean.
+    (mod.BUNDLES[1] / "board_b" / "betacrawler-1.0.0.bin").unlink()
+
+    mod.release(["board_a"], builder=builder_for(mod))
+
+    for bundle in mod.BUNDLES:
+        assert not (bundle / "board_b").exists()

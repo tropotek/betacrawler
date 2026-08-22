@@ -1,0 +1,167 @@
+          <div class="d-flex justify-content-between flex-wrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">Firmware</h1>
+            <!-- Its own badge: whether a board is in DFU mode is knowable with
+                 no serial connection at all. -->
+            <div class="d-flex gap-2 align-items-center">
+              <span class="badge"
+                    :class="$store.firmware.dfuPresent ? 'text-bg-warning' : 'text-bg-secondary'"
+                    x-text="$store.firmware.dfuPresent ? 'DFU mode' : 'no DFU device'"></span>
+            </div>
+          </div>
+
+          <!-- Running firmware, for comparison against the list below. `built`
+               is the device's own build timestamp and the manifest records the
+               same string, so "already running this" is an exact match rather
+               than a version-number guess. -->
+          <dl class="row mb-4">
+            <dt class="col-sm-3">Connected device</dt>
+            <dd class="col-sm-9" x-text="$store.firmware.deviceSummary"></dd>
+          </dl>
+
+          <h2 class="h5">Available firmware</h2>
+          <p class="text-secondary small" x-show="$store.firmware.images.length">
+            These images ship with this version of the app, so they are known to match it.
+          </p>
+
+          <div x-show="!$store.firmware.images.length" class="alert alert-secondary">
+            No firmware images are available. <code>firmware/</code> ships with this site, so an
+            empty one means an incomplete copy of it. You can still flash a local file using
+            <strong>Advanced</strong> below.
+          </div>
+
+          <div class="row g-3 mb-4">
+            <template x-for="img in $store.firmware.images" :key="img.id">
+              <div class="col-md-6">
+                <label class="card h-100" :class="{ 'border-primary': $store.firmware.selected === img.id }"
+                       style="cursor: pointer">
+                  <div class="card-body py-2">
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="fw-image"
+                             :id="'fw-' + img.id" :value="img.id"
+                             x-model="$store.firmware.selected">
+                      <label class="form-check-label w-100" :for="'fw-' + img.id">
+                        <span class="fw-semibold" x-text="img.board"></span>
+                        <span x-show="img.id === $store.firmware.recommended"
+                              class="badge text-bg-primary ms-1">recommended</span>
+                        <span x-show="$store.firmware.isRunning(img)"
+                              class="badge text-bg-success ms-1">currently running</span>
+                        <div class="text-secondary small">
+                          <div x-text="`${img.name} ${img.version}`"></div>
+                          <div x-text="`built ${img.built}`"></div>
+                          <div x-text="img.notes"></div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </template>
+          </div>
+
+          <!-- One button, because one is all the normal path needs: Flash reboots
+               the board into DFU, waits for the bootloader and writes it. -->
+          <div class="d-flex gap-2 flex-wrap align-items-center mb-3">
+            <button id="fw-flash" class="btn btn-danger"
+                    :disabled="!$store.firmware.canFlash">Flash selected firmware</button>
+            <span class="text-secondary small"
+                  x-show="!$store.firmware.dfuPresent && !$store.firmware.deviceConnected">
+              Connect the board, or put it in DFU mode first. If it is already in DFU and this
+              stays disabled, use <strong>Select DFU device…</strong> below to grant access once.
+            </span>
+            <!-- A board already in DFU has never said `hello`, so nothing may be
+                 recommended and nothing preselected. Say why the button is dead
+                 rather than leaving it dead and silent. -->
+            <span id="fw-pick-hint" class="text-secondary small"
+                  x-show="($store.firmware.dfuPresent || $store.firmware.deviceConnected)
+                          && !$store.firmware.selectedImage">
+              Choose which image to flash above.
+            </span>
+          </div>
+
+          <div x-show="$store.firmware.phase !== 'idle'" class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="small" x-text="$store.firmware.statusText"></span>
+              <span class="small text-secondary" x-text="$store.firmware.pct + '%'"></span>
+            </div>
+            <div class="progress" role="progressbar" style="height: 1.25rem">
+              <div class="progress-bar"
+                   :class="{
+                     'bg-danger': $store.firmware.phase === 'error',
+                     'bg-success': $store.firmware.phase === 'done',
+                     'progress-bar-striped progress-bar-animated':
+                        $store.firmware.phase === 'flashing' || $store.firmware.phase === 'waiting'
+                   }"
+                   :style="`width: ${$store.firmware.pct}%`"></div>
+            </div>
+            <textarea id="fw-log" class="form-control font-monospace mt-2" rows="8" readonly></textarea>
+            <div x-show="$store.firmware.phase === 'done'" class="alert alert-success mt-2 mb-0">
+              Flash complete. The board resets into the new firmware on its own —
+              click <strong>Connect</strong> at the top once it reappears.
+              If it stays in DFU mode, tap the NRST button.
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <h2 class="h5">Getting into DFU mode</h2>
+          <p class="text-secondary small">
+            Flashing does this by itself, so none of it is part of the normal path. It matters when
+            the firmware on the board is broken, and when you want the board left in DFU for an
+            external tool rather than written to here.
+          </p>
+          <p>By hand, which works whatever state the firmware is in:</p>
+          <ol>
+            <li>Hold the <strong>BOOT0</strong> button down.</li>
+            <li>Tap <strong>NRST</strong> and release it.</li>
+            <li>Release <strong>BOOT0</strong>.</li>
+          </ol>
+          <p class="text-secondary small">
+            The board then disappears as a serial port and shows up as a DFU device instead —
+            pick it below, and the badge at the top of this page turns amber. This page keeps
+            working while disconnected, which is the whole point: a board that needs re-flashing
+            often can't be talked to.
+          </p>
+          <div class="d-flex gap-2 flex-wrap align-items-center">
+            <!-- Gated on the device advertising `dfu` in its capabilities:
+                 firmware built without FEATURE_DFU (or predating it entirely)
+                 would just answer an error. -->
+            <button id="fw-enter-dfu" class="btn btn-outline-secondary"
+                    :disabled="!$store.firmware.canEnterDfu"
+                    x-text="$store.firmware.dfuPresent ? 'Already in DFU mode' : 'Reboot to DFU'"></button>
+            <!-- Grants this browser access to a bootloader, which it otherwise
+                 cannot see at all. Flash asks for one itself when it needs to,
+                 so this covers a chooser that was dismissed, and a board whose
+                 firmware cannot reboot itself. Hidden only while a device is
+                 connected over serial (that board is demonstrably running its
+                 firmware); deliberately NOT hidden when a bootloader is believed
+                 present -- picking again is the way out if that belief is ever
+                 wrong. -->
+            <button id="fw-select-dfu" class="btn btn-outline-secondary"
+                    x-show="!$store.firmware.deviceConnected"
+                    :disabled="$store.firmware.busy">Select DFU device…</button>
+          </div>
+
+          <details class="mt-4">
+            <summary class="h6">Advanced: flash a local file</summary>
+            <div class="mt-3">
+              <div class="alert alert-warning">
+                <strong>Nothing verifies this file matches your board.</strong>
+                A bundled image above is checksummed against the manifest; a file you pick
+                is only sanity-checked for being a raw firmware binary at all. Flashing the
+                wrong one leaves the board unbootable until you re-flash it (BOOT0 + NRST
+                still works, so this is recoverable — just tedious).
+              </div>
+              <p class="small text-secondary">
+                For a locally built image this is
+                <code>firmware/.pio/build/&lt;env&gt;/firmware.bin</code> — the
+                <code>.bin</code>, not the <code>.elf</code> or <code>.hex</code> beside it.
+              </p>
+              <button id="fw-upload" class="btn btn-outline-danger btn-sm"
+                      :disabled="!$store.firmware.canUpload">
+                Choose a .bin and flash…
+              </button>
+              <input id="fw-upload-file" type="file" accept=".bin,application/octet-stream"
+                     class="d-none">
+            </div>
+          </details>
+          <p>&nbsp;</p>

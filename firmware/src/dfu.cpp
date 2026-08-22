@@ -8,13 +8,6 @@
 #error "FEATURE_DFU is on but the board header defines no DFU_SYSMEM_ADDR"
 #endif
 
-#if defined(USBCON) && defined(USBD_USE_CDC)
-// The Arduino core's own USB device handle (libraries/USBDevice/src/usbd_conf.c),
-// global but declared in no header. initVariant() below needs it to properly
-// tear the USB peripheral down before jumping -- see the comment there for why.
-extern PCD_HandleTypeDef g_hpcd;
-#endif
-
 namespace {
 
 // Arbitrary, but deliberately not 0 and not 0xFFFFFFFF: those are the values a
@@ -52,89 +45,59 @@ void DfuTrigger::reboot() {
   RTC->BKP0R = kDfuMagic;
   // A system reset leaves the backup domain (and so BKP0R) intact, which is
   // the entire mechanism: the magic survives into the next boot, where
-  // initVariant() below finds it.
+  // dfuJumpOnBoot() below finds it.
   NVIC_SystemReset();
 }
 
 }  // namespace dfu
 
-// Called by the Arduino core's main() before setup() -- and therefore before
-// Serial.begin() runs. Declared weak in the core's Arduino.h, so simply
-// defining it here overrides it.
-//
-// NOT called before USB itself comes up, though -- that was this function's
-// original assumption, and it was wrong. The core's premain() (a
-// constructor-priority hook that runs before main(), see
-// cores/arduino/main.cpp) already calls init() -> hw_config_init() ->
-// USBD_CDC_init() by the time initVariant() gets a chance to run. So the USB
-// peripheral is already live, enumerated, and mid-flight as a CDC device
-// here -- not "fresh and untouched" as the comment used to claim. Jumping
-// into the ROM bootloader on top of that half-alive peripheral left it stuck
-// in a state where neither the CDC descriptor nor a DFU one would ever
-// enumerate again: confirmed on real hardware by halting the core over SWD
-// after the jump -- the CPU was genuinely running inside the ROM bootloader's
-// own poll loop (PC sitting in the 0x1FFFxxxx system memory region, moving
-// normally between halts), yet the board never reappeared on the USB bus in
-// EITHER mode, even left running undisturbed for several seconds. The
-// bootloader was alive and waiting; USB just never came back.
-//
-// The fix is to properly tear the USB peripheral down first, the same way
-// the framework's own USBD_reenumerate() forces a fresh re-enumeration at
-// normal startup: HAL_PCD_DeInit() calls HAL_PCD_Stop() internally, which
-// sets the peripheral's soft-disconnect bit and releases the D+ pull-up so
-// the host actually sees a disconnect, then disables the USB clock via
-// HAL_PCD_MspDeInit(). Only after that does the ROM bootloader get a clean
-// peripheral to bring its own USB stack up on.
-#if defined(USBCON) && defined(USBD_USE_CDC)
-static void teardownUsb() {
-  HAL_PCD_DeInit(&g_hpcd);
-}
-#else
-static void teardownUsb() {}
-#endif
+// Runs from .preinit_array, which __libc_init_array() walks before any
+// constructor -- and so before the Arduino core's premain() (itself a
+// constructor) calls init() and brings the USB peripheral up. That ordering is
+// the whole point: entering from initVariant() meant jumping on top of a live,
+// already-enumerated CDC device, and tearing that down first left the host with
+// an attach/detach/attach burst it sometimes refused to enumerate after -- the
+// board reached the ROM bootloader's poll loop but never reappeared on the bus.
+// Here there is nothing to tear down: the clocks are still SystemInit's
+// defaults and USB does not exist yet, which is as close to a hardware BOOT0
+// reset as software gets.
+static void dfuJumpOnBoot();
 
-void initVariant() {
+__attribute__((used, section(".preinit_array")))
+static void (*const kDfuPreinit)(void) = dfuJumpOnBoot;
+
+static void dfuJumpOnBoot() {
   unlockBackupDomain();
   if (RTC->BKP0R != kDfuMagic) return;
 
-  // Cleared BEFORE the jump, not after. If anything below fails, the next
-  // reset must come up as a normal application -- a board that reboots
-  // forever into a bootloader that never appeared is indistinguishable from
-  // a brick, and would need SWD to recover.
+  // Cleared BEFORE the jump, not after. If anything below fails, the next reset
+  // must come up as a normal application -- a board that reboots forever into a
+  // bootloader that never appeared is indistinguishable from a brick, and would
+  // need SWD to recover.
   RTC->BKP0R = 0;
 
   __disable_irq();
-
-  // Must happen before HAL_RCC_DeInit()/HAL_DeInit() below: HAL_PCD_DeInit()
-  // still needs a live peripheral clock to touch the USB registers safely.
-  teardownUsb();
-
-  // Undo everything premain()'s init() set up. The ROM bootloader expects
-  // reset-state peripherals and the HSI clock; leaving the PLL running or a
-  // peripheral clocked makes its USB enumeration unreliable.
-  HAL_RCC_DeInit();
-  HAL_DeInit();
-
-  SysTick->CTRL = 0;
-  SysTick->LOAD = 0;
-  SysTick->VAL  = 0;
 
   // Map system memory at 0x00000000 so the bootloader's vector table is where
   // the core will look for it.
   __HAL_RCC_SYSCFG_CLK_ENABLE();
   __HAL_SYSCFG_REMAPMEMORY_SYSTEMFLASH();
 
-  // Re-enabled before the jump: the bootloader drives USB from interrupts and
-  // will hang with them masked.
-  __enable_irq();
+  // Back to the reset value. SystemInit() pointed it at the application's
+  // vector table, and leaving it there sends the bootloader's own interrupts --
+  // USB's among them -- into this firmware's handlers.
+  SCB->VTOR = 0;
 
   const uint32_t* sysmem = reinterpret_cast<const uint32_t*>(DFU_SYSMEM_ADDR);
   void (*bootJump)(void) = reinterpret_cast<void (*)(void)>(sysmem[1]);
   __set_MSP(sysmem[0]);
+
+  // The bootloader drives USB from interrupts and hangs with them masked.
+  __enable_irq();
   bootJump();
 
-  // Not reached. If it somehow is, fall through into setup() as a normal boot
-  // rather than spinning -- the magic is already cleared, so the app runs.
+  // Not reached. If it somehow is, returning boots the application normally --
+  // the magic is already cleared.
 }
 
 #else   // !FEATURE_DFU
@@ -142,8 +105,8 @@ void initVariant() {
 namespace dfu {
 
 // A board with no ROM bootloader (or one that deliberately does not expose
-// it) answers `nodfu` and advertises no `dfu` capability. No initVariant() is
-// defined, so the core's weak default applies and the binary is unchanged.
+// it) answers `nodfu` and advertises no `dfu` capability. No boot-time
+// constructor is defined either, so the binary is unchanged.
 bool DfuTrigger::supported() const { return false; }
 bool DfuTrigger::enterDfu()        { return false; }
 void DfuTrigger::reboot()          {}

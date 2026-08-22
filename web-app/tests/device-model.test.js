@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DeviceModel, DeviceError, ProtoMismatch } from '../js/device-model.js';
+import { NotConnected } from '../js/webserial-link.js';
 
 const SCHEMA = {
   params: [
@@ -130,6 +131,88 @@ test('a disconnected op maps a link RequestTimeout to DeviceError("timeout")', a
   await assert.rejects(() => device.save(), (exc) => {
     assert.ok(exc instanceof DeviceError);
     assert.equal(exc.code, 'timeout');
+    return true;
+  });
+});
+
+// --- entering DFU -------------------------------------------------------------
+
+function dfuLink(dfuResponse) {
+  const link = makeFakeLink({
+    hello: () => ({ sent: '', raw: '', response: { id: 1, proto: 1, fw: 'betacrawler 1.0.0', board: 'blackpill_f411ce', caps: ['dfu'] } }),
+    schema: () => ({ sent: '', raw: '', response: { id: 2, ...SCHEMA } }),
+    getall: () => ({ sent: '', raw: '', response: { id: 3, vals: {} } }),
+    dfu: () => ({ sent: '', raw: '', response: { id: 4, ...dfuResponse } }),
+  });
+  link.disconnect = async () => { link.state = 'disconnected'; };
+  return link;
+}
+
+test('enterDfu() disconnects once the device accepts', async () => {
+  const link = dfuLink({ ok: true });
+  const device = new DeviceModel(link);
+  await device.connect({}, 'p');
+  await device.enterDfu();
+  assert.equal(link.state, 'disconnected');
+});
+
+test('enterDfu() reports firmware built without DFU support', async () => {
+  const device = new DeviceModel(dfuLink({ ok: false, err: 'nodfu' }));
+  await device.connect({}, 'p');
+  await assert.rejects(() => device.enterDfu(), (exc) => {
+    assert.equal(exc.code, 'nodfu');
+    assert.match(exc.message, /BOOT0 button/);
+    return true;
+  });
+});
+
+test('enterDfu() treats an unknown op the same as no DFU support', async () => {
+  const device = new DeviceModel(dfuLink({ ok: false, err: 'badop' }));
+  await device.connect({}, 'p');
+  await assert.rejects(() => device.enterDfu(), /BOOT0 button/);
+});
+
+test('enterDfu() surfaces any other device error', async () => {
+  const device = new DeviceModel(dfuLink({ ok: false, err: 'busy' }));
+  await device.connect({}, 'p');
+  await assert.rejects(() => device.enterDfu(), (exc) => exc.code === 'busy');
+});
+
+test('enterDfu() leaves the link connected when the device refuses', async () => {
+  const link = dfuLink({ ok: false, err: 'nodfu' });
+  const device = new DeviceModel(link);
+  await device.connect({}, 'p');
+  await assert.rejects(() => device.enterDfu());
+  assert.equal(link.state, 'connected');
+});
+
+// Which side of this race a board lands on varies -- an F411 gets its ack out,
+// an F401 resets first -- so the ack cannot be a precondition for success.
+test('enterDfu() accepts a board that resets before its ack flushes', async () => {
+  const link = dfuLink({ ok: true });
+  const device = new DeviceModel(link);
+  await device.connect({}, 'p');
+  link.requestRaw = async () => {
+    link.state = 'disconnected';
+    const exc = new NotConnected('connection lost while waiting');
+    exc.afterSend = true;   // the request was on the wire when the port died
+    throw exc;
+  };
+  await device.enterDfu();
+  assert.equal(link.state, 'disconnected');
+});
+
+// The opposite case must still fail: nothing reached the board, so nothing
+// rebooted, and reporting success would strand the caller waiting for a
+// bootloader that is never coming.
+test('enterDfu() still fails when the request never left', async () => {
+  const link = dfuLink({ ok: true });
+  const device = new DeviceModel(link);
+  await device.connect({}, 'p');
+  link.requestRaw = async () => { throw new NotConnected('write failed: port gone'); };
+  await assert.rejects(() => device.enterDfu(), (exc) => {
+    assert.equal(exc.code, 'disconnected');
+    assert.equal(exc.afterSend, false, 'a write that never left is not a reboot');
     return true;
   });
 });

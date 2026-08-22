@@ -5,9 +5,31 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **feat: `web-app/` flashes firmware itself, over WebUSB.** A Firmware page that writes an STM32
+  Black Pill in DFU mode straight from the browser — bundled images or a local `.bin` — with no
+  backend and no `dfu-util`. `js/dfu.js` implements DfuSe against an injected `USBDevice`, so the
+  protocol unit-tests without hardware; progress rides the existing `Api.subscribe` channel as
+  `flash` frames, the same shape the FastAPI build pushes over its WebSocket. Both DFU entry paths
+  work: the `dfu` wire op and BOOT0+NRST, and the page stays usable with nothing connected.
+  A board that resets before its `dfu` acknowledgement reaches the host counts as having accepted
+  it — boards land on either side of that race, an F411 answering first and an F401 resetting
+  first, so the reply is honoured when it arrives but never required.
+  A bootloader this browser has never been granted is asked for rather than waited on — WebUSB
+  cannot see one until permission exists, and never prompts on its own — so the wait for a
+  rebooted board is budgeted to stay inside the click's user activation and the device chooser
+  opens by itself. Requires a Chromium-based browser; on Windows a board bound to ST's DfuSe
+  driver needs switching to WinUSB first.
+
+- **feat: the firmware images `web-app/` ships are committed to the repo.** A static site has no
+  backend to build one on demand, so `web-app/firmware/` travels with the deployment.
+  `bundle_firmware.py` writes it and `app/firmware/` in the same run, and records
+  `fw_source_sha256` — a hash of the firmware sources — which the guard test in
+  `web-app/tests/` recomputes, so binaries that fall behind their sources fail the suite instead
+  of shipping silently.
+
 - **feat: `web-app/` is a standalone browser configurator, talking to a board directly over the
-  Web Serial API.** Feature-equivalent to `app/web/` minus firmware flashing, WiFi scan and the
-  `sim://board` simulator — those need a backend process this tree deliberately has none of. No
+  Web Serial API.** Feature-equivalent to `app/web/` minus the WiFi scan and the `sim://board`
+  simulator — those need a backend process this tree deliberately has none of. No
   build step and no npm dependencies: `js/*.js` ports `app/backend/`'s protocol/link/device/
   terminal/settings_ini logic to vanilla ES modules behind the same `Api` seam `app/web/` uses,
   and everything above that seam is copied from `app/web/` unmodified (held to parity by a test).

@@ -265,6 +265,14 @@
                   Terminal
                 </button>
               </li>
+              <!-- Deliberately not connection-gated: a board that needs
+                   re-flashing is frequently one you cannot talk to. -->
+              <li class="nav-item">
+                <button class="nav-link d-flex align-items-center gap-2" data-page="firmware">
+                  <svg class="bi"><use href="#cpu"/></svg>
+                  Firmware
+                </button>
+              </li>
             </ul>
             <hr class="my-3">
             <ul class="nav flex-column mb-auto">
