@@ -1,12 +1,9 @@
 import { Api } from './api.js';
 import { assessBrowser } from './browser-support.js';
 
-// This app is versioned independently of the firmware: they are separate
-// projects that happen to live in one repo, and their numbers are not meant to
-// track each other. betacrawler is a template, so this stays 1.0.0 -- a fork
-// bumps it. The firmware's own version lives in firmware/include/config.h and
-// arrives over the wire in `hello`.
-const APP_VERSION = '1.0.0';
+// Shared with FW_VERSION in firmware/include/config.h -- betacrawler tracks
+// one project-wide version number across firmware and app.
+const APP_VERSION = '4.0.0';
 
 const el = (id) => document.getElementById(id);
 let connected = false;

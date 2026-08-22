@@ -202,7 +202,8 @@ That hash covers `include/**/*.h` only, and deliberately so — hashing `src/**/
 every source-header edit a full rebuild during ordinary development. The cost is that
 `version.cpp`'s `__DATE__`/`__TIME__` do not re-stamp when only `src/` changed, and that stamp is
 the app's **only** way to tell a running board apart from a bundled image (`isRunning()` in
-`app.js` compares `built` and `version`, and `FW_VERSION` stays 1.0.0 by policy).
+`app.js` compares `built` and `version` — `FW_VERSION` alone isn't enough to tell two builds of
+the same release apart).
 
 So `bundle_firmware.py` deletes `version.cpp.o` before each release build
 (`force_version_rebuild()`): dev builds stay fast, and every image that actually **ships** carries
@@ -288,8 +289,8 @@ an image on demand, so what it flashes has to travel with the deployment. The gu
 match their sources is a test rather than a convention — the manifest carries `fw_source_sha256`,
 a path-sensitive hash of `firmware/{include,src}` and `platformio.ini`, and
 `web-app/tests/firmware-bundle.test.js` recomputes it. That guard exists because the failure it
-catches is silent: both versions stay `1.0.0` in this template, so binaries that have fallen
-behind their sources still checksum perfectly against a manifest that is equally stale.
+catches is silent: a version bump is not required for every source change, so binaries that have
+fallen behind their sources can still checksum perfectly against a manifest that is equally stale.
 
 A multi-board run is **all-or-nothing**: `plan_entry()` builds and validates every env before
 `release()` writes anything, so a second board failing to compile cannot leave a manifest that
@@ -382,8 +383,8 @@ flash stall must never look like a disconnect.
 
 ## Versioning
 
-Firmware and app are separate projects with independent version numbers that are not meant to
-track each other. Firmware: `FW_VERSION` in `firmware/include/config.h`, reported over the wire by
-`hello` (`name`/`ver`/`built`/`mods`, alongside the unchanged `fw` display string). App:
-`APP_VERSION` at the top of `web-app/js/app.js`. **Both stay 1.0.0 in this template** —
-bumps happen in real forked projects, not here.
+Firmware and app share one project-wide version number, bumped together. Firmware: `FW_VERSION`
+in `firmware/include/config.h`, reported over the wire by `hello` (`name`/`ver`/`built`/`mods`,
+alongside the unchanged `fw` display string). App: `APP_VERSION` at the top of
+`web-app/js/app.js`. Both are kept equal by hand — a mismatch means one was bumped without the
+other.

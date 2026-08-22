@@ -2,7 +2,7 @@
 // favicon.ico, tank-hero.svg) -- installed clients only refetch them once the
 // browser detects service-worker.js itself has new bytes. js/* is network-first
 // below, so it needs no bump to update.
-const CACHE_NAME = 'betacrawler-web-app-v16';
+const CACHE_NAME = 'betacrawler-web-app-v17';
 const SHELL_FILES = [
   './', './index.html', './manifest.json',
   './js/app.js', './js/api.js', './js/webserial-link.js', './js/device-model.js',
@@ -14,8 +14,8 @@ const SHELL_FILES = [
   './pages/firmware.html',
   // Pre-cached so a board can be re-flashed with no network at all.
   './firmware/manifest.json',
-  './firmware/blackpill_f411ce/betacrawler-1.0.0.bin',
-  './firmware/blackpill_f401ce/betacrawler-1.0.0.bin',
+  './firmware/blackpill_f411ce/betacrawler-4.0.0.bin',
+  './firmware/blackpill_f401ce/betacrawler-4.0.0.bin',
   './favicon.ico', './tank-hero.svg',
   './icons/icon-192.png', './icons/icon-512.png',
 ];

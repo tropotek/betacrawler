@@ -220,8 +220,8 @@ change.
 
 **Nothing can identify a board in DFU mode** — every STM32F4 bootloader reports `0483:df11`.
 
-**Both versions stay 1.0.0 in this template** — firmware (`FW_VERSION`) and app (`APP_VERSION`)
-version independently, and bumps happen in forked projects, not here.
+**Firmware and app share one version number** — `FW_VERSION` (`firmware/include/config.h`) and
+`APP_VERSION` (`web-app/js/app.js`) are bumped together, not independently.
 
 **Page convention** — every page fragment under `web-app/pages/` ends with a `<p>&nbsp;</p>`
 spacer as its last child so content doesn't sit flush against the viewport bottom. Add one when you

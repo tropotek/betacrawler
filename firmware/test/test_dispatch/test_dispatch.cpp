@@ -342,10 +342,10 @@ void test_hello_reports_build_identity_from_config() {
   d.handle(q, out, sizeof(out));
 
   TEST_ASSERT_NOT_NULL(strstr(out, "\"name\":\"betacrawler\""));
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"ver\":\"1.0.0\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"ver\":\"4.0.0\""));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"board\":\"blackpill_f411ce\""));
   // `fw` must survive as a display string -- app.js and docs/api.md read it.
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler 1.0.0\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler 4.0.0\""));
   // Exact build timestamp is unassertable; that it is present and non-empty
   // is the part that can actually regress.
   TEST_ASSERT_NOT_NULL(strstr(out, "\"built\":\""));
@@ -703,7 +703,7 @@ void test_hello_keeps_its_existing_fields_alongside_caps() {
 
   Request q = parseRequest("{\"id\":26,\"op\":\"hello\"}");
   d.handle(q, out, sizeof(out));
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler 1.0.0\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler 4.0.0\""));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"proto\":1"));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"mods\":["));
 }

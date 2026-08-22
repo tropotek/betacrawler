@@ -42,7 +42,7 @@ Every response carries `ok`. A failure adds `err`:
 | `nowifi` / `busy` | No WiFi seam / a scan is already running |
 | `badop` | Unknown `op` |
 
-`fw` is a display string (`"betacrawler 1.0.0"`); `name`/`ver`/`built` are its structured form.
+`fw` is a display string (`"betacrawler 4.0.0"`); `name`/`ver`/`built` are its structured form.
 `built` is the firmware's own `__DATE__ " " __TIME__`, and a bundled image's manifest records the
 identical string — which makes "is the board running *this* image?" an exact comparison rather
 than a version-number guess, two builds of one version number included.

@@ -25,4 +25,4 @@ git add web-app/firmware
 ```
 That test recomputes the manifest's `fw_source_sha256` from `firmware/{include,src}` and
 `platformio.ini`. It fails whenever the committed binaries have fallen behind the sources — which
-a version number cannot catch, since both stay 1.0.0 in this template.
+a version number alone cannot catch, since not every source change bumps it.

@@ -8,10 +8,9 @@
 
 // --- project identity -------------------------------------------------------
 #define FW_PROJECT_NAME "betacrawler"
-// betacrawler is a template. It stays at 1.0.0 forever; a fork bumps this. The
-// app (backend + web UI) is versioned separately in app/web/app.js -- the two
-// are unrelated projects and their numbers are not meant to track each other.
-#define FW_VERSION      "1.0.0"
+// Shared with APP_VERSION in web-app/js/app.js -- betacrawler tracks one
+// project-wide version number across firmware and app.
+#define FW_VERSION      "4.0.0"
 
 // --- link -------------------------------------------------------------------
 // Must match `monitor_speed` in platformio.ini. There is no way to share one
