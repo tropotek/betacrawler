@@ -84,7 +84,7 @@
     .wiring-diagram .wire-reserved { stroke-dasharray: 3 3; opacity: 0.55; }
 
     /* Home page hero: a hand-drawn comic/arcade-poster illustration
-       (app/web/tank-hero.svg). object-fit:contain (not cover) so nothing is
+       (tank-hero.svg). object-fit:contain (not cover) so nothing is
        ever cropped off the top/bottom on wide screens, where the main
        column can get much wider than the artwork's own 1200x500 aspect
        ratio -- the background color matches the SVG's own so letterboxing
@@ -199,9 +199,8 @@
     <div class="container-fluid flex-wrap gap-2 py-2">
       <a href="#" class="navbar-brand me-0 px-3 flex-shrink-0" data-page="home">
         betacrawler
-        <!-- The APP's version (this UI + the Python backend), filled in from
-             APP_VERSION in app.js. The FIRMWARE's version is separate and
-             appears in #fw once connected. -->
+        <!-- This app's own version, filled in from APP_VERSION in app.js. The
+             FIRMWARE's version is separate and appears in #fw once connected. -->
         <span id="app-version" class="fs-6 fw-normal text-secondary"></span>
       </a>
 

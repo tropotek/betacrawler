@@ -1,4 +1,4 @@
-// JSON-lines codec. Mirrors app/backend/protocol.py and firmware/src/core/protocol.cpp.
+// JSON-lines codec. The host half of firmware/src/core/protocol.cpp.
 
 export class ProtocolError extends Error {}
 

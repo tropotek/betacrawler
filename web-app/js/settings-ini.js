@@ -1,5 +1,4 @@
-// INI codec for whole-device settings backup and restore. Mirrors
-// app/backend/settings_ini.py's dump_ini()/parse_ini(). Pure text in, pure
+// INI codec for whole-device settings backup and restore. Pure text in, pure
 // text out: no device, no type coercion -- DeviceModel.terminalSet() already
 // knows how to coerce and validate a raw string against the schema.
 export const GENERAL_SECTION = 'general';

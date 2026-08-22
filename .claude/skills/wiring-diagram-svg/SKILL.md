@@ -1,13 +1,13 @@
 ---
 name: wiring-diagram-svg
-description: Use when creating or extending a hardware wiring diagram for betacrawler's Examples page — a new board, or a new peripheral card on an existing board's SVG diagram.
+description: Use when creating or extending a hardware wiring diagram for betacrawler's Wiring page — a new board, or a new peripheral card on an existing board's SVG diagram.
 ---
 
 # Wiring Diagram SVG
 
 ## Overview
 
-Betacrawler's Examples page uses one hand-authored schematic SVG format for every board-wiring
+Betacrawler's Wiring page uses one hand-authored schematic SVG format for every board-wiring
 diagram — a wiring map grouped by peripheral, not a photorealistic/Fritzing-style render (no such
 tool is available). It was converged on over several iterative rounds; reuse it exactly rather
 than re-deriving a layout.
@@ -22,8 +22,8 @@ than re-deriving a layout.
 ## Reference implementation
 
 The full worked example (Black Pill + battery/PDB/ESC/motor/receiver/USB cards) lives in
-`app/web/pages/wiring.html`, inside `<div class="wiring-diagram">`. CSS tokens are in
-`app/web/index.html`'s `<style>` block under `.wiring-diagram { --wd-* }`. Copy an existing card
+`web-app/pages/wiring.html`, inside `<div class="wiring-diagram">`. CSS tokens are in
+`web-app/index.html`'s `<style>` block under `.wiring-diagram { --wd-* }`. Copy an existing card
 (the "Motor 0 card" is the smallest complete one) as your starting point — don't build a card from
 a blank SVG.
 
@@ -73,7 +73,7 @@ Re-run that script after changing the SVG or the docs page goes stale.
 4. Place STM-side labels inside the board rect, module-side labels inside the card rect,
    right/left-aligned toward the wire, matching the alignment rule above.
 5. If the diagram no longer fits the current `viewBox`, expand it.
-6. Check it in a browser (Examples page) — confirm no label collides with a border or another
+6. Check it in a browser (Wiring page) — confirm no label collides with a border or another
    card, and that new wires read as the same visual language as the existing ones.
 
 ## Common mistakes

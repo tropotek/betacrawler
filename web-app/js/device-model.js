@@ -1,4 +1,4 @@
-// Schema cache, value cache, connection state. Mirrors app/backend/device.py.
+// Schema cache, value cache, connection state.
 // Validates locally before sending so bad input fails fast; the firmware
 // validates again regardless -- it must never trust its host.
 import { NotConnected, RequestTimeout } from './webserial-link.js';

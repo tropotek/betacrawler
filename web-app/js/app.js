@@ -1,11 +1,11 @@
 import { Api } from './api.js';
 import { assessBrowser } from './browser-support.js';
 
-// The app (backend + this UI) is versioned independently of the firmware:
-// they are separate projects that happen to live in one repo, and their
-// numbers are not meant to track each other. betacrawler is a template, so this
-// stays 1.0.0 -- a fork bumps it. The firmware's own version lives in
-// firmware/include/config.h and arrives over the wire in `hello`.
+// This app is versioned independently of the firmware: they are separate
+// projects that happen to live in one repo, and their numbers are not meant to
+// track each other. betacrawler is a template, so this stays 1.0.0 -- a fork
+// bumps it. The firmware's own version lives in firmware/include/config.h and
+// arrives over the wire in `hello`.
 const APP_VERSION = '1.0.0';
 
 const el = (id) => document.getElementById(id);
@@ -55,7 +55,7 @@ function setState(state, info) {
 }
 
 // Telemetry-staleness: distinct from a hard disconnect. The port is still
-// open and /api/status still says "connected", but no telemetry frame has
+// open and the device still counts as connected, but no telemetry frame has
 // arrived for 3 missed intervals -- the firmware may have wedged. Shown as
 // an amber "stale" badge rather than silently re-affirming green
 // "connected". Does not touch `connected` or disable the form: as far as
@@ -88,7 +88,7 @@ function clearStale() {
 // a new reading shows up here with no JavaScript change.
 //
 // `div`/`dec` keep the wire honest: the device sends vdd as integer
-// millivolts (see docs/api.md) and only this display divides by 1000. What is
+// millivolts, and only this display divides by 1000. What is
 // sent to, and validated by, the device is never touched.
 //
 // `fmt` is the same idea for readings a divisor and a decimal count cannot
@@ -1099,8 +1099,8 @@ function initTerminalPage() {
   });
 
   // --- restore from INI -------------------------------------------------------
-  // The other half of `dump`. The report text is built here from the backend's
-  // applied/skipped lists rather than sent as prose, so this stays the only
+  // The other half of `dump`. The report text is built here from the restore's
+  // applied/skipped lists rather than carried as prose, so this stays the only
   // place that decides how the terminal reads.
   el('term-restore').addEventListener('click', () => el('term-restore-file').click());
 
@@ -1130,10 +1130,9 @@ function initTerminalPage() {
 
 }
 
-// One handler for every frame the backend pushes. Nothing here knows there is
-// a socket underneath -- Api.subscribe owns the transport and its reconnection
-// across backend restarts -- which is what lets an Electron build swap it for
-// IPC without this function changing at all.
+// One handler for every frame the device pushes. Nothing here knows what the
+// transport is -- Api.subscribe owns it and its reconnection -- which is what
+// lets an Electron build swap it for IPC without this function changing at all.
 function subscribeEvents() {
   Api.subscribe((msg) => {
     if (msg.type === 'tlm') {

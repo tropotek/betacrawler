@@ -1,6 +1,5 @@
-// Owns the Web Serial port. Mirrors app/backend/link.py's SerialLink, with a
-// per-connection read loop (an async function, not a thread) standing in for
-// pyserial's blocking readline().
+// Owns the Web Serial port: one read loop per connection, feeding a line
+// buffer, with responses correlated back to their requests by id.
 import { encode, decode, isResponse } from './protocol.js';
 import { LineBuffer } from './line-buffer.js';
 
