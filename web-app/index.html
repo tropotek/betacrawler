@@ -309,6 +309,38 @@
     </div>
   </div>
 
+  <!-- Shown when a flash reaches a bootloader this browser has not been granted
+       and too long has passed for the chooser to open on its own. Its button
+       carries a fresh user activation into requestDevice(), which is the only
+       way back. Static because the two buttons are the only ways out: either
+       finishes the parked flash one way or the other. -->
+  <div class="modal fade" id="dfu-grant-modal" tabindex="-1"
+       data-bs-backdrop="static" data-bs-keyboard="false"
+       aria-labelledby="dfu-grant-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="dfu-grant-title">Grant access to the bootloader</h5>
+        </div>
+        <div class="modal-body">
+          <p>
+            The board is in DFU mode, but this browser has never been given access to it.
+            Chrome only opens its device chooser from a click, and the one that started
+            this flash has expired.
+          </p>
+          <p class="mb-0">
+            Click below and pick <strong>STM32&nbsp;BOOTLOADER</strong> — the flash carries
+            on from there. Nothing has been written to the board yet.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" id="dfu-grant-cancel">Cancel flash</button>
+          <button type="button" class="btn btn-primary" id="dfu-grant-ok">Select DFU device…</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="vendor/bootstrap.bundle.min.js"></script>
   <!-- A module script executes deferred, same as Alpine's own defer tag below --
        both run in document order once parsing finishes. app.js's

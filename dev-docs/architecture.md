@@ -344,6 +344,32 @@ failure once writing has begun arrives as a `{type:'flash'}` frame on the `subsc
 the same frame shape the FastAPI build pushes over its WebSocket, so the page's handler is
 identical in both.
 
+### The permission ladder
+
+WebUSB cannot see a bootloader this origin has never been granted — `getDevices()` returns nothing
+and never prompts — and `requestDevice()` only opens its chooser while the page holds *transient
+user activation*, measured at exactly 5 seconds in Chrome. A flash spends more than that before it
+knows it needs one: the confirm dialog (whose open time counts), the image fetch and checksum, the
+`dfu` wire op, and the bounded wait for the bootloader to enumerate. Past the window the call
+throws `SecurityError` with nothing shown, which is indistinguishable from a refusal unless the
+error name is read.
+
+So `api.js` climbs three rungs, the same shape Betaflight Configurator uses:
+
+1. `waitForDfuArrival()` polls what this origin may already see. No activation needed, so a browser
+   that has flashed this board before never leaves this rung. Bounded by `DFU_WAIT_MS`, kept short
+   so rung two still has a chance.
+2. `promptForDfuDevice()` calls `requestDevice()` anyway — the original click is sometimes still
+   live, and then the chooser opens with no extra step. It reports `blocked` for `SecurityError`
+   specifically; every other empty answer is genuinely no device.
+3. `parkForGrant()` holds the image, keeps `flashBusy` set and publishes a `needsdevice` frame. The
+   page opens a modal whose button calls `Api.grantDfuAndResume()`, and *that* click is an
+   activation the chooser accepts. Nothing has been written at this point, so the parked flash
+   resumes rather than restarts; `Api.cancelDfuGrant()` is the other way out and fails it.
+
+The modal's markup lives in `index.html`, not `pages/firmware.html`: a flash keeps running while
+another page is mounted, so it has to exist wherever the frame arrives.
+
 `web-app/firmware/` is committed, unlike `app/firmware/`: a static site has no backend to build an
 image on demand, so the bundle travels with the deployment. The manifest carries
 `fw_source_sha256`, a path-sensitive hash of `firmware/{include,src}` and `platformio.ini`, and

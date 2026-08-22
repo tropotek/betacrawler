@@ -458,7 +458,7 @@ document.addEventListener('alpine:init', () => {
     selected: null,
     dfuPresent: false,
     busy: false,
-    phase: 'idle',        // idle | waiting | flashing | done | error
+    phase: 'idle',        // idle | waiting | needsdevice | flashing | done | error
     pct: 0,
     op: null,
 
@@ -522,6 +522,7 @@ document.addEventListener('alpine:init', () => {
     get statusText() {
       switch (this.phase) {
         case 'waiting':  return 'waiting for a device in DFU mode…';
+        case 'needsdevice': return 'waiting for access to the bootloader…';
         // Two passes, erase then download, each 0-100%. Naming the current one
         // is why the bar reaching 100% twice isn't confusing.
         case 'flashing': return this.op ? `${this.op}…` : 'flashing…';
@@ -561,6 +562,9 @@ document.addEventListener('alpine:init', () => {
       if (typeof ev.pct === 'number') this.pct = ev.pct;
       if (ev.phase === 'error') this.pct = 100;
       if (ev.line) firmwareLog(ev.line);
+      // The flash is parked on a permission the browser will only grant to a
+      // click of its own, so put a button in front of the user to click.
+      showDfuGrantModal(ev.phase === 'needsdevice');
       if (ev.phase === 'done' || ev.phase === 'error') {
         this.busy = false;
         this.op = null;
@@ -871,6 +875,45 @@ function firmwareLog(text) {
   flushLogBuffer(fwLog, 'fw-log');
 }
 
+// The grant prompt is markup in index.html, not on the Firmware page: a flash
+// runs on while another page is mounted, so the modal has to exist wherever the
+// frame that opens it arrives. Wired once at startup for the same reason.
+let dfuGrantModal = null;
+
+function showDfuGrantModal(show) {
+  if (!show) {
+    dfuGrantModal?.hide();
+    return;
+  }
+  const node = el('dfu-grant-modal');
+  if (!node) return;
+  dfuGrantModal ||= new window.bootstrap.Modal(node);
+  dfuGrantModal.show();
+}
+
+function initDfuGrantModal() {
+  const grant = el('dfu-grant-ok');
+  if (!grant) return;
+  grant.addEventListener('click', async () => {
+    // Hidden first, in the same task as the click: the chooser this opens is
+    // the point of the modal, and the flash it resumes runs to completion
+    // inside the await below.
+    showDfuGrantModal(false);
+    grant.disabled = true;
+    try {
+      await Api.grantDfuAndResume();
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      grant.disabled = false;
+    }
+  });
+  el('dfu-grant-cancel').addEventListener('click', () => {
+    Api.cancelDfuGrant();
+    showDfuGrantModal(false);
+  });
+}
+
 // Entering the page reads the catalog and the current DFU state once. A
 // bootloader arriving or leaving afterwards comes through as a `dfu` frame, so
 // nothing here polls -- and nothing opens a device to find out, which on a
@@ -1170,6 +1213,7 @@ function startWatchdog() {
 
 (async function init() {
   el('app-version').textContent = `v${APP_VERSION}`;
+  initDfuGrantModal();
   // Home is always the landing page, including on a reload while a device is
   // still connected server-side. Nothing navigates for you any more -- page
   // choice is the user's, and connecting only enables the gated nav items.

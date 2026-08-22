@@ -59,8 +59,17 @@ let fakeUsbDevices = [];
 // models a bootloader only a pick can reach, and `null` an empty/dismissed
 // chooser. Reset by setFakeUsbDevices() so it cannot leak between tests.
 let fakeChooserDevice;
-const setFakeUsbDevices = (devices) => { fakeUsbDevices = devices; fakeChooserDevice = undefined; };
+// Chrome refusing to open the chooser at all, because the click the call
+// descends from has aged out of its 5s transient activation window. Distinct
+// from an empty chooser: nothing was shown to dismiss.
+let chooserBlocked = false;
+const setFakeUsbDevices = (devices) => {
+  fakeUsbDevices = devices;
+  fakeChooserDevice = undefined;
+  chooserBlocked = false;
+};
 const setFakeChooserDevice = (dev) => { fakeChooserDevice = dev; };
+const setChooserBlocked = (blocked) => { chooserBlocked = blocked; };
 const usbDisconnectListeners = [];
 const usbConnectListeners = [];
 const fireUsbDisconnect = (device) => {
@@ -81,6 +90,11 @@ Object.defineProperty(globalThis, 'navigator', {
       },
       removeEventListener: () => {},
       requestDevice: async () => {
+        if (chooserBlocked) {
+          const err = new Error('Must be handling a user gesture to show a permission request.');
+          err.name = 'SecurityError';
+          throw err;
+        }
         const offered = fakeChooserDevice !== undefined ? fakeChooserDevice : fakeUsbDevices[0];
         if (!offered) {
           const err = new Error('No device selected.');
@@ -727,6 +741,72 @@ test('a chooser the user dismisses ends in the error frame, not a rejection', as
   off();
   assert.equal(frames.at(-1).phase, 'error');
   assert.match(frames.at(-1).line, /Select DFU device/);
+});
+
+// --- tier three: a chooser the browser will not open on its own ---------------
+// Chrome only opens the device chooser inside a click's 5s transient activation
+// window, and a flash spends more than that on its confirm, the reboot and the
+// arrival wait -- so requestDevice() is refused outright, with no chooser shown.
+// The image parks until a button of its own can carry a fresh click into it.
+
+test('a chooser the browser refuses parks the flash instead of failing it', async () => {
+  fakeBundle();
+  setFakeUsbDevices([]);
+  setChooserBlocked(true);
+  const port = await Api.requestPort();
+  await Api.connect(port);
+  const { frames, off } = collectFlashFrames();
+  await Api.flashBundled(F411.id, { waitMs: 300 });
+  assert.equal(frames.at(-1).phase, 'needsdevice');
+  assert.equal(Api.needsDfuGrant(), true);
+  assert.equal((await Api.dfuStatus()).busy, true, 'a parked flash is not over');
+
+  const picked = fakeDfuDevice({ serial: 'FRESH' });
+  setChooserBlocked(false);        // the grant button's click is an activation
+  setFakeChooserDevice(picked);
+  assert.equal(await Api.grantDfuAndResume(), true);
+  off();
+  assert.equal(frames.at(-1).phase, 'done');
+  assert.ok(picked.opens > 0, 'the parked image is written to the granted device');
+  assert.equal(Api.needsDfuGrant(), false);
+  assert.equal((await Api.dfuStatus()).busy, false);
+});
+
+test('cancelling the grant ends the parked flash rather than leaving it busy', async () => {
+  fakeBundle();
+  setFakeUsbDevices([]);
+  setChooserBlocked(true);
+  const port = await Api.requestPort();
+  await Api.connect(port);
+  const { frames, off } = collectFlashFrames();
+  await Api.flashBundled(F411.id, { waitMs: 300 });
+  Api.cancelDfuGrant();
+  off();
+  assert.equal(frames.at(-1).phase, 'error');
+  assert.equal(Api.needsDfuGrant(), false);
+  assert.equal((await Api.dfuStatus()).busy, false);
+});
+
+test('a grant prompt the user dismisses abandons the parked flash', async () => {
+  fakeBundle();
+  setFakeUsbDevices([]);
+  setChooserBlocked(true);
+  const port = await Api.requestPort();
+  await Api.connect(port);
+  const { frames, off } = collectFlashFrames();
+  await Api.flashBundled(F411.id, { waitMs: 300 });
+  setChooserBlocked(false);
+  setFakeChooserDevice(null);      // dismissed: requestDevice() throws NotFoundError
+  assert.equal(await Api.grantDfuAndResume(), false);
+  off();
+  assert.equal(frames.at(-1).phase, 'error');
+  assert.match(frames.at(-1).line, /no bootloader was picked/);
+  assert.equal((await Api.dfuStatus()).busy, false);
+});
+
+test('grantDfuAndResume() rejects when no flash is parked', async () => {
+  setFakeUsbDevices([]);
+  await assert.rejects(() => Api.grantDfuAndResume(), /no flash is waiting/);
 });
 
 test('a picked device that is not really there is not written to', async () => {

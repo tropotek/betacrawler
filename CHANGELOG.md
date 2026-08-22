@@ -15,10 +15,14 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   it — boards land on either side of that race, an F411 answering first and an F401 resetting
   first, so the reply is honoured when it arrives but never required.
   A bootloader this browser has never been granted is asked for rather than waited on — WebUSB
-  cannot see one until permission exists, and never prompts on its own — so the wait for a
-  rebooted board is budgeted to stay inside the click's user activation and the device chooser
-  opens by itself. Requires a Chromium-based browser; on Windows a board bound to ST's DfuSe
-  driver needs switching to WinUSB first.
+  cannot see one until permission exists, and never prompts on its own. That ask climbs three
+  rungs, because Chrome only opens its device chooser inside a click's 5-second activation window
+  and a flash spends longer than that on the confirm, the reboot and the arrival wait: poll what is
+  already granted, try the chooser anyway in case the original click still counts, and otherwise
+  park the flash behind a modal whose own button carries a fresh click into the chooser. Nothing
+  has been written at that point, so granting access resumes the flash rather than restarting it.
+  Requires a Chromium-based browser; on Windows a board bound to ST's DfuSe driver needs switching
+  to WinUSB first.
 
 - **feat: the firmware images `web-app/` ships are committed to the repo.** A static site has no
   backend to build one on demand, so `web-app/firmware/` travels with the deployment.

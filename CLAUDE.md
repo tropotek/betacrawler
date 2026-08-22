@@ -233,6 +233,13 @@ page stays out of `CONNECTION_REQUIRED_PAGES`; gating the recovery tool on a wor
 backwards. `enterDfu()` only arms the reboot (so the response can flush first) and `initVariant()`
 clears the RTC magic before jumping (or a failed jump is an unrecoverable boot loop).
 
+**`web-app/`'s DFU permission ladder has three rungs, not two** — poll what is granted, try the
+chooser in case the flash's original click still counts, then park the flash behind a modal whose
+own button opens it. Chrome gives a click 5 seconds of activation and a flash spends more than that
+before it knows it needs permission, so rung two alone strands the user. `promptForDfuDevice()`
+must keep reporting `SecurityError` distinctly, and `DFU_WAIT_MS` must stay short enough for rung
+two to have a chance: `dev-docs/architecture.md`, "The permission ladder".
+
 **CRSF receive stays off the ROM bootloader's UART pins** — `RX_RX_PIN` is PB7, not USART1's
 usual PA10, and moving it back breaks both DFU paths. The bootloader picks its host interface by
 watching for traffic and commits to the first one that shows any; a powered receiver on PA10 wins

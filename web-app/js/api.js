@@ -65,6 +65,9 @@ let flashBusy = false;
 // Set for the whole flash, including the moment before it starts, so the
 // presence poll never opens a device a write is about to take over.
 let usbBusy = false;
+// A flash that reached a bootloader it may not open, holding its image until a
+// click of its own can grant access. Non-null means a flash is parked, not over.
+let pendingFlash = null;
 const subscribers = new Set();
 
 // The read loop already notices a physical unplug when the next read fails
@@ -182,18 +185,20 @@ async function deviceForFlash() {
 
 // The chooser, for a bootloader this origin has never been granted: WebUSB
 // cannot see one at all, and getDevices() never prompts, so polling alone would
-// dead-end on a browser profile that has not flashed before. Returns null when
-// the browser refuses the prompt or the user dismisses it -- neither is a
-// fault, both just mean no device.
+// dead-end on a browser profile that has not flashed before. `blocked` reports
+// a SecurityError -- the browser refusing to open the chooser at all because
+// the click this call descends from has aged out of its transient user
+// activation. That needs a fresh click, not an error; every other empty answer
+// (dismissed, stale pick, no WebUSB) is just no device.
 async function promptForDfuDevice() {
-  if (!navigator.usb) return null;
+  if (!navigator.usb) return { device: null, blocked: false };
   let picked;
   try {
     picked = await navigator.usb.requestDevice({ filters: DFU_FILTERS });
-  } catch {
-    return null;
+  } catch (exc) {
+    return { device: null, blocked: exc.name === 'SecurityError' };
   }
-  return await isOnTheBus(picked) ? picked : null;
+  return { device: await isOnTheBus(picked) ? picked : null, blocked: false };
 }
 
 async function sha256Hex(bytes) {
@@ -229,15 +234,16 @@ async function runFlash(bytes, label, { waitMs = DFU_WAIT_MS } = {}) {
   if (device.status().state !== 'connected') {
     // Nothing was rebooted, so nothing new is coming: resolve fast, and if the
     // handle has gone stale ask for one rather than sending the user away.
-    const dev = await deviceForFlash() || await promptForDfuDevice();
-    if (!dev) {
-      throw new DeviceError(
-        'nodfu',
-        'no device in DFU mode could be opened. If one was listed, it may be left '
-        + 'over from an earlier DFU session -- put the board back into DFU (hold '
-        + 'BOOT0, tap NRST, release BOOT0) and pick it again.');
-    }
-    return writeAndReport(dev, bytes, label);
+    const dev = await deviceForFlash();
+    if (dev) return writeAndReport(dev, bytes, label);
+    const { device: picked, blocked } = await promptForDfuDevice();
+    if (picked) return writeAndReport(picked, bytes, label);
+    if (blocked) return parkForGrant(bytes, label);
+    throw new DeviceError(
+      'nodfu',
+      'no device in DFU mode could be opened. If one was listed, it may be left '
+      + 'over from an earlier DFU session -- put the board back into DFU (hold '
+      + 'BOOT0, tap NRST, release BOOT0) and pick it again.');
   }
 
   flashBusy = true;
@@ -255,14 +261,16 @@ async function runFlash(bytes, label, { waitMs = DFU_WAIT_MS } = {}) {
       // flashed before is the expected answer, not a failure. Ask for it.
       publish({ type: 'flash', data: { phase: 'waiting', pct: 0, line:
         'no bootloader this browser can reach; asking for permission' } });
-      dev = await promptForDfuDevice();
+      const { device: picked, blocked } = await promptForDfuDevice();
+      if (blocked) return parkForGrant(bytes, label);
+      dev = picked;
     }
     if (!dev) {
       publish({ type: 'flash', data: { phase: 'error', line:
         'the board rebooted but no bootloader this browser can open appeared. '
-        + 'If no chooser opened, click "Select DFU device" below to grant access '
-        + 'once; otherwise try BOOT0 + NRST by hand, and rule out a different '
-        + 'USB port or cable.' } });
+        + 'Put the board into DFU by hand (hold BOOT0, tap NRST, release BOOT0), '
+        + 'pick it with "Select DFU device" below, and rule out a different USB '
+        + 'port or cable.' } });
       return;
     }
     dfuDevice = dev;
@@ -270,8 +278,31 @@ async function runFlash(bytes, label, { waitMs = DFU_WAIT_MS } = {}) {
   } catch (exc) {
     publish({ type: 'flash', data: { phase: 'error', line: exc.message } });
   } finally {
-    finishFlash();
+    // A parked flash is not over: its image is still waiting to be written, so
+    // the busy state it holds has to survive this frame.
+    if (!pendingFlash) finishFlash();
   }
+}
+
+// The third tier of the permission ladder. Tier one polls what this origin may
+// already see; tier two asks for the rest, and the browser turns that down when
+// the click behind it has expired -- 5s in Chrome, less than a confirm dialog
+// plus a reboot plus the arrival wait. The image waits here for a button of its
+// own, whose click is an activation the chooser will accept.
+function parkForGrant(bytes, label) {
+  pendingFlash = { bytes, label };
+  flashBusy = true;
+  usbBusy = true;
+  publish({ type: 'flash', data: { phase: 'needsdevice', pct: 0, line:
+    'this browser has not been granted access to the bootloader, and too long '
+    + 'has passed since the Flash click for it to open the chooser by itself. '
+    + 'Grant access now and the flash finishes.' } });
+}
+
+function abandonPendingFlash(line) {
+  pendingFlash = null;
+  publish({ type: 'flash', data: { phase: 'error', line } });
+  finishFlash();
 }
 
 async function writeAndReport(dev, bytes, label) {
@@ -394,11 +425,47 @@ export const Api = {
   // already see turns up. Reports presence through the usual `dfu` frame.
   async ensureDfuDevice({ waitMs = DFU_WAIT_MS } = {}) {
     if (!this.dfuSupported()) return false;
-    const dev = await waitForDfuArrival(waitMs) || await promptForDfuDevice();
+    const dev = await waitForDfuArrival(waitMs)
+      || (await promptForDfuDevice()).device;
     if (!dev) return false;
     dfuDevice = dev;
     publishDfu();
     return true;
+  },
+  // Whether a flash is parked waiting for the grant below.
+  needsDfuGrant() { return !!pendingFlash; },
+  // The button behind a parked flash: called straight from a click, so
+  // requestDevice() has the fresh activation the flash itself no longer had.
+  // Whatever is granted gets the parked image; anything else ends the flash.
+  async grantDfuAndResume() {
+    const pending = pendingFlash;
+    if (!pending) throw new DeviceError('nodfu', 'no flash is waiting for a device');
+    let picked;
+    try {
+      picked = await navigator.usb.requestDevice({ filters: DFU_FILTERS });
+    } catch (exc) {
+      abandonPendingFlash(exc.name === 'NotFoundError'
+        ? 'no bootloader was picked, so the flash was abandoned. The board is '
+          + 'still in DFU mode -- start the flash again to retry.'
+        : exc.message);
+      return false;
+    }
+    if (!await isOnTheBus(picked)) {
+      abandonPendingFlash(
+        'that device is no longer connected -- the entry is left over from an '
+        + 'earlier DFU session. Put the board into DFU mode and flash again.');
+      return false;
+    }
+    pendingFlash = null;
+    dfuDevice = picked;
+    await writeAndReport(picked, pending.bytes, pending.label);
+    return true;
+  },
+  // Closing the grant prompt without picking: the parked image is dropped and
+  // the flash reported as failed, so nothing stays busy forever.
+  cancelDfuGrant() {
+    if (!pendingFlash) return;
+    abandonPendingFlash('the flash was abandoned without granting access to the bootloader');
   },
   async enterDfu() { await device.enterDfu(); },
   async firmwareCatalog() {
