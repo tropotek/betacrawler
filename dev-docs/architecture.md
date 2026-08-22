@@ -22,6 +22,10 @@ Two exceptions are deliberate and documented rather than accidental. `showPage()
 takes a Web Serial `SerialPort` object, because Web Serial's permission model has no other way to
 name a port: a port only exists as the object the browser's own chooser handed back.
 
+A third path, `Api.connectSim()`, needs no exception at all: it swaps `activeDevice` to a
+`DeviceModel` wrapping `SimLink` (`js/sim-link.js`), which implements `SerialLink`'s exact public
+surface and runs an in-process device behind it. No browser type crosses the seam for it.
+
 `flashUpload` really did take a DOM `File` once, because the API it fed accepted one — which is
 exactly how this kind of coupling gets in. Full contract, plus a grep check for the mechanical
 part: `_notes/_archive/review-electron-port-readiness.md`.

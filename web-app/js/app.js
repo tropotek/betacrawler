@@ -655,6 +655,33 @@ el('connect').addEventListener('click', async () => {
   }
 });
 
+// Wired on every visit to Home: the button lives in that page's fragment and
+// only exists in the DOM while Home is mounted.
+let simConnecting = false;
+
+function initHomePage() {
+  const btn = el('sim-connect');
+  if (!btn) return;
+  btn.disabled = connected;
+  btn.addEventListener('click', async () => {
+    if (simConnecting || connected) return;
+    simConnecting = true;
+    btn.disabled = true;
+    btn.textContent = 'Connecting…';
+    try {
+      const st = await Api.connectSim();
+      setState(st.state, st);
+      await loadDevice();
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      simConnecting = false;
+      btn.disabled = connected;
+      btn.textContent = 'Try the simulator';
+    }
+  });
+}
+
 // One dirty flag, two readouts: the Configuration page's "applied — not saved"
 // note and the Terminal's Save button. Anything that changes the device's RAM
 // -- a form field, a restore -- goes through here, so both pages agree about
@@ -733,7 +760,7 @@ const pageCache = new Map();   // page name -> fetched fragment HTML text, cache
 // right below turns "forgot to add a page here" into a loud console error
 // instead of a page with silently dead buttons.
 const PAGE_INIT = {
-  home:       null,
+  home:       initHomePage,
   config:     null,
   controller: null,
   modes:      null,
@@ -826,6 +853,8 @@ async function showPage(page) {
 
 function updateNavAvailability() {
   el('nav-device')?.classList.toggle('d-none', !connected);
+  const simBtn = el('sim-connect');
+  if (simBtn && !simConnecting) simBtn.disabled = connected;
   // Losing the link while standing on one of those pages leaves the user on
   // markup that can no longer do anything, and whose nav entry has just gone.
   if (!connected && CONNECTION_REQUIRED_PAGES.has(currentPage)) {

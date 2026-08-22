@@ -3,6 +3,7 @@
 // Serial cannot enumerate ports before one is granted, and does not exist at
 // all outside Chromium.
 import { SerialLink } from './webserial-link.js';
+import { SimLink } from './sim-link.js';
 import { DeviceModel, DeviceError } from './device-model.js';
 import { run as terminalRun } from './terminal.js';
 import { parseIni } from './settings-ini.js';
@@ -50,13 +51,17 @@ function rememberBoard(board) {
 }
 
 function lastBoard() {
-  const live = device.lastRealBoard();
+  const live = realDevice.lastRealBoard();
   if (live) return live;
   try { return localStorage.getItem(LAST_BOARD_KEY); } catch { return null; }
 }
 
-const link = new SerialLink();
-const device = new DeviceModel(link);
+const realLink = new SerialLink();
+const realDevice = new DeviceModel(realLink);
+const simDevice = new DeviceModel(new SimLink());
+// Which device every Api method below delegates to. Swapped by connect(),
+// connectSim() and disconnect() only.
+let activeDevice = realDevice;
 let currentPort = null;
 // The granted bootloader, held here so no USBDevice crosses the Api seam.
 let dfuDevice = null;
@@ -78,8 +83,13 @@ const subscribers = new Set();
 // Optional-chained because Firefox and Safari have no navigator.serial:
 // throwing here would take the whole app down before it rendered.
 navigator.serial?.addEventListener('disconnect', (event) => {
-  if (event.target === currentPort) link.handleDisconnect();
+  if (event.target === currentPort) realLink.handleDisconnect();
 });
+
+// Wired once, not per Api.subscribe() call, so a subscription survives
+// activeDevice being swapped between real and sim sessions.
+realDevice.subscribe((msg) => { if (activeDevice === realDevice) publish(toFrame(msg)); });
+simDevice.subscribe((msg) => { if (activeDevice === simDevice) publish(toFrame(msg)); });
 
 const isDfuDevice = (d) => d.vendorId === DFU_VID && d.productId === DFU_PID;
 
@@ -230,7 +240,7 @@ async function waitForDfuArrival(timeoutMs) {
 async function runFlash(bytes, label, { waitMs = DFU_WAIT_MS } = {}) {
   if (flashBusy) throw new DeviceError('busy', 'a firmware flash is already in progress');
 
-  if (device.status().state !== 'connected') {
+  if (activeDevice.status().state !== 'connected') {
     // Nothing was rebooted, so nothing new is coming: resolve fast, and if the
     // handle has gone stale ask for one rather than sending the user away.
     const dev = await deviceForFlash();
@@ -249,7 +259,7 @@ async function runFlash(bytes, label, { waitMs = DFU_WAIT_MS } = {}) {
   usbBusy = true;
   try {
     publish({ type: 'flash', data: { phase: 'waiting', pct: 0, line: 'asking the board to reboot into DFU mode' } });
-    await device.enterDfu();
+    await activeDevice.enterDfu();
     // enterDfu() closes the port deliberately, which publishes no state frame;
     // mid-flash the page still needs to know the serial connection is gone.
     publish({ type: 'state', data: 'disconnected' });
@@ -345,42 +355,51 @@ export const Api = {
     const ports = await navigator.serial.getPorts();
     return ports.map((port) => ({ port, label: portLabel(port) }));
   },
-  async status() { return device.status(); },
-  async schema() { return device.schema(); },
-  async params() { return device.values(); },
+  async status() { return activeDevice.status(); },
+  async schema() { return activeDevice.schema(); },
+  async params() { return activeDevice.values(); },
   async connect(serialPort) {
     currentPort = serialPort;
-    await device.connect(serialPort, portLabel(serialPort));
-    rememberBoard(device.status().board);
-    return device.status();
+    activeDevice = realDevice;
+    await realDevice.connect(serialPort, portLabel(serialPort));
+    rememberBoard(realDevice.status().board);
+    return realDevice.status();
+  },
+  // No SerialPort involved -- Web Serial's permission model is why connect()
+  // needs one, and the simulator has no permission to ask for.
+  async connectSim() {
+    activeDevice = simDevice;
+    await simDevice.connect(null, 'sim://board');
+    return simDevice.status();
   },
   async disconnect() {
-    await device.disconnect();
+    await activeDevice.disconnect();
+    activeDevice = realDevice;
     currentPort = null;
-    return device.status();
+    return activeDevice.status();
   },
   async setParam(key, val) {
-    await device.set(key, val);
+    await activeDevice.set(key, val);
     return { ok: true, key, val };
   },
-  async save() { await device.save(); return { ok: true }; },
-  async defaults() { await device.loadDefaults(); return { ok: true, vals: device.values() }; },
+  async save() { await activeDevice.save(); return { ok: true }; },
+  async defaults() { await activeDevice.loadDefaults(); return { ok: true, vals: activeDevice.values() }; },
   async revert() {
-    const src = await device.revert();
-    return { ok: true, src, vals: device.values() };
+    const src = await activeDevice.revert();
+    return { ok: true, src, vals: activeDevice.values() };
   },
   async sendTerminalCommand(command) {
-    const result = await terminalRun(device, command);
+    const result = await terminalRun(activeDevice, command);
     return {
       ok: result.ok, friendly: result.friendly,
       raw_sent: result.rawSent, raw_recv: result.rawRecv, dirty: result.dirty,
     };
   },
   async restoreIni(ini) {
-    if (device.status().state !== 'connected') throw new DeviceError('disconnected', 'not connected');
+    if (activeDevice.status().state !== 'connected') throw new DeviceError('disconnected', 'not connected');
     let pairs;
     try {
-      pairs = parseIni(ini, device.schema().params.map((p) => p.key));
+      pairs = parseIni(ini, activeDevice.schema().params.map((p) => p.key));
     } catch (exc) {
       throw new DeviceError('badini', exc.message);
     }
@@ -388,13 +407,13 @@ export const Api = {
     const skipped = [];
     for (const [key, raw] of pairs) {
       try {
-        await device.terminalSet(key, raw);
+        await activeDevice.terminalSet(key, raw);
         applied.push(key);
       } catch (exc) {
         skipped.push({ key, reason: exc.message });
       }
     }
-    return { ok: applied.length > 0 && skipped.length === 0, applied, skipped, vals: device.values() };
+    return { ok: applied.length > 0 && skipped.length === 0, applied, skipped, vals: activeDevice.values() };
   },
   dfuSupported() {
     return typeof navigator !== 'undefined' && 'usb' in navigator;
@@ -466,7 +485,7 @@ export const Api = {
     if (!pendingFlash) return;
     abandonPendingFlash('the flash was abandoned without granting access to the bootloader');
   },
-  async enterDfu() { await device.enterDfu(); },
+  async enterDfu() { await activeDevice.enterDfu(); },
   async firmwareCatalog() {
     const r = await fetch('firmware/manifest.json', { cache: 'no-cache' });
     if (!r.ok) {
@@ -515,7 +534,6 @@ export const Api = {
   },
   subscribe(handler) {
     subscribers.add(handler);
-    const off = device.subscribe((msg) => handler(toFrame(msg)));
-    return () => { subscribers.delete(handler); off(); };
+    return () => { subscribers.delete(handler); };
   },
 };
