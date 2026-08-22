@@ -86,3 +86,123 @@ export function sectorsFor(layout, origin, length) {
   const end = origin + length;
   return layout.filter((s) => s.start < end && s.start + s.size > origin);
 }
+
+// --- the flash sequence -------------------------------------------------------
+
+// DFU class requests, and the DfuSe commands carried in block 0.
+const DFU_DNLOAD = 1, DFU_GETSTATUS = 3, DFU_CLRSTATUS = 4;
+const DFUSE_SET_ADDRESS = 0x21, DFUSE_ERASE = 0x41;
+const STATE_DNLOAD_IDLE = 5, STATE_DFU_ERROR = 10;
+const INTERFACE = 0;
+// The STM32 ROM bootloader's wTransferSize. Fixed rather than read from the DFU
+// functional descriptor: this module targets exactly one bootloader.
+const TRANSFER_SIZE = 2048;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const setup = (request, value) => ({
+  requestType: 'class', recipient: 'interface', request, value, index: INTERFACE,
+});
+
+function le32(value) {
+  const bytes = new Uint8Array(4);
+  new DataView(bytes.buffer).setUint32(0, value, true);
+  return bytes;
+}
+
+async function getStatus(dev) {
+  const r = await dev.controlTransferIn(setup(DFU_GETSTATUS, 0), 6);
+  if (r.status !== 'ok') throw new DfuError('the device did not answer DFU_GETSTATUS');
+  return {
+    status: r.data.getUint8(0),
+    pollTimeout: r.data.getUint8(1) | (r.data.getUint8(2) << 8) | (r.data.getUint8(3) << 16),
+    state: r.data.getUint8(4),
+  };
+}
+
+// Honours the device's own bwPollTimeout rather than a fixed sleep -- erasing a
+// 128KB sector asks for far longer than a 2KB write does.
+async function pollUntilIdle(dev) {
+  let st = await getStatus(dev);
+  while (st.state !== STATE_DNLOAD_IDLE && st.state !== STATE_DFU_ERROR) {
+    if (st.pollTimeout) await sleep(st.pollTimeout);
+    st = await getStatus(dev);
+  }
+  if (st.status !== 0 || st.state === STATE_DFU_ERROR) {
+    throw new DfuError(`the device rejected the write (DFU status 0x${st.status.toString(16)})`);
+  }
+  return st;
+}
+
+async function download(dev, blockNum, data) {
+  const r = await dev.controlTransferOut(setup(DFU_DNLOAD, blockNum), data);
+  if (r.status !== 'ok') throw new DfuError(`DFU_DNLOAD block ${blockNum} failed`);
+}
+
+async function dfuseCommand(dev, command, addr) {
+  await download(dev, 0, new Uint8Array([command, ...le32(addr)]));
+  await pollUntilIdle(dev);
+}
+
+// A bootloader that has just been entered reports errFIRMWARE/dfuERROR on its
+// first status read, so clearing is part of connecting, not error handling.
+async function clearErrorState(dev) {
+  const st = await getStatus(dev);
+  if (st.state === STATE_DFU_ERROR) {
+    await dev.controlTransferOut(setup(DFU_CLRSTATUS, 0));
+    await getStatus(dev);
+  }
+}
+
+function layoutOf(dev) {
+  const alt = dev.configuration?.interfaces
+    ?.find((i) => i.interfaceNumber === INTERFACE)
+    ?.alternates?.find((a) => a.alternateSetting === 0);
+  return parseMemoryLayout(alt?.interfaceName);
+}
+
+/** Write `bytes` to the board's internal flash and leave DFU mode.
+ *  onProgress receives {op, pct, line}; op is 'erase' then 'download'. */
+export async function flash(usbDevice, bytes, { onProgress = () => {} } = {}) {
+  const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  await usbDevice.open();
+  if (!usbDevice.configuration) await usbDevice.selectConfiguration(1);
+  await usbDevice.claimInterface(INTERFACE);
+  await usbDevice.selectAlternateInterface(INTERFACE, 0);
+  try {
+    await clearErrorState(usbDevice);
+
+    const sectors = sectorsFor(layoutOf(usbDevice), FLASH_ORIGIN, data.length);
+    for (const [i, sector] of sectors.entries()) {
+      await dfuseCommand(usbDevice, DFUSE_ERASE, sector.start);
+      onProgress({
+        op: 'erase',
+        pct: Math.round(((i + 1) / sectors.length) * 100),
+        line: `erased ${hex8(sector.start)}`,
+      });
+    }
+
+    // Set once: the bootloader advances the pointer itself as the block number
+    // climbs from 2, which is what dfu-util does too.
+    await dfuseCommand(usbDevice, DFUSE_SET_ADDRESS, FLASH_ORIGIN);
+    for (let offset = 0, block = 2; offset < data.length; offset += TRANSFER_SIZE, block += 1) {
+      await download(usbDevice, block, data.subarray(offset, offset + TRANSFER_SIZE));
+      await pollUntilIdle(usbDevice);
+      const written = Math.min(offset + TRANSFER_SIZE, data.length);
+      onProgress({
+        op: 'download',
+        pct: Math.round((written / data.length) * 100),
+        line: `${written}/${data.length} bytes`,
+      });
+    }
+
+    // Manifest and leave. The device resets into the new application here, so
+    // this transfer and the status read after it may never be answered -- that
+    // is the success case, not a failure.
+    try {
+      await download(usbDevice, 0, new Uint8Array(0));
+      await getStatus(usbDevice);
+    } catch { /* already detached */ }
+  } finally {
+    try { await usbDevice.close(); } catch { /* already gone */ }
+  }
+}
