@@ -5,6 +5,9 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **feat: the configurator is published with the docs.** The docs workflow copies `web-app/` into
+  the built site, so the app is served from `https://tropotek.github.io/betacrawler/app/`.
+
 - **feat: the pages that need a board are a sidebar section of their own.** Configuration,
   Controller, Modes and Terminal — Terminal joins them, having previously been reachable with
   nothing connected — now live in one group that is hidden outright while disconnected, rather

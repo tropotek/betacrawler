@@ -24,6 +24,9 @@ jobs:
           python-version: "3.x"
       - run: pip install -r docs-tools/requirements.txt
       - run: mkdocs build --strict
+      # The configurator is published alongside the docs, at /betacrawler/app/.
+      # It is a static site with no build step, so it ships as-is.
+      - run: cp -r web-app site/app
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
