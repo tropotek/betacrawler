@@ -506,12 +506,16 @@ document.addEventListener('alpine:init', () => {
       return this.images.find((i) => i.id === this.selected) || null;
     },
 
+    // A connected board is flashable: Api.flashBundled/flashUpload reboot it
+    // into DFU themselves and wait for the bootloader, so the page needs no
+    // reboot/select choreography on the normal path.
     get canFlash() {
-      return !!this.selectedImage && !this.busy && this.dfuPresent;
+      return !!this.selectedImage && !this.busy
+        && (this.dfuPresent || this.deviceConnected);
     },
 
     get canUpload() {
-      return !this.busy && this.dfuPresent;
+      return !this.busy && (this.dfuPresent || this.deviceConnected);
     },
 
     get statusText() {

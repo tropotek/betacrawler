@@ -78,14 +78,16 @@
 
             <button id="fw-flash" class="btn btn-danger"
                     :disabled="!$store.firmware.canFlash">Flash selected firmware</button>
-            <span class="text-secondary small" x-show="!$store.firmware.dfuPresent">
-              The board must be in DFU mode first.
+            <span class="text-secondary small"
+                  x-show="!$store.firmware.dfuPresent && !$store.firmware.deviceConnected">
+              Connect the board, or put it in DFU mode first.
             </span>
             <!-- A board already in DFU has never said `hello`, so nothing may be
                  recommended and nothing preselected. Say why the button is dead
                  rather than leaving it dead and silent. -->
             <span id="fw-pick-hint" class="text-secondary small"
-                  x-show="$store.firmware.dfuPresent && !$store.firmware.selectedImage">
+                  x-show="($store.firmware.dfuPresent || $store.firmware.deviceConnected)
+                          && !$store.firmware.selectedImage">
               Choose which image to flash above.
             </span>
           </div>

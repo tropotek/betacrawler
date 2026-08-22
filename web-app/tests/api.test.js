@@ -35,6 +35,7 @@ function makeFakeSerialPort(scriptedResponses) {
 
 const BOARD = {
   hello: () => ({ ok: true, proto: 1, fw: 'betacrawler 1.0.0', board: 'blackpill_f411ce' }),
+  dfu: () => ({ ok: true }),
   schema: () => ({ ok: true, params: [{ key: 'led.mode', type: 'enum', options: ['on', 'off'], def: 'off' }], tlm: [] }),
   getall: () => ({ ok: true, vals: { 'led.mode': 'off' } }),
   get: () => ({ ok: true, val: 'off' }),
@@ -647,4 +648,64 @@ test('verifying a pick leaves the device closed', async () => {
   setFakeUsbDevices([live]);
   await Api.requestDfuDevice();
   assert.equal(live.opens, live.closes, 'the verification open() must be closed again');
+});
+
+
+// --- one click from a connected board -----------------------------------------
+// Betaflight's flow, and the backend FlashSession's: Flash reboots the board
+// into DFU itself, waits (bounded) for the bootloader to arrive, then writes.
+
+test('flashing while connected reboots the board and waits for the bootloader', async () => {
+  fakeBundle();
+  setFakeUsbDevices([]);
+  const port = await Api.requestPort();
+  await Api.connect(port);
+  const { frames, off } = collectFlashFrames();
+  const flashing = Api.flashBundled(F411.id, { waitMs: 4000 });
+  // The bootloader enumerates a moment after the reboot.
+  setTimeout(() => setFakeUsbDevices([fakeDfuDevice()]), 150);
+  await flashing;
+  off();
+  assert.equal((await Api.status()).state, 'disconnected',
+               'the serial connection died with the reboot');
+  assert.equal(frames[0].phase, 'waiting');
+  assert.ok(frames.some((f) => f.phase === 'flashing'));
+  assert.equal(frames.at(-1).phase, 'done');
+});
+
+test('a reboot that never produces a bootloader ends in an error frame', async () => {
+  fakeBundle();
+  setFakeUsbDevices([]);
+  const port = await Api.requestPort();
+  await Api.connect(port);
+  const { frames, off } = collectFlashFrames();
+  await Api.flashBundled(F411.id, { waitMs: 600 });
+  off();
+  assert.equal(frames[0].phase, 'waiting');
+  assert.equal(frames.at(-1).phase, 'error');
+  assert.match(frames.at(-1).line, /bootloader never appeared/);
+});
+
+test('firmware that cannot reboot itself ends in an error frame naming BOOT0', async () => {
+  fakeBundle();
+  setFakeUsbDevices([]);
+  const noDfuPort = makeFakeSerialPort({ ...BOARD, dfu: () => ({ ok: false, err: 'nodfu' }) });
+  await Api.connect(noDfuPort);
+  const { frames, off } = collectFlashFrames();
+  await Api.flashBundled(F411.id, { waitMs: 600 });
+  off();
+  assert.equal(frames.at(-1).phase, 'error');
+  assert.match(frames.at(-1).line, /BOOT0 button/);
+  await Api.disconnect();
+});
+
+test('the busy lock clears after a reboot-and-wait flash', async () => {
+  fakeBundle();
+  setFakeUsbDevices([]);
+  const port = await Api.requestPort();
+  await Api.connect(port);
+  const flashing = Api.flashBundled(F411.id, { waitMs: 3000 });
+  setTimeout(() => setFakeUsbDevices([fakeDfuDevice()]), 100);
+  await flashing;
+  assert.equal((await Api.dfuStatus()).busy, false);
 });

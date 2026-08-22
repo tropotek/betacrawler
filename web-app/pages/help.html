@@ -76,13 +76,14 @@
 
           <p><strong>Updating the firmware</strong></p>
           <ul>
-            <li>Open the <strong>Firmware</strong> page. With a board connected, click
-                <strong>Reboot to DFU</strong>; otherwise hold <strong>BOOT0</strong>, tap
-                <strong>NRST</strong> and release <strong>BOOT0</strong>.</li>
-            <li>Click <strong>Select DFU device…</strong> and pick the STM32 bootloader — the
-                browser can't see it until you grant it once, after which it remembers.</li>
-            <li>Choose an image and click <strong>Flash selected firmware</strong>. The board
-                resets into the new firmware on its own.</li>
+            <li>With the board connected: open the <strong>Firmware</strong> page, choose an
+                image, and click <strong>Flash selected firmware</strong>. The app reboots the
+                board into DFU, flashes it, and the board resets into the new firmware on its
+                own. The first time, the browser asks you to pick the STM32 bootloader — after
+                that it remembers.</li>
+            <li>For a board whose firmware is broken: hold <strong>BOOT0</strong>, tap
+                <strong>NRST</strong>, release <strong>BOOT0</strong>, then click
+                <strong>Select DFU device…</strong> and flash as above.</li>
             <li>Flashing needs a Chromium-based browser, like the rest of this app.</li>
             <li>On Windows, a board bound to ST's DfuSe driver is invisible to the browser
                 until it's switched to WinUSB (with Zadig). Linux needs nothing beyond the

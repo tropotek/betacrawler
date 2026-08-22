@@ -1,7 +1,8 @@
-// Bump this whenever a cache-first file below changes (js/*, vendor/*,
-// icons/*, favicon.ico, tank-hero.svg) -- installed clients only refetch
-// them once the browser detects service-worker.js itself has new bytes.
-const CACHE_NAME = 'betacrawler-web-app-v15';
+// Bump this whenever a cache-first file below changes (vendor/*, icons/*,
+// favicon.ico, tank-hero.svg) -- installed clients only refetch them once the
+// browser detects service-worker.js itself has new bytes. js/* is network-first
+// below, so it needs no bump to update.
+const CACHE_NAME = 'betacrawler-web-app-v16';
 const SHELL_FILES = [
   './', './index.html', './manifest.json',
   './js/app.js', './js/api.js', './js/webserial-link.js', './js/device-model.js',
@@ -42,9 +43,13 @@ self.addEventListener('fetch', (event) => {
   // /firmware/ is network-first for the same reason /pages/ is: a re-bundle
   // replaces the manifest and its binaries together, and a cache-first worker
   // would serve a stale pair that still checksums perfectly against itself.
+  // /js/ is network-first because it is this app's own code: serving a stale
+  // copy makes every fix invisible until a double reload, which reads as "the
+  // fix didn't work". Only the vendor files and icons stay cache-first.
   const liveFirst = event.request.mode === 'navigate'
     || url.pathname.includes('/pages/')
-    || url.pathname.includes('/firmware/');
+    || url.pathname.includes('/firmware/')
+    || url.pathname.includes('/js/');
   if (liveFirst) {
     event.respondWith(
       fetch(event.request)

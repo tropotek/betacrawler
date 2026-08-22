@@ -180,35 +180,95 @@ async function sha256Hex(bytes) {
 // Pre-flight failures (no device, busy, bad image, bad checksum) throw, the way
 // the backend build answers a rejected POST. A failure once writing has begun
 // arrives as an error frame instead, the way its WS progress does.
-async function runFlash(bytes, label) {
-  if (flashBusy) throw new DeviceError('busy', 'a firmware flash is already in progress');
-  const dev = await deviceForFlash();
-  if (!dev) {
-    throw new DeviceError(
-      'nodfu',
-      'no device in DFU mode could be opened. If one was listed, it may be left '
-      + 'over from an earlier DFU session -- put the board back into DFU (hold '
-      + 'BOOT0, tap NRST, release BOOT0) and pick it again.');
+// Betaflight's shape: poll for the bootloader only while a reboot we triggered
+// is in flight, bounded, and never as a background habit. "Arrived" means a
+// granted device that actually opens -- ground truth, not the grant list.
+async function waitForDfuArrival(timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const dev = await deviceForFlash();
+    if (dev) return dev;
+    if (Date.now() >= deadline) return null;
+    await new Promise((resolve) => setTimeout(resolve, 400));
   }
+}
+
+// One flash, start to finish. From a connected board this is the whole
+// Betaflight-style sequence -- reboot into DFU, wait for the bootloader,
+// write -- so the page needs no reboot/select choreography on the normal path.
+// From a board already in DFU it just writes. Failures before anything has
+// been published throw, like a rejected POST; failures after that arrive as
+// error frames, like the backend build's FlashSession.
+async function runFlash(bytes, label, { waitMs = 15000 } = {}) {
+  if (flashBusy) throw new DeviceError('busy', 'a firmware flash is already in progress');
+
+  if (device.status().state !== 'connected') {
+    // Nothing was rebooted, so nothing new is coming: resolve fast or fail fast.
+    const dev = await deviceForFlash();
+    if (!dev) {
+      throw new DeviceError(
+        'nodfu',
+        'no device in DFU mode could be opened. If one was listed, it may be left '
+        + 'over from an earlier DFU session -- put the board back into DFU (hold '
+        + 'BOOT0, tap NRST, release BOOT0) and pick it again.');
+    }
+    return writeAndReport(dev, bytes, label);
+  }
+
   flashBusy = true;
   usbBusy = true;
-  publish({ type: 'flash', data: { phase: 'flashing', pct: 0, line: `writing ${label}` } });
   try {
-    await dfuFlash(dev, bytes, {
-      onProgress: (ev) => publish({ type: 'flash', data: { phase: 'flashing', ...ev } }),
-    });
-    publish({ type: 'flash', data: { phase: 'done', pct: 100, line: 'flash complete' } });
+    publish({ type: 'flash', data: { phase: 'waiting', pct: 0, line: 'asking the board to reboot into DFU mode' } });
+    await device.enterDfu();
+    // enterDfu() closes the port deliberately, which publishes no state frame;
+    // mid-flash the page still needs to know the serial connection is gone.
+    publish({ type: 'state', data: 'disconnected' });
+    publish({ type: 'flash', data: { phase: 'waiting', pct: 0, line: 'waiting for the bootloader to appear' } });
+    const dev = await waitForDfuArrival(waitMs);
+    if (!dev) {
+      publish({ type: 'flash', data: { phase: 'error', line:
+        'the board rebooted but its bootloader never appeared on USB. Try '
+        + 'BOOT0 + NRST by hand, then Select DFU device; a different USB '
+        + 'port or cable is worth ruling out.' } });
+      return;
+    }
+    dfuDevice = dev;
+    await writeBody(dev, bytes, label);
   } catch (exc) {
     publish({ type: 'flash', data: { phase: 'error', line: exc.message } });
   } finally {
-    // The handle dies with the reset that ends a successful flash. A failed one
-    // leaves the board in DFU, and its disconnect event never fires -- so the
-    // next status call probes afresh rather than assuming either way.
-    flashBusy = false;
-    usbBusy = false;
-    dfuDevice = null;
-    publishDfu();
+    finishFlash();
   }
+}
+
+async function writeAndReport(dev, bytes, label) {
+  flashBusy = true;
+  usbBusy = true;
+  try {
+    await writeBody(dev, bytes, label);
+  } catch (exc) {
+    publish({ type: 'flash', data: { phase: 'error', line: exc.message } });
+  } finally {
+    finishFlash();
+  }
+}
+
+async function writeBody(dev, bytes, label) {
+  publish({ type: 'flash', data: { phase: 'flashing', pct: 0, line: `writing ${label}` } });
+  await dfuFlash(dev, bytes, {
+    onProgress: (ev) => publish({ type: 'flash', data: { phase: 'flashing', ...ev } }),
+  });
+  publish({ type: 'flash', data: { phase: 'done', pct: 100, line: 'flash complete' } });
+}
+
+function finishFlash() {
+  // The handle dies with the reset that ends a successful flash. A failed one
+  // leaves the board in DFU, and its disconnect event never fires -- so the
+  // next status call probes afresh rather than assuming either way.
+  flashBusy = false;
+  usbBusy = false;
+  dfuDevice = null;
+  publishDfu();
 }
 
 export const Api = {
@@ -314,7 +374,7 @@ export const Api = {
       board,
     };
   },
-  async flashBundled(id) {
+  async flashBundled(id, opts = {}) {
     const cat = await this.firmwareCatalog();
     const img = cat.images.find((i) => i.id === id);
     if (!img) throw new DeviceError('firmware', `no firmware image '${id}' in the bundle`);
@@ -338,12 +398,12 @@ export const Api = {
         `${img.file} failed its checksum -- the bundled file does not match the `
         + 'manifest and will not be flashed');
     }
-    await runFlash(bytes, `${img.name} ${img.version} (${img.board})`);
+    await runFlash(bytes, `${img.name} ${img.version} (${img.board})`, opts);
   },
-  async flashUpload(bytes, name) {
+  async flashUpload(bytes, name, opts = {}) {
     const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
     validateImage(data);
-    await runFlash(data, name);
+    await runFlash(data, name, opts);
   },
   subscribe(handler) {
     subscribers.add(handler);
