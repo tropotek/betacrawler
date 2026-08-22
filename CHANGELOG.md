@@ -5,6 +5,9 @@ records live in the git history, not here.
 
 ## Version 4.0
 
+- **feat: a simulated board can be tried from the Home page, no hardware required.**
+  `sim://board` runs entirely in the browser tab, behind the same `Api` seam a real board uses.
+
 - **docs: flashing needs no programmer, first flash included.** BOOT0+NRST reaches a blank
   board's ROM bootloader, so the ST-Link leaves the parts list.
 
