@@ -490,10 +490,11 @@ document.addEventListener('alpine:init', () => {
     },
 
     // An exact match, not a version-number comparison: the manifest records the
-    // same build timestamp the device reports in `hello`, so two builds of the
-    // same version number are still told apart.
+    // same build timestamp the device reports in `hello`. Board is part of it,
+    // or two boards built in the same second each claim to be running the other.
     isRunning(img) {
       return this.deviceConnected && !!this.device.built
+        && img.board === this.device.board
         && img.built === this.device.built && img.version === this.device.ver;
     },
 
