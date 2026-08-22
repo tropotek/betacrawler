@@ -320,6 +320,37 @@ nothing else. The app carries the `board` string forward from the last `hello` a
 when it has none, rather than guessing. Any future "auto-detect the right firmware" idea runs into
 this wall first.
 
+## DFU in the browser
+
+`web-app/` flashes the same boards with no backend at all: `js/dfu.js` speaks DfuSe directly over
+WebUSB. It takes an injected `USBDevice`-shaped object and never touches `navigator.usb` itself,
+the same shape as `webserial-link.js` and for the same reason — the whole protocol tests against a
+fake, and overwriting a device's flash is not something to leave covered only by hardware runs.
+
+Three details are measured rather than assumed, and each is load-bearing:
+
+- **A freshly entered bootloader reports `errFIRMWARE`/`dfuERROR` on its first status read.**
+  Clearing that state is part of connecting, not error handling; without it the first poll throws
+  before anything is written.
+- **Chrome reports this bootloader's `interfaceName` as `null`**, so the sector map comes from
+  `F4_DEFAULT_LAYOUT`. `parseMemoryLayout()` is what would adapt to a different flash geometry if
+  the descriptor ever appears. The map cannot be a constant stride: F4 sectors are non-uniform.
+- **The device detaches during the leave that ends a successful flash**, so the final transfer and
+  status read may go unanswered. That is success, not a transfer failure.
+
+Errors split along the line the backend build's HTTP/WS split already draws: pre-flight failures
+(no device, a flash already running, a bad image, a checksum mismatch) throw from `Api`, while a
+failure once writing has begun arrives as a `{type:'flash'}` frame on the `subscribe` channel —
+the same frame shape the FastAPI build pushes over its WebSocket, so the page's handler is
+identical in both.
+
+`web-app/firmware/` is committed, unlike `app/firmware/`: a static site has no backend to build an
+image on demand, so the bundle travels with the deployment. The manifest carries
+`fw_source_sha256`, a path-sensitive hash of `firmware/{include,src}` and `platformio.ini`, and
+`web-app/tests/firmware-bundle.test.js` recomputes it. That guard exists because the failure it
+catches is silent: both versions stay `1.0.0` in this template, so binaries that have fallen
+behind their sources still checksum perfectly against a manifest that is equally stale.
+
 ## Flashing an ESP32 (esptool)
 
 The second flashing mechanism, dispatched off the manifest's `method` field (`"dfu"` /

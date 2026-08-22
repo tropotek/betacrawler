@@ -160,6 +160,10 @@ web-app/                a second, fully static front end for the same board, tal
                         Unit-tested with `node --test`, run from `web-app/` (it discovers
                         `tests/*.test.js` itself); `tests/parity.test.js` holds the copied
                         page fragments and vendor files to `app/web/`.
+web-app/firmware/       the firmware images this site flashes, plus manifest.json.
+                        COMMITTED, unlike app/firmware/ — a static site has no backend
+                        to build one on demand. Written by app/tools/bundle_firmware.py
+                        alongside app/firmware/, in the same run.
 ```
 
 **`hardware/`** sits outside those three tiers — KiCad schematic/PCB source for the wiring
@@ -240,6 +244,13 @@ is also why esc1 keeps PB6. PA2/PA3 are no escape: USART2 is a bootloader interf
 
 **`app/firmware/` stays gitignored** — don't re-commit the binaries and don't "fix" the
 `.gitignore` entry. A checkout with no firmware until the script runs is the expected state.
+
+**`web-app/firmware/` stays committed** — the opposite call, for the opposite reason: the static
+build has no backend, so the images it flashes have to be in the deployed tree.
+`bundle_firmware.py` writes it alongside `app/firmware/` in the same run, and
+`web-app/tests/firmware-bundle.test.js` fails when those binaries no longer match the firmware
+sources (the manifest's `fw_source_sha256`). Re-bundle and commit after any firmware source
+change.
 
 **Nothing can identify a board in DFU mode** — every STM32F4 bootloader reports `0483:df11`.
 
