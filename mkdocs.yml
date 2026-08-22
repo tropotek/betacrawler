@@ -31,6 +31,7 @@ nav:
       - What you need: build/what-you-need.md
       - Wiring: build/wiring.md
       - Flashing the firmware: build/flashing.md
+      - Model Examples: build/models.md
   - Drive it:
       - Connect to the board: drive/install-and-connect.md
       - First setup: drive/first-setup.md
