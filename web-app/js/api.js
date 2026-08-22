@@ -51,6 +51,13 @@ navigator.serial?.addEventListener('disconnect', (event) => {
   if (event.target === currentPort) link.handleDisconnect();
 });
 
+// Drops the granted bootloader the moment it leaves the bus, rather than
+// waiting for the next poll to notice. Optional-chained for the browsers with
+// no WebUSB at all, exactly as the serial listener above is.
+navigator.usb?.addEventListener('disconnect', (event) => {
+  if (event.device === dfuDevice) dfuDevice = null;
+});
+
 // The link publishes what the device said; app.js consumes {type, data}
 // frames. A port of main.py's Broadcaster.publish_threadsafe, which is the
 // same translation on the same seam.
@@ -65,10 +72,16 @@ function publish(frame) {
   for (const handler of subscribers) handler(frame);
 }
 
+// Presence means "on the bus now", never "granted at some point". A WebUSB
+// grant outlives the device it was given for, so a board that has been reset
+// -- by NRST, by BOOT0, or by the flash that just finished -- leaves a handle
+// behind that would otherwise report DFU mode forever.
 async function firstDfuDevice() {
-  if (dfuDevice) return dfuDevice;
-  const devices = await navigator.usb.getDevices();
-  return devices.find((d) => d.vendorId === DFU_VID && d.productId === DFU_PID) || null;
+  if (!navigator.usb) return null;
+  const live = (await navigator.usb.getDevices())
+    .filter((d) => d.vendorId === DFU_VID && d.productId === DFU_PID);
+  if (dfuDevice && !live.includes(dfuDevice)) dfuDevice = null;
+  return dfuDevice || live[0] || null;
 }
 
 async function sha256Hex(bytes) {
