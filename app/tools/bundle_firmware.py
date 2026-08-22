@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Build the firmware images the app ships with, into app/firmware/.
+"""Build the firmware images the apps ship with, into app/firmware/ and
+web-app/firmware/.
 
-Run at RELEASE time, by hand. `app/firmware/` is gitignored build output, not
-source: this script is the only thing that puts anything there, and it is what
-populates the folder before the app is packaged into an executable. A source
-checkout therefore has no firmware until someone runs this -- which is fine,
-because only a developer ever sees that state.
+Run at RELEASE time, by hand. This script is the only thing that puts anything
+in either destination. `app/firmware/` is gitignored build output, populated
+before the desktop app is packaged into an executable. `web-app/firmware/` is
+committed instead: the static site has no backend to build an image on demand,
+so what it flashes has to travel with it -- re-run this and commit the result
+after any firmware source change, which web-app/tests/firmware-bundle.test.js
+checks via the manifest's fw_source_sha256.
 
     python app/tools/bundle_firmware.py                    # blackpill_f411ce
     python app/tools/bundle_firmware.py board_a board_b    # the release set
@@ -48,7 +51,10 @@ from pathlib import Path
 # functions below, so the tests can point the whole script at a fixture tree.
 ROOT = Path(__file__).resolve().parents[2]
 FIRMWARE = ROOT / "firmware"
-BUNDLE = ROOT / "app" / "firmware"
+# Every successful run writes each of these identically. app/firmware/ is
+# gitignored build output; web-app/firmware/ is a committed release artifact
+# the static site serves, since it has no backend to build one on demand.
+BUNDLES = [ROOT / "app" / "firmware", ROOT / "web-app" / "firmware"]
 
 DEFAULT_ENV = "blackpill_f411ce"
 
@@ -70,8 +76,8 @@ ESP32_MERGE_LAYOUT = (
 )
 
 
-def manifest_path() -> Path:
-    return BUNDLE / "manifest.json"
+def manifest_path(bundle: Path) -> Path:
+    return bundle / "manifest.json"
 
 
 def bin_path_for(env: str) -> Path:
@@ -198,11 +204,35 @@ def proto_version() -> int:
 
 
 def app_version() -> str:
-    text = (ROOT / "app" / "web" / "app.js").read_text()
+    text = (ROOT / "web-app" / "js" / "app.js").read_text()
     m = re.search(r"^const APP_VERSION\s*=\s*'([^']+)'", text, re.M)
     if not m:
-        raise BundleError("could not find APP_VERSION in app/web/app.js")
+        raise BundleError("could not find APP_VERSION in web-app/js/app.js")
     return m.group(1)
+
+
+# What every bundled image is built from. firmware/test/ and firmware/scripts/
+# are excluded: neither reaches the binary.
+FW_SOURCE_DIRS = ("include", "src")
+FW_SOURCE_FILES = ("platformio.ini",)
+
+
+def fw_source_sha256() -> str:
+    """Fingerprint of the firmware sources, path-sensitive.
+
+    Recorded in the manifest so a committed bundle can be checked against the
+    tree it was built from. Each file's relative path is hashed along with its
+    contents, so adding, renaming or deleting one counts as a change even when
+    no existing file was touched.
+    """
+    paths = [p for name in FW_SOURCE_DIRS
+             for p in (FIRMWARE / name).rglob("*") if p.is_file()]
+    paths += [FIRMWARE / n for n in FW_SOURCE_FILES if (FIRMWARE / n).is_file()]
+    digest = hashlib.sha256()
+    for path in sorted(paths, key=lambda p: p.relative_to(FIRMWARE).as_posix()):
+        digest.update(path.relative_to(FIRMWARE).as_posix().encode())
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 
 # --- checking the binary actually matches those sources ------------------------
@@ -454,8 +484,8 @@ def check_esp32_image(blob: bytes) -> None:
 
 # --- manifest ------------------------------------------------------------------
 
-def load_manifest() -> dict:
-    path = manifest_path()
+def load_manifest(bundle: Path) -> dict:
+    path = manifest_path(bundle)
     if not path.is_file():
         return {"app_version": None, "images": []}
     try:
@@ -467,32 +497,32 @@ def load_manifest() -> dict:
     return data
 
 
-def write_manifest(data: dict) -> None:
-    path = manifest_path()
+def write_manifest(bundle: Path, data: dict) -> None:
+    path = manifest_path(bundle)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + "\n")
 
 
-def prune(old: dict, new: dict) -> list[Path]:
+def prune(bundle: Path, old: dict, new: dict) -> list[Path]:
     """Delete images the previous manifest listed and the new one doesn't.
 
     Scoped to what a manifest named, never a wildcard sweep of the directory:
-    `rm -rf app/firmware/*` is shorter and would also throw away a binary
+    `rm -rf <bundle>/*` is shorter and would also throw away a binary
     someone had dropped in there by hand. Since this is the one path in the
     script that deletes anything, entries are also checked to actually live
     under the bundle before being unlinked -- a `file` of "../../secrets"
     should not be reachable even from a manifest we wrote ourselves.
     """
     keep = {img.get("file") for img in new.get("images", [])}
-    bundle = BUNDLE.resolve()
+    root = bundle.resolve()
     removed, parents = [], set()
 
     for img in old.get("images", []):
         rel = img.get("file")
         if not rel or rel in keep:
             continue
-        path = (BUNDLE / rel).resolve()
-        if not path.is_relative_to(bundle):
+        path = (bundle / rel).resolve()
+        if not path.is_relative_to(root):
             continue
         parents.add(path.parent)
         if path.is_file():
@@ -502,7 +532,7 @@ def prune(old: dict, new: dict) -> list[Path]:
     # A board directory left empty by the above is noise; a board that still
     # has images keeps its directory untouched.
     for d in parents:
-        if d != bundle and d.is_dir() and not any(d.iterdir()):
+        if d != root and d.is_dir() and not any(d.iterdir()):
             d.rmdir()
     return removed
 
@@ -632,7 +662,8 @@ def release(envs: list[str], dry_run: bool = False, force: bool = False,
     # Read before building rather than just before writing: a corrupt manifest
     # is a one-second failure, and finding it after a multi-board build has
     # already run is a needlessly expensive way to be told.
-    old = load_manifest()
+    olds = {bundle: load_manifest(bundle) for bundle in BUNDLES}
+    primary = olds[BUNDLES[0]]
 
     plans = [(env, plan_entry(env, force=force, build=build, pio=tool,
                               builder=builder))
@@ -661,16 +692,19 @@ def release(envs: list[str], dry_run: bool = False, force: bool = False,
     # listed and this one doesn't is gone. With it, prior entries survive and
     # only same-id ones are replaced.
     fresh = set(ids)
-    kept = [img for img in old["images"] if img.get("id") not in fresh] if add else []
+    kept = [img for img in primary["images"] if img.get("id") not in fresh] if add else []
+    # One manifest, computed once and written to every destination verbatim.
     # Stable order, so re-releasing produces a diff of only the fields that
     # actually changed.
     data = {"app_version": app_version(),
+            "fw_source_sha256": fw_source_sha256(),
             "images": sorted(kept + entries, key=lambda i: i["id"])}
 
-    for env, entry in plans:
-        dest = BUNDLE / entry["file"]
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(entry["_source"], dest)
+    for bundle in BUNDLES:
+        for env, entry in plans:
+            dest = bundle / entry["file"]
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(entry["_source"], dest)
 
     # _source is an internal Path object, not JSON-serializable and not
     # something the manifest should carry -- stripped only now, after the
@@ -679,9 +713,14 @@ def release(envs: list[str], dry_run: bool = False, force: bool = False,
         entry.pop("_source", None)
 
     # After the copies, so an image this run rewrote in place is never a
-    # deletion candidate.
-    pruned = [] if add else prune(old, data)
-    write_manifest(data)
+    # deletion candidate. Each destination is pruned against its OWN previous
+    # manifest, so a stale image in one is removed even when the other never
+    # had it.
+    pruned = []
+    for bundle in BUNDLES:
+        if not add:
+            pruned += prune(bundle, olds[bundle], data)
+        write_manifest(bundle, data)
     return entries, pruned
 
 
@@ -732,11 +771,13 @@ def main() -> int:
         print(f"  size    {entry['size']} bytes")
         print(f"  sha256  {entry['sha256']}")
         if not args.dry_run:
-            print(f"  -> app/firmware/{entry['file']}")
+            for bundle in BUNDLES:
+                print(f"  -> {bundle.relative_to(ROOT)}/{entry['file']}")
     for path in pruned:
-        print(f"removed  app/firmware/{path.relative_to(BUNDLE.resolve())}")
+        print(f"removed  {path.relative_to(ROOT)}")
     if not args.dry_run:
-        print(f"{len(entries)} image(s) -> app/firmware/manifest.json")
+        for bundle in BUNDLES:
+            print(f"{len(entries)} image(s) -> {bundle.relative_to(ROOT)}/manifest.json")
     return 0
 
 
