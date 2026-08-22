@@ -42,8 +42,10 @@ export class DeviceModel {
     } catch (exc) {
       throw new DeviceError('connect_failed', exc.message);
     }
+    const t0 = performance.now();
     try {
       const hello = await this._send('hello');
+      console.debug(`connect: hello ${(performance.now() - t0).toFixed(0)}ms`);
       if (hello.proto !== PROTO_VERSION) {
         throw new ProtoMismatch(
           `device speaks proto ${hello.proto}, this app speaks ${PROTO_VERSION}`);
@@ -59,6 +61,7 @@ export class DeviceModel {
       this._values = (await this._send('getall')).vals;
       this._portLabel = portLabel;
       this._lastRealBoard = this._info.board;
+      console.debug(`connect: handshake total ${(performance.now() - t0).toFixed(0)}ms`);
     } catch (exc) {
       await this._link.disconnect();
       this._schema = []; this._tlmSchema = [];
@@ -110,7 +113,20 @@ export class DeviceModel {
   // here rather than letting the read loop find a dead port and report it as a
   // fault at the exact moment things are working.
   async enterDfu() {
-    const resp = await this._send('dfu', {}, 2000);
+    let resp;
+    try {
+      resp = await this._send('dfu', {}, 2000);
+    } catch (exc) {
+      // The port dying under a request that was already on the wire is this
+      // op's success signature, not a failure: the board reset before its ack
+      // could flush, which is the reboot that was asked for. Boards differ in
+      // which side of that race they land on, so neither may be relied on.
+      if (exc.code === 'disconnected' && exc.afterSend) {
+        await this._link.disconnect();
+        return;
+      }
+      throw exc;
+    }
     if (!resp.ok) {
       const err = resp.err || 'err';
       if (err === 'nodfu' || err === 'badop') {
@@ -202,7 +218,11 @@ export class DeviceModel {
       return await this._link.requestRaw(op, fields, timeoutMs);
     } catch (exc) {
       if (exc instanceof RequestTimeout) throw new DeviceError('timeout', exc.message);
-      if (exc instanceof NotConnected) throw new DeviceError('disconnected', exc.message);
+      if (exc instanceof NotConnected) {
+        const err = new DeviceError('disconnected', exc.message);
+        err.afterSend = !!exc.afterSend;   // whether the request reached the wire
+        throw err;
+      }
       throw exc;
     }
   }

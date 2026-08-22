@@ -53,7 +53,14 @@ const disconnectListeners = [];
 // WebUSB stand-in for the Firmware page's DFU paths. Chrome only ever hands
 // back devices this origin has been granted, so a test sets that list directly.
 let fakeUsbDevices = [];
-const setFakeUsbDevices = (devices) => { fakeUsbDevices = devices; };
+// What the chooser offers, which is NOT the granted list: WebUSB shows the user
+// devices this origin has never been granted, and getDevices() cannot see those
+// at all. `undefined` means "whatever is granted", the common case; setting it
+// models a bootloader only a pick can reach, and `null` an empty/dismissed
+// chooser. Reset by setFakeUsbDevices() so it cannot leak between tests.
+let fakeChooserDevice;
+const setFakeUsbDevices = (devices) => { fakeUsbDevices = devices; fakeChooserDevice = undefined; };
+const setFakeChooserDevice = (dev) => { fakeChooserDevice = dev; };
 const usbDisconnectListeners = [];
 const usbConnectListeners = [];
 const fireUsbDisconnect = (device) => {
@@ -74,12 +81,16 @@ Object.defineProperty(globalThis, 'navigator', {
       },
       removeEventListener: () => {},
       requestDevice: async () => {
-        if (!fakeUsbDevices.length) {
+        const offered = fakeChooserDevice !== undefined ? fakeChooserDevice : fakeUsbDevices[0];
+        if (!offered) {
           const err = new Error('No device selected.');
           err.name = 'NotFoundError';
           throw err;
         }
-        return fakeUsbDevices[0];
+        // A grant persists: the browser lists a picked device from getDevices()
+        // from here on, which is what makes presence knowable without a re-pick.
+        if (!fakeUsbDevices.includes(offered)) fakeUsbDevices = [...fakeUsbDevices, offered];
+        return offered;
       },
     },
     serial: {
@@ -683,7 +694,64 @@ test('a reboot that never produces a bootloader ends in an error frame', async (
   off();
   assert.equal(frames[0].phase, 'waiting');
   assert.equal(frames.at(-1).phase, 'error');
-  assert.match(frames.at(-1).line, /bootloader never appeared/);
+  assert.match(frames.at(-1).line, /no bootloader this browser can open/);
+});
+
+// WebUSB cannot see a bootloader this origin has never been granted, and
+// getDevices() never prompts -- so a browser profile that has not flashed
+// before would dead-end after the reboot with the board sitting in DFU.
+test('a bootloader this origin cannot see is asked for rather than given up on', async () => {
+  fakeBundle();
+  setFakeUsbDevices([]);          // never granted, so getDevices() stays blind
+  const picked = fakeDfuDevice({ serial: 'FRESH' });
+  setFakeChooserDevice(picked);   // only a pick can reach it
+  const port = await Api.requestPort();
+  await Api.connect(port);
+  const { frames, off } = collectFlashFrames();
+  await Api.flashBundled(F411.id, { waitMs: 300 });
+  off();
+  assert.ok(frames.some((f) => /asking for permission/.test(f.line || '')),
+            'the user is told why a chooser is opening');
+  assert.equal(frames.at(-1).phase, 'done');
+  assert.ok(picked.opens > 0, 'the picked device is the one written to');
+});
+
+test('a chooser the user dismisses ends in the error frame, not a rejection', async () => {
+  fakeBundle();
+  setFakeUsbDevices([]);
+  setFakeChooserDevice(null);     // dismissed: requestDevice() throws NotFoundError
+  const port = await Api.requestPort();
+  await Api.connect(port);
+  const { frames, off } = collectFlashFrames();
+  await Api.flashBundled(F411.id, { waitMs: 300 });
+  off();
+  assert.equal(frames.at(-1).phase, 'error');
+  assert.match(frames.at(-1).line, /Select DFU device/);
+});
+
+test('a picked device that is not really there is not written to', async () => {
+  fakeBundle();
+  setFakeUsbDevices([]);
+  const stale = fakeDfuDevice({ onBus: false, serial: 'STALE' });
+  setFakeChooserDevice(stale);
+  const port = await Api.requestPort();
+  await Api.connect(port);
+  const { frames, off } = collectFlashFrames();
+  await Api.flashBundled(F411.id, { waitMs: 300 });
+  off();
+  assert.equal(frames.at(-1).phase, 'error', 'a pick that will not open is not a device');
+});
+
+test('ensureDfuDevice() prompts when nothing granted turns up, and reports presence', async () => {
+  setFakeUsbDevices([]);
+  setFakeChooserDevice(null);
+  assert.equal(await Api.ensureDfuDevice({ waitMs: 100 }), false,
+               'no device and an empty chooser is an honest false');
+
+  setFakeUsbDevices([]);
+  setFakeChooserDevice(fakeDfuDevice({ serial: 'FRESH2' }));
+  assert.equal(await Api.ensureDfuDevice({ waitMs: 100 }), true);
+  assert.equal((await Api.dfuStatus()).present, true);
 });
 
 test('firmware that cannot reboot itself ends in an error frame naming BOOT0', async () => {

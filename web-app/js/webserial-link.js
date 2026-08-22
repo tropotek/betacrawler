@@ -42,11 +42,15 @@ export class SerialLink {
 
   async connect(serialPort) {
     await this.disconnect();
+    const t0 = performance.now();
     await serialPort.open({ baudRate: 115200 });
+    const opened = performance.now();
     // pyserial raises DTR/RTS on open; Web Serial's open() has no such
     // option. The firmware's USB CDC write bails out the instant DTR reads
     // low, so a port opened without this connects and then answers nothing.
     await serialPort.setSignals({ dataTerminalReady: true, requestToSend: true });
+    console.debug(`connect: port.open ${(opened - t0).toFixed(0)}ms,`
+      + ` setSignals ${(performance.now() - opened).toFixed(0)}ms`);
     this._port = serialPort;
     this._writer = serialPort.writable.getWriter();
     this._stopped = false;
@@ -133,10 +137,18 @@ export class SerialLink {
     }
   }
 
+  // `afterSend` separates these from a write that never left: the request is
+  // known to be on the wire, so the device may well have acted on it. `dfu` is
+  // the op that turns on the difference -- a board that resets before its ack
+  // flushes did exactly what was asked.
   _failAllPending() {
     const waiters = Array.from(this._pending.values());
     this._pending.clear();
-    for (const slot of waiters) slot.reject(new NotConnected('connection lost while waiting'));
+    for (const slot of waiters) {
+      const exc = new NotConnected('connection lost while waiting');
+      exc.afterSend = true;
+      slot.reject(exc);
+    }
   }
 
   async handleDisconnect() {

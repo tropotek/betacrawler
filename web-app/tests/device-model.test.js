@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DeviceModel, DeviceError, ProtoMismatch } from '../js/device-model.js';
+import { NotConnected } from '../js/webserial-link.js';
 
 const SCHEMA = {
   params: [
@@ -183,4 +184,35 @@ test('enterDfu() leaves the link connected when the device refuses', async () =>
   await device.connect({}, 'p');
   await assert.rejects(() => device.enterDfu());
   assert.equal(link.state, 'connected');
+});
+
+// Which side of this race a board lands on varies -- an F411 gets its ack out,
+// an F401 resets first -- so the ack cannot be a precondition for success.
+test('enterDfu() accepts a board that resets before its ack flushes', async () => {
+  const link = dfuLink({ ok: true });
+  const device = new DeviceModel(link);
+  await device.connect({}, 'p');
+  link.requestRaw = async () => {
+    link.state = 'disconnected';
+    const exc = new NotConnected('connection lost while waiting');
+    exc.afterSend = true;   // the request was on the wire when the port died
+    throw exc;
+  };
+  await device.enterDfu();
+  assert.equal(link.state, 'disconnected');
+});
+
+// The opposite case must still fail: nothing reached the board, so nothing
+// rebooted, and reporting success would strand the caller waiting for a
+// bootloader that is never coming.
+test('enterDfu() still fails when the request never left', async () => {
+  const link = dfuLink({ ok: true });
+  const device = new DeviceModel(link);
+  await device.connect({}, 'p');
+  link.requestRaw = async () => { throw new NotConnected('write failed: port gone'); };
+  await assert.rejects(() => device.enterDfu(), (exc) => {
+    assert.equal(exc.code, 'disconnected');
+    assert.equal(exc.afterSend, false, 'a write that never left is not a reboot');
+    return true;
+  });
 });

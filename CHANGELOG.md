@@ -11,8 +11,14 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
   protocol unit-tests without hardware; progress rides the existing `Api.subscribe` channel as
   `flash` frames, the same shape the FastAPI build pushes over its WebSocket. Both DFU entry paths
   work: the `dfu` wire op and BOOT0+NRST, and the page stays usable with nothing connected.
-  Requires a Chromium-based browser; on Windows a board bound to ST's DfuSe driver needs switching
-  to WinUSB first.
+  A board that resets before its `dfu` acknowledgement reaches the host counts as having accepted
+  it — boards land on either side of that race, an F411 answering first and an F401 resetting
+  first, so the reply is honoured when it arrives but never required.
+  A bootloader this browser has never been granted is asked for rather than waited on — WebUSB
+  cannot see one until permission exists, and never prompts on its own — so the wait for a
+  rebooted board is budgeted to stay inside the click's user activation and the device chooser
+  opens by itself. Requires a Chromium-based browser; on Windows a board bound to ST's DfuSe
+  driver needs switching to WinUSB first.
 
 - **feat: the firmware images `web-app/` ships are committed to the repo.** A static site has no
   backend to build one on demand, so `web-app/firmware/` travels with the deployment.

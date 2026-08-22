@@ -30,6 +30,14 @@ function portLabel(serialPort) {
 // exactly this, which is why nothing here can tell one board from another and
 // the UI has to carry the board identity forward from the last `hello`.
 const DFU_VID = 0x0483, DFU_PID = 0xdf11;
+const DFU_FILTERS = [{ vendorId: DFU_VID, productId: DFU_PID }];
+
+// How long to wait for a rebooted board's bootloader to turn up among the
+// devices this origin may already see, before asking the browser for
+// permission instead. Deliberately short: requestDevice() needs user
+// activation, and the click that started the flash only counts for a few
+// seconds, so this budget has to fit inside it.
+const DFU_WAIT_MS = 4000;
 
 // Which board was last connected, remembered across reloads. A bootloader
 // cannot be asked what board it is -- every STM32F4 in DFU reports 0483:df11 --
@@ -172,6 +180,22 @@ async function deviceForFlash() {
   return null;
 }
 
+// The chooser, for a bootloader this origin has never been granted: WebUSB
+// cannot see one at all, and getDevices() never prompts, so polling alone would
+// dead-end on a browser profile that has not flashed before. Returns null when
+// the browser refuses the prompt or the user dismisses it -- neither is a
+// fault, both just mean no device.
+async function promptForDfuDevice() {
+  if (!navigator.usb) return null;
+  let picked;
+  try {
+    picked = await navigator.usb.requestDevice({ filters: DFU_FILTERS });
+  } catch {
+    return null;
+  }
+  return await isOnTheBus(picked) ? picked : null;
+}
+
 async function sha256Hex(bytes) {
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -199,12 +223,13 @@ async function waitForDfuArrival(timeoutMs) {
 // From a board already in DFU it just writes. Failures before anything has
 // been published throw, like a rejected POST; failures after that arrive as
 // error frames, like the backend build's FlashSession.
-async function runFlash(bytes, label, { waitMs = 15000 } = {}) {
+async function runFlash(bytes, label, { waitMs = DFU_WAIT_MS } = {}) {
   if (flashBusy) throw new DeviceError('busy', 'a firmware flash is already in progress');
 
   if (device.status().state !== 'connected') {
-    // Nothing was rebooted, so nothing new is coming: resolve fast or fail fast.
-    const dev = await deviceForFlash();
+    // Nothing was rebooted, so nothing new is coming: resolve fast, and if the
+    // handle has gone stale ask for one rather than sending the user away.
+    const dev = await deviceForFlash() || await promptForDfuDevice();
     if (!dev) {
       throw new DeviceError(
         'nodfu',
@@ -224,12 +249,20 @@ async function runFlash(bytes, label, { waitMs = 15000 } = {}) {
     // mid-flash the page still needs to know the serial connection is gone.
     publish({ type: 'state', data: 'disconnected' });
     publish({ type: 'flash', data: { phase: 'waiting', pct: 0, line: 'waiting for the bootloader to appear' } });
-    const dev = await waitForDfuArrival(waitMs);
+    let dev = await waitForDfuArrival(waitMs);
+    if (!dev) {
+      // Nothing this origin may see -- which on a browser that has never
+      // flashed before is the expected answer, not a failure. Ask for it.
+      publish({ type: 'flash', data: { phase: 'waiting', pct: 0, line:
+        'no bootloader this browser can reach; asking for permission' } });
+      dev = await promptForDfuDevice();
+    }
     if (!dev) {
       publish({ type: 'flash', data: { phase: 'error', line:
-        'the board rebooted but its bootloader never appeared on USB. Try '
-        + 'BOOT0 + NRST by hand, then Select DFU device; a different USB '
-        + 'port or cable is worth ruling out.' } });
+        'the board rebooted but no bootloader this browser can open appeared. '
+        + 'If no chooser opened, click "Select DFU device" below to grant access '
+        + 'once; otherwise try BOOT0 + NRST by hand, and rule out a different '
+        + 'USB port or cable.' } });
       return;
     }
     dfuDevice = dev;
@@ -340,9 +373,7 @@ export const Api = {
   // that no longer exist, and believing one puts the page in DFU mode with no
   // board there. Verified before it is allowed to mean anything.
   async requestDfuDevice() {
-    const picked = await navigator.usb.requestDevice({
-      filters: [{ vendorId: DFU_VID, productId: DFU_PID }],
-    });
+    const picked = await navigator.usb.requestDevice({ filters: DFU_FILTERS });
     if (!await isOnTheBus(picked)) {
       throw new DeviceError(
         'nodfu',
@@ -357,6 +388,17 @@ export const Api = {
   async dfuStatus() {
     if (!this.dfuSupported()) return { present: false, busy: flashBusy };
     return { present: !!(await firstDfuDevice()), busy: flashBusy };
+  },
+  // Settles whether a bootloader is in hand after something was asked to reboot
+  // into one: wait for an arrival first, and only prompt if none this origin can
+  // already see turns up. Reports presence through the usual `dfu` frame.
+  async ensureDfuDevice({ waitMs = DFU_WAIT_MS } = {}) {
+    if (!this.dfuSupported()) return false;
+    const dev = await waitForDfuArrival(waitMs) || await promptForDfuDevice();
+    if (!dev) return false;
+    dfuDevice = dev;
+    publishDfu();
+    return true;
   },
   async enterDfu() { await device.enterDfu(); },
   async firmwareCatalog() {

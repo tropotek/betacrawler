@@ -619,11 +619,23 @@ el('connect').addEventListener('click', async () => {
     // Web Serial remembers a granted port, so a board connected once
     // reconnects on one click. Anything else -- nothing granted yet, or
     // several -- still goes through the browser's own picker.
+    //
+    // Phase timings for a connect, at console.debug so DevTools hides them
+    // unless Verbose is on. The first connect after a browser restart is
+    // slower than later ones; this is what says which phase pays for it.
+    const t0 = performance.now();
     const known = await Api.knownPorts();
+    const tPorts = performance.now();
     const port = known.length === 1 ? known[0].port : await Api.requestPort();
+    const tPick = performance.now();
     const st = await Api.connect(port);
+    const tOpen = performance.now();
     setState(st.state, st);
     await loadDevice();
+    console.debug(`connect: getPorts ${(tPorts - t0).toFixed(0)}ms`
+      + ` | pick ${(tPick - tPorts).toFixed(0)}ms`
+      + ` | open+handshake ${(tOpen - tPick).toFixed(0)}ms`
+      + ` | loadDevice ${(performance.now() - tOpen).toFixed(0)}ms`);
     setState(st.state, st);
     // Deliberately stays on whatever page you were on. Connecting enables
     // the gated nav items (updateNavAvailability) and that is enough --
@@ -893,9 +905,13 @@ function initFirmwarePage() {
       // notice and report it as a fault.
       setState('disconnected');
       firmwareLog('device acknowledged the DFU request and is rebooting');
-      // The bootloader announces itself when it enumerates; this only covers a
-      // browser that never granted it, where no event can arrive.
-      setTimeout(() => store.readDfu(), 1500);
+      // A bootloader this browser has never been granted cannot announce
+      // itself, so waiting alone would dead-end here. Api asks for it instead,
+      // and publishes the presence it settles on.
+      if (await Api.ensureDfuDevice()) return;
+      firmwareLog('no bootloader this browser can reach; use "Select DFU device" '
+                  + 'below to grant access once');
+      store.readDfu();
     } catch (e) {
       showError(e.message);
       firmwareLog(`ERROR: ${e.message}`);
