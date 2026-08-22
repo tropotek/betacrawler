@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "tools" / "bundle_firmware.py"
+SCRIPT = Path(__file__).resolve().parent / "bundle_firmware.py"
 
 
 def load_script():
@@ -138,8 +138,8 @@ def tree(tmp_path, monkeypatch):
 
     monkeypatch.setattr(mod, "ROOT", root)
     monkeypatch.setattr(mod, "FIRMWARE", fw)
-    monkeypatch.setattr(mod, "BUNDLES", [root / "app" / "firmware",
-                                         root / "web-app" / "firmware"])
+    monkeypatch.setattr(mod, "BUNDLES", [root / "dest_a" / "firmware",
+                                         root / "dest_b" / "firmware"])
     return mod
 
 
@@ -186,20 +186,7 @@ def build_esp32_parts_into(mod, env: str, stamp: str = STAMP_A, board: str | Non
 
 # --- locating esptool ---------------------------------------------------------
 
-def test_find_esptool_prefers_the_apps_venv(tree, monkeypatch):
-    """The venv copy is tried first for the same reason find_pio() tries
-    PlatformIO's: this script's documented invocation is the SYSTEM python3,
-    whose PATH has neither tool on it."""
-    mod = tree
-    tool = mod.ROOT / "app" / ".venv" / "bin" / "esptool"
-    tool.parent.mkdir(parents=True)
-    tool.write_text("#!/bin/sh\n")
-    tool.chmod(0o755)
-    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/esptool")
-    assert mod.find_esptool() == str(tool)
-
-
-def test_find_esptool_falls_back_to_path(tree, monkeypatch):
+def test_find_esptool_uses_path(tree, monkeypatch):
     mod = tree
     monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/esptool")
     assert mod.find_esptool() == "/usr/bin/esptool"

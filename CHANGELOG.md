@@ -5,6 +5,10 @@ records live in the git history, not here.
 
 ## Version 4.0
 
+- **chore: the deprecated `app/` desktop configurator and FastAPI backend removed.**
+  `bundle_firmware.py` and the hero-image tool move to `tools/`, which absorbs `docs-tools/`;
+  the stale screenshot-capture script is dropped.
+
 - **feat: a simulated board can be tried from the Home page, no hardware required.**
   `sim://board` runs entirely in the browser tab, behind the same `Api` seam a real board uses.
 

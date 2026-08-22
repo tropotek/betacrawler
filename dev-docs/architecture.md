@@ -283,7 +283,7 @@ detail: `_notes/_archive/spec-config-revert.md`.
 ## Firmware bundling and in-app updates
 
 The app ships the firmware that matches it: built images live in `web-app/firmware/` with a
-`manifest.json`, produced by `app/tools/bundle_firmware.py` at release time (it builds first, then
+`manifest.json`, produced by `tools/bundle_firmware.py` at release time (it builds first, then
 derives every manifest field from the sources and the binary — nothing is typed in). A file picker
 survives only as a collapsed *Advanced* path, where a vector-table check is all that stands
 between picking `firmware.elf` out of `.pio/build` and a board that no longer enumerates.

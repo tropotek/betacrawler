@@ -294,8 +294,8 @@ void test_log_line_is_unsolicited_and_well_formed() {
   TEST_ASSERT_TRUE(n > 0);
   TEST_ASSERT_EQUAL_STRING(
       "{\"log\":\"boot: init complete in 138ms\"}", out);
-  // id-less, exactly like telemetry -- that is what makes the backend treat
-  // it as unsolicited (app/backend/protocol.py's is_log).
+  // id-less, exactly like telemetry -- that is what makes a host treat it as
+  // unsolicited rather than a response to any request.
   TEST_ASSERT_NULL(strstr(out, "\"id\""));
 }
 
@@ -566,10 +566,10 @@ void test_schema_omits_secret_key_when_unset() {
   TEST_ASSERT_NULL(strstr(slice.c_str(), "\"secret\""));
 }
 
-// Golden fixture: app/tests/test_device.py loads this exact file instead of
-// hand-typing a Python SCHEMA literal, so a firmware schema change (e.g. a
-// bumped `max`) that isn't reflected here becomes a visible Python failure
-// instead of silently validating against a stale bound at runtime.
+// Golden fixture: web-app/tools/gen-sim-schema.js regenerates web-app/js/sim-schema.js
+// from this exact file, so a firmware schema change (e.g. a bumped `max`) that
+// isn't reflected here becomes a visible mismatch web-app/tests/sim-schema-drift.test.js
+// catches, instead of the simulator silently validating against a stale bound.
 //
 // It is built from `realReg` -- the board header's actual module set -- which
 // is the whole reason the native environment compiles against a real board

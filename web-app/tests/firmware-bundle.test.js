@@ -8,7 +8,7 @@ const here = fileURLToPath(new URL('.', import.meta.url));
 const bundle = `${here}../firmware`;
 const firmware = `${here}../../firmware`;
 
-// Mirrors fw_source_sha256() in app/tools/bundle_firmware.py: the same files,
+// Mirrors fw_source_sha256() in tools/bundle_firmware.py: the same files,
 // the same path-then-contents hashing, the same sort. The two must agree or
 // the guard below is worthless.
 const FW_SOURCE_DIRS = ['include', 'src'];
@@ -43,7 +43,7 @@ test('the committed binaries were built from the current firmware sources', () =
   assert.equal(
     manifest.fw_source_sha256, fwSourceSha256(),
     'the firmware sources have changed since these binaries were built -- re-run'
-    + ' `python3 app/tools/bundle_firmware.py blackpill_f411ce blackpill_f401ce`'
+    + ' `python3 tools/bundle_firmware.py blackpill_f411ce blackpill_f401ce`'
     + ' and commit web-app/firmware/');
 });
 

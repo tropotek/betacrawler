@@ -29,17 +29,6 @@
         "version": "2.0.0",
         "tasks": [
             {
-                "label": "app: Run backend server",
-                "type": "shell",
-                "command": "${workspaceFolder:betacrawler}/run-server.sh",
-                "problemMatcher": [],
-                "presentation": {
-                    "panel": "dedicated",
-                    "clear": true,
-                    "focus": false
-                }
-            },
-            {
                 "label": "web-app: Serve web-app",
                 "type": "shell",
                 "command": "python3 -m http.server 9091",
@@ -56,7 +45,7 @@
             {
                 "label": "Build release firmware",
                 "type": "shell",
-                "command": "python3 ${workspaceFolder:betacrawler}/app/tools/bundle_firmware.py ${input:releaseBoards}",
+                "command": "python3 ${workspaceFolder:betacrawler}/tools/bundle_firmware.py ${input:releaseBoards}",
                 "problemMatcher": [],
                 "presentation": {
                     "panel": "dedicated",
@@ -67,7 +56,7 @@
             {
                 "label": "Build ALL release firmware",
                 "type": "shell",
-                "command": "python3 ${workspaceFolder:betacrawler}/app/tools/bundle_firmware.py --all",
+                "command": "python3 ${workspaceFolder:betacrawler}/tools/bundle_firmware.py --all",
                 "problemMatcher": [],
                 "presentation": {
                     "panel": "dedicated",

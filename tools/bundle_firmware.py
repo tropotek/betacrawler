@@ -1,26 +1,24 @@
 #!/usr/bin/env python3
-"""Build the firmware images the apps ship with, into app/firmware/ and
-web-app/firmware/.
+"""Build the firmware images web-app/ ships, into web-app/firmware/.
 
 Run at RELEASE time, by hand. This script is the only thing that puts anything
-in either destination. `app/firmware/` is gitignored build output, populated
-before the desktop app is packaged into an executable. `web-app/firmware/` is
-committed instead: the static site has no backend to build an image on demand,
-so what it flashes has to travel with it -- re-run this and commit the result
-after any firmware source change, which web-app/tests/firmware-bundle.test.js
-checks via the manifest's fw_source_sha256.
+there. It's committed rather than gitignored: the static site has no backend
+to build an image on demand, so what it flashes has to travel with it -- re-run
+this and commit the result after any firmware source change, which
+web-app/tests/firmware-bundle.test.js checks via the manifest's
+fw_source_sha256.
 
-    python app/tools/bundle_firmware.py                    # blackpill_f411ce
-    python app/tools/bundle_firmware.py board_a board_b    # the release set
-    python app/tools/bundle_firmware.py --all              # every board target
-    python app/tools/bundle_firmware.py --add other_board  # merge, don't prune
-    python app/tools/bundle_firmware.py --dry-run          # report, change nothing
-    python app/tools/bundle_firmware.py --no-build         # bundle what's already built
+    python tools/bundle_firmware.py                    # blackpill_f411ce
+    python tools/bundle_firmware.py board_a board_b    # the release set
+    python tools/bundle_firmware.py --all              # every board target
+    python tools/bundle_firmware.py --add other_board  # merge, don't prune
+    python tools/bundle_firmware.py --dry-run          # report, change nothing
+    python tools/bundle_firmware.py --no-build         # bundle what's already built
 
-What lands in the bundle is what the app is allowed to flash (app/backend/
-firmware.py serves it, and re-checks the sha256 before every write), so the
-whole value of this script is that the manifest cannot quietly describe a
-binary that isn't there. Everything below exists to enforce that.
+What lands in the bundle is what the app is allowed to flash (web-app/js/api.js
+re-checks the sha256 against the manifest before every flash), so the whole
+value of this script is that the manifest cannot quietly describe a binary
+that isn't there. Everything below exists to enforce that.
 
 An esptool-method env (currently esp32_wroom32) bundles a merged single
 binary built from PlatformIO's four separate output files, not a copy of
@@ -46,15 +44,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-# app/tools/bundle_firmware.py -> app/tools -> app -> <repo root>
+# tools/bundle_firmware.py -> tools -> <repo root>
 # Read through module attributes rather than captured at import inside the
 # functions below, so the tests can point the whole script at a fixture tree.
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 FIRMWARE = ROOT / "firmware"
-# Every successful run writes each of these identically. app/firmware/ is
-# gitignored build output; web-app/firmware/ is a committed release artifact
-# the static site serves, since it has no backend to build one on demand.
-BUNDLES = [ROOT / "app" / "firmware", ROOT / "web-app" / "firmware"]
+# A list, not a single path, so a second destination can be added the same
+# way this one was -- every successful run writes each entry identically.
+BUNDLES = [ROOT / "web-app" / "firmware"]
 
 DEFAULT_ENV = "blackpill_f411ce"
 
@@ -282,28 +279,16 @@ def find_pio() -> str | None:
 def find_esptool() -> str:
     """Locate the esptool CLI, the same way find_pio() locates PlatformIO.
 
-    esptool is a pip dependency of the APP (app/requirements.txt), installed
-    into app/.venv/ -- while this script's documented invocation is
-    `python3 app/tools/bundle_firmware.py`, i.e. the SYSTEM python3, whose
-    PATH has neither the package nor the console script. Trying the venv copy
-    first makes PATH irrelevant for the normal case; the PATH fallback covers
-    a system-wide install.
-
     Raises rather than returning None (unlike find_pio(), whose caller has its
     own message for that) so a missing tool reads as an instruction instead of
     a FileNotFoundError traceback out of subprocess.
     """
-    candidate = ROOT / "app" / ".venv" / "bin" / "esptool"
-    if candidate.is_file() and os.access(candidate, os.X_OK):
-        return str(candidate)
     found = shutil.which("esptool")
     if found:
         return found
     raise BundleError(
-        "esptool not found. It ships as a dependency of the app's venv:\n"
-        "    app/.venv/bin/pip install -r app/requirements.txt\n"
-        "(or install it so `esptool` is on PATH). Only esptool-method envs "
-        "-- the ESP32 targets -- need it.")
+        "esptool not found. Install it so `esptool` is on PATH (`pip install "
+        "esptool`). Only esptool-method envs -- the ESP32 targets -- need it.")
 
 
 def force_version_rebuild(env: str) -> list[Path]:
@@ -438,9 +423,9 @@ def sources_newer_than(bin_path: Path) -> list[Path]:
 
 
 # --- vector table --------------------------------------------------------------
-# Same check app/backend/firmware.py applies to an uploaded file. Running it
-# here too means a bundled image can never be the thing that trips it at flash
-# time, when the board is already in DFU and the user is committed.
+# Same check web-app/js/dfu.js applies to an uploaded file. Running it here too
+# means a bundled image can never be the thing that trips it at flash time,
+# when the board is already in DFU and the user is committed.
 SRAM_LO, SRAM_HI = 0x2000_0000, 0x2002_0000   # HI is INCLUSIVE: a real
 # betacrawler build has MSP exactly 0x20020000, the top of the F411's 128KB SRAM.
 FLASH_LO, FLASH_HI = 0x0800_0000, 0x0808_0000
@@ -541,7 +526,7 @@ def plan_entry(env: str, force: bool = False, build: bool = True,
                pio: str | None = None, builder=None) -> dict:
     """Build and validate one env, and return its manifest entry.
 
-    Deliberately writes NOTHING under app/firmware/. Separating "work out what
+    Deliberately writes NOTHING under any bundle. Separating "work out what
     this env would contribute" from "write it" is what lets a multi-board run
     fail cleanly: every env goes through here first, so the release either
     lands whole or not at all.
@@ -637,7 +622,7 @@ def release(envs: list[str], dry_run: bool = False, force: bool = False,
             builder=None) -> tuple[list[dict], list[Path]]:
     """Build every env, then write the bundle. Returns (entries, pruned).
 
-    Nothing under app/firmware/ is touched until all of `envs` have built and
+    Nothing under any bundle is touched until all of `envs` have built and
     validated -- see the module docstring for why that ordering is the point
     of this function rather than an implementation detail.
 

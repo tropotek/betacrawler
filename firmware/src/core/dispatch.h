@@ -45,8 +45,7 @@ struct WifiScanner {
 size_t writeTelemetry(char* out, size_t cap, const Registry& reg, const TlmValue* vals);
 
 // Serializes an unsolicited log line, `{"log":"..."}`. Id-less like telemetry,
-// which is what makes the backend route it as a device log
-// (app/backend/protocol.py's is_log, main.py's WS "log" message).
+// which is what makes a host route it as a device log rather than a response.
 //
 // Exists so a driver never hand-rolls JSON: `msg` is escaped properly, and a
 // message too long for `cap` yields nothing rather than a truncated line the

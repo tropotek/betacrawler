@@ -1,7 +1,0 @@
-fastapi
-uvicorn[standard]
-pyserial
-pytest
-httpx
-websockets
-esptool
