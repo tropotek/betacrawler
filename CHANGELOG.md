@@ -5,6 +5,17 @@ Summaries of completed work. Detail, reasoning and hardware-verification records
 
 ## Unreleased
 
+- **feat: `web-app/` says so up front when the browser cannot drive a board.** A modal on load,
+  replacing a banner that cleared itself after five seconds — no use to someone who arrived to
+  flash a board and cannot. Feature detection decides; the user agent only picks the wording, so
+  an unrecognised browser is still judged on what it exposes. Three cases the old message got
+  wrong: mobile is told the platform is the problem rather than being sent to install the browser
+  it is already running, an insecure origin is named as such rather than blamed on the browser
+  (Chrome hides Web Serial over plain HTTP too), and a Chromium browser with the API switched off
+  is pointed at flags and policy. Missing WebUSB warns about flashing without blocking the rest of
+  the app, and the modal is dismissible so the Wiring and Help pages stay readable with no device
+  APIs at all.
+
 - **feat: `web-app/` flashes firmware itself, over WebUSB.** A Firmware page that writes an STM32
   Black Pill in DFU mode straight from the browser — bundled images or a local `.bin` — with no
   backend and no `dfu-util`. `js/dfu.js` implements DfuSe against an injected `USBDevice`, so the

@@ -1,4 +1,5 @@
 import { Api } from './api.js';
+import { assessBrowser } from './browser-support.js';
 
 // The app (backend + this UI) is versioned independently of the firmware:
 // they are separate projects that happen to live in one repo, and their
@@ -1222,11 +1223,23 @@ function startWatchdog() {
   // pages/home.html surfaces only as an unhandled rejection.
   showPage('home').catch((e) => showError(`Failed to load the app: ${e.message}`));
 
-  if (!Api.isSupported()) {
+  // A modal rather than showError(): that banner clears itself after 5 seconds,
+  // which is no way to deliver "nothing on this page will work for you".
+  const browser = assessBrowser({
+    userAgent: navigator.userAgent,
+    hasSerial: Api.isSupported(),
+    hasUsb: Api.dfuSupported(),
+    isSecureContext: window.isSecureContext,
+  });
+  if (browser.level !== 'ok') {
+    el('browser-title').textContent = browser.title;
+    el('browser-message').textContent = browser.message;
+    new window.bootstrap.Modal(el('browser-modal')).show();
+  }
+  if (browser.level === 'block') {
     el('connect').disabled = true;
     el('connect').textContent = 'Web Serial unavailable';
-    el('connect').title = 'Needs a Chromium-based browser: Chrome, Edge, Brave or Opera.';
-    showError('This browser has no Web Serial API — open the app in Chrome, Edge, Brave or Opera.');
+    el('connect').title = browser.message;
     return;
   }
 

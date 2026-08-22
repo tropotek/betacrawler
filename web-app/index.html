@@ -309,6 +309,27 @@
     </div>
   </div>
 
+  <!-- Shown on load when this browser has no Web Serial (or no WebUSB). Dismissible
+       on purpose: the Wiring and Help pages are worth reading with no board and no
+       device APIs at all. -->
+  <div class="modal fade" id="browser-modal" tabindex="-1"
+       aria-labelledby="browser-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="browser-title"></h5>
+        </div>
+        <div class="modal-body">
+          <p id="browser-message" class="mb-0"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary"
+                  data-bs-dismiss="modal">Continue anyway</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Shown when a flash reaches a bootloader this browser has not been granted
        and too long has passed for the chooser to open on its own. Its button
        carries a fresh user activation into requestDevice(), which is the only
