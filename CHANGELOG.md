@@ -5,6 +5,10 @@ records live in the git history, not here.
 
 ## Version 4.0
 
+- **feat: CRSF moved to PA2/PA3, freeing PA9/PA10 as a spare UART for forks.** `esc1` moved to PB8
+  and WiFi to PB6/PB7 to make room; bench-verified against the STM32 ROM bootloader's DFU race
+  (`_notes/docs/research/rx-uart-bootloader-race.md`).
+
 - **chore: the deprecated `app/` desktop configurator and FastAPI backend removed.**
   `bundle_firmware.py` and the hero-image tool move to `tools/`, which absorbs `docs-tools/`;
   the stale screenshot-capture script is dropped.
