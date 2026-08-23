@@ -99,6 +99,21 @@
 #define ESC1_TIMER      TIM4
 #define ESC1_PIN        PB8
 
+// esc0/esc1's second PWM pin, used only when that instance's esc<N>.type is
+// hbridge (a runtime choice -- both macros are always defined whenever
+// FEATURE_ESC0/FEATURE_ESC1 are on, regardless of which type is selected).
+// PA7 is TIM3_CH2 -- the same physical timer as esc0's own PA6 (TIM3_CH1),
+// a different channel of it, matching how esc1 and the future servo pin
+// already share TIM4 across different channels. PB9 is TIM4_CH4, same
+// relationship to esc1's PB8 (TIM4_CH3). Both bench-validated
+// (_notes/docs/research/brushed-tank-variant.md, section 5a). Neither
+// carries the ROM-bootloader-race hazard RX_RX_PIN does: motor output is
+// always MCU-to-peripheral, never the reverse, so nothing external ever
+// transmits into either pin (docs/development/architecture.md, "CRSF pin
+// choice and the bootloader race").
+#define ESC0_PIN_B  PA7
+#define ESC1_PIN_B  PB9
+
 // Battery voltage sense on ADC1_IN1. PA1 is unclaimed on this board: the LED
 // is PC13, the button PA0, the ESCs PA6/PB8, CRSF PA2/PA3, USB PA11/PA12 and
 // SWD PA13/PA14. Expects a 47k/4k7 divider from the PDB's VCC pad; vbat.scale
