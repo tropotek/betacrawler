@@ -32,7 +32,11 @@
 // test covers that path, but nothing today surfaces the refusal to a
 // person, so don't rely on it as a warning.
 #define FW_MAX_MODULES  8
-#define FW_MAX_PARAMS   32
+// esc0/esc1 each carry a `type` param plus three hbridge-only params
+// (`freq`/`invert`/`brake`), taking the param table from 32 (a bare fit) to
+// 40. 48 rather than a bare fit leaves the same kind of headroom FW_MAX_TLM
+// already does below.
+#define FW_MAX_PARAMS   48
 // This board's current build (led, button, esc0, esc1, rx, vbat, tank_drive
 // enabled; servo off) exposes 40 telemetry fields: rx alone
 // publishes 16 channels plus 7 link readings, esc0 and esc1 add 2 each (its
