@@ -72,6 +72,7 @@ Both ESCs carry the same settings. `esc0` drives the left track, `esc1` the righ
 
 | Setting | Key | Default | Range |
 |---|---|---|---|
+| Type | `esc0.type` / `esc1.type` | `brushless` | `brushless`, `brushed` |
 | Direction | `esc0.direction` / `esc1.direction` | `bidirectional` | `unidirectional`, `bidirectional` |
 | PWM Rate (Hz) | `esc0.rate` / `esc1.rate` | `50` | `50`, `100`, `200`, `400` |
 | ESC mode | `esc0.mode` / `esc1.mode` | `input` | `off`, `armed`, `input` |
@@ -90,6 +91,24 @@ bypasses the mixer entirely.
 
 **Throttle** is a manual output used when the mode is not `input`. **Min** and **Max** are the
 ESC's calibrated endpoints; they cannot cross.
+
+### Brushed motors (H-Bridge)
+
+Shown only when `Type` is `brushed`.
+
+| Setting | Key | Default | Range |
+|---|---|---|---|
+| Switch Freq (Hz) | `esc0.freq` / `esc1.freq` | `20000` | 1000–50000 |
+| Invert | `esc0.invert` / `esc1.invert` | `normal` | `normal`, `inverted` |
+| At Zero | `esc0.brake` / `esc1.brake` | `coast` | `coast`, `brake` |
+
+**Switch Freq** is the H-bridge's PWM switching frequency — 20 kHz is above the audible range and
+every DRV8833/TB6612-class driver handles it fine.
+
+**Invert** is per motor, not shared — fixes a swapped H-bridge lead pair without rewiring.
+
+**At Zero** decides what happens at zero command: `coast` (both H-bridge inputs low, motor spins
+freely) or `brake` (both high, resisting motion).
 
 ## Telemetry values
 

@@ -99,6 +99,34 @@
 #define ESC1_TIMER      TIM4
 #define ESC1_PIN        PB8
 
+// esc0/esc1's second PWM pin, used only when that instance's esc<N>.type is
+// brushed (a runtime choice -- both macros are always defined whenever
+// FEATURE_ESC0/FEATURE_ESC1 are on, regardless of which type is selected).
+// PA7 is TIM3_CH2 -- the same physical timer as esc0's own PA6 (TIM3_CH1),
+// a different channel of it, matching how esc1 and the future servo pin
+// already share TIM4 across different channels. It must be named as
+// PA7_ALT1: PA7's FIRST entry in this part's PinMap_TIM is TIM1_CH1N, and
+// the pinmap lookup answers that one for a bare PA7. PB9 is TIM4_CH4, same
+// relationship to esc1's PB8 (TIM4_CH3), and its first entry already, so it
+// needs no alias. Both bench-validated
+// (_notes/docs/research/brushed-tank-variant.md, section 5a). Neither
+// carries the ROM-bootloader-race hazard RX_RX_PIN does: motor output is
+// always MCU-to-peripheral, never the reverse, so nothing external ever
+// transmits into either pin (docs/development/architecture.md, "CRSF pin
+// choice and the bootloader race").
+#define ESC0_PIN_B  PA7_ALT1
+#define ESC1_PIN_B  PB9
+
+// Which motor each instance starts on -- esc::TYPE_BRUSHLESS (an ESC) or
+// esc::TYPE_BRUSHED (an H-bridge). esc<N>.type overrides it at runtime; this
+// only decides where an unconfigured board starts, including after a settings
+// reset. Both are TYPE_BRUSHLESS because this image serves either wiring: a
+// fork committed to brushed motors sets TYPE_BRUSHED here so a reset can never
+// leave an H-bridge driven by an RC pulse train (a 1500us pulse in a 5000us
+// frame is 30% duty).
+#define ESC0_TYPE_DEFAULT  esc::TYPE_BRUSHLESS
+#define ESC1_TYPE_DEFAULT  esc::TYPE_BRUSHLESS
+
 // Battery voltage sense on ADC1_IN1. PA1 is unclaimed on this board: the LED
 // is PC13, the button PA0, the ESCs PA6/PB8, CRSF PA2/PA3, USB PA11/PA12 and
 // SWD PA13/PA14. Expects a 47k/4k7 divider from the PDB's VCC pad; vbat.scale

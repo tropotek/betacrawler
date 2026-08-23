@@ -232,6 +232,17 @@ export const SIM_SCHEMA = {
       "group": "Tank Drive"
     },
     {
+      "key": "esc0.type",
+      "type": "enum",
+      "options": [
+        "brushless",
+        "brushed"
+      ],
+      "def": "brushless",
+      "label": "Type",
+      "group": "ESC 0"
+    },
+    {
       "key": "esc0.direction",
       "type": "enum",
       "options": [
@@ -254,7 +265,11 @@ export const SIM_SCHEMA = {
       "def": "200",
       "label": "PWM Rate",
       "unit": "Hz",
-      "group": "ESC 0"
+      "group": "ESC 0",
+      "showIf": {
+        "key": "esc0.type",
+        "val": "brushless"
+      }
     },
     {
       "key": "esc0.mode",
@@ -326,6 +341,61 @@ export const SIM_SCHEMA = {
       }
     },
     {
+      "key": "esc0.freq",
+      "type": "u8",
+      "min": 1000,
+      "max": 50000,
+      "def": 20000,
+      "label": "Switch Freq",
+      "unit": "Hz",
+      "group": "H-Bridge",
+      "showIf": {
+        "key": "esc0.type",
+        "val": "brushed"
+      }
+    },
+    {
+      "key": "esc0.invert",
+      "type": "enum",
+      "options": [
+        "normal",
+        "inverted"
+      ],
+      "def": "normal",
+      "label": "Invert",
+      "group": "H-Bridge",
+      "showIf": {
+        "key": "esc0.type",
+        "val": "brushed"
+      }
+    },
+    {
+      "key": "esc0.brake",
+      "type": "enum",
+      "options": [
+        "coast",
+        "brake"
+      ],
+      "def": "coast",
+      "label": "At Zero",
+      "group": "H-Bridge",
+      "showIf": {
+        "key": "esc0.type",
+        "val": "brushed"
+      }
+    },
+    {
+      "key": "esc1.type",
+      "type": "enum",
+      "options": [
+        "brushless",
+        "brushed"
+      ],
+      "def": "brushless",
+      "label": "Type",
+      "group": "ESC 1"
+    },
+    {
       "key": "esc1.direction",
       "type": "enum",
       "options": [
@@ -348,7 +418,11 @@ export const SIM_SCHEMA = {
       "def": "200",
       "label": "PWM Rate",
       "unit": "Hz",
-      "group": "ESC 1"
+      "group": "ESC 1",
+      "showIf": {
+        "key": "esc1.type",
+        "val": "brushless"
+      }
     },
     {
       "key": "esc1.mode",
@@ -417,6 +491,50 @@ export const SIM_SCHEMA = {
       "showIf": {
         "key": "esc1.mode",
         "val": "off"
+      }
+    },
+    {
+      "key": "esc1.freq",
+      "type": "u8",
+      "min": 1000,
+      "max": 50000,
+      "def": 20000,
+      "label": "Switch Freq",
+      "unit": "Hz",
+      "group": "H-Bridge",
+      "showIf": {
+        "key": "esc1.type",
+        "val": "brushed"
+      }
+    },
+    {
+      "key": "esc1.invert",
+      "type": "enum",
+      "options": [
+        "normal",
+        "inverted"
+      ],
+      "def": "normal",
+      "label": "Invert",
+      "group": "H-Bridge",
+      "showIf": {
+        "key": "esc1.type",
+        "val": "brushed"
+      }
+    },
+    {
+      "key": "esc1.brake",
+      "type": "enum",
+      "options": [
+        "coast",
+        "brake"
+      ],
+      "def": "coast",
+      "label": "At Zero",
+      "group": "H-Bridge",
+      "showIf": {
+        "key": "esc1.type",
+        "val": "brushed"
       }
     }
   ],

@@ -5,6 +5,10 @@ records live in the git history, not here.
 
 ## Version 4.0
 
+- **feat: `esc0`/`esc1` can drive a brushed-motor H-bridge (DRV8833-class) as well as a brushless
+  ESC**, switchable per motor from the app with no reflash. New `type`/`freq`/`invert`/`brake`
+  params; wiring diagram and setup docs for brushed builds.
+
 - **feat: CRSF moved to PA2/PA3, freeing PA9/PA10 as a spare UART for forks.** `esc1` moved to PB8
   and WiFi to PB6/PB7 to make room; bench-verified against the STM32 ROM bootloader's DFU race
   (`_notes/docs/research/rx-uart-bootloader-race.md`).

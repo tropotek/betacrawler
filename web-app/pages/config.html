@@ -70,25 +70,106 @@
               </div>
             </div>
           </fieldset>
-          <template x-if="$store.config.field('esc0.rate').def">
+          <template x-if="$store.config.field('esc0.type').def">
             <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>
-              <legend class="card-header h6 text-secondary mb-0 py-2">ESC</legend>
+              <legend class="card-header h6 text-secondary mb-0 py-2"
+                      x-text="$store.config.values['esc0.type'] === 'brushed' ? 'Motor Output' : 'ESC'"></legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
-                  <label class="form-label" for="f-esc-rate">PWM Rate (Hz)</label>
-                  <select class="form-select" id="f-esc-rate"
-                          :class="{ 'is-invalid': $store.config.invalid['esc0.rate'] || $store.config.invalid['esc1.rate'] }"
-                          @change="$store.config.setBothEscRates($event.target.value)">
-                    <template x-for="opt in $store.config.field('esc0.rate').def?.options ?? []" :key="opt">
-                      <option :value="opt" :selected="opt === $store.config.values['esc0.rate']" x-text="opt"></option>
+                  <label class="form-label" for="f-esc-type">Type</label>
+                  <select class="form-select" id="f-esc-type"
+                          :class="{ 'is-invalid': $store.config.invalid['esc0.type'] || $store.config.invalid['esc1.type'] }"
+                          @change="$store.config.setBothEscTypes($event.target.value)">
+                    <template x-for="opt in $store.config.field('esc0.type').def?.options ?? []" :key="opt">
+                      <option :value="opt" :selected="opt === $store.config.values['esc0.type']" x-text="opt"></option>
                     </template>
                   </select>
                   <div class="form-text">
-                    How often each ESC is sent a new command. 50 Hz is what every analog ESC
-                    auto-detects; a BLHeli_S-class ESC handles 400 Hz and cuts up to 20ms of
-                    stick-to-motor delay. Changing this re-runs the arm hold.
+                    <strong>brushless</strong> drives a BLHeli-class ESC. <strong>brushed</strong> drives a
+                    DRV8833-class H-bridge — see the Wiring page for both.
                   </div>
                 </div>
+
+                <template x-if="$store.config.values['esc0.type'] === 'brushless'">
+                  <div class="col-md-6">
+                    <label class="form-label" for="f-esc-rate">PWM Rate (Hz)</label>
+                    <select class="form-select" id="f-esc-rate"
+                            :class="{ 'is-invalid': $store.config.invalid['esc0.rate'] || $store.config.invalid['esc1.rate'] }"
+                            @change="$store.config.setBothEscRates($event.target.value)">
+                      <template x-for="opt in $store.config.field('esc0.rate').def?.options ?? []" :key="opt">
+                        <option :value="opt" :selected="opt === $store.config.values['esc0.rate']" x-text="opt"></option>
+                      </template>
+                    </select>
+                    <div class="form-text">
+                      How often each ESC is sent a new command. 50 Hz is what every analog ESC
+                      auto-detects; a BLHeli_S-class ESC handles 400 Hz and cuts up to 20ms of
+                      stick-to-motor delay. Changing this re-runs the arm hold.
+                    </div>
+                  </div>
+                </template>
+
+                <template x-if="$store.config.values['esc0.type'] === 'brushed'">
+                  <div class="col-md-6">
+                    <label class="form-label" for="f-esc-freq">Switch Freq (Hz)</label>
+                    <input type="number" class="form-control" id="f-esc-freq"
+                           :class="{ 'is-invalid': $store.config.invalid['esc0.freq'] || $store.config.invalid['esc1.freq'] }"
+                           :min="$store.config.field('esc0.freq').def?.min" :max="$store.config.field('esc0.freq').def?.max"
+                           :value="$store.config.values['esc0.freq']"
+                           @change="$store.config.setBothEscFreq($event.target.value)">
+                    <div class="form-text">
+                      PWM switching frequency into the H-bridge. 20 kHz (the default) is above the
+                      audible range and every DRV8833/TB6612-class driver handles it fine.
+                    </div>
+                  </div>
+                </template>
+
+                <template x-if="$store.config.values['esc0.type'] === 'brushed'">
+                  <div class="col-md-6">
+                    <label class="form-label" for="f-esc-brake">At Zero</label>
+                    <select class="form-select" id="f-esc-brake"
+                            :class="{ 'is-invalid': $store.config.invalid['esc0.brake'] || $store.config.invalid['esc1.brake'] }"
+                            @change="$store.config.setBothEscBrake($event.target.value)">
+                      <template x-for="opt in $store.config.field('esc0.brake').def?.options ?? []" :key="opt">
+                        <option :value="opt" :selected="opt === $store.config.values['esc0.brake']" x-text="opt"></option>
+                      </template>
+                    </select>
+                    <div class="form-text">
+                      <strong>coast</strong> lets a stopped motor spin freely. <strong>brake</strong> holds
+                      both H-bridge inputs high at zero command, resisting motion.
+                    </div>
+                  </div>
+                </template>
+
+                <template x-if="$store.config.values['esc0.type'] === 'brushed'">
+                  <div class="col-md-3">
+                    <label class="form-label" for="f-esc0-invert">Motor 0 Invert</label>
+                    <select class="form-select" id="f-esc0-invert"
+                            :class="{ 'is-invalid': $store.config.invalid['esc0.invert'] }"
+                            x-model="$store.config.values['esc0.invert']"
+                            @change="$store.config.commit($store.config.field('esc0.invert').def)">
+                      <template x-for="opt in $store.config.field('esc0.invert').def?.options ?? []" :key="opt">
+                        <option :value="opt" :selected="opt === $store.config.values['esc0.invert']" x-text="opt"></option>
+                      </template>
+                    </select>
+                  </div>
+                </template>
+
+                <template x-if="$store.config.field('esc1.invert').def && $store.config.values['esc0.type'] === 'brushed'">
+                  <div class="col-md-3">
+                    <label class="form-label" for="f-esc1-invert">Motor 1 Invert</label>
+                    <select class="form-select" id="f-esc1-invert"
+                            :class="{ 'is-invalid': $store.config.invalid['esc1.invert'] }"
+                            x-model="$store.config.values['esc1.invert']"
+                            @change="$store.config.commit($store.config.field('esc1.invert').def)">
+                      <template x-for="opt in $store.config.field('esc1.invert').def?.options ?? []" :key="opt">
+                        <option :value="opt" :selected="opt === $store.config.values['esc1.invert']" x-text="opt"></option>
+                      </template>
+                    </select>
+                    <div class="form-text">
+                      Per motor, not shared — fixes a swapped H-bridge lead without rewiring.
+                    </div>
+                  </div>
+                </template>
               </div>
             </fieldset>
           </template>

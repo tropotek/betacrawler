@@ -214,44 +214,50 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    // Throttle's row alone dual-writes esc0.direction/esc1.direction together
-    // -- a frontend convenience the Modes page uses, not a new firmware param.
-    // esc0/esc1 keep their own independent .direction params exactly as
-    // designed; nothing stops them being set differently via the Controller
-    // page, this is just the one control meant to keep them in sync in the
-    // common case.
-    async setBothDirections(v) {
-      this.values['esc0.direction'] = v;
-      this.values['esc1.direction'] = v;
-      try {
-        await Api.setParam('esc0.direction', v);
-        await Api.setParam('esc1.direction', v);
-        this.invalid['esc0.direction'] = false;
-        this.invalid['esc1.direction'] = false;
-        setDirty(true);
-      } catch (e) {
-        this.invalid['esc0.direction'] = true;
-        this.invalid['esc1.direction'] = true;
-        showError(`Direction: ${e.message}`);
+    // One control over several independent params -- esc0/esc1 keep separate
+    // params (notify() only ever reaches the owning module, so one shared
+    // param would leave the other ESC un-notified), but two motors on one
+    // vehicle running different values has no use case, so the UI offers one
+    // control. Each key is written, marked and rolled back on its own result:
+    // a refusal partway through must not leave the form showing a value the
+    // board never took. `coerce` shapes the value for the wire (Number for a
+    // u8), leaving `values` holding what the control produced.
+    async setAll(keys, v, label, coerce) {
+      let failed = null;
+      for (const k of keys.filter((key) => this.field(key).def)) {
+        const prev = this.values[k];
+        this.values[k] = v;
+        try {
+          await Api.setParam(k, coerce ? coerce(v) : v);
+          this.invalid[k] = false;
+          setDirty(true);
+        } catch (e) {
+          this.values[k] = prev;
+          this.invalid[k] = true;
+          failed = e;
+        }
       }
+      if (failed) showError(`${label}: ${failed.message}`);
     },
 
-    // Same dual-write convenience as setBothDirections, for the Configuration
-    // page's single PWM Rate control. esc0/esc1 keep independent .rate params
-    // -- notify() only ever reaches the owning module, so one shared param
-    // would leave the other ESC un-notified -- but two motors on one vehicle
-    // running different frame rates has no use case, so the UI offers one.
-    async setBothEscRates(v) {
-      const keys = ['esc0.rate', 'esc1.rate'].filter((k) => this.field(k).def);
-      keys.forEach((k) => { this.values[k] = v; });
-      try {
-        for (const k of keys) await Api.setParam(k, v);
-        keys.forEach((k) => { this.invalid[k] = false; });
-        setDirty(true);
-      } catch (e) {
-        keys.forEach((k) => { this.invalid[k] = true; });
-        showError(`PWM Rate: ${e.message}`);
-      }
+    setBothDirections(v) {
+      return this.setAll(['esc0.direction', 'esc1.direction'], v, 'Direction');
+    },
+
+    setBothEscRates(v) {
+      return this.setAll(['esc0.rate', 'esc1.rate'], v, 'PWM Rate');
+    },
+
+    setBothEscTypes(v) {
+      return this.setAll(['esc0.type', 'esc1.type'], v, 'Type');
+    },
+
+    setBothEscFreq(v) {
+      return this.setAll(['esc0.freq', 'esc1.freq'], v, 'Switch Freq', Number);
+    },
+
+    setBothEscBrake(v) {
+      return this.setAll(['esc0.brake', 'esc1.brake'], v, 'At Zero');
     },
 
     // Betaflight's own formula: new = old * (measured / reported). The

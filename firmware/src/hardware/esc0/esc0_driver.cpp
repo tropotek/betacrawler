@@ -27,6 +27,9 @@
 #ifndef ESC0_TIMER
 #error "FEATURE_ESC0 is on but the board header defines no ESC0_TIMER"
 #endif
+#ifndef ESC0_PIN_B
+#error "FEATURE_ESC0 is on but the board header defines no ESC0_PIN_B"
+#endif
 
 // 50Hz frame -- the universally-compatible default every analog-PWM ESC
 // (BLHeli/BLHeli_S/BLHeli32 included) auto-detects. Overridable from a board
@@ -71,65 +74,27 @@ constexpr uint8_t kDriveArmSlot = 2;
 
 namespace esc0 {
 
-// Storage for the one HardwareTimer, placement-new'd in begin().
-//
-// NOT `new`: this firmware allocates nothing on the heap (see config.h).
-// NOT a file-scope `static HardwareTimer` either -- its constructor enables
-// the timer clock and calls into the HAL, which is not up yet at
-// static-init time. Identical reasoning to servo's own s_timerMem, and to
-// esc1's own copy of this same buffer -- each instance's storage lives in
-// its own translation unit, so the two ESCs never share it.
+// Storage for the shared HardwareTimer and every OutputStage this instance
+// might switch between at runtime. NOT `new`: this firmware allocates
+// nothing on the heap. NOT file-scope `static` objects either -- their
+// constructors touch the HAL, which is not up yet at static-init time. Each
+// instance's storage lives in its own translation unit, so esc0 and esc1
+// never share it.
 alignas(HardwareTimer) static uint8_t s_timerMem[sizeof(HardwareTimer)];
+alignas(esc::EscOutput) static uint8_t s_escOutMem[sizeof(esc::EscOutput)];
+alignas(esc::HbridgeOutput) static uint8_t s_hbridgeOutMem[sizeof(esc::HbridgeOutput)];
 
 void EscDriver::begin() {
   timer_ = new (s_timerMem) HardwareTimer(ESC0_TIMER);
-  ch_ = STM_PIN_CHANNEL(pinmap_function(digitalPinToPinName(ESC0_PIN), PinMap_PWM));
-  frameUs_ = ESC0_FRAME_US;
-  timer_->setOverflow(frameUs_, MICROSEC_FORMAT);
+  periodUs_ = ESC0_FRAME_US;
+  timer_->setOverflow(periodUs_, MICROSEC_FORMAT);
   timer_->resume();
-  detach();   // boot silent; main.cpp's notify pass applies any saved mode next
-}
-
-void EscDriver::attachOutput() {
-  timer_->setMode(ch_, TIMER_OUTPUT_COMPARE_PWM1, ESC0_PIN);
-  timer_->resumeChannel(ch_);
-}
-
-void EscDriver::detach() {
-  // A real detach, not a zero-width pulse: no pulse train at all while off.
-  timer_->pauseChannel(ch_);
-  // Also zero the compare register itself, not just pause the channel. STM32
-  // PWM channels have the OCxPE preload bit set, so setCaptureCompare() below
-  // (and writeUs()'s identical call) only ever writes a *shadow* register --
-  // the counter, running or not, keeps whatever value was active until an
-  // update event loads the shadow into the real CCR. Left alone, that stale
-  // value survives a pauseChannel()/resumeChannel() cycle untouched. Without
-  // this, re-arming (attachOutput() -> writeUs(neutral) in apply(), where
-  // neutral is esc::neutralUs()'s result) could still emit one stale,
-  // pre-detach pulse -- possibly a high throttle -- before the new neutral
-  // value's own update event lands, up to one ESC0_FRAME_US frame later.
-  // That is exactly the hazard the arm-hold gate exists to prevent. Zeroing
-  // here is safe regardless of timing: the pin is already held LOW by
-  // pinMode/digitalWrite below while detached.
-  timer_->setCaptureCompare(ch_, 0, MICROSEC_COMPARE_FORMAT);
-  pinMode(ESC0_PIN, OUTPUT);
-  digitalWrite(ESC0_PIN, LOW);
-  lastUs_ = 0;
-}
-
-void EscDriver::writeUs(uint16_t us) {
-  timer_->setCaptureCompare(ch_, us, MICROSEC_COMPARE_FORMAT);
-  lastUs_ = us;
-}
-
-// Retunes the PWM frame. setOverflow() may re-derive the prescaler, which
-// changes what a microsecond means to setCaptureCompare() -- so every caller
-// must re-write the pulse afterwards. apply() and tick() both do, by ending
-// on writeUs().
-void EscDriver::setFrameUs(uint32_t frameUs) {
-  if (frameUs == frameUs_) return;
-  frameUs_ = frameUs;
-  timer_->setOverflow(frameUs_, MICROSEC_FORMAT);
+  escOut_ = new (s_escOutMem) esc::EscOutput(timer_, ESC0_PIN);
+  hbridgeOut_ = new (s_hbridgeOutMem) esc::HbridgeOutput(timer_, ESC0_PIN, ESC0_PIN_B);
+  escOut_->begin();
+  hbridgeOut_->begin();
+  stage_ = escOut_;   // type_ defaults to TYPE_BRUSHLESS
+  stage_->detach();   // boot silent; main.cpp's notify pass applies any saved mode next
 }
 
 void EscDriver::attach(const core::Registry& reg, const core::Params& p) {
@@ -142,6 +107,8 @@ void EscDriver::apply(const core::Params& p) {
   const int32_t prevMode = mode_;
   const uint8_t prevSrcIdx = srcIdx_;
   const uint8_t prevRateIdx = rateIdx_;
+  const int32_t prevType = type_;
+  type_       = p.num(globalParam(P_TYPE));
   mode_       = p.num(globalParam(P_MODE));
   throttleUs_ = (uint16_t)p.num(globalParam(P_THROTTLE_US));
   minUs_      = (uint16_t)p.num(globalParam(P_MIN_US));
@@ -149,8 +116,29 @@ void EscDriver::apply(const core::Params& p) {
   direction_  = p.num(globalParam(P_DIRECTION));
   srcIdx_     = (uint8_t)p.num(globalParam(P_SRC));
   rateIdx_    = (uint8_t)p.num(globalParam(P_RATE));
+  freqHz_     = (uint32_t)p.num(globalParam(P_FREQ));
+  invert_     = p.num(globalParam(P_INVERT)) != 0;
+  brake_      = p.num(globalParam(P_BRAKE)) != 0;
 
-  setFrameUs(esc::frameUsForRate(rateIdx_));
+  const bool typeChanged = (type_ != prevType);
+  if (typeChanged) {
+    esc::OutputStage* nextStage = (type_ == esc::TYPE_BRUSHED)
+        ? static_cast<esc::OutputStage*>(hbridgeOut_)
+        : static_cast<esc::OutputStage*>(escOut_);
+    // Switching electronics type while live: detach the old stage's pins
+    // before the new one drives anything -- never both stages driving at
+    // once. Safe to call unconditionally even from MODE_OFF (detach() on an
+    // already-detached stage is a no-op in substance).
+    stage_->detach();
+    stage_ = nextStage;
+  }
+  stage_->setInverted(invert_);
+  stage_->setBrakeOnZero(brake_);
+
+  periodUs_ = (type_ == esc::TYPE_BRUSHED)
+      ? (1000000u / (freqHz_ ? freqHz_ : 1u))
+      : esc::frameUsForRate(rateIdx_);
+  stage_->setPeriodUs(periodUs_);
 
   const bool enteringFromOff = (prevMode == esc::MODE_OFF && mode_ != esc::MODE_OFF);
   const bool srcChanged = (srcIdx_ != prevSrcIdx);
@@ -170,7 +158,7 @@ void EscDriver::apply(const core::Params& p) {
 
   if (esc::inputLossDemotesArmed(armState_, mode_, inputFresh) ||
       esc::srcChangeDemotesArmed(armState_, mode_, srcChanged) ||
-      esc::rateChangeDemotesArmed(armState_, rateChanged)) {
+      esc::rateChangeDemotesArmed(armState_, rateChanged || typeChanged)) {
     armState_ = esc::ARM_ARMING;
     armT0_    = now;
   }
@@ -182,8 +170,8 @@ void EscDriver::apply(const core::Params& p) {
   armState_ = esc::nextArmState(armState_, mode_ == esc::MODE_OFF, enteringFromOff, now, armT0_,
                                  ESC0_ARM_HOLD_MS, commandedLow);
 
-  if (mode_ == esc::MODE_OFF) { detach(); return; }
-  if (enteringFromOff) attachOutput();
+  if (mode_ == esc::MODE_OFF) { stage_->detach(); lastUs_ = 0; return; }
+  if (enteringFromOff || typeChanged) stage_->attachOutput();
 
   uint16_t us = esc::nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs,
                                   inputStale, neutral);
@@ -200,9 +188,9 @@ void EscDriver::apply(const core::Params& p) {
   if (armSwitchInactive) us = neutral;
   // Last, so no route to the pin can outrun the frame. 0 means "hold the last
   // pulse" and must never be clamped up into a real command.
-  const uint16_t effMax = esc::effectiveMaxUs(maxUs_, frameUs_);
+  const uint16_t effMax = (type_ == esc::TYPE_BRUSHED) ? maxUs_ : esc::effectiveMaxUs(maxUs_, periodUs_);
   if (us > effMax) us = effMax;
-  if (us > 0) writeUs(us);
+  if (us > 0) { stage_->write(us, minUs_, maxUs_, neutral); lastUs_ = us; }
 }
 
 void EscDriver::onParamChanged(uint8_t local, const core::Params& p) {
@@ -240,9 +228,9 @@ void EscDriver::tick(uint32_t nowMs) {
   const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;
   const bool armSwitchInactive = driveBusFresh && driveInputs_->get(kDriveArmSlot) == 0;
   if (armSwitchInactive) us = neutral;
-  const uint16_t effMax = esc::effectiveMaxUs(maxUs_, frameUs_);
+  const uint16_t effMax = (type_ == esc::TYPE_BRUSHED) ? maxUs_ : esc::effectiveMaxUs(maxUs_, periodUs_);
   if (us > effMax) us = effMax;
-  if (us > 0) writeUs(us);
+  if (us > 0) { stage_->write(us, minUs_, maxUs_, neutral); lastUs_ = us; }
 }
 
 void EscDriver::readTelemetry(core::TlmValue* out) {
