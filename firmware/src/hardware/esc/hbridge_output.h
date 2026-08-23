@@ -28,7 +28,6 @@ class HbridgeOutput : public OutputStage {
   uint32_t pinB_;
   uint32_t chA_ = 0;
   uint32_t chB_ = 0;
-  uint32_t periodUs_ = 0;
   bool     inverted_ = false;
   bool     brakeOnZero_ = false;
 };

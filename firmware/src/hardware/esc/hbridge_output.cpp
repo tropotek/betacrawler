@@ -37,18 +37,22 @@ void HbridgeOutput::detach() {
 }
 
 void HbridgeOutput::setPeriodUs(uint32_t periodUs) {
-  periodUs_ = periodUs;
-  timer_->setOverflow(periodUs_, MICROSEC_FORMAT);
+  timer_->setOverflow(periodUs, MICROSEC_FORMAT);
 }
 
 void HbridgeOutput::write(uint16_t us, uint16_t minUs, uint16_t maxUs, uint16_t neutralUs) {
   if (!chA_ || !chB_) return;
   const int16_t duty = signedDutyPermille(us, minUs, maxUs, neutralUs);
   const PinDuty pd = splitPinDuty(duty, inverted_, brakeOnZero_);
-  const uint32_t compareA = (uint32_t)periodUs_ * pd.a / 1000u;
-  const uint32_t compareB = (uint32_t)periodUs_ * pd.b / 1000u;
-  timer_->setCaptureCompare(chA_, compareA, MICROSEC_COMPARE_FORMAT);
-  timer_->setCaptureCompare(chB_, compareB, MICROSEC_COMPARE_FORMAT);
+  // Ticks, not microseconds: a 20kHz period is 50us, so a microsecond compare
+  // would quantise the duty to 2% (and to 5% at the 50kHz this param allows).
+  // ARR+1 is the timer's own full scale, and is also what a permille of 1000
+  // must reach for 100% -- the reference manual's "CCRx strictly greater than
+  // ARR". ARR and CCRx are both preload registers that latch on the same
+  // update event, so reading one to compute the other cannot tear.
+  const uint32_t top = (uint32_t)__HAL_TIM_GET_AUTORELOAD(timer_->getHandle()) + 1u;
+  timer_->setCaptureCompare(chA_, top * pd.a / 1000u, TICK_COMPARE_FORMAT);
+  timer_->setCaptureCompare(chB_, top * pd.b / 1000u, TICK_COMPARE_FORMAT);
 }
 
 }  // namespace esc
