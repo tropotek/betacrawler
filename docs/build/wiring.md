@@ -84,6 +84,45 @@ If a single track runs backwards, swap any two of the three motor wires on that 
 
 Next: [Flashing the firmware](flashing.md).
 
+## Wiring for brushed motors (H-Bridge)
+
+`esc0`/`esc1` can drive a DRV8833-class H-bridge instead of a brushless ESC — pick `hbridge` for
+`Type` on the Configuration page, no reflash needed. The pack feeds the H-bridge module directly;
+the board's own 5V still comes from USB or the receiver, same as an ESC build — a brushed build
+does not power the board from the drive-motor pack.
+
+[![Wiring a Black Pill to a DRV8833 H-bridge module and two brushed motors](../assets/screenshots/wiring-diagram-hbridge.png)](../assets/screenshots/wiring-diagram-hbridge-large.png){target=_blank}
+
+**Click the diagram to open it full size** in a new tab.
+
+## Pin map (brushed motors)
+
+| Signal | Board pin | Goes to |
+|---|---|---|
+| Motor 0, pin A | PA6 | DRV8833 IN1 |
+| Motor 0, pin B | PA7 | DRV8833 IN2 |
+| Motor 1, pin A | PB8 | DRV8833 IN3 |
+| Motor 1, pin B | PB9 | DRV8833 IN4 |
+| Receiver | PA3 | The receiver's CRSF **TX** pad |
+| Telemetry | PA2 | The receiver's CRSF **RX** pad |
+| Board power | 5V, GND | USB, or the receiver's own supply |
+
+!!! warning "The module's SLEEP pin must be jumpered to VCC"
+
+    Some DRV8833 breakouts label this pin `SLEEP`, others truncate it on their own printed
+    pinout table to something like `EEP` — same pin either way. Powered but with SLEEP left
+    floating, the module's power LED lights but nothing drives OUT1-4, which is easy to mistake
+    for a wiring fault elsewhere.
+
+!!! warning "Never feed the H-bridge's VM from the board's own 5V pin"
+
+    Same reasoning as an ESC build: a stalled motor can pull more current than the board's 5V
+    rail supplies, browning it out. Power the H-bridge from the drive pack, and keep a common
+    ground between the pack, the H-bridge, and the board.
+
+Motor direction can be fixed from the app — set `Invert` per motor on the Configuration page —
+rather than by swapping leads.
+
 ## Battery sense (optional)
 
 The vehicle drives without this. Fit it if you want pack voltage on your transmitter and in the
