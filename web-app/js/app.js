@@ -254,6 +254,48 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    // Same dual-write convenience as setBothEscRates, for the Configuration
+    // page's Type/Switch Freq/At Zero controls -- esc0/esc1 keep independent
+    // params, but a build normally runs matching electronics on both motors.
+    async setBothEscTypes(v) {
+      const keys = ['esc0.type', 'esc1.type'].filter((k) => this.field(k).def);
+      keys.forEach((k) => { this.values[k] = v; });
+      try {
+        for (const k of keys) await Api.setParam(k, v);
+        keys.forEach((k) => { this.invalid[k] = false; });
+        setDirty(true);
+      } catch (e) {
+        keys.forEach((k) => { this.invalid[k] = true; });
+        showError(`Type: ${e.message}`);
+      }
+    },
+
+    async setBothEscFreq(v) {
+      const keys = ['esc0.freq', 'esc1.freq'].filter((k) => this.field(k).def);
+      keys.forEach((k) => { this.values[k] = v; });
+      try {
+        for (const k of keys) await Api.setParam(k, Number(v));
+        keys.forEach((k) => { this.invalid[k] = false; });
+        setDirty(true);
+      } catch (e) {
+        keys.forEach((k) => { this.invalid[k] = true; });
+        showError(`Switch Freq: ${e.message}`);
+      }
+    },
+
+    async setBothEscBrake(v) {
+      const keys = ['esc0.brake', 'esc1.brake'].filter((k) => this.field(k).def);
+      keys.forEach((k) => { this.values[k] = v; });
+      try {
+        for (const k of keys) await Api.setParam(k, v);
+        keys.forEach((k) => { this.invalid[k] = false; });
+        setDirty(true);
+      } catch (e) {
+        keys.forEach((k) => { this.invalid[k] = true; });
+        showError(`At Zero: ${e.message}`);
+      }
+    },
+
     // Betaflight's own formula: new = old * (measured / reported). The
     // firmware cannot do this itself -- onParamChanged() takes a const Params,
     // so a driver cannot write a parameter -- and does not need to, since one
