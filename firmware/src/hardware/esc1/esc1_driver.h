@@ -1,5 +1,7 @@
 #pragma once
 #include "hardware/esc1/esc1_params.h"
+#include "hardware/esc/output_stage.h"
+#include "hardware/esc/esc_output.h"
 #include "core/inputs.h"
 
 // Forward-declared rather than including <HardwareTimer.h>: this header is
@@ -19,15 +21,12 @@ class EscDriver : public core::Module {
 
  private:
   void apply(const core::Params& p);
-  void attachOutput();
-  void detach();
-  void writeUs(uint16_t us);
-  void setFrameUs(uint32_t frameUs);
 
   const core::Inputs* inputs_ = nullptr;
   const core::Inputs* driveInputs_ = nullptr;
   HardwareTimer* timer_ = nullptr;
-  uint32_t ch_         = 0;
+  esc::EscOutput*    escOut_ = nullptr;
+  esc::OutputStage*  stage_  = nullptr;
   int32_t  mode_       = esc::MODE_OFF;
   uint16_t throttleUs_ = 1000;
   uint8_t  srcIdx_     = 0;
@@ -38,7 +37,7 @@ class EscDriver : public core::Module {
   uint32_t armT0_      = 0;
   uint16_t lastUs_     = 0;
   uint8_t  rateIdx_    = 0;
-  uint32_t frameUs_    = 0;
+  uint32_t periodUs_   = 0;
 };
 
 }  // namespace esc1
