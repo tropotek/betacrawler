@@ -198,14 +198,18 @@ before it knows it needs permission, so rung two alone strands the user. `prompt
 must keep reporting `SecurityError` distinctly, and `DFU_WAIT_MS` must stay short enough for rung
 two to have a chance: `docs/development/architecture.md`, "The permission ladder".
 
-**CRSF receive stays off the ROM bootloader's UART pins** — `RX_RX_PIN` is PB7, not USART1's
-usual PA10, and moving it back breaks both DFU paths. The bootloader picks its host interface by
-watching for traffic and commits to the first one that shows any; a powered receiver on PA10 wins
-that race every time, after which USB never enumerates. PB7 is the same USART1 on its alternate
-pin, and is only an I2C1 candidate to the bootloader, which cannot commit without a master
-clocking SCL. `RX_TX_PIN` stays PA9 deliberately: it is outbound only so it never triggers
-detection, and leaving PB6 (I2C1_SCL) connected to nothing keeps that guarantee absolute — which
-is also why esc1 keeps PB6. PA2/PA3 are no escape: USART2 is a bootloader interface too.
+**CRSF receive lives on USART2's native pins, not USART1's** — `RX_RX_PIN`/`RX_TX_PIN` are PA3/PA2,
+leaving USART1's PA9/PA10 completely standard and unclaimed for a fork's own project. No pin on
+this chip is structurally immune to the ROM bootloader's interface race (bench-tested 2026-08-23:
+PA10, PA3, and PB6/PB7 all block DFU under a deliberate flood of the byte its autobaud detector
+watches for) — PA3 works because real, linked ELRS traffic never happens to emit that byte, not
+because of any property of the pin itself. Crossfire/TBS is untested and may behave differently;
+don't assume PA3 is safe for a receiver protocol that hasn't been checked. `RX_TX_PIN` stays
+outbound-only deliberately: it can't trigger the race regardless of protocol. `esc1` moved to PB8
+(from PB6) and WiFi moved to PB6/PB7 (from PA2/PA3) to make room — `esc1`'s pin is safe by
+directionality alone (motor output never receives external data), and WiFi's new pins carry the
+same untested-for-its-own-traffic caveat PA3 no longer needs. Reasoning and full bench methodology:
+`docs/development/architecture.md`, "CRSF pin choice and the bootloader race".
 
 **`web-app/firmware/` stays committed** — unlike most build output: the site has no server, so
 the images it flashes have to be in the deployed tree.

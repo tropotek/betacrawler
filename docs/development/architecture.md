@@ -327,6 +327,65 @@ nothing else. The app carries the `board` string forward from the last `hello` a
 when it has none, rather than guessing. Any future "auto-detect the right firmware" idea runs into
 this wall first.
 
+## CRSF pin choice and the bootloader race
+
+`RX_RX_PIN` avoids PA10 (USART1's default RX pin) because both DFU paths from the previous
+section reboot into the same STM32 ROM bootloader, which arms multiple peripherals at once —
+looking for a specific autobaud sync byte (`0x7F`, framed with even parity — AN3155) on each — and
+commits to whichever shows it first. A receiver whose traffic produces that byte at the wrong
+moment wins the race, and USB then never enumerates.
+
+**Bench-tested 2026-08-23** (full methodology, matrix, and raw results:
+`_notes/docs/research/rx-uart-bootloader-race.md` — gitignored, local-only, won't follow a fresh
+clone, but present in this checkout): a real, linked ELRS receiver, tried repeatedly across both DFU
+entry paths, never triggered a hijack on PA10, PA3 (USART2's own RX), *or* PB7. That could have
+meant any of those pins is safe — but a controlled positive control settled it: a USB-UART bridge
+deliberately flooding literal `0x7F` bytes **blocked DFU on all three**, checked directly via
+`lsusb` with no browser or app involved, immediately after triggering and before any recovery
+power-cycle, to rule out the separate WebUSB-permission-grant issue as a confound.
+
+**No pin on this package is structurally immune.** The previous explanation for why PB7 works — "it's
+only an I2C1 candidate, which can't commit without a master clocking SCL" — is wrong: a plain UART
+byte flood has nothing to do with I2C, and PB6 (I2C1's SCL) isn't being clocked by anything during
+the ROM bootloader phase regardless (the app firmware isn't running to drive it). PB7 blocking under
+the same flood that blocks PA10 and PA3 is much better explained by PB7 simply being **USART1's
+alternate/remapped RX candidate**, which the bootloader evidently arms in addition to the default
+PA9/PA10 pair — still USART1, not I2C1. What actually protects this board today is that ELRS's real
+traffic never happens to emit the trigger byte on any of the three pins tested, not any property of
+PB7 itself. `rx.protocol` also supports Crossfire, which is untested against this same flood as of
+this writing — the board header's own wiring comments reference a "Nano RX" (a TBS product),
+suggesting the *original*, pre-bench-test belief that "a receiver on PA10 wins every time" may have
+come from Crossfire's different byte-level behavior, not from ELRS. Don't extend PB7's proven
+safety to a receiver protocol that hasn't been checked.
+
+This also settled a question the bench session went looking for: whether CRSF could live on a
+single, fully-native UART peripheral, leaving the *other* USART completely clean for a fork's own
+project. On this exact chip, every USART's own native RX pin is armed the same way — PA10, PA3, and
+PB6/PB7 all blocked under the same deliberate flood — so there's no pin *structurally* safer than
+any other. But TX pin choice was never part of the hazard (only something external transmitting
+*into* the MCU can trigger it), which means the shipped PB7-era wiring (PA9, USART1's default TX,
+paired with PB7, USART1's *alternate* RX) was a mixed combination tying up one pin from each of
+USART1's two pin-pair options without fully freeing either.
+
+**`RX_RX_PIN`/`RX_TX_PIN` are PA3/PA2 as shipped** — CRSF moved onto USART2's fully-native mapping,
+verified safe for real ELRS traffic exactly as thoroughly as PB7 was, which fully frees USART1's
+PA9/PA10 as a genuinely standard, unremapped UART pair for a fork's own project. `esc1` moved from
+PB6 to PB8 (TIM4_CH3, still a separate timer peripheral from `esc0`'s TIM3, just a different channel
+of TIM4 than before) to make room, and WiFi moved from PA2/PA3 to PB6/PB7 (USART1's alternate
+mapping) to take the pins CRSF vacated. `esc1`'s new pin is safe regardless of any of this bootloader
+analysis — motor output is always MCU-to-peripheral, never the reverse, so nothing external ever
+transmits into PB8. WiFi's new pins carry the same caveat PA3 needed before it was bench-tested:
+`FEATURE_WIFI` ships 0 by default, and nobody has yet run the ESP8266's real AT-firmware traffic
+against a deliberate flood the way ELRS was — don't extend PA3's proven safety to WiFi's pins
+without doing that test first.
+
+A third-party source worth reading but not fully trusting here: Betaflight's own manufacturer
+design guidelines table the exact vulnerable pin-pairs per MCU, and list only PA9/PA10 and PD5/PD6
+for STM32F411 (PD5/PD6 don't exist on this LQFP48 package) — no USART2 entry. Bench-testing found
+USART2 armed anyway. Most likely Betaflight's table reflects pins *known problematic from real
+field reports* rather than an exhaustive theoretical enumeration — a pin it flags is real, but a pin
+it omits isn't proven safe, only unreported.
+
 ## DFU in the browser
 
 Flashing happens in the page itself: `js/dfu.js` speaks DfuSe directly over WebUSB, with no host
