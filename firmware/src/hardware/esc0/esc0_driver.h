@@ -2,6 +2,7 @@
 #include "hardware/esc0/esc0_params.h"
 #include "hardware/esc/output_stage.h"
 #include "hardware/esc/esc_output.h"
+#include "hardware/esc/hbridge_output.h"
 #include "core/inputs.h"
 
 // Forward-declared rather than including <HardwareTimer.h>: this header is
@@ -10,7 +11,8 @@ class HardwareTimer;
 
 namespace esc0 {
 
-// Requires ESC0_PIN and ESC0_TIMER from the board header.
+// Requires ESC0_PIN/ESC0_TIMER, and ESC0_PIN_B for hbridge mode, from the
+// board header.
 class EscDriver : public core::Module {
  public:
   void attach(const core::Registry& reg, const core::Params& p) override;
@@ -24,9 +26,11 @@ class EscDriver : public core::Module {
 
   const core::Inputs* inputs_ = nullptr;
   const core::Inputs* driveInputs_ = nullptr;
-  HardwareTimer* timer_ = nullptr;
-  esc::EscOutput*    escOut_ = nullptr;
-  esc::OutputStage*  stage_  = nullptr;
+  HardwareTimer*        timer_      = nullptr;
+  esc::EscOutput*        escOut_     = nullptr;
+  esc::HbridgeOutput*    hbridgeOut_ = nullptr;
+  esc::OutputStage*      stage_      = nullptr;
+  int32_t  type_       = esc::TYPE_ESC;
   int32_t  mode_       = esc::MODE_OFF;
   uint16_t throttleUs_ = 1000;
   uint8_t  srcIdx_     = 0;
@@ -37,6 +41,9 @@ class EscDriver : public core::Module {
   uint32_t armT0_      = 0;
   uint16_t lastUs_     = 0;
   uint8_t  rateIdx_    = 0;
+  uint32_t freqHz_     = 20000;
+  bool     invert_     = false;
+  bool     brake_      = false;
   uint32_t periodUs_   = 0;
 };
 

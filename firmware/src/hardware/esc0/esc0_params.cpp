@@ -8,6 +8,8 @@ using core::ParamType;
 using core::TlmDef;
 using core::TlmType;
 
+static const char* const kTypes[] = {"esc", "hbridge"};
+
 // Order must match esc::MODE_* -- the wire carries the name, the driver
 // receives the index.
 static const char* const kModes[] = {"off", "armed", "input"};
@@ -30,6 +32,9 @@ static const char* const kDirections[] = {"unidirectional", "bidirectional"};
 // and an INI line read the way a user would write them.
 static const char* const kRates[] = {"50", "100", "200", "400"};
 
+static const char* const kInvertOpts[] = {"normal", "inverted"};
+static const char* const kBrakeOpts[] = {"coast", "brake"};
+
 // The board header states the hardware default; this param is the runtime
 // override. Same #ifndef fallback rx_params.cpp uses for RX_BAUD, and for the
 // same reason: this descriptor TU is compiled by the native env too, where no
@@ -43,21 +48,18 @@ static constexpr int32_t kDefaultRate =
     ESC0_FRAME_US <= 10000 ? esc::RATE_100 : esc::RATE_50;
 
 static const ParamDef kParams[] = {
-  // key                type             label       unit  min   max   opts     n  maxlen def       defStr group
+  // key                type             label       unit  min   max   opts     n  maxlen def       defStr group        showIfKey     showIfVal
   // Declared FIRST, ahead of esc0.mode -- not just cosmetic. EscDriver::apply()
   // re-reads every one of this module's params from the shared Params store
   // on ANY of them changing, so declaration order is also the order values
   // become known during a one-at-a-time apply sequence (INI restore, or a
-  // human typing Terminal `set` commands). Putting esc0.direction first
-  // guarantees it is always already known -- never still at its stale prior
-  // value -- by the time esc0.mode or esc0.throttle_us can cause a pulse to
-  // be computed and armed against. Defaults to bidirectional: a tank drive
-  // needs reverse, so the ESC is expected to be in BLHeli's bidirectional mode.
+  // human typing Terminal set commands). Putting esc0.type first guarantees
+  // it is always already known -- it decides which OutputStage runs at all,
+  // even more foundational than esc0.direction/esc0.rate below it.
+  {"esc0.type",         ParamType::Enum, "Type",      nullptr, 0, 0, kTypes, 2, 0, esc::TYPE_ESC, nullptr, nullptr},
   {"esc0.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_BIDIRECTIONAL, nullptr, nullptr},
-  // Ahead of esc0.mode for exactly the reason esc0.direction is: the frame
-  // rate must already be known by the time a pulse can be computed and armed
-  // against, since a BLHeli_S-class ESC frame-detects as it arms.
-  {"esc0.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr},
+  // Shown only for type=esc: meaningless for a straight duty-cycle output.
+  {"esc0.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr, "esc0.type", "esc"},
   // Defaults to input: the shared ARM switch (tank_drive.arm_src, itself
   // defaulting to a real channel) clamps the output to neutral whenever the
   // link is stale or the switch is inactive, and the arm-hold state machine
@@ -84,6 +86,10 @@ static const ParamDef kParams[] = {
   // still accept it regardless of mode (showIf is display-only, never an
   // access rule). Defaults to ch1, the conventional throttle channel.
   {"esc0.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 12, nullptr, nullptr, "esc0.mode", "off"},
+  // Hbridge-only, shown only for type=hbridge.
+  {"esc0.freq",         ParamType::U8,   "Switch Freq", "Hz", 1000, 50000, nullptr, 0, 0, 20000, nullptr, "H-Bridge", "esc0.type", "hbridge"},
+  {"esc0.invert",       ParamType::Enum, "Invert",   nullptr, 0, 0, kInvertOpts, 2, 0, 0, nullptr, "H-Bridge", "esc0.type", "hbridge"},
+  {"esc0.brake",        ParamType::Enum, "At Zero",  nullptr, 0, 0, kBrakeOpts, 2, 0, 0, nullptr, "H-Bridge", "esc0.type", "hbridge"},
 };
 
 // The commanded pulse width, or 0 when off -- including neutralUs during the

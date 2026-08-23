@@ -27,6 +27,9 @@
 #ifndef ESC1_TIMER
 #error "FEATURE_ESC1 is on but the board header defines no ESC1_TIMER"
 #endif
+#ifndef ESC1_PIN_B
+#error "FEATURE_ESC1 is on but the board header defines no ESC1_PIN_B"
+#endif
 
 // 50Hz frame -- the universally-compatible default every analog-PWM ESC
 // (BLHeli/BLHeli_S/BLHeli32 included) auto-detects. Overridable from a board
@@ -79,6 +82,7 @@ namespace esc1 {
 // never share it.
 alignas(HardwareTimer) static uint8_t s_timerMem[sizeof(HardwareTimer)];
 alignas(esc::EscOutput) static uint8_t s_escOutMem[sizeof(esc::EscOutput)];
+alignas(esc::HbridgeOutput) static uint8_t s_hbridgeOutMem[sizeof(esc::HbridgeOutput)];
 
 void EscDriver::begin() {
   timer_ = new (s_timerMem) HardwareTimer(ESC1_TIMER);
@@ -86,8 +90,10 @@ void EscDriver::begin() {
   timer_->setOverflow(periodUs_, MICROSEC_FORMAT);
   timer_->resume();
   escOut_ = new (s_escOutMem) esc::EscOutput(timer_, ESC1_PIN);
+  hbridgeOut_ = new (s_hbridgeOutMem) esc::HbridgeOutput(timer_, ESC1_PIN, ESC1_PIN_B);
   escOut_->begin();
-  stage_ = escOut_;
+  hbridgeOut_->begin();
+  stage_ = escOut_;   // type_ defaults to TYPE_ESC
   stage_->detach();   // boot silent; main.cpp's notify pass applies any saved mode next
 }
 
@@ -101,6 +107,8 @@ void EscDriver::apply(const core::Params& p) {
   const int32_t prevMode = mode_;
   const uint8_t prevSrcIdx = srcIdx_;
   const uint8_t prevRateIdx = rateIdx_;
+  const int32_t prevType = type_;
+  type_       = p.num(globalParam(P_TYPE));
   mode_       = p.num(globalParam(P_MODE));
   throttleUs_ = (uint16_t)p.num(globalParam(P_THROTTLE_US));
   minUs_      = (uint16_t)p.num(globalParam(P_MIN_US));
@@ -108,8 +116,28 @@ void EscDriver::apply(const core::Params& p) {
   direction_  = p.num(globalParam(P_DIRECTION));
   srcIdx_     = (uint8_t)p.num(globalParam(P_SRC));
   rateIdx_    = (uint8_t)p.num(globalParam(P_RATE));
+  freqHz_     = (uint32_t)p.num(globalParam(P_FREQ));
+  invert_     = p.num(globalParam(P_INVERT)) != 0;
+  brake_      = p.num(globalParam(P_BRAKE)) != 0;
 
-  periodUs_ = esc::frameUsForRate(rateIdx_);
+  const bool typeChanged = (type_ != prevType);
+  if (typeChanged) {
+    esc::OutputStage* nextStage = (type_ == esc::TYPE_HBRIDGE)
+        ? static_cast<esc::OutputStage*>(hbridgeOut_)
+        : static_cast<esc::OutputStage*>(escOut_);
+    // Switching electronics type while live: detach the old stage's pins
+    // before the new one drives anything -- never both stages driving at
+    // once. Safe to call unconditionally even from MODE_OFF (detach() on an
+    // already-detached stage is a no-op in substance).
+    stage_->detach();
+    stage_ = nextStage;
+  }
+  stage_->setInverted(invert_);
+  stage_->setBrakeOnZero(brake_);
+
+  periodUs_ = (type_ == esc::TYPE_HBRIDGE)
+      ? (1000000u / (freqHz_ ? freqHz_ : 1u))
+      : esc::frameUsForRate(rateIdx_);
   stage_->setPeriodUs(periodUs_);
 
   const bool enteringFromOff = (prevMode == esc::MODE_OFF && mode_ != esc::MODE_OFF);
@@ -130,7 +158,7 @@ void EscDriver::apply(const core::Params& p) {
 
   if (esc::inputLossDemotesArmed(armState_, mode_, inputFresh) ||
       esc::srcChangeDemotesArmed(armState_, mode_, srcChanged) ||
-      esc::rateChangeDemotesArmed(armState_, rateChanged)) {
+      esc::rateChangeDemotesArmed(armState_, rateChanged || typeChanged)) {
     armState_ = esc::ARM_ARMING;
     armT0_    = now;
   }
@@ -143,7 +171,7 @@ void EscDriver::apply(const core::Params& p) {
                                  ESC1_ARM_HOLD_MS, commandedLow);
 
   if (mode_ == esc::MODE_OFF) { stage_->detach(); lastUs_ = 0; return; }
-  if (enteringFromOff) stage_->attachOutput();
+  if (enteringFromOff || typeChanged) stage_->attachOutput();
 
   uint16_t us = esc::nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs,
                                   inputStale, neutral);
@@ -160,7 +188,7 @@ void EscDriver::apply(const core::Params& p) {
   if (armSwitchInactive) us = neutral;
   // Last, so no route to the pin can outrun the frame. 0 means "hold the last
   // pulse" and must never be clamped up into a real command.
-  const uint16_t effMax = esc::effectiveMaxUs(maxUs_, periodUs_);
+  const uint16_t effMax = (type_ == esc::TYPE_HBRIDGE) ? maxUs_ : esc::effectiveMaxUs(maxUs_, periodUs_);
   if (us > effMax) us = effMax;
   if (us > 0) { stage_->write(us, minUs_, maxUs_, neutral); lastUs_ = us; }
 }
@@ -200,7 +228,7 @@ void EscDriver::tick(uint32_t nowMs) {
   const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;
   const bool armSwitchInactive = driveBusFresh && driveInputs_->get(kDriveArmSlot) == 0;
   if (armSwitchInactive) us = neutral;
-  const uint16_t effMax = esc::effectiveMaxUs(maxUs_, periodUs_);
+  const uint16_t effMax = (type_ == esc::TYPE_HBRIDGE) ? maxUs_ : esc::effectiveMaxUs(maxUs_, periodUs_);
   if (us > effMax) us = effMax;
   if (us > 0) { stage_->write(us, minUs_, maxUs_, neutral); lastUs_ = us; }
 }
