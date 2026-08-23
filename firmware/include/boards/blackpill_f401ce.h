@@ -60,34 +60,35 @@
 #define BUTTON_PIN      USER_BTN
 
 // Hobby servo on TIM4_CH1 -- but TIM4 is now claimed by esc1 (below), which
-// also drives PB6/TIM4_CH1. Same latent conflict as blackpill_f411ce.h: this
-// board does not ship FEATURE_SERVO on, so the #error guard just past esc1's
-// block below only fires if someone flips FEATURE_SERVO on here without also
-// reconsidering esc1.
+// drives PB8/TIM4_CH3, a different channel of the SAME peripheral. Same
+// latent conflict as blackpill_f411ce.h: this board does not ship
+// FEATURE_SERVO on, so the #error guard just past esc1's block below only
+// fires if someone flips FEATURE_SERVO on here without also reconsidering
+// esc1.
 //
 // Power the servo from the 5V pin (USB VBUS), never 3V3, with a 470-1000uF
 // bulk cap at the connector -- see the note in blackpill_f411ce.h.
 #define SERVO_TIMER     TIM4
 #define SERVO_PIN       PB6
 
-// Brushless ESCs on TIM3_CH1 and TIM4_CH1, same pins and reasoning as
+// Brushless ESCs on TIM3_CH1 and TIM4_CH3, same pins and reasoning as
 // blackpill_f411ce.h's esc0/esc1: two separate timer peripherals, not two
-// channels of the same one. FEATURE_SERVO, the only other module that claims
-// TIM4 (PB6/TIM4_CH1), is off on this board, so esc1 takes it.
+// channels of the same one. esc1 moved off PB6 (2026-08-23) to free it for
+// WIFI_TX_PIN below.
 #define ESC0_TIMER      TIM3
 #define ESC0_PIN        PA6
 #define ESC1_TIMER      TIM4
-#define ESC1_PIN        PB6
+#define ESC1_PIN        PB8
 
 // 200Hz frame on both, same reasoning as blackpill_f411ce.h. Without these the
 // module default of 20000us applies, which is 50Hz.
 #define ESC0_FRAME_US   5000
 #define ESC1_FRAME_US   5000
 
-// Both esc1 and (if ever enabled) servo drive TIM4/PB6 -- see
+// Both esc1 and (if ever enabled) servo drive TIM4 -- see
 // blackpill_f411ce.h's identical guard for the full hazard explanation.
 #if FEATURE_SERVO && FEATURE_ESC1
-#error "servo and esc1 both claim TIM4/PB6 on this board -- move one to another timer/pin before enabling both"
+#error "servo and esc1 both claim TIM4 on this board -- move one to another timer/pin before enabling both"
 #endif
 
 // Battery voltage sense on ADC1_IN1, same pin, divider and scale as
@@ -95,9 +96,16 @@
 #define VBAT_PIN        PA1
 #define VBAT_SCALE_DEFAULT 11000
 
-// CRSF receiver on USART1. Same pins as blackpill_f411ce.h; see that header
-// for why receive is on PB7 rather than USART1's usual PA10, and why transmit
-// stays on PA9.
-#define RX_RX_PIN       PB7
-#define RX_TX_PIN       PA9
+// CRSF receiver on USART2's native pins. Same pins as blackpill_f411ce.h;
+// see that header for the bootloader-race reasoning behind this choice.
+#define RX_RX_PIN       PA3
+#define RX_TX_PIN       PA2
 #define RX_BAUD         420000
+
+// ESP-01 (ESP8266) WiFi module, stock AT firmware, on USART1's alternate
+// mapping. Same pins and reasoning as blackpill_f411ce.h -- FEATURE_WIFI
+// ships 0 on both boards, but the macros are defined here too now so both
+// headers stay symmetric (firmware/test/test_board_headers enforces this).
+#define WIFI_RX_PIN  PB7
+#define WIFI_TX_PIN  PB6
+#define WIFI_BAUD    115200

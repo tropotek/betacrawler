@@ -28,12 +28,6 @@ const char* const kMayDiffer[] = {
   "BOARD_ID",   // names its own board, so it must
 };
 
-// Names allowed to be absent from one header. A pin only means something when
-// the feature that reads it is on, and FEATURE_WIFI is 0 on both boards.
-const char* const kMayBeAbsent[] = {
-  "WIFI_RX_PIN", "WIFI_TX_PIN", "WIFI_BAUD",
-};
-
 bool listed(const char* const* list, size_t n, const std::string& name) {
   for (size_t i = 0; i < n; i++)
     if (name == list[i]) return true;
@@ -87,12 +81,11 @@ void test_both_boards_enable_the_same_features() {
 // the board silently behaves differently.
 void test_neither_board_defines_something_the_other_lacks() {
   const auto a = defines(kF411), b = defines(kF401);
-  const size_t n = sizeof(kMayBeAbsent) / sizeof(kMayBeAbsent[0]);
   for (const auto& kv : a)
-    if (!b.count(kv.first) && !listed(kMayBeAbsent, n, kv.first))
+    if (!b.count(kv.first))
       TEST_FAIL_MESSAGE((kv.first + " is in the F411 header but not the F401's").c_str());
   for (const auto& kv : b)
-    if (!a.count(kv.first) && !listed(kMayBeAbsent, n, kv.first))
+    if (!a.count(kv.first))
       TEST_FAIL_MESSAGE((kv.first + " is in the F401 header but not the F411's").c_str());
 }
 
