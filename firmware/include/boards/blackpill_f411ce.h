@@ -104,14 +104,17 @@
 // FEATURE_ESC0/FEATURE_ESC1 are on, regardless of which type is selected).
 // PA7 is TIM3_CH2 -- the same physical timer as esc0's own PA6 (TIM3_CH1),
 // a different channel of it, matching how esc1 and the future servo pin
-// already share TIM4 across different channels. PB9 is TIM4_CH4, same
-// relationship to esc1's PB8 (TIM4_CH3). Both bench-validated
+// already share TIM4 across different channels. It must be named as
+// PA7_ALT1: PA7's FIRST entry in this part's PinMap_TIM is TIM1_CH1N, and
+// the pinmap lookup answers that one for a bare PA7. PB9 is TIM4_CH4, same
+// relationship to esc1's PB8 (TIM4_CH3), and its first entry already, so it
+// needs no alias. Both bench-validated
 // (_notes/docs/research/brushed-tank-variant.md, section 5a). Neither
 // carries the ROM-bootloader-race hazard RX_RX_PIN does: motor output is
 // always MCU-to-peripheral, never the reverse, so nothing external ever
 // transmits into either pin (docs/development/architecture.md, "CRSF pin
 // choice and the bootloader race").
-#define ESC0_PIN_B  PA7
+#define ESC0_PIN_B  PA7_ALT1
 #define ESC1_PIN_B  PB9
 
 // Battery voltage sense on ADC1_IN1. PA1 is unclaimed on this board: the LED

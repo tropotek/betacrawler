@@ -1,7 +1,16 @@
 #pragma once
 #include <stdint.h>
 
+class HardwareTimer;
+
 namespace esc {
+
+// Resolves `pin` to its PWM channel on `timer`, or 0 when the pin's channel
+// belongs to a different timer -- the pinmap answers a pin's FIRST timer
+// entry, which is not always the intended one, and a board header names an
+// ALT alias (PA7_ALT1) to pick another. A 0 channel is never attached and
+// never written, and one boot-log line names the pin.
+uint32_t resolveChannel(HardwareTimer* timer, uint32_t pin);
 
 // Hardware-facing interface each esc<N> instance dispatches to, selected at
 // runtime by that instance's `type` param. One HardwareTimer per esc<N>

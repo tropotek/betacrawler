@@ -82,7 +82,7 @@
 
 // esc0/esc1's second PWM pin for hbridge mode -- same pins and reasoning as
 // blackpill_f411ce.h.
-#define ESC0_PIN_B  PA7
+#define ESC0_PIN_B  PA7_ALT1
 #define ESC1_PIN_B  PB9
 
 // 200Hz frame on both, same reasoning as blackpill_f411ce.h. Without these the
