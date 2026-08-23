@@ -460,4 +460,211 @@
             tank mixer rather than by a receiver channel directly.
           </p>
 
+          <h2 class="h5 mt-4">Wiring a Black Pill for brushed motors</h2>
+          <p class="text-secondary">
+            The same board wired for a DRV8833-class dual H-bridge module driving two brushed DC
+            gearmotors instead of brushless ESCs &mdash; pick <code>hbridge</code> for <code>Type</code>
+            on the Configuration page, no reflash needed. <code>esc0</code>/<code>esc1</code> use the
+            same PA6/PB8 pins either way, plus a second pin each (PA7/PB9) for the H-bridge's other
+            input. The battery pack feeds the H-bridge module directly &mdash; the board's own power
+            still comes from USB or the receiver, exactly like an ESC build; a brushed build does not
+            power the board from the drive-motor pack.
+          </p>
+
+          <div class="wiring-diagram">
+            <div class="diagram-card">
+              <svg viewBox="0 0 1450 870" xmlns="http://www.w3.org/2000/svg" role="img"
+                   aria-label="Wiring diagram connecting a 2S 18650 battery pack to a DRV8833 dual H-bridge module, a Black Pill STM32F411CE board driving it on PA6/PA7 for motor 0 and PB8/PB9 for motor 1, two brushed DC motors, a CRSF receiver, and a USB host powering the board itself">
+
+                <!-- ===== Board ===== -->
+                <rect x="840" y="90" width="220" height="440" rx="20" class="fill-surface2 stroke-border" stroke-width="1.5" />
+                <text x="950" y="128" text-anchor="middle" class="lbl-heading fill-ink" font-size="16">STM32F411CE</text>
+                <text x="950" y="146" text-anchor="middle" class="lbl-mono fill-muted" font-size="10.5" letter-spacing="0.05em">WEACT BLACK PILL</text>
+                <line x1="872" y1="160" x2="1028" y2="160" class="stroke-border" stroke-width="1" />
+
+                <!-- onboard badges -->
+                <text x="852" y="380" class="lbl-mono fill-muted" font-size="9">PC13 · LED (LOW=on, onboard)</text>
+                <text x="852" y="405" class="lbl-mono fill-muted" font-size="9">PA0 · KEY button (onboard)</text>
+                <text x="852" y="430" class="lbl-mono fill-muted" font-size="9">PA13/PA14 · SWD (alt. flash)</text>
+
+                <!-- USB-C nub + lead -->
+                <rect x="925" y="510" width="50" height="20" rx="3" class="fill-copper" />
+                <line x1="950" y1="530" x2="950" y2="600" class="wire-copper" />
+                <g class="fill-copper">
+                  <circle cx="950" cy="530" r="3" /><circle cx="950" cy="600" r="3" />
+                </g>
+
+                <!-- ===== Left stubs: H-bridge signal (esc0 + esc1) ===== -->
+                <g class="wire-hbridge">
+                  <line x1="840" y1="222" x2="740" y2="222" />
+                  <line x1="840" y1="246" x2="740" y2="246" />
+                  <line x1="840" y1="270" x2="740" y2="270" />
+                  <line x1="840" y1="294" x2="740" y2="294" />
+                </g>
+                <g class="fill-hbridge">
+                  <circle cx="840" cy="222" r="3" /><circle cx="840" cy="246" r="3" />
+                  <circle cx="840" cy="270" r="3" /><circle cx="840" cy="294" r="3" />
+                </g>
+                <!-- STM pin names, inside the board's own border -->
+                <g class="lbl-mono fill-hbridge" font-size="10.5" font-weight="600">
+                  <text x="847" y="221">PA6</text>
+                  <text x="847" y="245">PA7</text>
+                  <text x="847" y="269">PB8</text>
+                  <text x="847" y="293">PB9</text>
+                </g>
+
+                <!-- ===== Right stubs: Receiver group ===== -->
+                <g class="wire-receiver">
+                  <line x1="1060" y1="222" x2="1140" y2="222" />
+                  <line x1="1060" y1="246" x2="1140" y2="246" />
+                  <line x1="1060" y1="270" x2="1140" y2="270" />
+                  <line x1="1060" y1="294" x2="1140" y2="294" />
+                </g>
+                <g class="fill-receiver">
+                  <circle cx="1060" cy="222" r="3" /><circle cx="1060" cy="246" r="3" />
+                  <circle cx="1060" cy="270" r="3" /><circle cx="1060" cy="294" r="3" />
+                </g>
+                <g class="lbl-mono fill-receiver" font-size="10.5" font-weight="600" text-anchor="end">
+                  <text x="1053" y="221">PA3</text>
+                  <text x="1053" y="245">PA2</text>
+                  <text x="1053" y="269">5V</text>
+                  <text x="1053" y="293">GND</text>
+                </g>
+
+                <!-- ===== H-Bridge module card ===== -->
+                <rect x="440" y="140" width="300" height="380" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="455" y="154" width="12" height="12" rx="2" class="fill-hbridge" />
+                <text x="475" y="164" class="lbl-heading fill-ink" font-size="13">DRV8833 dual H-bridge</text>
+                <text x="455" y="182" class="lbl-mono fill-muted" font-size="9.5">components101 module · IN1-4 / OUT1-4</text>
+                <line x1="455" y1="196" x2="725" y2="196" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="725" y="221">IN1</text>
+                  <text x="725" y="245">IN2</text>
+                  <text x="725" y="269">IN3</text>
+                  <text x="725" y="293">IN4</text>
+                </g>
+                <line x1="455" y1="310" x2="725" y2="310" class="stroke-border" stroke-width="1" />
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="455" y="343">OUT1</text>
+                  <text x="455" y="367">OUT2</text>
+                  <text x="455" y="391">OUT3</text>
+                  <text x="455" y="415">OUT4</text>
+                </g>
+                <line x1="455" y1="432" x2="725" y2="432" class="stroke-border" stroke-width="1" />
+                <text x="455" y="452" class="lbl-mono fill-muted" font-size="10">IN1/IN2 = motor0 (left track).</text>
+                <text x="455" y="468" class="lbl-mono fill-muted" font-size="10">IN3/IN4 = motor1 (right track).</text>
+                <text x="455" y="484" class="lbl-mono fill-muted" font-size="10">SLEEP → VCC; FAULT unused.</text>
+                <g class="fill-hbridge">
+                  <circle cx="740" cy="222" r="3" /><circle cx="740" cy="246" r="3" />
+                  <circle cx="740" cy="270" r="3" /><circle cx="740" cy="294" r="3" />
+                </g>
+                <g class="fill-motor">
+                  <circle cx="440" cy="344" r="3" /><circle cx="440" cy="368" r="3" />
+                  <circle cx="440" cy="392" r="3" /><circle cx="440" cy="416" r="3" />
+                </g>
+                <!-- bottom-edge power pins, reaching down to the battery -->
+                <g class="lbl-mono fill-pdb" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="520" y="508">VM+</text>
+                  <text x="590" y="508">VM−</text>
+                </g>
+                <g class="fill-pdb">
+                  <circle cx="520" cy="520" r="3" /><circle cx="590" cy="520" r="3" />
+                </g>
+
+                <!-- ===== Motors card ===== -->
+                <rect x="140" y="260" width="260" height="230" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="155" y="274" width="12" height="12" rx="2" class="fill-motor" />
+                <text x="175" y="284" class="lbl-heading fill-ink" font-size="13">Brushed motors 0 &amp; 1</text>
+                <text x="155" y="302" class="lbl-mono fill-muted" font-size="9.5">DC · 2-wire each · motor leads</text>
+                <line x1="155" y1="316" x2="385" y2="316" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="385" y="343">MOTOR 0 +</text>
+                  <text x="385" y="367">MOTOR 0 −</text>
+                  <text x="385" y="391">MOTOR 1 +</text>
+                  <text x="385" y="415">MOTOR 1 −</text>
+                </g>
+                <line x1="155" y1="432" x2="385" y2="432" class="stroke-border" stroke-width="1" />
+                <text x="155" y="452" class="lbl-mono fill-muted" font-size="10">Either lead order runs each motor;</text>
+                <text x="155" y="468" class="lbl-mono fill-muted" font-size="10">swap a pair to reverse it.</text>
+                <g class="fill-motor">
+                  <circle cx="400" cy="344" r="3" /><circle cx="400" cy="368" r="3" />
+                  <circle cx="400" cy="392" r="3" /><circle cx="400" cy="416" r="3" />
+                </g>
+                <g class="wire-motor">
+                  <line x1="400" y1="344" x2="440" y2="344" />
+                  <line x1="400" y1="368" x2="440" y2="368" />
+                  <line x1="400" y1="392" x2="440" y2="392" />
+                  <line x1="400" y1="416" x2="440" y2="416" />
+                </g>
+
+                <!-- ===== Receiver card ===== -->
+                <rect x="1140" y="140" width="260" height="230" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="1155" y="154" width="12" height="12" rx="2" class="fill-receiver" />
+                <text x="1175" y="164" class="lbl-heading fill-ink" font-size="13">CRSF receiver</text>
+                <text x="1155" y="182" class="lbl-mono fill-muted" font-size="9.5">TBS / ELRS · module pins</text>
+                <line x1="1155" y1="196" x2="1385" y2="196" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="1155" y="222">TX (out to STM)</text>
+                  <text x="1155" y="246">RX (telemetry in)</text>
+                  <text x="1155" y="270">+</text>
+                  <text x="1155" y="294">GND</text>
+                </g>
+                <line x1="1155" y1="314" x2="1385" y2="314" class="stroke-border" stroke-width="1" />
+                <text x="1155" y="336" class="lbl-mono fill-muted" font-size="10">Nano-RX pads default to PWM out —</text>
+                <text x="1155" y="352" class="lbl-mono fill-muted" font-size="10">switch to CRSF in its own menu first.</text>
+                <g class="fill-receiver">
+                  <circle cx="1140" cy="222" r="3" /><circle cx="1140" cy="246" r="3" />
+                  <circle cx="1140" cy="270" r="3" /><circle cx="1140" cy="294" r="3" />
+                </g>
+
+                <!-- ===== Battery pack card ===== -->
+                <rect x="440" y="650" width="300" height="190" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <g class="lbl-mono fill-pdb" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="520" y="670">PACK +</text>
+                  <text x="590" y="670">PACK −</text>
+                </g>
+                <line x1="455" y1="684" x2="725" y2="684" class="stroke-border" stroke-width="1" />
+                <rect x="455" y="696" width="12" height="12" rx="2" class="fill-pdb" />
+                <text x="475" y="706" class="lbl-heading fill-ink" font-size="13">2S 18650 pack</text>
+                <text x="455" y="724" class="lbl-mono fill-muted" font-size="9.5">7.4V nominal · XT60/JST lead</text>
+                <line x1="455" y1="738" x2="725" y2="738" class="stroke-border" stroke-width="1" />
+                <text x="455" y="758" class="lbl-mono fill-muted" font-size="10">Connect last, once everything else is</text>
+                <text x="455" y="774" class="lbl-mono fill-muted" font-size="10">wired. Feeds VM only — the board's</text>
+                <text x="455" y="790" class="lbl-mono fill-muted" font-size="10">own 5V still comes from USB.</text>
+                <g class="fill-pdb">
+                  <circle cx="520" cy="650" r="3" /><circle cx="590" cy="650" r="3" />
+                </g>
+
+                <!-- ESC0/esc1's power leads, hbridge down to the battery -->
+                <g class="wire-pdb">
+                  <line x1="520" y1="520" x2="520" y2="650" />
+                  <line x1="590" y1="520" x2="590" y2="650" />
+                </g>
+
+                <!-- ===== USB card ===== -->
+                <rect x="810" y="600" width="290" height="140" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="826" y="616" width="12" height="12" rx="2" class="fill-copper" />
+                <text x="846" y="626" class="lbl-heading fill-ink" font-size="13">USB-C · to host PC</text>
+                <text x="826" y="650" class="lbl-mono fill-muted" font-size="10.5">Powers the board itself — never the</text>
+                <text x="826" y="666" class="lbl-mono fill-muted" font-size="10.5">H-bridge's VM. A stalled motor can</text>
+                <text x="826" y="682" class="lbl-mono fill-muted" font-size="10.5">draw past what USB can source.</text>
+                <text x="826" y="704" class="lbl-mono fill-muted" font-size="10.5">No cable? BOOT0+NRST by hand, or SWD</text>
+                <text x="826" y="720" class="lbl-mono fill-muted" font-size="10.5">(PA13/PA14), reach the same bootloader.</text>
+              </svg>
+            </div>
+          </div>
+          <p class="text-secondary small mt-2">
+            Gold = the H-bridge's control signals from the board (PA6/PA7 to <code>esc0</code>,
+            PB8/PB9 to <code>esc1</code>). Navy = the two motor leads out of each H-bridge channel —
+            either order runs the motor, swapping a pair reverses it, or set that motor's
+            <code>Invert</code> in the app instead. Teal = the power chain: the pack feeds the
+            H-bridge's VM/GND directly, with no board or PDB in that path. Violet = the CRSF link,
+            unchanged from the ESC build. The module's SLEEP pin must be jumpered to VCC to run at
+            all — some breakouts truncate that pin's silkscreen label to <code>EEP</code> — and a
+            common ground between the pack, the module, and the board is required, not optional.
+          </p>
+
           <p>&nbsp;</p>
