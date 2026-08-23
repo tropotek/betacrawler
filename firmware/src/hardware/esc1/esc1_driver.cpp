@@ -93,7 +93,7 @@ void EscDriver::begin() {
   hbridgeOut_ = new (s_hbridgeOutMem) esc::HbridgeOutput(timer_, ESC1_PIN, ESC1_PIN_B);
   escOut_->begin();
   hbridgeOut_->begin();
-  stage_ = escOut_;   // type_ defaults to TYPE_ESC
+  stage_ = escOut_;   // type_ defaults to TYPE_BRUSHLESS
   stage_->detach();   // boot silent; main.cpp's notify pass applies any saved mode next
 }
 
@@ -122,7 +122,7 @@ void EscDriver::apply(const core::Params& p) {
 
   const bool typeChanged = (type_ != prevType);
   if (typeChanged) {
-    esc::OutputStage* nextStage = (type_ == esc::TYPE_HBRIDGE)
+    esc::OutputStage* nextStage = (type_ == esc::TYPE_BRUSHED)
         ? static_cast<esc::OutputStage*>(hbridgeOut_)
         : static_cast<esc::OutputStage*>(escOut_);
     // Switching electronics type while live: detach the old stage's pins
@@ -135,7 +135,7 @@ void EscDriver::apply(const core::Params& p) {
   stage_->setInverted(invert_);
   stage_->setBrakeOnZero(brake_);
 
-  periodUs_ = (type_ == esc::TYPE_HBRIDGE)
+  periodUs_ = (type_ == esc::TYPE_BRUSHED)
       ? (1000000u / (freqHz_ ? freqHz_ : 1u))
       : esc::frameUsForRate(rateIdx_);
   stage_->setPeriodUs(periodUs_);
@@ -188,7 +188,7 @@ void EscDriver::apply(const core::Params& p) {
   if (armSwitchInactive) us = neutral;
   // Last, so no route to the pin can outrun the frame. 0 means "hold the last
   // pulse" and must never be clamped up into a real command.
-  const uint16_t effMax = (type_ == esc::TYPE_HBRIDGE) ? maxUs_ : esc::effectiveMaxUs(maxUs_, periodUs_);
+  const uint16_t effMax = (type_ == esc::TYPE_BRUSHED) ? maxUs_ : esc::effectiveMaxUs(maxUs_, periodUs_);
   if (us > effMax) us = effMax;
   if (us > 0) { stage_->write(us, minUs_, maxUs_, neutral); lastUs_ = us; }
 }
@@ -228,7 +228,7 @@ void EscDriver::tick(uint32_t nowMs) {
   const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;
   const bool armSwitchInactive = driveBusFresh && driveInputs_->get(kDriveArmSlot) == 0;
   if (armSwitchInactive) us = neutral;
-  const uint16_t effMax = (type_ == esc::TYPE_HBRIDGE) ? maxUs_ : esc::effectiveMaxUs(maxUs_, periodUs_);
+  const uint16_t effMax = (type_ == esc::TYPE_BRUSHED) ? maxUs_ : esc::effectiveMaxUs(maxUs_, periodUs_);
   if (us > effMax) us = effMax;
   if (us > 0) { stage_->write(us, minUs_, maxUs_, neutral); lastUs_ = us; }
 }

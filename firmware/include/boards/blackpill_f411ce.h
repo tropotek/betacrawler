@@ -100,7 +100,7 @@
 #define ESC1_PIN        PB8
 
 // esc0/esc1's second PWM pin, used only when that instance's esc<N>.type is
-// hbridge (a runtime choice -- both macros are always defined whenever
+// brushed (a runtime choice -- both macros are always defined whenever
 // FEATURE_ESC0/FEATURE_ESC1 are on, regardless of which type is selected).
 // PA7 is TIM3_CH2 -- the same physical timer as esc0's own PA6 (TIM3_CH1),
 // a different channel of it, matching how esc1 and the future servo pin
@@ -117,15 +117,15 @@
 #define ESC0_PIN_B  PA7_ALT1
 #define ESC1_PIN_B  PB9
 
-// Which output electronics each instance starts on -- esc::TYPE_ESC (a
-// brushless ESC) or esc::TYPE_HBRIDGE (a brushed H-bridge). esc<N>.type
-// overrides it at runtime; this only decides where an unconfigured board
-// starts, including after a settings reset. Both are TYPE_ESC because this
-// image serves either wiring: a fork committed to brushed motors sets
-// TYPE_HBRIDGE here so a reset can never leave an H-bridge driven by an RC
-// pulse train (a 1500us pulse in a 5000us frame is 30% duty).
-#define ESC0_TYPE_DEFAULT  esc::TYPE_ESC
-#define ESC1_TYPE_DEFAULT  esc::TYPE_ESC
+// Which motor each instance starts on -- esc::TYPE_BRUSHLESS (an ESC) or
+// esc::TYPE_BRUSHED (an H-bridge). esc<N>.type overrides it at runtime; this
+// only decides where an unconfigured board starts, including after a settings
+// reset. Both are TYPE_BRUSHLESS because this image serves either wiring: a
+// fork committed to brushed motors sets TYPE_BRUSHED here so a reset can never
+// leave an H-bridge driven by an RC pulse train (a 1500us pulse in a 5000us
+// frame is 30% duty).
+#define ESC0_TYPE_DEFAULT  esc::TYPE_BRUSHLESS
+#define ESC1_TYPE_DEFAULT  esc::TYPE_BRUSHLESS
 
 // Battery voltage sense on ADC1_IN1. PA1 is unclaimed on this board: the LED
 // is PC13, the button PA0, the ESCs PA6/PB8, CRSF PA2/PA3, USB PA11/PA12 and

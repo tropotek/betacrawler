@@ -10,13 +10,13 @@ enum : int32_t { MODE_OFF = 0, MODE_ARMED = 1, MODE_INPUT = 2 };
 // Values of an esc<N>.direction parameter, in declaration order.
 enum : int32_t { DIR_UNIDIRECTIONAL = 0, DIR_BIDIRECTIONAL = 1 };
 
-// Values of an esc<N>.type parameter, in declaration order -- which output
-// electronics that instance drives. esc<N>'s shared calibration
-// (min_us/max_us/direction/mode/src) means the same regardless; only the
-// final step (turning a calibrated value into pin output) differs, which is
-// what esc::OutputStage's two implementations (EscOutput/HbridgeOutput)
-// exist to isolate.
-enum : int32_t { TYPE_ESC = 0, TYPE_HBRIDGE = 1 };
+// Values of an esc<N>.type parameter, in declaration order -- which motor
+// that instance drives, and so which output electronics sit between the two.
+// esc<N>'s shared calibration (min_us/max_us/direction/mode/src) means the
+// same regardless; only the final step (turning a calibrated value into pin
+// output) differs, which is what esc::OutputStage's two implementations
+// (EscOutput for an ESC, HbridgeOutput for an H-bridge) exist to isolate.
+enum : int32_t { TYPE_BRUSHLESS = 0, TYPE_BRUSHED = 1 };
 
 // Values of an esc<N>.rate parameter, in declaration order -- the PWM frame
 // rate the output runs at. 50Hz is what every analog ESC auto-detects; a

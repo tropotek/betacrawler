@@ -6,7 +6,7 @@ class HardwareTimer;
 namespace esc {
 
 // Single-pin RC-pulse output stage -- one PWM channel on a shared timer,
-// used for esc<N>.type == TYPE_ESC. Owns no timer of its own: constructed
+// used for esc<N>.type == TYPE_BRUSHLESS. Owns no timer of its own: constructed
 // with the pin its esc<N> instance already claims in the board header.
 class EscOutput : public OutputStage {
  public:

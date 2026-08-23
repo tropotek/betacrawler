@@ -86,7 +86,7 @@ Next: [Flashing the firmware](flashing.md).
 
 ## Wiring for brushed motors (H-Bridge)
 
-`esc0`/`esc1` can drive a DRV8833-class H-bridge instead of a brushless ESC — pick `hbridge` for
+`esc0`/`esc1` can drive a DRV8833-class H-bridge instead of a brushless ESC — pick `brushed` for
 `Type` on the Configuration page, no reflash needed. The pack feeds the H-bridge module directly;
 the board's own 5V still comes from USB or the receiver, same as an ESC build — a brushed build
 does not power the board from the drive-motor pack.
@@ -107,16 +107,16 @@ does not power the board from the drive-motor pack.
 | Telemetry | PA2 | The receiver's CRSF **RX** pad |
 | Board power | 5V, GND | USB, or the receiver's own supply |
 
-!!! danger "Set Type to `hbridge` and save before connecting the drive pack"
+!!! danger "Set Type to `brushed` and save before connecting the drive pack"
 
-    Out of the box `esc0.type`/`esc1.type` are `esc`, and a brushless ESC's
+    Out of the box `esc0.type`/`esc1.type` are `brushless`, and an ESC's
     idle command is a 1500 µs pulse in a 5000 µs frame — into an H-bridge that
     is a 30% duty cycle, so both motors run at a third throttle from the
     moment the board powers up, with no receiver and no arming. Set `Type` to
-    `hbridge` on the Configuration page, press **Save to flash**, and only
+    `brushed` on the Configuration page, press **Save to flash**, and only
     then connect the pack. The same applies after every firmware update: an
     update changes the settings fingerprint, the stored record is discarded,
-    and `Type` is back to `esc` on the next boot.
+    and `Type` is back to `brushless` on the next boot.
 
 !!! warning "The module's SLEEP pin must be jumpered to VCC"
 

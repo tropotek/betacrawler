@@ -235,10 +235,10 @@ export const SIM_SCHEMA = {
       "key": "esc0.type",
       "type": "enum",
       "options": [
-        "esc",
-        "hbridge"
+        "brushless",
+        "brushed"
       ],
-      "def": "esc",
+      "def": "brushless",
       "label": "Type",
       "group": "ESC 0"
     },
@@ -268,7 +268,7 @@ export const SIM_SCHEMA = {
       "group": "ESC 0",
       "showIf": {
         "key": "esc0.type",
-        "val": "esc"
+        "val": "brushless"
       }
     },
     {
@@ -351,7 +351,7 @@ export const SIM_SCHEMA = {
       "group": "H-Bridge",
       "showIf": {
         "key": "esc0.type",
-        "val": "hbridge"
+        "val": "brushed"
       }
     },
     {
@@ -366,7 +366,7 @@ export const SIM_SCHEMA = {
       "group": "H-Bridge",
       "showIf": {
         "key": "esc0.type",
-        "val": "hbridge"
+        "val": "brushed"
       }
     },
     {
@@ -381,17 +381,17 @@ export const SIM_SCHEMA = {
       "group": "H-Bridge",
       "showIf": {
         "key": "esc0.type",
-        "val": "hbridge"
+        "val": "brushed"
       }
     },
     {
       "key": "esc1.type",
       "type": "enum",
       "options": [
-        "esc",
-        "hbridge"
+        "brushless",
+        "brushed"
       ],
-      "def": "esc",
+      "def": "brushless",
       "label": "Type",
       "group": "ESC 1"
     },
@@ -421,7 +421,7 @@ export const SIM_SCHEMA = {
       "group": "ESC 1",
       "showIf": {
         "key": "esc1.type",
-        "val": "esc"
+        "val": "brushless"
       }
     },
     {
@@ -504,7 +504,7 @@ export const SIM_SCHEMA = {
       "group": "H-Bridge",
       "showIf": {
         "key": "esc1.type",
-        "val": "hbridge"
+        "val": "brushed"
       }
     },
     {
@@ -519,7 +519,7 @@ export const SIM_SCHEMA = {
       "group": "H-Bridge",
       "showIf": {
         "key": "esc1.type",
-        "val": "hbridge"
+        "val": "brushed"
       }
     },
     {
@@ -534,7 +534,7 @@ export const SIM_SCHEMA = {
       "group": "H-Bridge",
       "showIf": {
         "key": "esc1.type",
-        "val": "hbridge"
+        "val": "brushed"
       }
     }
   ],

@@ -72,7 +72,7 @@ Both ESCs carry the same settings. `esc0` drives the left track, `esc1` the righ
 
 | Setting | Key | Default | Range |
 |---|---|---|---|
-| Type | `esc0.type` / `esc1.type` | `esc` | `esc`, `hbridge` |
+| Type | `esc0.type` / `esc1.type` | `brushless` | `brushless`, `brushed` |
 | Direction | `esc0.direction` / `esc1.direction` | `bidirectional` | `unidirectional`, `bidirectional` |
 | PWM Rate (Hz) | `esc0.rate` / `esc1.rate` | `50` | `50`, `100`, `200`, `400` |
 | ESC mode | `esc0.mode` / `esc1.mode` | `input` | `off`, `armed`, `input` |
@@ -94,7 +94,7 @@ ESC's calibrated endpoints; they cannot cross.
 
 ### Brushed motors (H-Bridge)
 
-Shown only when `Type` is `hbridge`.
+Shown only when `Type` is `brushed`.
 
 | Setting | Key | Default | Range |
 |---|---|---|---|

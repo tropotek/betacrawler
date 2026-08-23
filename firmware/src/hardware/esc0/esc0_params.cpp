@@ -8,7 +8,7 @@ using core::ParamType;
 using core::TlmDef;
 using core::TlmType;
 
-static const char* const kTypes[] = {"esc", "hbridge"};
+static const char* const kTypes[] = {"brushless", "brushed"};
 
 // Order must match esc::MODE_* -- the wire carries the name, the driver
 // receives the index.
@@ -42,12 +42,12 @@ static const char* const kBrakeOpts[] = {"coast", "brake"};
 #ifndef ESC0_FRAME_US
 #define ESC0_FRAME_US 20000
 #endif
-// The board header states which output electronics this build is wired for;
+// The board header states which motor this build is wired for;
 // esc0.type is the runtime override. Same #ifndef fallback the frame period
 // above uses, and for the same reason: this descriptor TU is compiled by the
 // native env too.
 #ifndef ESC0_TYPE_DEFAULT
-#define ESC0_TYPE_DEFAULT esc::TYPE_ESC
+#define ESC0_TYPE_DEFAULT esc::TYPE_BRUSHLESS
 #endif
 
 static constexpr int32_t kDefaultRate =
@@ -67,7 +67,7 @@ static const ParamDef kParams[] = {
   {"esc0.type",         ParamType::Enum, "Type",      nullptr, 0, 0, kTypes, 2, 0, ESC0_TYPE_DEFAULT, nullptr, nullptr},
   {"esc0.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_BIDIRECTIONAL, nullptr, nullptr},
   // Shown only for type=esc: meaningless for a straight duty-cycle output.
-  {"esc0.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr, "esc0.type", "esc"},
+  {"esc0.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr, "esc0.type", "brushless"},
   // Defaults to input: the shared ARM switch (tank_drive.arm_src, itself
   // defaulting to a real channel) clamps the output to neutral whenever the
   // link is stale or the switch is inactive, and the arm-hold state machine
@@ -94,10 +94,10 @@ static const ParamDef kParams[] = {
   // still accept it regardless of mode (showIf is display-only, never an
   // access rule). Defaults to ch1, the conventional throttle channel.
   {"esc0.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 12, nullptr, nullptr, "esc0.mode", "off"},
-  // Hbridge-only, shown only for type=hbridge.
-  {"esc0.freq",         ParamType::U8,   "Switch Freq", "Hz", 1000, 50000, nullptr, 0, 0, 20000, nullptr, "H-Bridge", "esc0.type", "hbridge"},
-  {"esc0.invert",       ParamType::Enum, "Invert",   nullptr, 0, 0, kInvertOpts, 2, 0, 0, nullptr, "H-Bridge", "esc0.type", "hbridge"},
-  {"esc0.brake",        ParamType::Enum, "At Zero",  nullptr, 0, 0, kBrakeOpts, 2, 0, 0, nullptr, "H-Bridge", "esc0.type", "hbridge"},
+  // Brushed-only, shown only for type=brushed.
+  {"esc0.freq",         ParamType::U8,   "Switch Freq", "Hz", 1000, 50000, nullptr, 0, 0, 20000, nullptr, "H-Bridge", "esc0.type", "brushed"},
+  {"esc0.invert",       ParamType::Enum, "Invert",   nullptr, 0, 0, kInvertOpts, 2, 0, 0, nullptr, "H-Bridge", "esc0.type", "brushed"},
+  {"esc0.brake",        ParamType::Enum, "At Zero",  nullptr, 0, 0, kBrakeOpts, 2, 0, 0, nullptr, "H-Bridge", "esc0.type", "brushed"},
 };
 
 // The commanded pulse width, or 0 when off -- including neutralUs during the

@@ -32,7 +32,7 @@
 // test covers that path, but nothing today surfaces the refusal to a
 // person, so don't rely on it as a warning.
 #define FW_MAX_MODULES  8
-// esc0/esc1 each carry a `type` param plus three hbridge-only params
+// esc0/esc1 each carry a `type` param plus three brushed-only params
 // (`freq`/`invert`/`brake`), taking the param table from 32 (a bare fit) to
 // 40. 48 rather than a bare fit leaves the same kind of headroom FW_MAX_TLM
 // already does below.

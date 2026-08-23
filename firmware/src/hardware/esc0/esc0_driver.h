@@ -11,7 +11,7 @@ class HardwareTimer;
 
 namespace esc0 {
 
-// Requires ESC0_PIN/ESC0_TIMER, and ESC0_PIN_B for hbridge mode, from the
+// Requires ESC0_PIN/ESC0_TIMER, and ESC0_PIN_B for brushed mode, from the
 // board header.
 class EscDriver : public core::Module {
  public:
@@ -30,7 +30,7 @@ class EscDriver : public core::Module {
   esc::EscOutput*        escOut_     = nullptr;
   esc::HbridgeOutput*    hbridgeOut_ = nullptr;
   esc::OutputStage*      stage_      = nullptr;
-  int32_t  type_       = esc::TYPE_ESC;
+  int32_t  type_       = esc::TYPE_BRUSHLESS;
   int32_t  mode_       = esc::MODE_OFF;
   uint16_t throttleUs_ = 1000;
   uint8_t  srcIdx_     = 0;
