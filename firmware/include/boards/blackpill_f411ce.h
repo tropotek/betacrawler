@@ -117,6 +117,16 @@
 #define ESC0_PIN_B  PA7_ALT1
 #define ESC1_PIN_B  PB9
 
+// Which output electronics each instance starts on -- esc::TYPE_ESC (a
+// brushless ESC) or esc::TYPE_HBRIDGE (a brushed H-bridge). esc<N>.type
+// overrides it at runtime; this only decides where an unconfigured board
+// starts, including after a settings reset. Both are TYPE_ESC because this
+// image serves either wiring: a fork committed to brushed motors sets
+// TYPE_HBRIDGE here so a reset can never leave an H-bridge driven by an RC
+// pulse train (a 1500us pulse in a 5000us frame is 30% duty).
+#define ESC0_TYPE_DEFAULT  esc::TYPE_ESC
+#define ESC1_TYPE_DEFAULT  esc::TYPE_ESC
+
 // Battery voltage sense on ADC1_IN1. PA1 is unclaimed on this board: the LED
 // is PC13, the button PA0, the ESCs PA6/PB8, CRSF PA2/PA3, USB PA11/PA12 and
 // SWD PA13/PA14. Expects a 47k/4k7 divider from the PDB's VCC pad; vbat.scale

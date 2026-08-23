@@ -85,6 +85,11 @@
 #define ESC0_PIN_B  PA7_ALT1
 #define ESC1_PIN_B  PB9
 
+// Default output electronics per instance, same reasoning as
+// blackpill_f411ce.h.
+#define ESC0_TYPE_DEFAULT  esc::TYPE_ESC
+#define ESC1_TYPE_DEFAULT  esc::TYPE_ESC
+
 // 200Hz frame on both, same reasoning as blackpill_f411ce.h. Without these the
 // module default of 20000us applies, which is 50Hz.
 #define ESC0_FRAME_US   5000

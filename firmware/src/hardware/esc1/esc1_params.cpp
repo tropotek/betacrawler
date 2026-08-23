@@ -42,6 +42,14 @@ static const char* const kBrakeOpts[] = {"coast", "brake"};
 #ifndef ESC1_FRAME_US
 #define ESC1_FRAME_US 20000
 #endif
+// The board header states which output electronics this build is wired for;
+// esc1.type is the runtime override. Same #ifndef fallback the frame period
+// above uses, and for the same reason: this descriptor TU is compiled by the
+// native env too.
+#ifndef ESC1_TYPE_DEFAULT
+#define ESC1_TYPE_DEFAULT esc::TYPE_ESC
+#endif
+
 static constexpr int32_t kDefaultRate =
     ESC1_FRAME_US <=  2500 ? esc::RATE_400 :
     ESC1_FRAME_US <=  5000 ? esc::RATE_200 :
@@ -56,7 +64,7 @@ static const ParamDef kParams[] = {
   // human typing Terminal set commands). Putting esc1.type first guarantees
   // it is always already known -- it decides which OutputStage runs at all,
   // even more foundational than esc1.direction/esc1.rate below it.
-  {"esc1.type",         ParamType::Enum, "Type",      nullptr, 0, 0, kTypes, 2, 0, esc::TYPE_ESC, nullptr, nullptr},
+  {"esc1.type",         ParamType::Enum, "Type",      nullptr, 0, 0, kTypes, 2, 0, ESC1_TYPE_DEFAULT, nullptr, nullptr},
   {"esc1.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, esc::DIR_BIDIRECTIONAL, nullptr, nullptr},
   // Shown only for type=esc: meaningless for a straight duty-cycle output.
   {"esc1.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr, "esc1.type", "esc"},

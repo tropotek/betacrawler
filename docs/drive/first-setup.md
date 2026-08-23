@@ -82,7 +82,9 @@ The firmware already expects this: `esc0.direction` and `esc1.direction` both de
 ### If you're using brushed motors (H-Bridge)
 
 No external configurator needed. On the **Configuration** page, set `Type` to `hbridge` for both
-motors. If a motor spins the wrong way once you're driving, fix it with that motor's `Invert`
+motors, then press **Save to flash** before connecting the drive pack — with `Type` left on `esc`
+an H-bridge sees a 30% duty cycle and both motors run, receiver or not. Redo this after any
+firmware update, which resets stored settings. If a motor spins the wrong way once you're driving, fix it with that motor's `Invert`
 setting rather than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for-brushed-motors-h-bridge).
 
 `esc0.direction`/`esc1.direction` still apply the same way as an ESC build — leave them on
