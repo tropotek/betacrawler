@@ -140,6 +140,48 @@ void test_rephase_keeps_the_commanded_angle_continuous() {
 void setUp() {}
 void tearDown() {}
 
+
+// --- applyInvert -------------------------------------------------------------
+
+void test_invert_off_passes_through() {
+  TEST_ASSERT_EQUAL_UINT16(1700, applyInvert(1700, 1000, 2000, false));
+}
+
+void test_invert_mirrors_about_the_span_midpoint() {
+  TEST_ASSERT_EQUAL_UINT16(1300, applyInvert(1700, 1000, 2000, true));
+  TEST_ASSERT_EQUAL_UINT16(2000, applyInvert(1000, 1000, 2000, true));
+  TEST_ASSERT_EQUAL_UINT16(1500, applyInvert(1500, 1000, 2000, true));
+}
+
+void test_invert_handles_an_asymmetric_span() {
+  // Midpoint of 1000..2500 is 1750, so 1500 mirrors to 2000.
+  TEST_ASSERT_EQUAL_UINT16(2000, applyInvert(1500, 1000, 2500, true));
+}
+
+void test_invert_degenerate_span_is_that_one_value() {
+  TEST_ASSERT_EQUAL_UINT16(1500, applyInvert(1500, 1500, 1500, true));
+}
+
+void test_invert_is_its_own_inverse() {
+  TEST_ASSERT_EQUAL_UINT16(1700, applyInvert(applyInvert(1700, 1000, 2000, true), 1000, 2000, true));
+}
+
+// --- applyTrim ---------------------------------------------------------------
+
+void test_trim_zero_passes_through() {
+  TEST_ASSERT_EQUAL_UINT16(1500, applyTrim(1500, 0, 1000, 2000));
+}
+
+void test_trim_offsets_in_both_directions() {
+  TEST_ASSERT_EQUAL_UINT16(1560, applyTrim(1500, 60, 1000, 2000));
+  TEST_ASSERT_EQUAL_UINT16(1440, applyTrim(1500, -60, 1000, 2000));
+}
+
+void test_trim_clamps_into_the_calibrated_range() {
+  TEST_ASSERT_EQUAL_UINT16(2000, applyTrim(1950, 200, 1000, 2000));
+  TEST_ASSERT_EQUAL_UINT16(1000, applyTrim(1050, -200, 1000, 2000));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_angle_zero_is_min_us);
@@ -165,5 +207,13 @@ int main() {
   RUN_TEST(test_rephase_same_period_is_identity_within_a_cycle);
   RUN_TEST(test_rephase_degenerate_old_period_is_safe);
   RUN_TEST(test_rephase_keeps_the_commanded_angle_continuous);
+  RUN_TEST(test_invert_off_passes_through);
+  RUN_TEST(test_invert_mirrors_about_the_span_midpoint);
+  RUN_TEST(test_invert_handles_an_asymmetric_span);
+  RUN_TEST(test_invert_degenerate_span_is_that_one_value);
+  RUN_TEST(test_invert_is_its_own_inverse);
+  RUN_TEST(test_trim_zero_passes_through);
+  RUN_TEST(test_trim_offsets_in_both_directions);
+  RUN_TEST(test_trim_clamps_into_the_calibrated_range);
   return UNITY_END();
 }

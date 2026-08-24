@@ -8,7 +8,13 @@ extern const core::ModuleDesc kDesc;
 // Parameter indices *within this module* -- what onParamChanged() receives.
 // Local, so nothing outside servo/ depends on where these landed in the
 // global table, and adding a module elsewhere can never shift them.
-enum : uint8_t { P_MODE = 0, P_ANGLE = 1, P_SWEEP_S = 2, P_MIN_US = 3, P_MAX_US = 4, P_SRC = 5 };
+enum : uint8_t {
+  P_MODE = 0, P_ANGLE = 1, P_SWEEP_S = 2, P_MIN_US = 3, P_MAX_US = 4,
+  P_SRC = 5, P_INVERT = 6, P_TRIM_US = 7,
+};
+
+// Values of the servo.invert enum, in declaration order.
+enum : int32_t { INVERT_NORMAL = 0, INVERT_REVERSED = 1 };
 
 // Values of the servo.mode enum, in declaration order.
 enum : int32_t { MODE_OFF = 0, MODE_HOLD = 1, MODE_SWEEP = 2, MODE_INPUT = 3 };
@@ -50,5 +56,15 @@ uint32_t rephase(uint32_t elapsedMs, uint32_t oldPeriodMs, uint32_t newPeriodMs)
 // only a range check -- but the degenerate-span safety (min == max) applies
 // the same way.
 uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs);
+
+// Mirrors a pulse about the midpoint of the calibrated span, so a servo horn
+// fitted the other way round travels the right way. A degenerate min == max
+// span answers that one value.
+uint16_t applyInvert(uint16_t us, uint16_t minUs, uint16_t maxUs, bool inverted);
+
+// Offsets a pulse by a signed microsecond trim and clamps back into the
+// calibrated range, so a mechanically off-centre linkage can be dialled
+// straight. A large trim legitimately eats travel at one end.
+uint16_t applyTrim(uint16_t us, int32_t trimUs, uint16_t minUs, uint16_t maxUs);
 
 }  // namespace servo

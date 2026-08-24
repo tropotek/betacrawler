@@ -38,6 +38,11 @@
 #define SERVO_FRAME_US 20000
 #endif
 
+// "drive_left"/"drive_right" are appended after the 12 raw ch1..ch12 options
+// in servo_params.cpp's kSrcNames -- index 12 is the first one. A slot-index
+// convention, not a header dependency on the drive module.
+constexpr uint8_t kDriveSrcBase = 12;
+
 namespace servo {
 
 // Storage for the one HardwareTimer, placement-new'd in begin().
@@ -79,14 +84,19 @@ void ServoDriver::detach() {
   lastUs_ = 0;
 }
 
+// Invert then trim then clamp, on every path to the pin: both describe the
+// linkage, so hold, sweep and input all get them.
 void ServoDriver::writeUs(uint16_t us) {
-  timer_->setCaptureCompare(ch_, us, MICROSEC_COMPARE_FORMAT);
-  lastUs_ = us;
+  const uint16_t out = applyTrim(applyInvert(us, minUs_, maxUs_, inverted_),
+                                 trimUs_, minUs_, maxUs_);
+  timer_->setCaptureCompare(ch_, out, MICROSEC_COMPARE_FORMAT);
+  lastUs_ = out;
 }
 
 void ServoDriver::attach(const core::Registry& reg, const core::Params& p) {
   (void)p;
-  inputs_ = &reg.inputs();
+  inputs_      = &reg.inputs();
+  driveInputs_ = &reg.driveOutputs();
 }
 
 void ServoDriver::apply(const core::Params& p) {
@@ -98,6 +108,8 @@ void ServoDriver::apply(const core::Params& p) {
   maxUs_    = (uint16_t)p.num(globalParam(P_MAX_US));
   periodMs_ = (uint32_t)p.num(globalParam(P_SWEEP_S)) * 1000u;
   srcIdx_   = (uint8_t)p.num(globalParam(P_SRC));
+  inverted_ = (p.num(globalParam(P_INVERT)) == INVERT_REVERSED);
+  trimUs_   = p.num(globalParam(P_TRIM_US));
 
   if (mode_ == MODE_OFF) { detach(); return; }
   if (prevMode == MODE_OFF) attachOutput();
@@ -136,7 +148,10 @@ void ServoDriver::tick(uint32_t nowMs) {
     // cannot drift the sweep rate.
     writeUs(angleToUs(sweepAngle(nowMs - t0_, periodMs_), minUs_, maxUs_));
   } else if (mode_ == MODE_INPUT) {
-    const int16_t v = inputs_->get(srcIdx_);
+    const bool usesDriveBus = (srcIdx_ >= kDriveSrcBase);
+    const core::Inputs* src = usesDriveBus ? driveInputs_ : inputs_;
+    const uint8_t srcSlot   = usesDriveBus ? (uint8_t)(srcIdx_ - kDriveSrcBase) : srcIdx_;
+    const int16_t v = src->get(srcSlot);
     // 0 is rx's established "this slot carries no data" sentinel -- never
     // written, a channel this protocol does not transmit, or invalidated by a
     // protocol/source switch -- and is not a reachable ticksToUs() output
