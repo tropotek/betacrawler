@@ -10,7 +10,7 @@
           }">
             <div class="card-body">
               <template x-for="row in rows" :key="row.channelKey">
-                <div class="mode-row d-flex gap-3 align-items-start">
+                <div class="mode-row d-flex flex-wrap flex-sm-nowrap gap-3 align-items-start">
                   <div class="mode-name">
                     <div class="mode-title" x-text="row.title"></div>
                   </div>
@@ -61,7 +61,7 @@
                       <template x-for="tick in ticks" :key="tick.v">
                         <div class="range-tick" :class="{ 'range-tick-major': tick.major }"
                              :style="`left:${pct(tick.v)}%`">
-                          <span x-text="tick.v"></span>
+                          <span :class="tick.alt ? 'd-none d-lg-inline' : ''" x-text="tick.v"></span>
                         </div>
                       </template>
                       <div class="range-live" :style="`left:${livePct}%`" :title="live + ' µs'"></div>

@@ -344,12 +344,20 @@ document.addEventListener('alpine:init', () => {
       return Math.min(Math.max(this.pct(this.live), 0), 100);
     },
 
-    // A labelled tick every tenth, drawn taller at both ends and the midpoint.
+    // A tick every tenth, drawn taller at both ends and the midpoint. `alt`
+    // marks the odd ones out, which narrow viewports hide the labels of --
+    // eleven numbers do not fit across a phone. CSS decides, not this getter:
+    // a breakpoint is not something a computed property can see.
     get ticks() {
       const span = this.max - this.min;
       const out = [];
-      for (let v = this.min; v <= this.max; v += span / 10) {
-        out.push({ v: Math.round(v), major: (v - this.min) % (span / 2) === 0 });
+      let i = 0;
+      for (let v = this.min; v <= this.max; v += span / 10, i += 1) {
+        out.push({
+          v: Math.round(v),
+          major: (v - this.min) % (span / 2) === 0,
+          alt: i % 2 === 1,
+        });
       }
       return out;
     },

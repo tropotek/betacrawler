@@ -156,6 +156,13 @@
     }
     .range-slider-disabled .range-live { background: var(--bs-secondary-color); }
 
+    /* Below sm the slider takes a row of its own. Bootstrap's flex-wrap
+       utilities do the wrapping (see the markup); the basis has no utility
+       equivalent, and w-100 would force full width at every breakpoint. */
+    @media (max-width: 575.98px) {
+      .range-slider { flex-basis: 100%; padding-top: .25rem; }
+    }
+
     /* Controller page's RC Channel bars: a lighter blue than Bootstrap's
        default .progress-bar so the centered bold-black value stays legible
        against the fill, not just the empty track. */
