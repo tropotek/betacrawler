@@ -4,6 +4,17 @@ You do not need a programmer. Every STM32 carries a USB bootloader in ROM, and t
 writes to it directly from the browser — including the very first time, on a board whose flash is
 still empty.
 
+!!! warning "Disconnect the drive pack first"
+
+    Unplug the motor battery before flashing, every time.
+
+    While the ROM bootloader is running the firmware is not, and the motor pins revert to their
+    reset state — floating. An H-bridge reads a floating input as undefined and can run the motor
+    for the whole flash, which is seconds, not milliseconds. The firmware holds those pins low on
+    its way into the bootloader, but it cannot cover a board that was reset by hand, browned out,
+    or powered up with the pack already connected. Fitting 10k pulldowns from each H-bridge input
+    to ground makes floating mean *off* in every one of those cases.
+
 ## Put the board in bootloader mode
 
 Hold **BOOT0**, tap **NRST**, release **BOOT0**.

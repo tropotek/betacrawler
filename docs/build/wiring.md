@@ -103,6 +103,16 @@ if they sit off-straight with the stick centred, nudge `Trim`.
 
 ## Wiring for brushed motors (H-Bridge)
 
+!!! warning "Fit pulldowns on the H-bridge inputs"
+
+    Put a 10k resistor from each H-bridge input to ground — four in total for two motors.
+
+    The STM32's pins are floating whenever the firmware is not driving them: during a firmware
+    update, between pressing NRST and the firmware booting, and from the moment the pack is
+    connected until the board has started. An H-bridge reads a floating input as undefined, so
+    without pulldowns the motor can run during any of those windows. With them, floating means
+    off. Check whether your module already has them before adding your own.
+
 `motor0`/`motor1` can drive a DRV8833-class H-bridge instead of a brushless ESC — pick `brushed` for
 `Type` on the Configuration page, no reflash needed. The pack feeds the H-bridge module directly;
 the board's own 5V still comes from USB or the receiver, same as an ESC build — a brushed build
