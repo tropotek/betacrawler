@@ -109,12 +109,18 @@
 // #define MOTOR0_TIMER  TIM3
 // #define MOTOR0_PIN    PA6      // TIM3_CH1
 
-// Required when FEATURE_TANK_DRIVE is 1: no pins, no macros -- this module
-// touches no hardware, only rx's bus and its own. The one thing that DOES
-// matter: in src/modules.cpp's registerModules(), it must register after rx
-// and before motor0/motor1, or motor0/motor1 will mix stale (one-loop-old) throttle/
-// steer data. See tank_drive_driver.cpp's own comment at the registration
+// Required when FEATURE_DRIVE is 1: no pins, and one optional macro -- this
+// module touches no hardware, only rx's bus and its own. The one thing that
+// DOES matter: in src/modules.cpp's registerModules(), it must register after
+// rx and before motor0/motor1, or they will mix stale (one-loop-old)
+// throttle/steer data. See drive_driver.cpp's own comment at the registration
 // site before reordering anything.
+//
+// DRIVE_MODE_DEFAULT is optional (drive::MODE_SKID): the mixer this board
+// starts on. drive::MODE_CAR suits a board wired as one driven motor plus a
+// steering servo. drive.mode overrides it at runtime; this only decides where
+// an unconfigured board starts, including after a settings reset.
+// #define DRIVE_MODE_DEFAULT  drive::MODE_SKID
 
 // Required when FEATURE_RX is 1: an RC receiver on its own hardware serial
 // port, decoded by the protocol-agnostic rx module.

@@ -30,7 +30,7 @@
 #define FEATURE_BUTTON  0
 #define FEATURE_SERVO   0
 #define FEATURE_RX         1
-#define FEATURE_TANK_DRIVE 1
+#define FEATURE_DRIVE 1
 #define FEATURE_MOTOR0       1
 #define FEATURE_MOTOR1       1
 #define FEATURE_VBAT       1

@@ -24,7 +24,7 @@
 // (FW_MAX_PARAMS * sizeof(core::Value) is the big one, 36 bytes per slot),
 // which is cheap on a 128KB part. Registry::add() refuses to exceed them
 // rather than overflowing, and a native test covers that path.
-// blackpill_f411ce ships device, system, button, led, rx, tank_drive, motor0
+// blackpill_f411ce ships device, system, button, led, rx, drive, motor0
 // and motor1 today -- 8 modules, exactly at the cap, zero headroom left.
 // Turning on servo or WiFi ALONGSIDE this board's mixed-tank
 // build would need FW_MAX_MODULES raised first -- Registry::add() silently
@@ -37,11 +37,11 @@
 // 40. 48 rather than a bare fit leaves the same kind of headroom FW_MAX_TLM
 // already does below.
 #define FW_MAX_PARAMS   48
-// This board's current build (led, button, motor0, motor1, rx, vbat, tank_drive
+// This board's current build (led, button, motor0, motor1, rx, vbat, drive
 // enabled; servo off) exposes 40 telemetry fields: rx alone
 // publishes 16 channels plus 7 link readings, motor0 and motor1 add 2 each (its
 // pulse width and arm state), vbat 3, and the rest split across
-// system/tank_drive. 48 rather than a bare fit leaves headroom for the next
+// system/drive. 48 rather than a bare fit leaves headroom for the next
 // module or field; TlmValue is 4 bytes, so the headroom costs 32 bytes of
 // static RAM in main.cpp's `static TlmValue g_tlm[FW_MAX_TLM]`.
 #define FW_MAX_TLM      48
@@ -81,8 +81,8 @@
 #ifndef FEATURE_MOTOR1
 #define FEATURE_MOTOR1 0
 #endif
-#ifndef FEATURE_TANK_DRIVE
-#define FEATURE_TANK_DRIVE 0
+#ifndef FEATURE_DRIVE
+#define FEATURE_DRIVE 0
 #endif
 #ifndef FEATURE_DFU
 #define FEATURE_DFU 0

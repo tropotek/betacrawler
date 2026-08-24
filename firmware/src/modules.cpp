@@ -35,7 +35,7 @@ static core::Battery g_battery;
 
 static core::Inputs g_inputs;
 
-// tank_drive's own bus (core/inputs.h) -- a second, parallel application of
+// drive's own bus (core/inputs.h) -- a second, parallel application of
 // the same one-producer pattern g_inputs/rx already establishes above, not
 // a fact specific to rx. See docs/architecture.md's "Inputs bus" section.
 static core::Inputs g_driveOutputs;
@@ -81,14 +81,14 @@ static core::Inputs g_driveOutputs;
 #  endif
 #endif
 
-#if FEATURE_TANK_DRIVE
-#  include "features/tank_drive/tank_drive_params.h"
+#if FEATURE_DRIVE
+#  include "features/drive/drive_params.h"
 #  if FW_TARGET_ARDUINO
-#    include "features/tank_drive/tank_drive_driver.h"
-     static tank_drive::TankDriveDriver g_tankDrive(g_driveOutputs);
-#    define TANK_DRIVE_DRV (&g_tankDrive)
+#    include "features/drive/drive_driver.h"
+     static drive::DriveDriver g_drive(g_driveOutputs);
+#    define DRIVE_DRV (&g_drive)
 #  else
-#    define TANK_DRIVE_DRV nullptr
+#    define DRIVE_DRV nullptr
 #  endif
 #endif
 
@@ -166,13 +166,13 @@ void registerModules(Registry& reg) {
 #if FEATURE_RX
   reg.add(rx::kDesc, RX_DRV);
 #endif
-  // tank_drive must register after rx and before motor0/motor1:
-  // Registry::tick() walks modules in registration order, and tank_drive must
+  // drive must register after rx and before motor0/motor1:
+  // Registry::tick() walks modules in registration order, and drive must
   // mix each loop's freshly-decoded rx frame before either motor reads it that
   // same loop. Registration order is a correctness requirement here, not just
   // a schema/telemetry/flash-layout ordering choice.
-#if FEATURE_TANK_DRIVE
-  reg.add(tank_drive::kDesc, TANK_DRIVE_DRV);
+#if FEATURE_DRIVE
+  reg.add(drive::kDesc, DRIVE_DRV);
 #endif
 #if FEATURE_MOTOR0
   reg.add(motor0::kDesc, MOTOR0_DRV);

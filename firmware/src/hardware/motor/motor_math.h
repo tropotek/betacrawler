@@ -42,7 +42,7 @@ enum : uint32_t { ARM_OFF = 0, ARM_ARMING = 1, ARM_ARMED = 2 };
 uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs);
 
 // One step of the arm-hold state machine -- deliberately independent of the
-// shared TX ARM switch (see tank_drive's design doc): that switch gates the
+// shared TX ARM switch (see drive's design doc): that switch gates the
 // OUTPUT pulse (motor0/motor1's callers clamp to neutralUs() when it's inactive,
 // after this state machine has already run), not this state machine, so an
 // ESC that has already completed its hold stays ARM_ARMED across the switch

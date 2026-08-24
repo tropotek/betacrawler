@@ -7,7 +7,7 @@
 // The two Black Pill headers describe the same physical board with a different
 // MCU on it, and blackpill_f401ce.h says its feature block is kept in step with
 // the F411's BY HAND. That convention has silently failed four times: vbat and
-// tank_drive were enabled on one board only, and both motor frame periods were
+// drive were enabled on one board only, and both motor frame periods were
 // left absent on the F401, where esc0_params.cpp's #ifndef fallback quietly
 // applied 50Hz against the F411's 200Hz. Nothing failed -- the boards just
 // shipped differently. These tests make that a red suite instead of a comment

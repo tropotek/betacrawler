@@ -1,6 +1,6 @@
-#include "features/tank_drive/tank_drive_math.h"
+#include "features/drive/drive_math.h"
 
-namespace tank_drive {
+namespace drive {
 
 int16_t deadbanded(int16_t us, int16_t centerUs, uint16_t deadbandUs) {
   int32_t d = (int32_t)us - centerUs;
@@ -64,6 +64,26 @@ MixResult mix(int16_t throttleUs, int16_t steerUs, int16_t centerUs,
   return r;
 }
 
+MixResult carMix(int16_t throttleUs, int16_t steerUs, int16_t centerUs,
+                 uint16_t minUs, uint16_t maxUs,
+                 uint8_t forwardRatioPct, uint8_t reverseRatioPct,
+                 uint8_t steerRatioPct, uint16_t deadbandUs) {
+  int32_t throttle = deadbanded(throttleUs, centerUs, deadbandUs);
+  const int32_t steer = deadbanded(steerUs, centerUs, deadbandUs);
+
+  if (throttle > centerUs) {
+    throttle = centerUs + (throttle - centerUs) * (int32_t)forwardRatioPct / 100;
+  } else if (throttle < centerUs) {
+    throttle = centerUs + (throttle - centerUs) * (int32_t)reverseRatioPct / 100;
+  }
+  const int32_t steerOut = centerUs + (steer - centerUs) * (int32_t)steerRatioPct / 100;
+
+  MixResult r;
+  r.leftUs  = clampToRange(throttle, minUs, maxUs);
+  r.rightUs = clampToRange(steerOut, minUs, maxUs);
+  return r;
+}
+
 bool computeArmed(bool rxFresh, bool armSrcIsNone, int16_t armSrcUs, int16_t armMinUs,
                    int16_t armMaxUs) {
   if (!rxFresh) return false;
@@ -71,4 +91,4 @@ bool computeArmed(bool rxFresh, bool armSrcIsNone, int16_t armSrcUs, int16_t arm
   return armSrcUs >= armMinUs && armSrcUs <= armMaxUs;
 }
 
-}  // namespace tank_drive
+}  // namespace drive

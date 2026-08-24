@@ -51,7 +51,7 @@ class Registry {
   void          setInputs(const Inputs& in) { inputs_ = &in; }
   const Inputs& inputs() const;
 
-  // The vehicle-level computed-signals bus (tank_drive's mixed left/right
+  // The vehicle-level computed-signals bus (drive's mixed left/right
   // output). Same one-producer pattern as inputs() above -- a second
   // application of it, not a fact specific to rx. See docs/architecture.md's
   // "Inputs bus" section.

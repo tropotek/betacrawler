@@ -62,13 +62,13 @@
 
 // "drive_left"/"drive_right" are appended after the 12 raw ch1..ch12
 // options in esc0_params.cpp's kSrcNames -- index 12 is the first one. This
-// is the one place motor0 knows anything about tank_drive's existence, and
+// is the one place motor0 knows anything about drive's existence, and
 // even this is just a slot-index convention, not a header dependency.
 constexpr uint8_t kDriveSrcBase = 12;
 
 // Slot 2 of driveOutputs -- the shared ARM switch (1 armed, 0 not), read
 // unconditionally below regardless of what motor0.src currently selects. Same
-// duplicated-literal convention as kDriveSrcBase just above; tank_drive_driver.cpp
+// duplicated-literal convention as kDriveSrcBase just above; drive_driver.cpp
 // names this same value kArmSlot.
 constexpr uint8_t kDriveArmSlot = 2;
 
@@ -178,7 +178,7 @@ void MotorDriver::apply(const core::Params& p) {
   // it stays ARM_ARMED regardless of the switch, and the switch just forces
   // the written pulse to neutral -- instantly, no hold delay either way --
   // whenever it's inactive, no matter what armState_/mode_/the rx say.
-  // driveBusFresh distinguishes "no tank_drive on this board" (never gate)
+  // driveBusFresh distinguishes "no drive on this board" (never gate)
   // from "switch says not armed" (gate) -- see Registry::driveOutputs()'s
   // empty-bus fallback.
   const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;

@@ -1,7 +1,7 @@
 #include <unity.h>
-#include "features/tank_drive/tank_drive_math.h"
+#include "features/drive/drive_math.h"
 
-using namespace tank_drive;
+using namespace drive;
 
 // --- deadbanded ----------------------------------------------------------------
 
@@ -91,11 +91,62 @@ void test_mix_applies_deadband_to_both_inputs() {
   TEST_ASSERT_EQUAL_UINT16(1500, r.rightUs);
 }
 
+// --- carMix ------------------------------------------------------------------
+
+void test_car_mix_passes_throttle_and_steer_through_independently() {
+  MixResult r = carMix(1700, 1300, 1500, 1000, 2000, 100, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(1700, r.leftUs);    // slot 0 = throttle
+  TEST_ASSERT_EQUAL_UINT16(1300, r.rightUs);   // slot 1 = steer
+}
+
+void test_car_mix_never_cross_couples_the_two_channels() {
+  // Full steer at zero throttle must leave throttle at centre -- the whole
+  // difference from the skid mixer.
+  MixResult r = carMix(1500, 2000, 1500, 1000, 2000, 100, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(1500, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(2000, r.rightUs);
+}
+
+void test_car_mix_scales_forward_and_reverse_independently() {
+  MixResult fwd = carMix(2000, 1500, 1500, 1000, 2000, 50, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(1750, fwd.leftUs);
+  MixResult rev = carMix(1000, 1500, 1500, 1000, 2000, 100, 25, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(1375, rev.leftUs);
+}
+
+void test_car_mix_forward_ratio_never_scales_reverse() {
+  MixResult r = carMix(1000, 1500, 1500, 1000, 2000, 50, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(1000, r.leftUs);
+}
+
+void test_car_mix_scales_steer_by_its_own_ratio() {
+  MixResult r = carMix(1500, 2000, 1500, 1000, 2000, 100, 100, 50, 0);
+  TEST_ASSERT_EQUAL_UINT16(1750, r.rightUs);
+}
+
+void test_car_mix_steer_ratio_zero_locks_steering_straight() {
+  MixResult r = carMix(1800, 2000, 1500, 1000, 2000, 100, 100, 0, 0);
+  TEST_ASSERT_EQUAL_UINT16(1800, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1500, r.rightUs);
+}
+
+void test_car_mix_applies_the_deadband_to_both_channels() {
+  MixResult r = carMix(1510, 1490, 1500, 1000, 2000, 100, 100, 100, 20);
+  TEST_ASSERT_EQUAL_UINT16(1500, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1500, r.rightUs);
+}
+
+void test_car_mix_clamps_to_the_output_range() {
+  MixResult r = carMix(2500, 500, 1500, 1000, 2000, 100, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(2000, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1000, r.rightUs);
+}
+
 // --- computeArmed ----------------------------------------------------------------
 
 void test_armed_requires_fresh_link() {
   // rxFresh=false must force unarmed regardless of arm_src/range -- a stale
-  // link can never leave the vehicle armed, same reasoning as tank_drive's
+  // link can never leave the vehicle armed, same reasoning as drive's
   // own failsafe for left/right.
   TEST_ASSERT_FALSE(computeArmed(false, true, 0, 1700, 2000));
   TEST_ASSERT_FALSE(computeArmed(false, false, 1800, 1700, 2000));
@@ -220,6 +271,14 @@ int main() {
   RUN_TEST(test_mix_forward_and_steer_ratios_combine);
   RUN_TEST(test_mix_proportional_clamp_preserves_turn_ratio);
   RUN_TEST(test_mix_applies_deadband_to_both_inputs);
+  RUN_TEST(test_car_mix_passes_throttle_and_steer_through_independently);
+  RUN_TEST(test_car_mix_never_cross_couples_the_two_channels);
+  RUN_TEST(test_car_mix_scales_forward_and_reverse_independently);
+  RUN_TEST(test_car_mix_forward_ratio_never_scales_reverse);
+  RUN_TEST(test_car_mix_scales_steer_by_its_own_ratio);
+  RUN_TEST(test_car_mix_steer_ratio_zero_locks_steering_straight);
+  RUN_TEST(test_car_mix_applies_the_deadband_to_both_channels);
+  RUN_TEST(test_car_mix_clamps_to_the_output_range);
   RUN_TEST(test_armed_requires_fresh_link);
   RUN_TEST(test_armed_true_when_no_arm_src_selected_and_link_fresh);
   RUN_TEST(test_armed_true_when_channel_within_range);

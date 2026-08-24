@@ -19,7 +19,7 @@
 #define FEATURE_MOTOR0       0
 #define FEATURE_MOTOR1       0
 #define FEATURE_RX         0
-#define FEATURE_TANK_DRIVE 0
+#define FEATURE_DRIVE 0
 #define FEATURE_WIFI    1
 // No STM32-style ROM DFU on this part; esptool over USB is the flash path
 // instead. dfu.cpp's existing FEATURE_DFU-off stub (already exercised by

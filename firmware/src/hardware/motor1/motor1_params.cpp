@@ -20,8 +20,8 @@ static const char* const kModes[] = {"off", "armed", "input"};
 static const char* const kSrcNames[] = {
   "ch1", "ch2", "ch3", "ch4", "ch5", "ch6",
   "ch7", "ch8", "ch9", "ch10", "ch11", "ch12",
-  // Indices 12/13: tank_drive's own bus (see core::Registry::driveOutputs()),
-  // not a raw rx channel. motor1 doesn't otherwise know tank_drive exists --
+  // Indices 12/13: drive's own bus (see core::Registry::driveOutputs()),
+  // not a raw rx channel. motor1 doesn't otherwise know drive exists --
   // this is the one place that convention is spelled out.
   "drive_left", "drive_right",
 };
@@ -65,7 +65,7 @@ static const ParamDef kParams[] = {
   {"motor1.type",         ParamType::Enum, "Type",      nullptr, 0, 0, kTypes, 2, 0, MOTOR1_TYPE_DEFAULT, nullptr, nullptr},
   // Shown only for type=esc: meaningless for a straight duty-cycle output.
   {"motor1.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr, "motor1.type", "brushless"},
-  // Defaults to input: the shared ARM switch (tank_drive.arm_src, itself
+  // Defaults to input: the shared ARM switch (drive.arm_src, itself
   // defaulting to a real channel) clamps the output to neutral whenever the
   // link is stale or the switch is inactive, and the arm-hold state machine
   // below still requires a held commanded-low before promoting to armed --
