@@ -10,6 +10,16 @@
   <style>
     /* Adapted from Bootstrap's Dashboard example (getbootstrap.com/docs/5.3/examples/dashboard/) */
     .bi { display: inline-block; width: 1rem; height: 1rem; vertical-align: -0.125em; fill: currentColor; }
+
+    /* Help affordance next to a field label -- the guidance itself lives in a
+       hidden .help-body beside the input and is shown in a popover. */
+    .help-icon { margin-left: .3rem; color: var(--bs-secondary-color); cursor: help; }
+    .help-icon:hover, .help-icon:focus { color: var(--bs-primary); }
+    .help-icon .bi { width: .875rem; height: .875rem; vertical-align: -0.15em; }
+    .help-icon:focus-visible {
+      outline: 0; border-radius: 50%;
+      box-shadow: 0 0 0 .2rem rgba(13, 110, 253, .25);
+    }
     .sidebar .nav-link { font-size: .875rem; font-weight: 500; color: var(--bs-body-color); }
     .sidebar .nav-link.active { color: #2470dc; }
     /* Bootstrap's own .nav-link.disabled color rule loses to the override

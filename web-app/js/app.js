@@ -812,6 +812,60 @@ let currentPage = 'home';
 // running for a page that isn't even displayed any more.
 let showPageGeneration = 0;
 
+// Help popovers: every input whose label carries a .help-icon has its guidance
+// in a sibling .help-body, hidden and read from here. Kept as markup rather
+// than a data-bs-content attribute so the text stays readable and diffable.
+//
+// The icon is a span, not a button, on purpose: these panels sit inside a
+// fieldset that is disabled while no board is connected, and a disabled
+// fieldset would swallow a button's events -- help has to work whether or not
+// a device is attached.
+let helpPopovers = [];
+let helpObserver = null;
+
+function disposeHelpPopovers() {
+  helpObserver?.disconnect();
+  helpObserver = null;
+  helpPopovers.forEach((p) => p.dispose());
+  helpPopovers = [];
+}
+
+function attachHelpPopover(icon) {
+  if (window.bootstrap.Popover.getInstance(icon)) return;
+  const label = icon.closest('label');
+  const body = label?.parentElement?.querySelector('.help-body');
+  if (!body) return;
+  const title = label.textContent.trim();
+  icon.setAttribute('aria-label', `Help: ${title}`);
+  helpPopovers.push(new window.bootstrap.Popover(icon, {
+    title,
+    content: body.innerHTML,
+    html: true,
+    placement: 'auto',
+    trigger: 'hover focus',
+    container: 'body',
+  }));
+}
+
+// Bootstrap binds its own hover/focus handlers when an instance is built, so
+// every icon needs one before it is first used. The brushed-only fields live
+// inside x-if templates and do not exist at page load, hence the observer:
+// a single pass would leave their icons inert.
+function initHelpPopovers(root) {
+  root.querySelectorAll('.help-icon').forEach(attachHelpPopover);
+  helpObserver = new MutationObserver((records) => {
+    for (const r of records) {
+      for (const node of r.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (node.matches?.('.help-icon')) attachHelpPopover(node);
+        node.querySelectorAll?.('.help-icon').forEach(attachHelpPopover);
+      }
+    }
+  });
+  helpObserver.observe(root, { childList: true, subtree: true });
+}
+
+
 async function showPage(page) {
   const generation = ++showPageGeneration;
   let html = pageCache.get(page);
@@ -834,6 +888,9 @@ async function showPage(page) {
   // rather than clobbering whatever the user actually navigated to since.
   if (generation !== showPageGeneration) return;
   currentPage = page;
+  // Before the markup they point at goes away: a popover attached to a removed
+  // element leaks, since container:'body' puts the popover outside the mount.
+  disposeHelpPopovers();
   el('page-mount').innerHTML = html;
   // Safe unguarded: this always runs after an awaited fetch, and even a
   // same-origin static-file fetch resolves as a browser task, never
@@ -841,6 +898,7 @@ async function showPage(page) {
   // long since run and registered every store, the same guarantee
   // loadDevice() already relies on for its own direct Alpine.store() calls.
   Alpine.initTree(el('page-mount'));
+  initHelpPopovers(el('page-mount'));
   PAGE_INIT[page]?.();
   if (page === 'firmware') enterFirmwarePage();
   // Save/Discard/Load defaults act on the device's config -- only the pages

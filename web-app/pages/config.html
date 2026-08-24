@@ -75,7 +75,7 @@
               <legend class="card-header h6 text-secondary mb-0 py-2">Drive</legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
-                  <label class="form-label" for="f-drive-mode">Drive Mode</label>
+                  <label class="form-label" for="f-drive-mode">Drive Mode<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle"/></svg></span></label>
                   <select class="form-select" id="f-drive-mode"
                           :class="{ 'is-invalid': $store.config.invalid['drive.mode'] }"
                           x-model="$store.config.values['drive.mode']"
@@ -84,7 +84,7 @@
                       <option :value="opt" x-text="opt"></option>
                     </template>
                   </select>
-                  <div class="form-text">
+                  <div class="help-body d-none">
                     <strong>skid</strong> mixes throttle and steer into a left and a right output —
                     tracks, or a wheeled rover that turns by driving its sides at different speeds.
                     <strong>car</strong> sends throttle to one motor and steer to a servo.
@@ -99,7 +99,7 @@
               <legend class="card-header h6 text-secondary mb-0 py-2">Steering Servo</legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
-                  <label class="form-label" for="f-servo-invert">Invert</label>
+                  <label class="form-label" for="f-servo-invert">Invert<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle"/></svg></span></label>
                   <select class="form-select" id="f-servo-invert"
                           :class="{ 'is-invalid': $store.config.invalid['servo.invert'] }"
                           x-model="$store.config.values['servo.invert']"
@@ -108,21 +108,21 @@
                       <option :value="opt" x-text="opt"></option>
                     </template>
                   </select>
-                  <div class="form-text">
+                  <div class="help-body d-none">
                     Set this to <strong>reversed</strong> if the wheels turn the wrong way. Which
                     way round the servo horn went on is a coin flip.
                   </div>
                 </div>
                 <template x-if="$store.config.field('servo.trim_us').def">
                   <div class="col-md-6">
-                    <label class="form-label" for="f-servo-trim">Trim (µs)</label>
+                    <label class="form-label" for="f-servo-trim">Trim (µs)<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle"/></svg></span></label>
                     <input type="number" class="form-control" id="f-servo-trim"
                            :min="$store.config.field('servo.trim_us').def?.min"
                            :max="$store.config.field('servo.trim_us').def?.max"
                            :class="{ 'is-invalid': $store.config.invalid['servo.trim_us'] }"
                            x-model="$store.config.values['servo.trim_us']"
                            @change="$store.config.commit($store.config.field('servo.trim_us').def)">
-                    <div class="form-text">
+                    <div class="help-body d-none">
                       Nudges the centre point so the wheels sit straight. Negative values go the
                       other way. Applies in every servo mode — it corrects the linkage, not the input.
                     </div>
@@ -138,7 +138,7 @@
                       x-text="$store.config.values['motor0.type'] === 'brushed' ? 'Motor Output' : 'ESC'"></legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
-                  <label class="form-label" for="f-esc-type">Type</label>
+                  <label class="form-label" for="f-esc-type">Type<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle"/></svg></span></label>
                   <select class="form-select" id="f-esc-type"
                           :class="{ 'is-invalid': $store.config.invalid['motor0.type'] || $store.config.invalid['motor1.type'] }"
                           @change="$store.config.setBothEscTypes($event.target.value)">
@@ -146,7 +146,7 @@
                       <option :value="opt" :selected="opt === $store.config.values['motor0.type']" x-text="opt"></option>
                     </template>
                   </select>
-                  <div class="form-text">
+                  <div class="help-body d-none">
                     <strong>brushless</strong> drives a BLHeli-class ESC. <strong>brushed</strong> drives a
                     DRV8833-class H-bridge — see the Wiring page for both.
                   </div>
@@ -154,7 +154,7 @@
 
                 <template x-if="$store.config.values['motor0.type'] === 'brushless'">
                   <div class="col-md-6">
-                    <label class="form-label" for="f-esc-rate">PWM Rate (Hz)</label>
+                    <label class="form-label" for="f-esc-rate">PWM Rate (Hz)<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle"/></svg></span></label>
                     <select class="form-select" id="f-esc-rate"
                             :class="{ 'is-invalid': $store.config.invalid['motor0.rate'] || $store.config.invalid['motor1.rate'] }"
                             @change="$store.config.setBothEscRates($event.target.value)">
@@ -162,7 +162,7 @@
                         <option :value="opt" :selected="opt === $store.config.values['motor0.rate']" x-text="opt"></option>
                       </template>
                     </select>
-                    <div class="form-text">
+                    <div class="help-body d-none">
                       How often each ESC is sent a new command. 50 Hz is what every analog ESC
                       auto-detects; a BLHeli_S-class ESC handles 400 Hz and cuts up to 20ms of
                       stick-to-motor delay. Changing this re-runs the arm hold.
@@ -172,13 +172,13 @@
 
                 <template x-if="$store.config.values['motor0.type'] === 'brushed'">
                   <div class="col-md-6">
-                    <label class="form-label" for="f-esc-freq">Switch Freq (Hz)</label>
+                    <label class="form-label" for="f-esc-freq">Switch Freq (Hz)<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle"/></svg></span></label>
                     <input type="number" class="form-control" id="f-esc-freq"
                            :class="{ 'is-invalid': $store.config.invalid['motor0.freq'] || $store.config.invalid['motor1.freq'] }"
                            :min="$store.config.field('motor0.freq').def?.min" :max="$store.config.field('motor0.freq').def?.max"
                            :value="$store.config.values['motor0.freq']"
                            @change="$store.config.setBothEscFreq($event.target.value)">
-                    <div class="form-text">
+                    <div class="help-body d-none">
                       PWM switching frequency into the H-bridge. 20 kHz (the default) is above the
                       audible range and every DRV8833/TB6612-class driver handles it fine.
                     </div>
@@ -187,7 +187,7 @@
 
                 <template x-if="$store.config.values['motor0.type'] === 'brushed'">
                   <div class="col-md-6">
-                    <label class="form-label" for="f-esc-brake">At Zero</label>
+                    <label class="form-label" for="f-esc-brake">At Zero<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle"/></svg></span></label>
                     <select class="form-select" id="f-esc-brake"
                             :class="{ 'is-invalid': $store.config.invalid['motor0.brake'] || $store.config.invalid['motor1.brake'] }"
                             @change="$store.config.setBothEscBrake($event.target.value)">
@@ -195,7 +195,7 @@
                         <option :value="opt" :selected="opt === $store.config.values['motor0.brake']" x-text="opt"></option>
                       </template>
                     </select>
-                    <div class="form-text">
+                    <div class="help-body d-none">
                       <strong>coast</strong> lets a stopped motor spin freely. <strong>brake</strong> holds
                       both H-bridge inputs high at zero command, resisting motion.
                     </div>
@@ -204,7 +204,7 @@
 
                 <template x-if="$store.config.field('motor0.invert').def">
                   <div class="col-md-3">
-                    <label class="form-label" for="f-motor0-invert">Motor 0 Invert</label>
+                    <label class="form-label" for="f-motor0-invert">Motor 0 Invert<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle"/></svg></span></label>
                     <select class="form-select" id="f-motor0-invert"
                             :class="{ 'is-invalid': $store.config.invalid['motor0.invert'] }"
                             x-model="$store.config.values['motor0.invert']"
@@ -213,13 +213,13 @@
                         <option :value="opt" :selected="opt === $store.config.values['motor0.invert']" x-text="opt"></option>
                       </template>
                     </select>
-                    <div class="form-text">Reverses motor direction.</div>
+                    <div class="help-body d-none">Reverses motor direction.</div>
                   </div>
                 </template>
 
                 <template x-if="$store.config.field('motor1.invert').def">
                   <div class="col-md-3">
-                    <label class="form-label" for="f-motor1-invert">Motor 1 Invert</label>
+                    <label class="form-label" for="f-motor1-invert">Motor 1 Invert<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle"/></svg></span></label>
                     <select class="form-select" id="f-motor1-invert"
                             :class="{ 'is-invalid': $store.config.invalid['motor1.invert'] }"
                             x-model="$store.config.values['motor1.invert']"
@@ -228,7 +228,7 @@
                         <option :value="opt" :selected="opt === $store.config.values['motor1.invert']" x-text="opt"></option>
                       </template>
                     </select>
-                    <div class="form-text">Reverses motor direction.</div>
+                    <div class="help-body d-none">Reverses motor direction.</div>
                   </div>
                 </template>
               </div>
@@ -239,7 +239,7 @@
               <legend class="card-header h6 text-secondary mb-0 py-2">Battery Sensor</legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
-                  <label class="form-label" for="f-vbat-cells">Cells</label>
+                  <label class="form-label" for="f-vbat-cells">Cells<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle"/></svg></span></label>
                   <select class="form-select" id="f-vbat-cells"
                           :class="{ 'is-invalid': $store.config.invalid['vbat.cells'] }"
                           x-model="$store.config.values['vbat.cells']"
@@ -248,21 +248,21 @@
                       <option :value="opt" x-text="opt"></option>
                     </template>
                   </select>
-                  <div class="form-text">
+                  <div class="help-body d-none">
                     <strong>auto</strong> latches the count from the first valid reading and
                     never revisits it. It cannot tell a part-drained 6S from a 5S, so set the
                     count explicitly if the Cells reading above is wrong.
                   </div>
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label" for="f-vbat-measured">Measured pack voltage (V)</label>
+                  <label class="form-label" for="f-vbat-measured">Measured pack voltage (V)<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle"/></svg></span></label>
                   <div class="input-group">
                     <input type="number" step="0.01" class="form-control" id="f-vbat-measured"
                            x-model="measured" placeholder="e.g. 16.78">
                     <button class="btn btn-outline-secondary" type="button"
                             @click="$store.config.calibrateVbat(measured)">Calibrate</button>
                   </div>
-                  <div class="form-text">
+                  <div class="help-body d-none">
                     Read the pack with a multimeter, enter it here, and the reading is
                     adjusted to match. Needs Source set to adc.
                     <span class="d-block mt-1">
