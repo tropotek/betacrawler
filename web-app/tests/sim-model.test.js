@@ -130,8 +130,20 @@ test('steer ratio changes the drive outputs', () => {
   assert.notEqual(mod.telemetry(0).drv_l, before);
 });
 
-test('esc holds neutral while the arm switch is inactive', () => {
+test('a motor drives nothing until its mode is set', () => {
+  // The safety default: an unconfigured board cannot know what is on the end
+  // of the wire, so it emits no pulse at all. Neutral would be safe for an
+  // ESC and 30% duty for an H-bridge.
   const tlm = makeModel().telemetry(0);
+  assert.equal(tlm.arm0, ARM_OFF);
+  assert.equal(tlm.motor0, 0);
+  assert.equal(tlm.motor1, 0);
+});
+
+test('a motor holds neutral while the arm switch is inactive', () => {
+  const mod = makeModel();
+  mod.set('motor0.mode', 'input', 0);
+  const tlm = mod.telemetry(0);
   assert.equal(tlm.arm0, ARM_ARMING);
   assert.equal(tlm.motor0, 1500);
 });

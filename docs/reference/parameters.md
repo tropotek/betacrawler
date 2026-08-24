@@ -87,7 +87,7 @@ Both ESCs carry the same settings. `motor0` drives the left track, `motor1` the 
 |---|---|---|---|
 | Type | `motor0.type` / `motor1.type` | `brushless` | `brushless`, `brushed` |
 | PWM Rate (Hz) | `motor0.rate` / `motor1.rate` | `50` | `50`, `100`, `200`, `400` |
-| ESC mode | `motor0.mode` / `motor1.mode` | `input` | `off`, `armed`, `input` |
+| Motor mode | `motor0.mode` / `motor1.mode` | `off` | `off`, `armed`, `input` |
 | Throttle (µs) | `motor0.throttle_us` / `motor1.throttle_us` | `1500` | 1000–2000 |
 | Min (µs) | `motor0.min_us` / `motor1.min_us` | `1000` | 500–1500 |
 | Max (µs) | `motor0.max_us` / `motor1.max_us` | `2000` | 1500–2500 |

@@ -26,6 +26,7 @@ class MotorDriver : public core::Module {
 
   const core::Inputs* inputs_ = nullptr;
   const core::Inputs* driveInputs_ = nullptr;
+  bool                hasDrive_    = false;
   HardwareTimer*        timer_      = nullptr;
   motor::MotorOutput*        escOut_     = nullptr;
   motor::HbridgeOutput*    hbridgeOut_ = nullptr;

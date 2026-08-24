@@ -82,6 +82,11 @@ While disarmed, both ESC outputs are held at neutral no matter what the sticks d
 
 ## 8. Set up your drive electronics
 
+Both motors ship set to `off`, so a freshly flashed board drives nothing at all. That is
+deliberate — it cannot know whether an ESC or an H-bridge is on the other end of the wire, and
+the wrong guess turns a motor. Set `Type` to match your hardware **first**, then set each motor's
+mode to `input`.
+
 ### If you're using brushless ESCs
 
 A surface ESC (sold for cars or boats) needs nothing here — it already treats centre-stick as
@@ -95,7 +100,9 @@ it never sees the low throttle it waits for at power-on.
 
 No external configurator needed. On the **Configuration** page, set `Type` to `brushed` for both
 motors, then press **Save to flash** before connecting the drive pack — with `Type` left on
-`brushless` an H-bridge sees a 30% duty cycle and both motors run, receiver or not. Redo this after any
+`brushless` an H-bridge reads the ESC pulse train as a 30% duty cycle and both motors run. The
+`off` mode default means a just-flashed board is safe until you set the mode, but set `Type`
+before you do. Redo this after any
 firmware update, which resets stored settings. If a motor spins the wrong way once you're driving, fix it with that motor's `Invert`
 setting rather than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for-brushed-motors-h-bridge).
 

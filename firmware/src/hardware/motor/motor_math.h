@@ -106,6 +106,13 @@ bool inputLossDemotesArmed(uint32_t armState, int32_t mode, bool inputFresh);
 // MODE_INPUT; MODE_ARMED never reads the source channel at all.
 bool srcChangeDemotesArmed(uint32_t armState, int32_t mode, bool srcChanged);
 
+// True when the shared ARM switch must force the output to neutral.
+// driveModulePresent is what separates "no drive module on this board, so
+// there is no switch to obey" from "the switch says not armed" -- including
+// before any receiver frame has ever arrived, which is exactly when a bench
+// board is most likely to be mis-wired.
+bool armSwitchGates(bool driveModulePresent, int16_t armSlotValue);
+
 // Frame period in microseconds for a RATE_* index. An unrecognised index
 // answers 20000 (50Hz): an unknown value must never speed the output up past
 // what the attached ESC is known to handle.

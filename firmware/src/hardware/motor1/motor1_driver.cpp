@@ -101,6 +101,7 @@ void MotorDriver::attach(const core::Registry& reg, const core::Params& p) {
   (void)p;
   inputs_      = &reg.inputs();
   driveInputs_ = &reg.driveOutputs();
+  hasDrive_    = reg.hasDriveOutputs();
 }
 
 void MotorDriver::apply(const core::Params& p) {
@@ -178,12 +179,10 @@ void MotorDriver::apply(const core::Params& p) {
   // it stays ARM_ARMED regardless of the switch, and the switch just forces
   // the written pulse to neutral -- instantly, no hold delay either way --
   // whenever it's inactive, no matter what armState_/mode_/the rx say.
-  // driveBusFresh distinguishes "no drive on this board" (never gate)
-  // from "switch says not armed" (gate) -- see Registry::driveOutputs()'s
-  // empty-bus fallback.
-  const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;
-  const bool armSwitchInactive = driveBusFresh && driveInputs_->get(kDriveArmSlot) == 0;
-  if (armSwitchInactive) us = neutral;
+  // Gated on the module being present, not on the bus having gone fresh: a
+  // board that has never seen a receiver frame is not armed, and must not be
+  // mistaken for a board with no drive module at all.
+  if (motor::armSwitchGates(hasDrive_, driveInputs_->get(kDriveArmSlot))) us = neutral;
   // Last, so no route to the pin can outrun the frame. 0 means "hold the last
   // pulse" and must never be clamped up into a real command.
   const uint16_t effMax = (type_ == motor::TYPE_BRUSHED) ? maxUs_ : motor::effectiveMaxUs(maxUs_, periodUs_);
@@ -222,9 +221,7 @@ void MotorDriver::tick(uint32_t nowMs) {
 
   uint16_t us = motor::nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs,
                                   inputStale, neutral);
-  const bool driveBusFresh = driveInputs_->lastFreshMs() != 0;
-  const bool armSwitchInactive = driveBusFresh && driveInputs_->get(kDriveArmSlot) == 0;
-  if (armSwitchInactive) us = neutral;
+  if (motor::armSwitchGates(hasDrive_, driveInputs_->get(kDriveArmSlot))) us = neutral;
   const uint16_t effMax = (type_ == motor::TYPE_BRUSHED) ? maxUs_ : motor::effectiveMaxUs(maxUs_, periodUs_);
   if (us > effMax) us = effMax;
   if (us > 0) { stage_->write(us, minUs_, maxUs_, neutral); lastUs_ = us; }

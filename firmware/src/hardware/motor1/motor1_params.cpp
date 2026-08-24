@@ -65,15 +65,14 @@ static const ParamDef kParams[] = {
   {"motor1.type",         ParamType::Enum, "Type",      nullptr, 0, 0, kTypes, 2, 0, MOTOR1_TYPE_DEFAULT, nullptr, nullptr},
   // Shown only for type=esc: meaningless for a straight duty-cycle output.
   {"motor1.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr, "motor1.type", "brushless"},
-  // Defaults to input: the shared ARM switch (drive.arm_src, itself
-  // defaulting to a real channel) clamps the output to neutral whenever the
-  // link is stale or the switch is inactive, and the arm-hold state machine
-  // below still requires a held commanded-low before promoting to armed --
-  // both gates apply regardless of this default, so nothing moves on boot
-  // just because mode is already input. Saved settings ARE re-applied at
-  // boot by main.cpp's notify pass, which is exactly where those gates
-  // matter most.
-  {"motor1.mode",         ParamType::Enum, "Motor",    nullptr, 0,    0,    kModes, 3, 0, motor::MODE_INPUT, nullptr, nullptr},
+  // Defaults to off, like servo.mode and for the same reason: an unconfigured
+  // board cannot know what is on the other end of the wire, so it commands
+  // nothing until asked. Neutral is only safe for a controller that reads
+  // pulses -- an H-bridge on a brushless-configured output reads a 1500us
+  // pulse in a 5000us frame as 30% duty and runs the motor. Saved settings
+  // ARE re-applied at boot by main.cpp's notify pass, so a configured board
+  // still starts driving at power-on and its ESC still arms once, there.
+  {"motor1.mode",         ParamType::Enum, "Motor",    nullptr, 0,    0,    kModes, 3, 0, motor::MODE_OFF, nullptr, nullptr},
   // Direct microseconds, not a percentage: the wire and the param are the
   // same unit, so motor::clampUs alone maps it.
   {"motor1.throttle_us",  ParamType::U8,   "Throttle", "µs",    1000, 2000, nullptr, 0, 0, 1500,     nullptr, nullptr},

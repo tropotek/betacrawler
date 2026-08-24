@@ -52,6 +52,10 @@ bool srcChangeDemotesArmed(uint32_t armState, int32_t mode, bool srcChanged) {
   return armState == ARM_ARMED && mode == MODE_INPUT && srcChanged;
 }
 
+bool armSwitchGates(bool driveModulePresent, int16_t armSlotValue) {
+  return driveModulePresent && armSlotValue == 0;
+}
+
 uint32_t frameUsForRate(uint8_t rateIdx) {
   static const uint32_t kFrameUs[] = {20000, 10000, 5000, 2500};
   if (rateIdx >= sizeof(kFrameUs) / sizeof(kFrameUs[0])) return kFrameUs[RATE_50];

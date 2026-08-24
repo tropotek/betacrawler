@@ -379,6 +379,31 @@ void test_rate_change_demotes_regardless_of_mode() {
 void setUp() {}
 void tearDown() {}
 
+
+// --- armSwitchGates ---------------------------------------------------------
+
+void test_arm_switch_gates_when_the_slot_reads_inactive() {
+  TEST_ASSERT_TRUE(armSwitchGates(true, 0));
+}
+
+void test_arm_switch_does_not_gate_when_the_slot_reads_armed() {
+  TEST_ASSERT_FALSE(armSwitchGates(true, 1));
+}
+
+void test_arm_switch_never_gates_without_a_drive_module() {
+  // No drive module means no shared switch to obey -- motor<N> is then driven
+  // by its own mode alone.
+  TEST_ASSERT_FALSE(armSwitchGates(false, 0));
+  TEST_ASSERT_FALSE(armSwitchGates(false, 1));
+}
+
+void test_arm_switch_gates_before_any_receiver_frame_arrives() {
+  // The slot is 0 both because the drive module computed "not armed" and
+  // because nothing has been received yet. Either way the answer is gate --
+  // this is the case a freshness-based check used to get wrong.
+  TEST_ASSERT_TRUE(armSwitchGates(true, 0));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_clamp_within_range_passes_through);
@@ -446,5 +471,9 @@ int main() {
   RUN_TEST(test_rate_change_does_not_affect_an_arming_session);
   RUN_TEST(test_rate_change_does_not_affect_an_off_session);
   RUN_TEST(test_rate_change_demotes_regardless_of_mode);
+  RUN_TEST(test_arm_switch_gates_when_the_slot_reads_inactive);
+  RUN_TEST(test_arm_switch_does_not_gate_when_the_slot_reads_armed);
+  RUN_TEST(test_arm_switch_never_gates_without_a_drive_module);
+  RUN_TEST(test_arm_switch_gates_before_any_receiver_frame_arrives);
   return UNITY_END();
 }

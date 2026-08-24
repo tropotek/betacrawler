@@ -39,16 +39,25 @@ to have been sitting at neutral for **two seconds** first.
 This is what stops a vehicle lurching away because you armed with the throttle stick already
 pushed forward. If you arm and nothing happens, centre the throttle and wait a couple of seconds.
 
-## ESC modes
+## Motor modes
 
-`motor0.mode` and `motor1.mode` control where each ESC's output comes from:
+`motor0.mode` and `motor1.mode` control where each motor's output comes from:
 
 | Mode | Behaviour |
 |---|---|
-| `input` | Normal. The ESC follows its Source — the tank mixer by default. **This is the default.** |
-| `armed` | The ESC is live but follows the manual `throttle_us` value rather than the sticks. |
-| `off` | The ESC is not driven at all. |
+| `off` | The pin is detached and held low. Nothing is driven. **This is the default.** |
+| `input` | Normal driving. The motor follows its Source — the drive mixer by default. |
+| `armed` | Live, but following the manual `throttle_us` value rather than the sticks. |
 
-Leave both on `input` for normal driving. The other two are bench-testing tools — `armed` in
-particular will spin a motor from a value typed into the app, so keep the tracks off the ground
-when using it.
+**A board that has never been configured drives nothing.** `off` is the default because the
+firmware cannot know what is wired to the pin: neutral is a stop command to an ESC, but an
+H-bridge on a brushless-configured output reads that same pulse as 30% duty and runs the motor.
+So nothing is commanded until you ask for it. Set `Type` to match your hardware first, then set
+the mode to `input` and save.
+
+Once saved, settings are restored at boot, so a configured board starts driving at power-on as
+usual and its ESC arms once, there — this default only affects a board that has never been set
+up, or one whose settings were reset by a firmware update.
+
+`armed` is a bench-testing tool: it will spin a motor from a value typed into the app, so keep
+the wheels off the ground when using it.

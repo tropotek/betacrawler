@@ -77,6 +77,12 @@ The ESC does not treat centre-stick as stop. A surface ESC already does; a BLHel
 needs its motor direction set to **Bidirectional** in BLHeli Configurator. The firmware always
 commands 1500 µs for stop and cannot make an ESC reverse that is not configured for it.
 
+## Nothing happens at all — no motor, no telemetry movement
+
+Check `Motor → mode` on the Configuration page. A board that has never been configured, or one
+whose settings a firmware update reset, ships with both motors `off` and drives nothing. Set
+`Type` to match your hardware, then mode to `input`, then **Save to flash**.
+
 ## A motor never arms — `arm0` or `arm1` stays at 1
 
 The module is stuck in its arm-hold: it waits for a commanded value near neutral before it will

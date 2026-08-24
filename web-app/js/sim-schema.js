@@ -380,7 +380,7 @@ export const SIM_SCHEMA = {
         "armed",
         "input"
       ],
-      "def": "input",
+      "def": "off",
       "label": "Motor",
       "group": "Motor 0"
     },
@@ -522,7 +522,7 @@ export const SIM_SCHEMA = {
         "armed",
         "input"
       ],
-      "def": "input",
+      "def": "off",
       "label": "Motor",
       "group": "Motor 1"
     },

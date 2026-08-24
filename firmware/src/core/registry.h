@@ -57,6 +57,11 @@ class Registry {
   // "Inputs bus" section.
   void          setDriveOutputs(const Inputs& in) { driveOutputs_ = &in; }
   const Inputs& driveOutputs() const;
+  // Whether a drive module was wired in at all, as opposed to driveOutputs()
+  // answering its empty fallback. Consumers of the shared ARM slot need the
+  // difference: an absent module means "no switch to obey", while a present
+  // one reading 0 means "not armed".
+  bool          hasDriveOutputs() const { return driveOutputs_ != nullptr; }
 
   // Pack measurements, published by vbat and read by whichever module
   // transmits them. Third application of the same one-producer pattern.
