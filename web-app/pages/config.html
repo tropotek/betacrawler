@@ -213,10 +213,7 @@
                         <option :value="opt" :selected="opt === $store.config.values['motor0.invert']" x-text="opt"></option>
                       </template>
                     </select>
-                    <div class="form-text">
-                      Reverses which way this motor turns. Swapping two motor wires is the better
-                      permanent fix — use this when you cannot reach them.
-                    </div>
+                    <div class="form-text">Reverses motor direction.</div>
                   </div>
                 </template>
 
@@ -231,9 +228,7 @@
                         <option :value="opt" :selected="opt === $store.config.values['motor1.invert']" x-text="opt"></option>
                       </template>
                     </select>
-                    <div class="form-text">
-                      Per motor, not shared — fixes a swapped H-bridge lead without rewiring.
-                    </div>
+                    <div class="form-text">Reverses motor direction.</div>
                   </div>
                 </template>
               </div>
