@@ -22,6 +22,107 @@ export const SIM_SCHEMA = {
       "group": "Telemetry"
     },
     {
+      "key": "servo.mode",
+      "type": "enum",
+      "options": [
+        "off",
+        "hold",
+        "sweep",
+        "input"
+      ],
+      "def": "off",
+      "label": "Servo",
+      "group": "Servo"
+    },
+    {
+      "key": "servo.angle",
+      "type": "u8",
+      "min": 0,
+      "max": 180,
+      "def": 90,
+      "label": "Angle",
+      "unit": "°",
+      "group": "Servo"
+    },
+    {
+      "key": "servo.sweep_s",
+      "type": "u8",
+      "min": 1,
+      "max": 30,
+      "def": 4,
+      "label": "Sweep",
+      "unit": "s",
+      "group": "Servo"
+    },
+    {
+      "key": "servo.min_us",
+      "type": "u8",
+      "min": 500,
+      "max": 1500,
+      "def": 1000,
+      "label": "Min",
+      "unit": "µs",
+      "group": "Servo"
+    },
+    {
+      "key": "servo.max_us",
+      "type": "u8",
+      "min": 1500,
+      "max": 2500,
+      "def": 2000,
+      "label": "Max",
+      "unit": "µs",
+      "group": "Servo"
+    },
+    {
+      "key": "servo.src",
+      "type": "enum",
+      "options": [
+        "ch1",
+        "ch2",
+        "ch3",
+        "ch4",
+        "ch5",
+        "ch6",
+        "ch7",
+        "ch8",
+        "ch9",
+        "ch10",
+        "ch11",
+        "ch12",
+        "drive_left",
+        "drive_right"
+      ],
+      "def": "ch2",
+      "label": "Source",
+      "group": "Servo",
+      "showIf": {
+        "key": "servo.mode",
+        "val": "input"
+      }
+    },
+    {
+      "key": "servo.invert",
+      "type": "enum",
+      "options": [
+        "normal",
+        "reversed"
+      ],
+      "def": "normal",
+      "label": "Invert",
+      "group": "Servo"
+    },
+    {
+      "key": "servo.trim_us",
+      "type": "u8",
+      "min": -250,
+      "max": 250,
+      "def": 0,
+      "label": "Trim",
+      "unit": "µs",
+      "group": "Servo"
+    },
+    {
       "key": "vbat.source",
       "type": "enum",
       "options": [
@@ -118,7 +219,18 @@ export const SIM_SCHEMA = {
       "group": "RX"
     },
     {
-      "key": "tank_drive.throttle_src",
+      "key": "drive.mode",
+      "type": "enum",
+      "options": [
+        "skid",
+        "car"
+      ],
+      "def": "skid",
+      "label": "Drive Mode",
+      "group": "Drive"
+    },
+    {
+      "key": "drive.throttle_src",
       "type": "enum",
       "options": [
         "ch1",
@@ -136,10 +248,10 @@ export const SIM_SCHEMA = {
       ],
       "def": "ch2",
       "label": "Throttle Src",
-      "group": "Tank Drive"
+      "group": "Drive"
     },
     {
-      "key": "tank_drive.steer_src",
+      "key": "drive.steer_src",
       "type": "enum",
       "options": [
         "ch1",
@@ -157,40 +269,40 @@ export const SIM_SCHEMA = {
       ],
       "def": "ch1",
       "label": "Steer Src",
-      "group": "Tank Drive"
+      "group": "Drive"
     },
     {
-      "key": "tank_drive.forward_ratio",
+      "key": "drive.forward_ratio",
       "type": "u8",
       "min": 0,
       "max": 100,
       "def": 100,
       "label": "Forward Ratio",
       "unit": "%",
-      "group": "Tank Drive"
+      "group": "Drive"
     },
     {
-      "key": "tank_drive.reverse_ratio",
+      "key": "drive.reverse_ratio",
       "type": "u8",
       "min": 0,
       "max": 100,
       "def": 100,
       "label": "Reverse Ratio",
       "unit": "%",
-      "group": "Tank Drive"
+      "group": "Drive"
     },
     {
-      "key": "tank_drive.steer_ratio",
+      "key": "drive.steer_ratio",
       "type": "u8",
       "min": 0,
       "max": 100,
       "def": 100,
       "label": "Steer Ratio",
       "unit": "%",
-      "group": "Tank Drive"
+      "group": "Drive"
     },
     {
-      "key": "tank_drive.arm_src",
+      "key": "drive.arm_src",
       "type": "enum",
       "options": [
         "none",
@@ -209,27 +321,27 @@ export const SIM_SCHEMA = {
       ],
       "def": "ch5",
       "label": "Arm Src",
-      "group": "Tank Drive"
+      "group": "Drive"
     },
     {
-      "key": "tank_drive.arm_min",
+      "key": "drive.arm_min",
       "type": "u8",
       "min": 1000,
       "max": 2000,
       "def": 1700,
       "label": "Arm Min",
       "unit": "µs",
-      "group": "Tank Drive"
+      "group": "Drive"
     },
     {
-      "key": "tank_drive.arm_max",
+      "key": "drive.arm_max",
       "type": "u8",
       "min": 1000,
       "max": 2000,
       "def": 2000,
       "label": "Arm Max",
       "unit": "µs",
-      "group": "Tank Drive"
+      "group": "Drive"
     },
     {
       "key": "motor0.type",
@@ -570,6 +682,12 @@ export const SIM_SCHEMA = {
       "group": "System"
     },
     {
+      "key": "srv",
+      "label": "Servo",
+      "unit": "µs",
+      "group": "Servo"
+    },
+    {
       "key": "vbat",
       "label": "Battery",
       "unit": "V",
@@ -776,13 +894,13 @@ export const SIM_SCHEMA = {
       "key": "drv_l",
       "label": "Left",
       "unit": "µs",
-      "group": "Tank Drive"
+      "group": "Drive"
     },
     {
       "key": "drv_r",
       "label": "Right",
       "unit": "µs",
-      "group": "Tank Drive"
+      "group": "Drive"
     },
     {
       "key": "motor0",

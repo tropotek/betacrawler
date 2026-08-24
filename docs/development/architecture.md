@@ -90,7 +90,7 @@ grants it. It doesn't violate the spirit of "observers are const" because that r
 is not param state; it's a purpose-built, one-way signal bus with exactly one writer decided by
 construction, not by convention a second module could quietly bend.
 
-`tank_drive` (added later) uses the identical pattern for a second, independent bus
+`drive` (added later) uses the identical pattern for a second, independent bus
 (`Registry::driveOutputs()`) rather than a second writer sharing `rx`'s own -- each bus still has
 exactly one constructor-wired producer, the pattern is just applied twice. `motor0`/`motor1` read
 whichever bus their own `.src` selection points at.
@@ -111,10 +111,10 @@ need it (position-hold-on-dropout is its own correct, deliberate design, not a g
 
 ## Control latency, and where it actually lives
 
-The stick-to-motor chain is `rx` decode → `tank_drive` mix → `motor0`/`motor1` write. All three run in
+The stick-to-motor chain is `rx` decode → `drive` mix → `motor0`/`motor1` write. All three run in
 one `Registry::tick()` pass, in that registration order, so a decoded frame reaches the compare
 register in the **same** loop iteration — there is no per-module pipeline delay to tune, and no
-smoothing or ramping anywhere in `motor_math` or `tank_drive_math` to unwind.
+smoothing or ramping anywhere in `motor_math` or `drive_math` to unwind.
 
 The main loop is not the constraint either. It is free-running, unthrottled, and the `loop`
 telemetry field reports it in the tens of kHz on an F411 — already well past the 8kHz a flight

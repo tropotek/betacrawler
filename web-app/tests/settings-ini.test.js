@@ -59,3 +59,10 @@ test('a dump parses straight back in', () => {
   const pairs = parseIni(text);
   assert.deepEqual(Object.fromEntries(pairs), { 'led.mode': 'on', 'rx.deadband_us': '5' });
 });
+
+test('a negative trim value survives an INI round trip', () => {
+  const schema = [{ key: 'servo.invert' }, { key: 'servo.trim_us' }];
+  const text = dumpIni(schema, { 'servo.invert': 'reversed', 'servo.trim_us': -125 }, {});
+  assert.match(text, /trim_us = -125/);
+  assert.deepEqual(parseIni(text), [['servo.invert', 'reversed'], ['servo.trim_us', '-125']]);
+});

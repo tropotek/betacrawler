@@ -56,7 +56,7 @@ Work through these in order:
 ## Channels move but the tracks do not
 
 The vehicle is not armed. Check on the **Modes** page that the arm channel's live marker sits
-inside the highlighted band, and that `tank_drive.arm_src` names the channel your switch is
+inside the highlighted band, and that `drive.arm_src` names the channel your switch is
 actually on.
 
 If the switch looks right, centre the throttle and wait two seconds — arming also requires the

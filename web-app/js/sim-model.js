@@ -1,4 +1,4 @@
-// Reactive device simulation ported from firmware math (tank_drive_math.cpp,
+// Reactive device simulation ported from firmware math (drive_math.cpp,
 // motor_math.cpp, RxDriver's sim source). Pure and deterministic: no timers, no I/O.
 
 const CENTER_US = 1500;
@@ -95,6 +95,39 @@ export function mix(throttleUs, steerUs, centerUs, minUs, maxUs, fwdPct, revPct,
   const left = centerUs + truncDiv(leftOffset * scale, 100);
   const right = centerUs + truncDiv(rightOffset * scale, 100);
   return [Math.max(minUs, Math.min(maxUs, left)), Math.max(minUs, Math.min(maxUs, right))];
+}
+
+// Car mix: throttle to slot 0, steer to slot 1, no cross-coupling. The two
+// outputs are independent, so the differential mixer's proportional clamp has
+// nothing to do here.
+export function carMix(throttleUs, steerUs, centerUs, minUs, maxUs, fwdPct, revPct, steerPct, deadbandUs) {
+  let throttle = deadbanded(throttleUs, centerUs, deadbandUs);
+  const steer = deadbanded(steerUs, centerUs, deadbandUs);
+
+  if (throttle > centerUs) {
+    throttle = centerUs + truncDiv((throttle - centerUs) * fwdPct, 100);
+  } else if (throttle < centerUs) {
+    throttle = centerUs + truncDiv((throttle - centerUs) * revPct, 100);
+  }
+  const steerOut = centerUs + truncDiv((steer - centerUs) * steerPct, 100);
+
+  const clamp = (v) => Math.max(minUs, Math.min(maxUs, v));
+  return [clamp(throttle), clamp(steerOut)];
+}
+
+// Servo linkage: mirror about the calibrated midpoint, then offset, then clamp.
+export function applyInvert(us, minUs, maxUs, inverted) {
+  if (!inverted) return us;
+  return Math.max(minUs, Math.min(maxUs, minUs + maxUs - us));
+}
+
+export function applyTrim(us, trimUs, minUs, maxUs) {
+  return Math.max(minUs, Math.min(maxUs, us + trimUs));
+}
+
+export function angleToUs(angle, minUs, maxUs) {
+  const a = Math.max(0, Math.min(180, angle));
+  return minUs + truncDiv((maxUs - minUs) * a, 180);
 }
 
 export function computeArmed(rxFresh, armSrcIsNone, armSrcUs, armMinUs, armMaxUs) {
@@ -283,6 +316,7 @@ export class SimModel {
     tlm.drv_l = left; tlm.drv_r = right;
     tlm.motor0 = this._motor.motor0.lastUs; tlm.arm0 = this._motor.motor0.armState;
     tlm.motor1 = this._motor.motor1.lastUs; tlm.arm1 = this._motor.motor1.armState;
+    tlm.srv = this._servo(nowMs, inputs, drive, rxFresh);
     this._tlm = tlm;
   }
 
@@ -301,23 +335,54 @@ export class SimModel {
   _tank(inputs, rxFresh) {
     let left, right;
     if (rxFresh) {
-      [left, right] = mix(
-        inputs[this.enumIndex('tank_drive.throttle_src')],
-        inputs[this.enumIndex('tank_drive.steer_src')],
+      const mixer = this.text('drive.mode') === 'car' ? carMix : mix;
+      [left, right] = mixer(
+        inputs[this.enumIndex('drive.throttle_src')],
+        inputs[this.enumIndex('drive.steer_src')],
         CENTER_US, DRIVE_MIN_US, DRIVE_MAX_US,
-        this.num('tank_drive.forward_ratio'),
-        this.num('tank_drive.reverse_ratio'),
-        this.num('tank_drive.steer_ratio'), 0,
+        this.num('drive.forward_ratio'),
+        this.num('drive.reverse_ratio'),
+        this.num('drive.steer_ratio'), 0,
       );
     } else {
       left = right = CENTER_US;
     }
-    const armSrc = this.text('tank_drive.arm_src');
+    const armSrc = this.text('drive.arm_src');
     const isNone = armSrc === 'none';
     const armUs = isNone ? 0 : inputs[Number(armSrc.slice(2)) - 1];
     const armed = computeArmed(rxFresh, isNone, armUs,
-      this.num('tank_drive.arm_min'), this.num('tank_drive.arm_max'));
+      this.num('drive.arm_min'), this.num('drive.arm_max'));
     return [left, right, armed];
+  }
+
+  // Mirrors ServoDriver: a base pulse from the mode, then invert, trim and the
+  // range clamp on every path to the pin. 0 means detached, as on the device.
+  _servo(nowMs, inputs, drive, rxFresh) {
+    const mode = this.text('servo.mode');
+    if (mode === 'off') return 0;
+    const minUs = this.num('servo.min_us');
+    const maxUs = this.num('servo.max_us');
+
+    let base;
+    if (mode === 'hold') {
+      base = angleToUs(this.num('servo.angle'), minUs, maxUs);
+    } else if (mode === 'sweep') {
+      const period = this.num('servo.sweep_s') * 1000;
+      base = angleToUs(Math.floor((trianglePercent(nowMs % period, period) * 180) / 100), minUs, maxUs);
+    } else {
+      const src = this.text('servo.src');
+      const v = src === 'drive_left' ? drive[0]
+        : src === 'drive_right' ? drive[1]
+        : (rxFresh ? inputs[Number(src.slice(2)) - 1] : 0);
+      if (!(v > 0)) return this._lastSrv ?? 0;
+      base = Math.max(minUs, Math.min(maxUs, v));
+    }
+
+    const out = applyTrim(
+      applyInvert(base, minUs, maxUs, this.text('servo.invert') === 'reversed'),
+      this.num('servo.trim_us'), minUs, maxUs);
+    this._lastSrv = out;
+    return out;
   }
 
   _link(rxFresh) {

@@ -22,8 +22,8 @@ A worked example:
 > get rx.protocol
 rx.protocol = elrs
 
-> set tank_drive.forward_ratio 70
-OK: tank_drive.forward_ratio = 70
+> set drive.forward_ratio 70
+OK: drive.forward_ratio = 70
 
 > save
 OK: saved to flash

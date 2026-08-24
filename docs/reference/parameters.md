@@ -48,18 +48,18 @@ released.
 How long the board waits without a valid frame before treating the radio link as lost and
 clamping the outputs to neutral. Only the one matching your protocol applies.
 
-## Tank Drive
+## Drive
 
 | Setting | Key | Default | Range |
 |---|---|---|---|
-| Throttle Src | `tank_drive.throttle_src` | `ch2` | `ch1`–`ch12` |
-| Steer Src | `tank_drive.steer_src` | `ch1` | `ch1`–`ch12` |
-| Forward Ratio (%) | `tank_drive.forward_ratio` | `100` | 0–100 |
-| Reverse Ratio (%) | `tank_drive.reverse_ratio` | `100` | 0–100 |
-| Steer Ratio (%) | `tank_drive.steer_ratio` | `100` | 0–100 |
-| Arm Src | `tank_drive.arm_src` | `ch5` | `none`, `ch1`–`ch12` |
-| Arm Min (µs) | `tank_drive.arm_min` | `1700` | 1000–2000 |
-| Arm Max (µs) | `tank_drive.arm_max` | `2000` | 1000–2000 |
+| Throttle Src | `drive.throttle_src` | `ch2` | `ch1`–`ch12` |
+| Steer Src | `drive.steer_src` | `ch1` | `ch1`–`ch12` |
+| Forward Ratio (%) | `drive.forward_ratio` | `100` | 0–100 |
+| Reverse Ratio (%) | `drive.reverse_ratio` | `100` | 0–100 |
+| Steer Ratio (%) | `drive.steer_ratio` | `100` | 0–100 |
+| Arm Src | `drive.arm_src` | `ch5` | `none`, `ch1`–`ch12` |
+| Arm Min (µs) | `drive.arm_min` | `1700` | 1000–2000 |
+| Arm Max (µs) | `drive.arm_max` | `2000` | 1000–2000 |
 
 The mixer. It takes throttle and steering and produces a speed for each track.
 
@@ -115,7 +115,7 @@ Read-only values the board reports. These are displayed, never set.
 | System | Uptime, Clock (MHz), Free RAM (kB), Temp (°C), VDD (V), Fault, Loop (Hz), Worst Pass (µs) |
 | RC Channels | CH1–CH16, in µs |
 | RC Link | Link, LQ (%), RSSI (dBm), Rate (Hz), Errors, RF Rate (Hz), TX Power (mW) |
-| Tank Drive | Left and Right output, in µs |
+| Drive | Left and Right output, in µs |
 | Motor 0 | Output (µs), Armed |
 | Motor 1 | Output (µs), Armed |
 

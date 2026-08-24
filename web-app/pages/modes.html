@@ -3,9 +3,9 @@
           </div>
           <fieldset class="card" :disabled="!$store.app.connected" x-data="{
             rows: [
-              { title: 'Throttle', channelKey: 'tank_drive.throttle_src', rangeKeys: null },
-              { title: 'Steer',    channelKey: 'tank_drive.steer_src',    rangeKeys: null },
-              { title: 'Arm',      channelKey: 'tank_drive.arm_src',      rangeKeys: ['tank_drive.arm_min', 'tank_drive.arm_max'] },
+              { title: 'Throttle', channelKey: 'drive.throttle_src', rangeKeys: null },
+              { title: 'Steer',    channelKey: 'drive.steer_src',    rangeKeys: null },
+              { title: 'Arm',      channelKey: 'drive.arm_src',      rangeKeys: ['drive.arm_min', 'drive.arm_max'] },
             ],
           }">
             <div class="card-body">

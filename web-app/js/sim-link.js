@@ -11,7 +11,7 @@ const SIM_FW = 'betacrawler 4.0.0 (sim)';
 const SIM_NAME = 'betacrawler';
 const SIM_VER = '4.0.0';
 const SIM_BOARD = 'simulator';
-const SIM_MODS = ['device', 'system', 'rx', 'tank_drive', 'motor0', 'motor1'];
+const SIM_MODS = ['device', 'system', 'rx', 'drive', 'motor0', 'motor1'];
 const PROTO_VERSION = 1;
 const BOOT_LOG = 'simulated board - every value below is fabricated';
 

@@ -7,9 +7,9 @@ turn no matter what the sticks do.
 
 | Setting | Default | What it is |
 |---|---|---|
-| `tank_drive.arm_src` | `ch5` | Which channel the arming switch is on. `none` disables arming. |
-| `tank_drive.arm_min` | 1700 µs | Bottom of the armed band |
-| `tank_drive.arm_max` | 2000 µs | Top of the armed band |
+| `drive.arm_src` | `ch5` | Which channel the arming switch is on. `none` disables arming. |
+| `drive.arm_min` | 1700 µs | Bottom of the armed band |
+| `drive.arm_max` | 2000 µs | Top of the armed band |
 
 The vehicle is armed while that channel sits **between** Arm Min and Arm Max. The defaults
 describe a two-position switch flipped up, which is where a switch usually sits at 1700–2000 µs.
