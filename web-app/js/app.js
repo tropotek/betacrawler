@@ -832,9 +832,15 @@ function disposeHelpPopovers() {
 
 function attachHelpPopover(icon) {
   if (window.bootstrap.Popover.getInstance(icon)) return;
-  const label = icon.closest('label');
-  const body = label?.parentElement?.querySelector('.help-body');
-  if (!body) return;
+  // The icon is a SIBLING of the label, not inside it: a click anywhere within
+  // a <label for=...> is forwarded to that control, so an icon nested there
+  // would open the select on a phone and blur itself before the popover
+  // settled -- which is exactly what tapping it used to do.
+  const label = icon.previousElementSibling;
+  let scope = icon.parentElement;
+  while (scope && !scope.querySelector('.help-body')) scope = scope.parentElement;
+  const body = scope?.querySelector('.help-body');
+  if (!body || !label) return;
   const title = label.textContent.trim();
   icon.setAttribute('aria-label', `Help: ${title}`);
   helpPopovers.push(new window.bootstrap.Popover(icon, {

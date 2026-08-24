@@ -61,7 +61,7 @@
             <legend class="card-header h6 text-secondary mb-0 py-2">Identity</legend>
             <div class="card-body row g-3">
               <div class="col-md-6">
-                <label class="form-label d-flex justify-content-between align-items-center" for="f-device-name">Device Name</label>
+                <label class="form-label" for="f-device-name">Device Name</label>
                 <input type="text" class="form-control" id="f-device-name"
                        :maxlength="$store.config.field('device.name').def?.maxlen"
                        :class="{ 'is-invalid': $store.config.invalid['device.name'] }"
@@ -75,7 +75,10 @@
               <legend class="card-header h6 text-secondary mb-0 py-2">Drive</legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
-                  <label class="form-label d-flex justify-content-between align-items-center" for="f-drive-mode">Drive Mode<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span></label>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0" for="f-drive-mode">Drive Mode</label>
+                    <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
+                  </div>
                   <select class="form-select" id="f-drive-mode"
                           :class="{ 'is-invalid': $store.config.invalid['drive.mode'] }"
                           x-model="$store.config.values['drive.mode']"
@@ -99,7 +102,10 @@
               <legend class="card-header h6 text-secondary mb-0 py-2">Steering Servo</legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
-                  <label class="form-label d-flex justify-content-between align-items-center" for="f-servo-invert">Invert<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span></label>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0" for="f-servo-invert">Invert</label>
+                    <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
+                  </div>
                   <select class="form-select" id="f-servo-invert"
                           :class="{ 'is-invalid': $store.config.invalid['servo.invert'] }"
                           x-model="$store.config.values['servo.invert']"
@@ -115,7 +121,10 @@
                 </div>
                 <template x-if="$store.config.field('servo.trim_us').def">
                   <div class="col-md-6">
-                    <label class="form-label d-flex justify-content-between align-items-center" for="f-servo-trim">Trim (µs)<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span></label>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <label class="form-label mb-0" for="f-servo-trim">Trim (µs)</label>
+                      <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
+                    </div>
                     <input type="number" class="form-control" id="f-servo-trim"
                            :min="$store.config.field('servo.trim_us').def?.min"
                            :max="$store.config.field('servo.trim_us').def?.max"
@@ -138,7 +147,10 @@
                       x-text="$store.config.values['motor0.type'] === 'brushed' ? 'Motor Output' : 'ESC'"></legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
-                  <label class="form-label d-flex justify-content-between align-items-center" for="f-esc-type">Type<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span></label>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0" for="f-esc-type">Type</label>
+                    <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
+                  </div>
                   <select class="form-select" id="f-esc-type"
                           :class="{ 'is-invalid': $store.config.invalid['motor0.type'] || $store.config.invalid['motor1.type'] }"
                           @change="$store.config.setBothEscTypes($event.target.value)">
@@ -154,7 +166,10 @@
 
                 <template x-if="$store.config.values['motor0.type'] === 'brushless'">
                   <div class="col-md-6">
-                    <label class="form-label d-flex justify-content-between align-items-center" for="f-esc-rate">PWM Rate (Hz)<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span></label>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <label class="form-label mb-0" for="f-esc-rate">PWM Rate (Hz)</label>
+                      <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
+                    </div>
                     <select class="form-select" id="f-esc-rate"
                             :class="{ 'is-invalid': $store.config.invalid['motor0.rate'] || $store.config.invalid['motor1.rate'] }"
                             @change="$store.config.setBothEscRates($event.target.value)">
@@ -172,7 +187,10 @@
 
                 <template x-if="$store.config.values['motor0.type'] === 'brushed'">
                   <div class="col-md-6">
-                    <label class="form-label d-flex justify-content-between align-items-center" for="f-esc-freq">Switch Freq (Hz)<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span></label>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <label class="form-label mb-0" for="f-esc-freq">Switch Freq (Hz)</label>
+                      <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
+                    </div>
                     <input type="number" class="form-control" id="f-esc-freq"
                            :class="{ 'is-invalid': $store.config.invalid['motor0.freq'] || $store.config.invalid['motor1.freq'] }"
                            :min="$store.config.field('motor0.freq').def?.min" :max="$store.config.field('motor0.freq').def?.max"
@@ -187,7 +205,10 @@
 
                 <template x-if="$store.config.values['motor0.type'] === 'brushed'">
                   <div class="col-md-6">
-                    <label class="form-label d-flex justify-content-between align-items-center" for="f-esc-brake">At Zero<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span></label>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <label class="form-label mb-0" for="f-esc-brake">At Zero</label>
+                      <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
+                    </div>
                     <select class="form-select" id="f-esc-brake"
                             :class="{ 'is-invalid': $store.config.invalid['motor0.brake'] || $store.config.invalid['motor1.brake'] }"
                             @change="$store.config.setBothEscBrake($event.target.value)">
@@ -204,7 +225,10 @@
 
                 <template x-if="$store.config.field('motor0.invert').def">
                   <div class="col-md-3">
-                    <label class="form-label d-flex justify-content-between align-items-center" for="f-motor0-invert">Motor 0 Invert<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span></label>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <label class="form-label mb-0" for="f-motor0-invert">Motor 0 Invert</label>
+                      <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
+                    </div>
                     <select class="form-select" id="f-motor0-invert"
                             :class="{ 'is-invalid': $store.config.invalid['motor0.invert'] }"
                             x-model="$store.config.values['motor0.invert']"
@@ -219,7 +243,10 @@
 
                 <template x-if="$store.config.field('motor1.invert').def">
                   <div class="col-md-3">
-                    <label class="form-label d-flex justify-content-between align-items-center" for="f-motor1-invert">Motor 1 Invert<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span></label>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <label class="form-label mb-0" for="f-motor1-invert">Motor 1 Invert</label>
+                      <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
+                    </div>
                     <select class="form-select" id="f-motor1-invert"
                             :class="{ 'is-invalid': $store.config.invalid['motor1.invert'] }"
                             x-model="$store.config.values['motor1.invert']"
@@ -239,7 +266,10 @@
               <legend class="card-header h6 text-secondary mb-0 py-2">Battery Sensor</legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
-                  <label class="form-label d-flex justify-content-between align-items-center" for="f-vbat-cells">Cells<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span></label>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0" for="f-vbat-cells">Cells</label>
+                    <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
+                  </div>
                   <select class="form-select" id="f-vbat-cells"
                           :class="{ 'is-invalid': $store.config.invalid['vbat.cells'] }"
                           x-model="$store.config.values['vbat.cells']"
@@ -255,7 +285,10 @@
                   </div>
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label d-flex justify-content-between align-items-center" for="f-vbat-measured">Measured pack voltage (V)<span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span></label>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0" for="f-vbat-measured">Measured pack voltage (V)</label>
+                    <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
+                  </div>
                   <div class="input-group">
                     <input type="number" step="0.01" class="form-control" id="f-vbat-measured"
                            x-model="measured" placeholder="e.g. 16.78">
