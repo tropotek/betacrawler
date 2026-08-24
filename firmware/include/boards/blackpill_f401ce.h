@@ -28,11 +28,11 @@
 // --- features ---------------------------------------------------------------
 #define FEATURE_STATUS_LED  1
 #define FEATURE_BUTTON  0
-#define FEATURE_SERVO   0
+#define FEATURE_SERVO   1
 #define FEATURE_RX         1
-#define FEATURE_TANK_DRIVE 1
-#define FEATURE_ESC0       1
-#define FEATURE_ESC1       1
+#define FEATURE_DRIVE 1
+#define FEATURE_MOTOR0       1
+#define FEATURE_MOTOR1       1
 #define FEATURE_VBAT       1
 #define FEATURE_WIFI    0
 // The F401 has the same USB DFU bootloader in ROM as the F411 -- same system
@@ -59,47 +59,38 @@
 // than assuming a polarity.
 #define BUTTON_PIN      USER_BTN
 
-// Hobby servo on TIM4_CH1 -- but TIM4 is now claimed by esc1 (below), which
-// drives PB8/TIM4_CH3, a different channel of the SAME peripheral. Same
-// latent conflict as blackpill_f411ce.h: this board does not ship
-// FEATURE_SERVO on, so the #error guard just past esc1's block below only
-// fires if someone flips FEATURE_SERVO on here without also reconsidering
-// esc1.
+// Hobby servo on TIM2_CH3, same pin and reasoning as blackpill_f411ce.h: its
+// own timer peripheral, separate from motor0's TIM3 and motor1's TIM4.
 //
 // Power the servo from the 5V pin (USB VBUS), never 3V3, with a 470-1000uF
 // bulk cap at the connector -- see the note in blackpill_f411ce.h.
-#define SERVO_TIMER     TIM4
-#define SERVO_PIN       PB6
+#define SERVO_TIMER     TIM2
+#define SERVO_PIN       PB10
 
 // Brushless ESCs on TIM3_CH1 and TIM4_CH3, same pins and reasoning as
-// blackpill_f411ce.h's esc0/esc1: two separate timer peripherals, not two
-// channels of the same one. esc1 moved off PB6 (2026-08-23) to free it for
+// blackpill_f411ce.h's motor0/motor1: two separate timer peripherals, not two
+// channels of the same one. motor1 moved off PB6 (2026-08-23) to free it for
 // WIFI_TX_PIN below.
-#define ESC0_TIMER      TIM3
-#define ESC0_PIN        PA6
-#define ESC1_TIMER      TIM4
-#define ESC1_PIN        PB8
+#define MOTOR0_TIMER      TIM3
+#define MOTOR0_PIN        PA6
+#define MOTOR1_TIMER      TIM4
+#define MOTOR1_PIN        PB8
 
-// esc0/esc1's second PWM pin for brushed mode -- same pins and reasoning as
+// motor0/motor1's second PWM pin for brushed mode -- same pins and reasoning as
 // blackpill_f411ce.h.
-#define ESC0_PIN_B  PA7_ALT1
-#define ESC1_PIN_B  PB9
+#define MOTOR0_PIN_B  PA7_ALT1
+#define MOTOR1_PIN_B  PB9
 
 // Default motor type per instance, same reasoning as
 // blackpill_f411ce.h.
-#define ESC0_TYPE_DEFAULT  esc::TYPE_BRUSHLESS
-#define ESC1_TYPE_DEFAULT  esc::TYPE_BRUSHLESS
+#define MOTOR0_TYPE_DEFAULT  motor::TYPE_BRUSHLESS
+#define MOTOR1_TYPE_DEFAULT  motor::TYPE_BRUSHLESS
 
 // 200Hz frame on both, same reasoning as blackpill_f411ce.h. Without these the
 // module default of 20000us applies, which is 50Hz.
-#define ESC0_FRAME_US   5000
-#define ESC1_FRAME_US   5000
+#define MOTOR0_FRAME_US   5000
+#define MOTOR1_FRAME_US   5000
 
-// Both esc1 and (if ever enabled) servo drive TIM4 -- see
-// blackpill_f411ce.h's identical guard for the full hazard explanation.
-#if FEATURE_SERVO && FEATURE_ESC1
-#error "servo and esc1 both claim TIM4 on this board -- move one to another timer/pin before enabling both"
-#endif
 
 // Battery voltage sense on ADC1_IN1, same pin, divider and scale as
 // blackpill_f411ce.h; see that header for the ratio and what vbat.scale means.

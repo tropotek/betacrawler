@@ -3,6 +3,7 @@
 #if FEATURE_DFU
 
 #include <Arduino.h>
+#include "config.h"
 
 #ifndef DFU_SYSMEM_ADDR
 #error "FEATURE_DFU is on but the board header defines no DFU_SYSMEM_ADDR"
@@ -66,6 +67,32 @@ static void dfuJumpOnBoot();
 __attribute__((used, section(".preinit_array")))
 static void (*const kDfuPreinit)(void) = dfuJumpOnBoot;
 
+// Drives every motor output pin low before the jump, and leaves it a GPIO
+// output so it stays there. The ROM bootloader configures only USB and its
+// own autobaud pins, so whatever these are left at is what they hold for the
+// entire DFU session -- seconds, not the milliseconds a normal reset costs.
+// Left floating, an H-bridge input is undefined and the motor can run for
+// that whole time. External pulldowns are the complete fix, since they also
+// cover the window before any code runs; this closes the one window the
+// firmware can reach.
+static void silenceMotorPins() {
+#ifdef MOTOR0_PIN
+  pinMode(MOTOR0_PIN, OUTPUT);   digitalWrite(MOTOR0_PIN, LOW);
+#endif
+#ifdef MOTOR0_PIN_B
+  pinMode(MOTOR0_PIN_B, OUTPUT); digitalWrite(MOTOR0_PIN_B, LOW);
+#endif
+#ifdef MOTOR1_PIN
+  pinMode(MOTOR1_PIN, OUTPUT);   digitalWrite(MOTOR1_PIN, LOW);
+#endif
+#ifdef MOTOR1_PIN_B
+  pinMode(MOTOR1_PIN_B, OUTPUT); digitalWrite(MOTOR1_PIN_B, LOW);
+#endif
+#ifdef SERVO_PIN
+  pinMode(SERVO_PIN, OUTPUT);    digitalWrite(SERVO_PIN, LOW);
+#endif
+}
+
 static void dfuJumpOnBoot() {
   unlockBackupDomain();
   if (RTC->BKP0R != kDfuMagic) return;
@@ -75,6 +102,10 @@ static void dfuJumpOnBoot() {
   // bootloader that never appeared is indistinguishable from a brick, and would
   // need SWD to recover.
   RTC->BKP0R = 0;
+
+  // Before anything else: the outputs must be quiet for the whole bootloader
+  // session, not just for this function.
+  silenceMotorPins();
 
   __disable_irq();
 

@@ -15,11 +15,11 @@
 // --- features ---------------------------------------------------------------
 #define FEATURE_STATUS_LED  1
 #define FEATURE_BUTTON  0
-#define FEATURE_SERVO   0
+#define FEATURE_SERVO   1
 #define FEATURE_RX         1
-#define FEATURE_TANK_DRIVE 1
-#define FEATURE_ESC0       1
-#define FEATURE_ESC1       1
+#define FEATURE_DRIVE 1
+#define FEATURE_MOTOR0       1
+#define FEATURE_MOTOR1       1
 #define FEATURE_VBAT       1
 #define FEATURE_WIFI    0
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
@@ -50,26 +50,21 @@
 // than assuming a polarity.
 #define BUTTON_PIN      USER_BTN
 
-// Hobby servo on TIM4_CH1 -- but TIM4 is now claimed by esc1 (below), which
-// drives PB8/TIM4_CH3, a different channel of the SAME physical peripheral.
-// This board does not ship FEATURE_SERVO on, so the conflict is latent, not
-// live; the #error guard just past ESC1's block below catches the case where
-// someone flips FEATURE_SERVO on here without also reconsidering esc1 -- two
-// independently-constructed HardwareTimer objects on TIM4, even on different
-// channels, still fight over its shared overflow/period register. A servo
-// fork on this board needs a different timer entirely, not any channel of
-// TIM4. Note this part is LQFP48, so port C is only PC13/14/15 and PB11 is
-// not bonded out -- most of the timer maps a generic F4 pinout table offers
-// do not exist here.
+// Hobby servo on TIM2_CH3. Its own timer peripheral, separate from motor0's
+// TIM3 and motor1's TIM4 -- two HardwareTimer objects on one peripheral fight
+// over its shared overflow/period register even on different channels. PB10 is
+// PB_10's only PinMap_TIM entry on this part, so it needs no _ALT alias.
 //
 // SERVO_FRAME_US (20000, i.e. 50Hz) is optional, defaulted in the driver.
 //
 // Power the servo from the 5V pin (USB VBUS), never 3V3, with a 470-1000uF
 // bulk cap at the connector. Current steps from a moving servo can droop VBUS
 // far enough to reset the MCU and drop the USB CDC link, which presents as a
-// configurator disconnect rather than as anything obviously electrical.
-#define SERVO_TIMER     TIM4
-#define SERVO_PIN       PB6
+// configurator disconnect rather than as anything obviously electrical. A
+// separate BEC on the battery side avoids this entirely; tie its ground to the
+// board's.
+#define SERVO_TIMER     TIM2
+#define SERVO_PIN       PB10
 
 // Brushless ESCs on TIM3_CH1 and TIM4_CH3. Each is a separate timer
 // peripheral, on purpose -- two independently-constructed HardwareTimer
@@ -78,54 +73,54 @@
 // part's own PeripheralPins.c
 // (framework-arduinoststm32/variants/STM32F4xx/F411C(C-E)(U-Y)/PeripheralPins.c).
 //
-// ESC0_ARM_HOLD_MS/ESC1_ARM_HOLD_MS (2000), ESC0_INPUT_STALE_MS/
-// ESC1_INPUT_STALE_MS (500) and ESC0_ARM_LOW_MARGIN_US/
-// ESC1_ARM_LOW_MARGIN_US (50) are all optional per instance, defaulted in
-// esc0_driver.cpp/esc1_driver.cpp respectively.
+// MOTOR0_ARM_HOLD_MS/MOTOR1_ARM_HOLD_MS (2000), MOTOR0_INPUT_STALE_MS/
+// MOTOR1_INPUT_STALE_MS (500) and MOTOR0_ARM_LOW_MARGIN_US/
+// MOTOR1_ARM_LOW_MARGIN_US (50) are all optional per instance, defaulted in
+// motor0_driver.cpp/motor1_driver.cpp respectively.
 //
 // Power the motor/ESC from its own supply, never the board's 5V/VBUS pin --
 // an ESC under load draws far more than the servo's own VBUS warning already
 // covers.
 //
-// esc0 on TIM3_CH1 -- the pin already wired and documented on every unit
+// motor0 on TIM3_CH1 -- the pin already wired and documented on every unit
 // shipped so far, unchanged from the single-ESC configuration this board
 // used to have.
-#define ESC0_TIMER      TIM3
-#define ESC0_PIN        PA6
+#define MOTOR0_TIMER      TIM3
+#define MOTOR0_PIN        PA6
 
-// esc1 on TIM4_CH3 -- moved off PB6 (2026-08-23) to free that pin for
-// WIFI_TX_PIN below; still a DIFFERENT physical timer peripheral from esc0's
+// motor1 on TIM4_CH3 -- moved off PB6 (2026-08-23) to free that pin for
+// WIFI_TX_PIN below; still a DIFFERENT physical timer peripheral from motor0's
 // TIM3, not just a different channel of the same one. PB8 is confirmed free.
-#define ESC1_TIMER      TIM4
-#define ESC1_PIN        PB8
+#define MOTOR1_TIMER      TIM4
+#define MOTOR1_PIN        PB8
 
-// esc0/esc1's second PWM pin, used only when that instance's esc<N>.type is
+// motor0/motor1's second PWM pin, used only when that instance's motor<N>.type is
 // brushed (a runtime choice -- both macros are always defined whenever
-// FEATURE_ESC0/FEATURE_ESC1 are on, regardless of which type is selected).
-// PA7 is TIM3_CH2 -- the same physical timer as esc0's own PA6 (TIM3_CH1),
-// a different channel of it, matching how esc1 and the future servo pin
+// FEATURE_MOTOR0/FEATURE_MOTOR1 are on, regardless of which type is selected).
+// PA7 is TIM3_CH2 -- the same physical timer as motor0's own PA6 (TIM3_CH1),
+// a different channel of it, matching how motor1 and the future servo pin
 // already share TIM4 across different channels. It must be named as
 // PA7_ALT1: PA7's FIRST entry in this part's PinMap_TIM is TIM1_CH1N, and
 // the pinmap lookup answers that one for a bare PA7. PB9 is TIM4_CH4, same
-// relationship to esc1's PB8 (TIM4_CH3), and its first entry already, so it
+// relationship to motor1's PB8 (TIM4_CH3), and its first entry already, so it
 // needs no alias. Both bench-validated
 // (_notes/docs/research/brushed-tank-variant.md, section 5a). Neither
 // carries the ROM-bootloader-race hazard RX_RX_PIN does: motor output is
 // always MCU-to-peripheral, never the reverse, so nothing external ever
 // transmits into either pin (docs/development/architecture.md, "CRSF pin
 // choice and the bootloader race").
-#define ESC0_PIN_B  PA7_ALT1
-#define ESC1_PIN_B  PB9
+#define MOTOR0_PIN_B  PA7_ALT1
+#define MOTOR1_PIN_B  PB9
 
-// Which motor each instance starts on -- esc::TYPE_BRUSHLESS (an ESC) or
-// esc::TYPE_BRUSHED (an H-bridge). esc<N>.type overrides it at runtime; this
+// Which motor each instance starts on -- motor::TYPE_BRUSHLESS (an ESC) or
+// motor::TYPE_BRUSHED (an H-bridge). motor<N>.type overrides it at runtime; this
 // only decides where an unconfigured board starts, including after a settings
 // reset. Both are TYPE_BRUSHLESS because this image serves either wiring: a
 // fork committed to brushed motors sets TYPE_BRUSHED here so a reset can never
 // leave an H-bridge driven by an RC pulse train (a 1500us pulse in a 5000us
 // frame is 30% duty).
-#define ESC0_TYPE_DEFAULT  esc::TYPE_BRUSHLESS
-#define ESC1_TYPE_DEFAULT  esc::TYPE_BRUSHLESS
+#define MOTOR0_TYPE_DEFAULT  motor::TYPE_BRUSHLESS
+#define MOTOR1_TYPE_DEFAULT  motor::TYPE_BRUSHLESS
 
 // Battery voltage sense on ADC1_IN1. PA1 is unclaimed on this board: the LED
 // is PC13, the button PA0, the ESCs PA6/PB8, CRSF PA2/PA3, USB PA11/PA12 and
@@ -144,20 +139,9 @@
 // 200Hz frame on both, which every analogue-PWM ESC auto-detects. A 5ms
 // period bounds output latency at a quarter of a 50Hz frame's, and
 // effectiveMaxUs()'s reserved low time leaves ample headroom over max_us.
-#define ESC0_FRAME_US   5000
-#define ESC1_FRAME_US   5000
+#define MOTOR0_FRAME_US   5000
+#define MOTOR1_FRAME_US   5000
 
-// Both esc1 and (if ever enabled) servo drive TIM4 -- esc1 on CH3 (PB8),
-// servo on CH1 (PB6) -- different channels of the SAME physical peripheral,
-// which still fight over its shared overflow/period register even though
-// they no longer share a pin. FEATURE_SERVO ships 0 on this board today, so
-// nothing conflicts yet -- but if someone flips it on here without also
-// reconsidering esc1, both servo::ServoDriver and esc1::EscDriver would
-// construct their own HardwareTimer(TIM4) and fight over its shared period
-// register. Catch that at compile time instead.
-#if FEATURE_SERVO && FEATURE_ESC1
-#error "servo and esc1 both claim TIM4 on this board -- move one to another timer/pin before enabling both"
-#endif
 
 // CRSF receiver on USART2's native pins. Both DFU entry paths reboot into
 // the STM32 ROM bootloader, which arms multiple peripherals at once, each
@@ -195,7 +179,7 @@
 
 // ESP-01 (ESP8266) WiFi module, stock AT firmware, on USART1's alternate
 // mapping. Moved here 2026-08-23 when CRSF moved to PA2/PA3 (USART2),
-// freeing PB6/PB7 -- esc1 no longer claims PB6 (see its own comment above).
+// freeing PB6/PB7 -- motor1 no longer claims PB6 (see its own comment above).
 // Bench-testing (_notes/docs/research/rx-uart-bootloader-race.md)
 // characterized CRSF's own receiver traffic against this pin pair's
 // bootloader-hijack risk, not the ESP8266's AT-firmware chatter.

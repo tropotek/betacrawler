@@ -1,5 +1,5 @@
-// Reactive device simulation ported from firmware math (tank_drive_math.cpp,
-// esc_math.cpp, RxDriver's sim source). Pure and deterministic: no timers, no I/O.
+// Reactive device simulation ported from firmware math (drive_math.cpp,
+// motor_math.cpp, RxDriver's sim source). Pure and deterministic: no timers, no I/O.
 
 const CENTER_US = 1500;
 const DRIVE_MIN_US = 1000;
@@ -16,7 +16,7 @@ const ARM_LOW_MARGIN_US = 50;
 const MIN_LOW_US = 125;
 export const FRAME_US = { 50: 20000, 100: 10000, 200: 5000, 400: 2500 };
 
-// esc<N>.src option indices 0..11 are ch1..ch12; 12 and 13 are the tank drive
+// motor<N>.src option indices 0..11 are ch1..ch12; 12 and 13 are the tank drive
 // bus's left/right slots. Slot 2 of that bus is the shared ARM switch.
 const DRIVE_SRC_BASE = 12;
 const DRIVE_ARM_SLOT = 2;
@@ -97,17 +97,50 @@ export function mix(throttleUs, steerUs, centerUs, minUs, maxUs, fwdPct, revPct,
   return [Math.max(minUs, Math.min(maxUs, left)), Math.max(minUs, Math.min(maxUs, right))];
 }
 
+// Car mix: throttle to slot 0, steer to slot 1, no cross-coupling. The two
+// outputs are independent, so the differential mixer's proportional clamp has
+// nothing to do here.
+export function carMix(throttleUs, steerUs, centerUs, minUs, maxUs, fwdPct, revPct, steerPct, deadbandUs) {
+  let throttle = deadbanded(throttleUs, centerUs, deadbandUs);
+  const steer = deadbanded(steerUs, centerUs, deadbandUs);
+
+  if (throttle > centerUs) {
+    throttle = centerUs + truncDiv((throttle - centerUs) * fwdPct, 100);
+  } else if (throttle < centerUs) {
+    throttle = centerUs + truncDiv((throttle - centerUs) * revPct, 100);
+  }
+  const steerOut = centerUs + truncDiv((steer - centerUs) * steerPct, 100);
+
+  const clamp = (v) => Math.max(minUs, Math.min(maxUs, v));
+  return [clamp(throttle), clamp(steerOut)];
+}
+
+// Servo linkage: mirror about the calibrated midpoint, then offset, then clamp.
+export function applyInvert(us, minUs, maxUs, inverted) {
+  if (!inverted) return us;
+  return Math.max(minUs, Math.min(maxUs, minUs + maxUs - us));
+}
+
+export function applyTrim(us, trimUs, minUs, maxUs) {
+  return Math.max(minUs, Math.min(maxUs, us + trimUs));
+}
+
+export function angleToUs(angle, minUs, maxUs) {
+  const a = Math.max(0, Math.min(180, angle));
+  return minUs + truncDiv((maxUs - minUs) * a, 180);
+}
+
 export function computeArmed(rxFresh, armSrcIsNone, armSrcUs, armMinUs, armMaxUs) {
   if (!rxFresh) return false;
   if (armSrcIsNone) return true;
   return armMinUs <= armSrcUs && armSrcUs <= armMaxUs;
 }
 
-export function neutralUs(minUs, maxUs, bidirectional) {
-  return bidirectional ? Math.floor((minUs + maxUs) / 2) : minUs;
+export function neutralUs(minUs, maxUs) {
+  return Math.floor((minUs + maxUs) / 2);
 }
 
-function isCommandedLow(mode, throttleUs, inputUs, inputFresh, neutral, lowMarginUs, bidirectional) {
+function isCommandedLow(mode, throttleUs, inputUs, inputFresh, neutral, lowMarginUs) {
   let v;
   if (mode === MODE_ARMED) {
     v = throttleUs;
@@ -117,7 +150,7 @@ function isCommandedLow(mode, throttleUs, inputUs, inputFresh, neutral, lowMargi
   } else {
     return false;
   }
-  if (bidirectional) return Math.abs(v - neutral) <= lowMarginUs;
+  return Math.abs(v - neutral) <= lowMarginUs;
   return v <= neutral + lowMarginUs;
 }
 
@@ -159,7 +192,7 @@ const ELRS_RF_HZ = [0, 0, 50, 0, 100, 150, 0, 250, 333, 500, 250, 500, 500, 1000
 // One ESC channel: arm state machine and last written pulse. update() detects
 // mode/src/rate changes by comparing against the previous tick, so it carries
 // the firmware's apply() and tick() behaviour in one call.
-class Esc {
+class Motor {
   constructor(prefix) {
     this.prefix = prefix;
     this.armState = ARM_OFF;
@@ -175,7 +208,6 @@ class Esc {
     const throttleUs = p.num(`${this.prefix}.throttle_us`);
     const minUs = p.num(`${this.prefix}.min_us`);
     const maxUs = p.num(`${this.prefix}.max_us`);
-    const bidirectional = p.text(`${this.prefix}.direction`) === 'bidirectional';
     const srcIdx = p.enumIndex(`${this.prefix}.src`);
     const rate = p.text(`${this.prefix}.rate`);
 
@@ -184,7 +216,7 @@ class Esc {
     const rateChanged = this._prevRate !== null && rate !== this._prevRate;
     this._prevMode = mode; this._prevSrc = srcIdx; this._prevRate = rate;
 
-    const neutral = neutralUs(minUs, maxUs, bidirectional);
+    const neutral = neutralUs(minUs, maxUs);
     const rawInput = srcIdx >= DRIVE_SRC_BASE ? drive[srcIdx - DRIVE_SRC_BASE] : inputs[srcIdx];
     const inputFresh = mode === MODE_INPUT && rxFresh;
     const inputStale = mode === MODE_INPUT && !inputFresh;
@@ -200,7 +232,7 @@ class Esc {
     if (enteringFromOff) this.armT0 = nowMs;
 
     const commandedLow = isCommandedLow(
-      mode, throttleUs, inputUs, inputFresh, neutral, ARM_LOW_MARGIN_US, bidirectional);
+      mode, throttleUs, inputUs, inputFresh, neutral, ARM_LOW_MARGIN_US);
     if (this.armState === ARM_ARMING && !commandedLow) this.armT0 = nowMs;
     this.armState = nextArmState(
       this.armState, mode === MODE_OFF, enteringFromOff, nowMs, this.armT0, ARM_HOLD_MS, commandedLow);
@@ -208,9 +240,10 @@ class Esc {
 
     let us = nextPulseUs(this.armState, mode, minUs, maxUs, throttleUs, inputUs, inputStale, neutral);
     // The shared ARM switch is a pure output gate outside the hold state
-    // machine: inactive forces neutral instantly, whatever the ESC's own
-    // state says.
-    if (driveEverFresh && drive[DRIVE_ARM_SLOT] === 0) us = neutral;
+    // machine: inactive forces neutral instantly, whatever the motor's own
+    // state says. Gated on the drive module existing, not on the bus having
+    // gone fresh -- a board that has never seen a frame is not armed.
+    if (drive[DRIVE_ARM_SLOT] === 0) us = neutral;
     const effMax = effectiveMaxUs(maxUs, FRAME_US[rate]);
     if (us > effMax) us = effMax;
     if (us > 0) this.lastUs = us;
@@ -224,7 +257,7 @@ export class SimModel {
     this._defaults = Object.fromEntries(params.map((p) => [p.key, p.def]));
     this._values = { ...this._defaults, ...BOOT_OVERRIDES };
     this._stored = null;
-    this._esc = { esc0: new Esc('esc0'), esc1: new Esc('esc1') };
+    this._motor = { motor0: new Motor('motor0'), motor1: new Motor('motor1') };
     this._driveEverFresh = false;
     this._vbatCells = 0;
     this._tlm = {};
@@ -272,7 +305,7 @@ export class SimModel {
     const [left, right, armed] = this._tank(inputs, rxFresh);
     const drive = [left, right, armed ? 1 : 0];
     if (rxFresh) this._driveEverFresh = true;
-    for (const esc of Object.values(this._esc)) {
+    for (const esc of Object.values(this._motor)) {
       esc.update(nowMs, this, inputs, drive, rxFresh, this._driveEverFresh);
     }
 
@@ -282,8 +315,9 @@ export class SimModel {
     Object.assign(tlm, this._system(nowMs));
     Object.assign(tlm, this._vbat(nowMs));
     tlm.drv_l = left; tlm.drv_r = right;
-    tlm.esc0 = this._esc.esc0.lastUs; tlm.arm0 = this._esc.esc0.armState;
-    tlm.esc1 = this._esc.esc1.lastUs; tlm.arm1 = this._esc.esc1.armState;
+    tlm.motor0 = this._motor.motor0.lastUs; tlm.arm0 = this._motor.motor0.armState;
+    tlm.motor1 = this._motor.motor1.lastUs; tlm.arm1 = this._motor.motor1.armState;
+    tlm.srv = this._servo(nowMs, inputs, drive, rxFresh);
     this._tlm = tlm;
   }
 
@@ -302,23 +336,54 @@ export class SimModel {
   _tank(inputs, rxFresh) {
     let left, right;
     if (rxFresh) {
-      [left, right] = mix(
-        inputs[this.enumIndex('tank_drive.throttle_src')],
-        inputs[this.enumIndex('tank_drive.steer_src')],
+      const mixer = this.text('drive.mode') === 'car' ? carMix : mix;
+      [left, right] = mixer(
+        inputs[this.enumIndex('drive.throttle_src')],
+        inputs[this.enumIndex('drive.steer_src')],
         CENTER_US, DRIVE_MIN_US, DRIVE_MAX_US,
-        this.num('tank_drive.forward_ratio'),
-        this.num('tank_drive.reverse_ratio'),
-        this.num('tank_drive.steer_ratio'), 0,
+        this.num('drive.forward_ratio'),
+        this.num('drive.reverse_ratio'),
+        this.num('drive.steer_ratio'), 0,
       );
     } else {
       left = right = CENTER_US;
     }
-    const armSrc = this.text('tank_drive.arm_src');
+    const armSrc = this.text('drive.arm_src');
     const isNone = armSrc === 'none';
     const armUs = isNone ? 0 : inputs[Number(armSrc.slice(2)) - 1];
     const armed = computeArmed(rxFresh, isNone, armUs,
-      this.num('tank_drive.arm_min'), this.num('tank_drive.arm_max'));
+      this.num('drive.arm_min'), this.num('drive.arm_max'));
     return [left, right, armed];
+  }
+
+  // Mirrors ServoDriver: a base pulse from the mode, then invert, trim and the
+  // range clamp on every path to the pin. 0 means detached, as on the device.
+  _servo(nowMs, inputs, drive, rxFresh) {
+    const mode = this.text('servo.mode');
+    if (mode === 'off') return 0;
+    const minUs = this.num('servo.min_us');
+    const maxUs = this.num('servo.max_us');
+
+    let base;
+    if (mode === 'hold') {
+      base = angleToUs(this.num('servo.angle'), minUs, maxUs);
+    } else if (mode === 'sweep') {
+      const period = this.num('servo.sweep_s') * 1000;
+      base = angleToUs(Math.floor((trianglePercent(nowMs % period, period) * 180) / 100), minUs, maxUs);
+    } else {
+      const src = this.text('servo.src');
+      const v = src === 'drive_left' ? drive[0]
+        : src === 'drive_right' ? drive[1]
+        : (rxFresh ? inputs[Number(src.slice(2)) - 1] : 0);
+      if (!(v > 0)) return this._lastSrv ?? 0;
+      base = Math.max(minUs, Math.min(maxUs, v));
+    }
+
+    const out = applyTrim(
+      applyInvert(base, minUs, maxUs, this.text('servo.invert') === 'reversed'),
+      this.num('servo.trim_us'), minUs, maxUs);
+    this._lastSrv = out;
+    return out;
   }
 
   _link(rxFresh) {

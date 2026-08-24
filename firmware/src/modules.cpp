@@ -35,7 +35,7 @@ static core::Battery g_battery;
 
 static core::Inputs g_inputs;
 
-// tank_drive's own bus (core/inputs.h) -- a second, parallel application of
+// drive's own bus (core/inputs.h) -- a second, parallel application of
 // the same one-producer pattern g_inputs/rx already establishes above, not
 // a fact specific to rx. See docs/architecture.md's "Inputs bus" section.
 static core::Inputs g_driveOutputs;
@@ -81,14 +81,14 @@ static core::Inputs g_driveOutputs;
 #  endif
 #endif
 
-#if FEATURE_TANK_DRIVE
-#  include "features/tank_drive/tank_drive_params.h"
+#if FEATURE_DRIVE
+#  include "features/drive/drive_params.h"
 #  if FW_TARGET_ARDUINO
-#    include "features/tank_drive/tank_drive_driver.h"
-     static tank_drive::TankDriveDriver g_tankDrive(g_driveOutputs);
-#    define TANK_DRIVE_DRV (&g_tankDrive)
+#    include "features/drive/drive_driver.h"
+     static drive::DriveDriver g_drive(g_driveOutputs);
+#    define DRIVE_DRV (&g_drive)
 #  else
-#    define TANK_DRIVE_DRV nullptr
+#    define DRIVE_DRV nullptr
 #  endif
 #endif
 
@@ -103,25 +103,25 @@ static core::Inputs g_driveOutputs;
 #  endif
 #endif
 
-#if FEATURE_ESC0
-#  include "hardware/esc0/esc0_params.h"
+#if FEATURE_MOTOR0
+#  include "hardware/motor0/motor0_params.h"
 #  if FW_TARGET_ARDUINO
-#    include "hardware/esc0/esc0_driver.h"
-     static esc0::EscDriver g_esc0;
-#    define ESC0_DRV (&g_esc0)
+#    include "hardware/motor0/motor0_driver.h"
+     static motor0::MotorDriver g_motor0;
+#    define MOTOR0_DRV (&g_motor0)
 #  else
-#    define ESC0_DRV nullptr
+#    define MOTOR0_DRV nullptr
 #  endif
 #endif
 
-#if FEATURE_ESC1
-#  include "hardware/esc1/esc1_params.h"
+#if FEATURE_MOTOR1
+#  include "hardware/motor1/motor1_params.h"
 #  if FW_TARGET_ARDUINO
-#    include "hardware/esc1/esc1_driver.h"
-     static esc1::EscDriver g_esc1;
-#    define ESC1_DRV (&g_esc1)
+#    include "hardware/motor1/motor1_driver.h"
+     static motor1::MotorDriver g_motor1;
+#    define MOTOR1_DRV (&g_motor1)
 #  else
-#    define ESC1_DRV nullptr
+#    define MOTOR1_DRV nullptr
 #  endif
 #endif
 
@@ -166,22 +166,19 @@ void registerModules(Registry& reg) {
 #if FEATURE_RX
   reg.add(rx::kDesc, RX_DRV);
 #endif
-  // tank_drive must register after rx and before esc0/esc1: Registry::tick()
-  // walks modules in registration order, and tank_drive must mix each
-  // loop's freshly-decoded rx frame before either ESC reads it that same
-  // loop. This is the first place in this codebase where registration order
-  // is a correctness requirement, not just a schema/telemetry/flash-layout
-  // ordering choice -- do not reorder these three without re-reading
-  // _notes/docs/plans/2026-08-14-tank-drive-mixer-design.md's "Firmware
-  // source changes" section first.
-#if FEATURE_TANK_DRIVE
-  reg.add(tank_drive::kDesc, TANK_DRIVE_DRV);
+  // drive must register after rx and before motor0/motor1:
+  // Registry::tick() walks modules in registration order, and drive must
+  // mix each loop's freshly-decoded rx frame before either motor reads it that
+  // same loop. Registration order is a correctness requirement here, not just
+  // a schema/telemetry/flash-layout ordering choice.
+#if FEATURE_DRIVE
+  reg.add(drive::kDesc, DRIVE_DRV);
 #endif
-#if FEATURE_ESC0
-  reg.add(esc0::kDesc, ESC0_DRV);
+#if FEATURE_MOTOR0
+  reg.add(motor0::kDesc, MOTOR0_DRV);
 #endif
-#if FEATURE_ESC1
-  reg.add(esc1::kDesc, ESC1_DRV);
+#if FEATURE_MOTOR1
+  reg.add(motor1::kDesc, MOTOR1_DRV);
 #endif
 #if FEATURE_WIFI
   reg.add(wifi::kDesc, WIFI_DRV);

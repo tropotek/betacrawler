@@ -8,7 +8,7 @@ namespace core {
 constexpr size_t   kMaxStrLen   = 31;    // longest Str param value, in chars
 constexpr size_t   kMaxLineIn   = 256;   // inbound line budget
 // Outbound line budget -- the schema response (parameter table + telemetry
-// descriptor) is the largest thing sent. esc0/esc1's brushed-motor params
+// descriptor) is the largest thing sent. motor0/motor1's brushed-motor params
 // (type/freq/invert/brake, 8 params total) pushed this board's schema past
 // the previous 8192 ceiling; raised with headroom rather than a bare fit,
 // same reasoning FW_MAX_PARAMS/FW_MAX_TLM already use. dispatch.cpp refuses

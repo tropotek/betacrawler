@@ -11,14 +11,18 @@ using namespace core;
 
 static const char* const kModes[] = {"off", "on", "blink"};
 
-enum : uint8_t { P_LEVEL = 0, P_MODE, P_NAME };
+enum : uint8_t { P_LEVEL = 0, P_MODE, P_NAME, P_TRIM };
 
 static const ParamDef kParams[] = {
   {"t.level", ParamType::U8,   "Level", "Hz",    1, 20, nullptr, 0, 0, 2, nullptr,  nullptr},
   {"t.mode",  ParamType::Enum, "Mode",  nullptr, 0, 0,  kModes,  3, 0, 2, nullptr,  nullptr},
   {"t.name",  ParamType::Str,  "Name",  nullptr, 0, 0,  nullptr, 0, kMaxStrLen, 0, "betacrawler", nullptr},
+  // A signed range: ParamDef's bounds are int32_t and setNum compares signed,
+  // but every shipped numeric parameter had a non-negative minimum until
+  // servo.trim_us, so the negative path needs covering here explicitly.
+  {"t.trim",  ParamType::U8,   "Trim",  "us",    -250, 250, nullptr, 0, 0, 0, nullptr, nullptr},
 };
-static const ModuleDesc kDesc = {"t", "Test", kParams, 3, nullptr, 0};
+static const ModuleDesc kDesc = {"t", "Test", kParams, 4, nullptr, 0};
 
 static Registry reg;
 
@@ -81,6 +85,23 @@ void test_load_defaults_restores_after_changes() {
 void setUp() {}
 void tearDown() {}
 
+
+void test_negative_default_and_range_round_trip() {
+  Params p(reg);
+  TEST_ASSERT_EQUAL_INT32(0, p.num(P_TRIM));
+  TEST_ASSERT_EQUAL(SetResult::Ok, p.setNum(P_TRIM, -250));
+  TEST_ASSERT_EQUAL_INT32(-250, p.num(P_TRIM));
+  TEST_ASSERT_EQUAL(SetResult::Ok, p.setNum(P_TRIM, 250));
+  TEST_ASSERT_EQUAL_INT32(250, p.num(P_TRIM));
+}
+
+void test_negative_range_rejects_beyond_either_end() {
+  Params p(reg);
+  TEST_ASSERT_EQUAL(SetResult::Range, p.setNum(P_TRIM, -251));
+  TEST_ASSERT_EQUAL(SetResult::Range, p.setNum(P_TRIM, 251));
+  TEST_ASSERT_EQUAL_INT32(0, p.num(P_TRIM));
+}
+
 int main() {
   reg.add(kDesc);
   UNITY_BEGIN();
@@ -90,5 +111,7 @@ int main() {
   RUN_TEST(test_string_too_long_rejected_not_truncated);
   RUN_TEST(test_wrong_type_rejected);
   RUN_TEST(test_load_defaults_restores_after_changes);
+  RUN_TEST(test_negative_default_and_range_round_trip);
+  RUN_TEST(test_negative_range_rejects_beyond_either_end);
   return UNITY_END();
 }

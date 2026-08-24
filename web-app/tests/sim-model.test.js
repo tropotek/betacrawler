@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  SimModel, truncDiv, trianglePercent, deadbanded, mix, computeArmed, neutralUs,
+  SimModel, truncDiv, trianglePercent, deadbanded, mix, carMix, applyInvert, applyTrim,
+  angleToUs, computeArmed, neutralUs,
   nextArmState, nextPulseUs, effectiveMaxUs, MODE_OFF, MODE_ARMED, MODE_INPUT,
   ARM_OFF, ARM_ARMING, ARM_ARMED, FRAME_US,
 } from '../js/sim-model.js';
@@ -56,9 +57,10 @@ test('computeArmed rules', () => {
   assert.equal(computeArmed(true, false, 1500, 1700, 2000), false);
 });
 
-test('neutralUs depends on direction', () => {
-  assert.equal(neutralUs(1000, 2000, true), 1500);
-  assert.equal(neutralUs(1000, 2000, false), 1000);
+test('neutralUs is always the midpoint of the calibrated span', () => {
+  assert.equal(neutralUs(1000, 2000), 1500);
+  assert.equal(neutralUs(1200, 2000), 1600);
+  assert.equal(neutralUs(1500, 1500), 1500);
 });
 
 test('arm state promotes only after the hold with throttle low', () => {
@@ -84,7 +86,7 @@ test('effectiveMaxUs reserves low time inside the frame', () => {
 
 test('values start at the schema defaults except rx.source', () => {
   const mod = makeModel();
-  assert.equal(mod.get('esc0.throttle_us'), 1500);
+  assert.equal(mod.get('motor0.throttle_us'), 1500);
   assert.equal(mod.get('device.name'), 'betacrawler');
   assert.equal(mod.get('rx.source'), 'sim');
 });
@@ -124,33 +126,45 @@ test('drive outputs follow the mixer at a known instant', () => {
 test('steer ratio changes the drive outputs', () => {
   const mod = makeModel();
   const before = mod.telemetry(0).drv_l;
-  mod.set('tank_drive.steer_ratio', 0, 0);
+  mod.set('drive.steer_ratio', 0, 0);
   assert.notEqual(mod.telemetry(0).drv_l, before);
 });
 
-test('esc holds neutral while the arm switch is inactive', () => {
+test('a motor drives nothing until its mode is set', () => {
+  // The safety default: an unconfigured board cannot know what is on the end
+  // of the wire, so it emits no pulse at all. Neutral would be safe for an
+  // ESC and 30% duty for an H-bridge.
   const tlm = makeModel().telemetry(0);
+  assert.equal(tlm.arm0, ARM_OFF);
+  assert.equal(tlm.motor0, 0);
+  assert.equal(tlm.motor1, 0);
+});
+
+test('a motor holds neutral while the arm switch is inactive', () => {
+  const mod = makeModel();
+  mod.set('motor0.mode', 'input', 0);
+  const tlm = mod.telemetry(0);
   assert.equal(tlm.arm0, ARM_ARMING);
-  assert.equal(tlm.esc0, 1500);
+  assert.equal(tlm.motor0, 1500);
 });
 
 test('esc arms after the hold once the arm source allows it', () => {
   const mod = makeModel();
-  mod.set('tank_drive.arm_src', 'none', 0);
-  mod.set('esc0.mode', 'armed', 0);
+  mod.set('drive.arm_src', 'none', 0);
+  mod.set('motor0.mode', 'armed', 0);
   let tlm;
   for (let t = 0; t <= 2000; t += 100) tlm = mod.telemetry(t);
   assert.equal(tlm.arm0, ARM_ARMED);
-  assert.equal(tlm.esc0, 1500);
+  assert.equal(tlm.motor0, 1500);
 });
 
 test('changing the esc rate demotes an armed esc', () => {
   const mod = makeModel();
-  mod.set('tank_drive.arm_src', 'none', 0);
-  mod.set('esc0.mode', 'armed', 0);
+  mod.set('drive.arm_src', 'none', 0);
+  mod.set('motor0.mode', 'armed', 0);
   for (let t = 0; t <= 3000; t += 100) mod.telemetry(t);
   assert.equal(mod.telemetry(3000).arm0, ARM_ARMED);
-  mod.set('esc0.rate', '400', 3000);
+  mod.set('motor0.rate', '400', 3000);
   assert.equal(mod.telemetry(3000).arm0, ARM_ARMING);
 });
 
@@ -175,4 +189,84 @@ test('loadDefaults resets every value', () => {
   mod.set('tlm.rate', 40, 0);
   mod.loadDefaults(0);
   assert.equal(mod.get('tlm.rate'), 10);
+});
+
+test('carMix: throttle and steer pass through independently', () => {
+  assert.deepEqual(carMix(1700, 1300, 1500, 1000, 2000, 100, 100, 100, 0), [1700, 1300]);
+});
+
+test('carMix: full steer at zero throttle leaves throttle at centre', () => {
+  assert.deepEqual(carMix(1500, 2000, 1500, 1000, 2000, 100, 100, 100, 0), [1500, 2000]);
+});
+
+test('carMix: steer ratio scales steer only', () => {
+  assert.deepEqual(carMix(1500, 2000, 1500, 1000, 2000, 100, 100, 50, 0), [1500, 1750]);
+});
+
+test('carMix: reverse ratio scales reverse only', () => {
+  assert.deepEqual(carMix(1000, 1500, 1500, 1000, 2000, 100, 25, 100, 0), [1375, 1500]);
+});
+
+test('carMix: clamps to the output range', () => {
+  assert.deepEqual(carMix(2500, 500, 1500, 1000, 2000, 100, 100, 100, 0), [2000, 1000]);
+});
+
+test('applyInvert mirrors about the calibrated midpoint', () => {
+  assert.equal(applyInvert(1700, 1000, 2000, false), 1700);
+  assert.equal(applyInvert(1700, 1000, 2000, true), 1300);
+  assert.equal(applyInvert(1000, 1000, 2000, true), 2000);
+  assert.equal(applyInvert(1500, 1000, 2500, true), 2000);
+});
+
+test('applyTrim offsets then clamps at the end stop', () => {
+  assert.equal(applyTrim(1500, 60, 1000, 2000), 1560);
+  assert.equal(applyTrim(1500, -60, 1000, 2000), 1440);
+  assert.equal(applyTrim(1950, 200, 1000, 2000), 2000);
+  assert.equal(applyTrim(1050, -200, 1000, 2000), 1000);
+});
+
+test('the model reports a detached servo as 0 and a held one as its angle', () => {
+  const mod = makeModel();
+  assert.equal(mod.telemetry(0).srv, 0);
+  mod.set('servo.mode', 'hold', 0);
+  mod.set('servo.angle', 180, 0);
+  assert.equal(mod.telemetry(0).srv, 2000);
+  mod.set('servo.invert', 'reversed', 0);
+  assert.equal(mod.telemetry(0).srv, 1000);
+  mod.set('servo.invert', 'normal', 0);
+  mod.set('servo.trim_us', -120, 0);
+  assert.equal(mod.telemetry(0).srv, 1880);
+});
+
+test('car mode drives the bus without cross-coupling', () => {
+  const mod = makeModel();
+  mod.set('drive.mode', 'car', 0);
+  mod.set('rx.source', 'sim', 0);
+  // Sampled at 1000ms, where both synthetic channels sit inside the drive
+  // range -- at t=0 they start at 988 and the mixer's clamp would mask the
+  // pass-through this is checking.
+  const t = mod.telemetry(1000);
+  // ch2 is throttle and ch1 is steer by default; in car mode each lands on its
+  // own slot untouched.
+  assert.equal(t.drv_l, t.ch2);
+  assert.equal(t.drv_r, t.ch1);
+  assert.notEqual(t.ch1, t.ch2);   // and they really are different values
+});
+
+test('the two mixers produce different buses from the same channels', () => {
+  const skid = makeModel();
+  skid.set('rx.source', 'sim', 0);
+  const car = makeModel();
+  car.set('rx.source', 'sim', 0);
+  car.set('drive.mode', 'car', 0);
+
+  const a = skid.telemetry(1500);
+  const b = car.telemetry(1500);
+  assert.equal(a.ch1, b.ch1);
+  assert.equal(a.ch2, b.ch2);
+  // Same sticks, different buses: skid folds steer into both tracks, car keeps
+  // throttle and steer on their own slots.
+  assert.notDeepEqual([a.drv_l, a.drv_r], [b.drv_l, b.drv_r]);
+  assert.equal(b.drv_l, b.ch2);
+  assert.equal(b.drv_r, b.ch1);
 });

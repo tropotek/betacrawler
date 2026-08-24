@@ -70,18 +70,80 @@
               </div>
             </div>
           </fieldset>
-          <template x-if="$store.config.field('esc0.type').def">
+          <template x-if="$store.config.field('drive.mode').def">
+            <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>
+              <legend class="card-header h6 text-secondary mb-0 py-2">Drive</legend>
+              <div class="card-body row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="f-drive-mode">Drive Mode</label>
+                  <select class="form-select" id="f-drive-mode"
+                          :class="{ 'is-invalid': $store.config.invalid['drive.mode'] }"
+                          x-model="$store.config.values['drive.mode']"
+                          @change="$store.config.commit($store.config.field('drive.mode').def)">
+                    <template x-for="opt in $store.config.field('drive.mode').def?.options ?? []" :key="opt">
+                      <option :value="opt" x-text="opt"></option>
+                    </template>
+                  </select>
+                  <div class="form-text">
+                    <strong>skid</strong> mixes throttle and steer into a left and a right output —
+                    tracks, or a wheeled rover that turns by driving its sides at different speeds.
+                    <strong>car</strong> sends throttle to one motor and steer to a servo.
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+          </template>
+
+          <template x-if="$store.config.field('servo.invert').def">
+            <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>
+              <legend class="card-header h6 text-secondary mb-0 py-2">Steering Servo</legend>
+              <div class="card-body row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="f-servo-invert">Invert</label>
+                  <select class="form-select" id="f-servo-invert"
+                          :class="{ 'is-invalid': $store.config.invalid['servo.invert'] }"
+                          x-model="$store.config.values['servo.invert']"
+                          @change="$store.config.commit($store.config.field('servo.invert').def)">
+                    <template x-for="opt in $store.config.field('servo.invert').def?.options ?? []" :key="opt">
+                      <option :value="opt" x-text="opt"></option>
+                    </template>
+                  </select>
+                  <div class="form-text">
+                    Set this to <strong>reversed</strong> if the wheels turn the wrong way. Which
+                    way round the servo horn went on is a coin flip.
+                  </div>
+                </div>
+                <template x-if="$store.config.field('servo.trim_us').def">
+                  <div class="col-md-6">
+                    <label class="form-label" for="f-servo-trim">Trim (µs)</label>
+                    <input type="number" class="form-control" id="f-servo-trim"
+                           :min="$store.config.field('servo.trim_us').def?.min"
+                           :max="$store.config.field('servo.trim_us').def?.max"
+                           :class="{ 'is-invalid': $store.config.invalid['servo.trim_us'] }"
+                           x-model="$store.config.values['servo.trim_us']"
+                           @change="$store.config.commit($store.config.field('servo.trim_us').def)">
+                    <div class="form-text">
+                      Nudges the centre point so the wheels sit straight. Negative values go the
+                      other way. Applies in every servo mode — it corrects the linkage, not the input.
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </fieldset>
+          </template>
+
+          <template x-if="$store.config.field('motor0.type').def">
             <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>
               <legend class="card-header h6 text-secondary mb-0 py-2"
-                      x-text="$store.config.values['esc0.type'] === 'brushed' ? 'Motor Output' : 'ESC'"></legend>
+                      x-text="$store.config.values['motor0.type'] === 'brushed' ? 'Motor Output' : 'ESC'"></legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
                   <label class="form-label" for="f-esc-type">Type</label>
                   <select class="form-select" id="f-esc-type"
-                          :class="{ 'is-invalid': $store.config.invalid['esc0.type'] || $store.config.invalid['esc1.type'] }"
+                          :class="{ 'is-invalid': $store.config.invalid['motor0.type'] || $store.config.invalid['motor1.type'] }"
                           @change="$store.config.setBothEscTypes($event.target.value)">
-                    <template x-for="opt in $store.config.field('esc0.type').def?.options ?? []" :key="opt">
-                      <option :value="opt" :selected="opt === $store.config.values['esc0.type']" x-text="opt"></option>
+                    <template x-for="opt in $store.config.field('motor0.type').def?.options ?? []" :key="opt">
+                      <option :value="opt" :selected="opt === $store.config.values['motor0.type']" x-text="opt"></option>
                     </template>
                   </select>
                   <div class="form-text">
@@ -90,14 +152,14 @@
                   </div>
                 </div>
 
-                <template x-if="$store.config.values['esc0.type'] === 'brushless'">
+                <template x-if="$store.config.values['motor0.type'] === 'brushless'">
                   <div class="col-md-6">
                     <label class="form-label" for="f-esc-rate">PWM Rate (Hz)</label>
                     <select class="form-select" id="f-esc-rate"
-                            :class="{ 'is-invalid': $store.config.invalid['esc0.rate'] || $store.config.invalid['esc1.rate'] }"
+                            :class="{ 'is-invalid': $store.config.invalid['motor0.rate'] || $store.config.invalid['motor1.rate'] }"
                             @change="$store.config.setBothEscRates($event.target.value)">
-                      <template x-for="opt in $store.config.field('esc0.rate').def?.options ?? []" :key="opt">
-                        <option :value="opt" :selected="opt === $store.config.values['esc0.rate']" x-text="opt"></option>
+                      <template x-for="opt in $store.config.field('motor0.rate').def?.options ?? []" :key="opt">
+                        <option :value="opt" :selected="opt === $store.config.values['motor0.rate']" x-text="opt"></option>
                       </template>
                     </select>
                     <div class="form-text">
@@ -108,13 +170,13 @@
                   </div>
                 </template>
 
-                <template x-if="$store.config.values['esc0.type'] === 'brushed'">
+                <template x-if="$store.config.values['motor0.type'] === 'brushed'">
                   <div class="col-md-6">
                     <label class="form-label" for="f-esc-freq">Switch Freq (Hz)</label>
                     <input type="number" class="form-control" id="f-esc-freq"
-                           :class="{ 'is-invalid': $store.config.invalid['esc0.freq'] || $store.config.invalid['esc1.freq'] }"
-                           :min="$store.config.field('esc0.freq').def?.min" :max="$store.config.field('esc0.freq').def?.max"
-                           :value="$store.config.values['esc0.freq']"
+                           :class="{ 'is-invalid': $store.config.invalid['motor0.freq'] || $store.config.invalid['motor1.freq'] }"
+                           :min="$store.config.field('motor0.freq').def?.min" :max="$store.config.field('motor0.freq').def?.max"
+                           :value="$store.config.values['motor0.freq']"
                            @change="$store.config.setBothEscFreq($event.target.value)">
                     <div class="form-text">
                       PWM switching frequency into the H-bridge. 20 kHz (the default) is above the
@@ -123,14 +185,14 @@
                   </div>
                 </template>
 
-                <template x-if="$store.config.values['esc0.type'] === 'brushed'">
+                <template x-if="$store.config.values['motor0.type'] === 'brushed'">
                   <div class="col-md-6">
                     <label class="form-label" for="f-esc-brake">At Zero</label>
                     <select class="form-select" id="f-esc-brake"
-                            :class="{ 'is-invalid': $store.config.invalid['esc0.brake'] || $store.config.invalid['esc1.brake'] }"
+                            :class="{ 'is-invalid': $store.config.invalid['motor0.brake'] || $store.config.invalid['motor1.brake'] }"
                             @change="$store.config.setBothEscBrake($event.target.value)">
-                      <template x-for="opt in $store.config.field('esc0.brake').def?.options ?? []" :key="opt">
-                        <option :value="opt" :selected="opt === $store.config.values['esc0.brake']" x-text="opt"></option>
+                      <template x-for="opt in $store.config.field('motor0.brake').def?.options ?? []" :key="opt">
+                        <option :value="opt" :selected="opt === $store.config.values['motor0.brake']" x-text="opt"></option>
                       </template>
                     </select>
                     <div class="form-text">
@@ -140,29 +202,33 @@
                   </div>
                 </template>
 
-                <template x-if="$store.config.values['esc0.type'] === 'brushed'">
+                <template x-if="$store.config.field('motor0.invert').def">
                   <div class="col-md-3">
-                    <label class="form-label" for="f-esc0-invert">Motor 0 Invert</label>
-                    <select class="form-select" id="f-esc0-invert"
-                            :class="{ 'is-invalid': $store.config.invalid['esc0.invert'] }"
-                            x-model="$store.config.values['esc0.invert']"
-                            @change="$store.config.commit($store.config.field('esc0.invert').def)">
-                      <template x-for="opt in $store.config.field('esc0.invert').def?.options ?? []" :key="opt">
-                        <option :value="opt" :selected="opt === $store.config.values['esc0.invert']" x-text="opt"></option>
+                    <label class="form-label" for="f-motor0-invert">Motor 0 Invert</label>
+                    <select class="form-select" id="f-motor0-invert"
+                            :class="{ 'is-invalid': $store.config.invalid['motor0.invert'] }"
+                            x-model="$store.config.values['motor0.invert']"
+                            @change="$store.config.commit($store.config.field('motor0.invert').def)">
+                      <template x-for="opt in $store.config.field('motor0.invert').def?.options ?? []" :key="opt">
+                        <option :value="opt" :selected="opt === $store.config.values['motor0.invert']" x-text="opt"></option>
                       </template>
                     </select>
+                    <div class="form-text">
+                      Reverses which way this motor turns. Swapping two motor wires is the better
+                      permanent fix — use this when you cannot reach them.
+                    </div>
                   </div>
                 </template>
 
-                <template x-if="$store.config.field('esc1.invert').def && $store.config.values['esc0.type'] === 'brushed'">
+                <template x-if="$store.config.field('motor1.invert').def">
                   <div class="col-md-3">
-                    <label class="form-label" for="f-esc1-invert">Motor 1 Invert</label>
-                    <select class="form-select" id="f-esc1-invert"
-                            :class="{ 'is-invalid': $store.config.invalid['esc1.invert'] }"
-                            x-model="$store.config.values['esc1.invert']"
-                            @change="$store.config.commit($store.config.field('esc1.invert').def)">
-                      <template x-for="opt in $store.config.field('esc1.invert').def?.options ?? []" :key="opt">
-                        <option :value="opt" :selected="opt === $store.config.values['esc1.invert']" x-text="opt"></option>
+                    <label class="form-label" for="f-motor1-invert">Motor 1 Invert</label>
+                    <select class="form-select" id="f-motor1-invert"
+                            :class="{ 'is-invalid': $store.config.invalid['motor1.invert'] }"
+                            x-model="$store.config.values['motor1.invert']"
+                            @change="$store.config.commit($store.config.field('motor1.invert').def)">
+                      <template x-for="opt in $store.config.field('motor1.invert').def?.options ?? []" :key="opt">
+                        <option :value="opt" :selected="opt === $store.config.values['motor1.invert']" x-text="opt"></option>
                       </template>
                     </select>
                     <div class="form-text">

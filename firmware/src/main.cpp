@@ -43,7 +43,7 @@ constexpr uint32_t kWriteStallTimeoutMs = 200;
 // The two cases are told apart by whether ANY byte was accepted. A partial
 // line is a stalled host worth waiting out. Zero bytes on the first call is
 // no host at all, and must return immediately: this runs inside loop(), so
-// blocking here stops the receiver drain, the mix and the ESC pulse writes
+// blocking here stops the receiver drain, the mix and the motor pulse writes
 // for as long as it waits -- which for an untethered vehicle, where nothing
 // is ever listening, is every telemetry period.
 static void writeLine(const char* buf, size_t len) {

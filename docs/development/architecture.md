@@ -90,9 +90,9 @@ grants it. It doesn't violate the spirit of "observers are const" because that r
 is not param state; it's a purpose-built, one-way signal bus with exactly one writer decided by
 construction, not by convention a second module could quietly bend.
 
-`tank_drive` (added later) uses the identical pattern for a second, independent bus
+`drive` (added later) uses the identical pattern for a second, independent bus
 (`Registry::driveOutputs()`) rather than a second writer sharing `rx`'s own -- each bus still has
-exactly one constructor-wired producer, the pattern is just applied twice. `esc0`/`esc1` read
+exactly one constructor-wired producer, the pattern is just applied twice. `motor0`/`motor1` read
 whichever bus their own `.src` selection points at.
 
 Three shapes for carrying
@@ -106,15 +106,50 @@ The bus also carries one piece of state beyond the channel values themselves: `m
 frame (real or simulated). It exists for the same reason the channel values do — a consumer that
 needs to know whether the link is actually alive cannot infer that from a channel value holding
 steady, since a real stick at its mechanical endpoint is indistinguishable from a dead link by
-value alone. `esc0`/`esc1`'s `mode=input` failsafe is the first consumer of this signal; `servo` does not
+value alone. `motor0`/`motor1`'s `mode=input` failsafe is the first consumer of this signal; `servo` does not
 need it (position-hold-on-dropout is its own correct, deliberate design, not a gap).
+
+## The drive bus's two mixers
+
+One module, `drive`, owns the bus in both vehicle layouts, selected by `drive.mode`. A sibling
+`car_drive` module was considered and rejected: it would have duplicated the arm gate and the
+freshness handling, and two producers on one bus needs an arbiter that nothing else here has.
+
+The slots keep their meaning by index, and their wire names never change:
+
+| Slot | `skid` | `car` | Name in `motor<N>.src` / `servo.src` |
+|---|---|---|---|
+| 0 | left track | throttle | `drive_left` |
+| 1 | right track | steer | `drive_right` |
+| 2 | arm | arm | not selectable; read directly |
+
+Stable names keep INI files portable across a mode change and keep `ParamDef.opts` the static
+table it has to be. The curated pages relabel them for humans, which is what curation is for. The
+cost is accepted: `set motor0.src drive_left` reads oddly on a car.
+
+`carMix()` needs no proportional clamp, unlike `mix()`. The skid mixer folds the steer offset into
+both tracks, so a hard turn at full throttle can push one past its limit and both must scale
+together; the car mixer's two outputs are independent and neither can displace the other.
+
+**Steering is never gated.** The servo has no arm gate, no failsafe centring and no
+hold-last-position on link loss: it follows its source in every state the vehicle can reach. A
+disarmed vehicle is not moving, so there is nothing for a steering gate to make safe, and
+freezing or centring the wheels when the link drops takes away the one control still worth having
+on a vehicle that is still rolling. The motors carry the whole arming responsibility, clamping to
+`neutralUs()` whenever the arm switch is inactive or the bus is stale. Bench-confirmed: with the
+vehicle disarmed the motor output sits at neutral while steering keeps tracking the stick.
+
+`neutralUs()` is always the midpoint of `min_us`/`max_us`. There is no parameter to move it,
+deliberately: the one that existed encoded whether the attached controller read 1000µs or 1500µs
+as stop, and its unsafe setting made every safe state in the firmware — arm-hold pulse, failsafe
+value, arm-switch clamp — command full reverse on a centre-neutral ESC.
 
 ## Control latency, and where it actually lives
 
-The stick-to-motor chain is `rx` decode → `tank_drive` mix → `esc0`/`esc1` write. All three run in
+The stick-to-motor chain is `rx` decode → `drive` mix → `motor0`/`motor1` write. All three run in
 one `Registry::tick()` pass, in that registration order, so a decoded frame reaches the compare
 register in the **same** loop iteration — there is no per-module pipeline delay to tune, and no
-smoothing or ramping anywhere in `esc_math` or `tank_drive_math` to unwind.
+smoothing or ramping anywhere in `motor_math` or `drive_math` to unwind.
 
 The main loop is not the constraint either. It is free-running, unthrottled, and the `loop`
 telemetry field reports it in the tens of kHz on an F411 — already well past the 8kHz a flight
@@ -124,7 +159,7 @@ The costs that remain are the two frame rates at either end:
 
 - **The RF link**, set on the handset, not here. The `rfrate` field reports it. At a 50Hz packet
   rate that is 20ms before the board has even been told anything changed.
-- **The PWM output frame**, `esc<N>.rate`. `writeUs()` writes a *shadow* compare register; it only
+- **The PWM output frame**, `motor<N>.rate`. `writeUs()` writes a *shadow* compare register; it only
   becomes a pulse at the next timer update event. At 50Hz that is 0–20ms of wait and an effective
   command rate of 50Hz no matter how fast everything upstream runs. This is the term worth
   changing, and the parameter exists to change it.
@@ -135,9 +170,9 @@ change must be followed by a re-write of the pulse, which is why `apply()` and `
 `writeUs()`. And a BLHeli_S-class ESC frame-detects as it arms, so a rate change under an armed ESC
 forces a fresh arm-hold (`rateChangeDemotesArmed`), the same way a src change already does.
 
-`esc<N>.rate` and `esc<N>.max_us` interact, and that interaction is resolved in the driver by
+`motor<N>.rate` and `motor<N>.max_us` interact, and that interaction is resolved in the driver by
 `effectiveMaxUs()`, not in the schema. `core::Params::setNum` validates one value against its own
-declared bounds and has no cross-parameter seam — the same limitation `esc<N>.min_us`/`max_us`
+declared bounds and has no cross-parameter seam — the same limitation `motor<N>.min_us`/`max_us`
 already work around by declaring bounds that cannot cross. `effectiveMaxUs` reserves `kMinLowUs` of
 low time inside each frame so the ESC always sees a pulse train rather than a line held high; it is
 deliberately **not** applied to `neutralUs()`, because clamping neutral would silently move where
@@ -235,7 +270,7 @@ grouping reads best for that page, via `Alpine.store('config').field(key)` /
 `Alpine.store('telemetry').field(key)` — a lookup by key, not an iteration. Adding a firmware
 parameter needs an explicit page decision and a hand-written label before it appears anywhere. A
 curated page must degrade a key its connected board doesn't publish (`field(key).def === null`,
-e.g. `esc1.*` on a board with `FEATURE_ESC1 0`) to an absent/disabled slot rather than crash.
+e.g. `motor1.*` on a board with `FEATURE_MOTOR1 0`) to an absent/disabled slot rather than crash.
 
 Display hints never change what goes over the wire:
 
@@ -369,10 +404,10 @@ USART1's two pin-pair options without fully freeing either.
 
 **`RX_RX_PIN`/`RX_TX_PIN` are PA3/PA2 as shipped** — CRSF moved onto USART2's fully-native mapping,
 verified safe for real ELRS traffic exactly as thoroughly as PB7 was, which fully frees USART1's
-PA9/PA10 as a genuinely standard, unremapped UART pair for a fork's own project. `esc1` moved from
-PB6 to PB8 (TIM4_CH3, still a separate timer peripheral from `esc0`'s TIM3, just a different channel
+PA9/PA10 as a genuinely standard, unremapped UART pair for a fork's own project. `motor1` moved from
+PB6 to PB8 (TIM4_CH3, still a separate timer peripheral from `motor0`'s TIM3, just a different channel
 of TIM4 than before) to make room, and WiFi moved from PA2/PA3 to PB6/PB7 (USART1's alternate
-mapping) to take the pins CRSF vacated. `esc1`'s new pin is safe regardless of any of this bootloader
+mapping) to take the pins CRSF vacated. `motor1`'s new pin is safe regardless of any of this bootloader
 analysis — motor output is always MCU-to-peripheral, never the reverse, so nothing external ever
 transmits into PB8. WiFi's new pins carry the same caveat PA3 needed before it was bench-tested:
 `FEATURE_WIFI` ships 0 by default, and nobody has yet run the ESP8266's real AT-firmware traffic

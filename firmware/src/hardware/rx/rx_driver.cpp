@@ -221,7 +221,7 @@ void RxDriver::sendBattery(uint32_t nowMs) {
   const size_t n = encodeBatteryFrame(buf, battery_->milliVolts(),
                                       battery_->remainingPct());
   // Never block: this runs inside loop(), so a stalled write would stop the
-  // receiver drain and the ESC pulse writes with it. A dropped frame is free;
+  // receiver drain and the motor pulse writes with it. A dropped frame is free;
   // the next one is kBatteryFrameMs away.
   if ((size_t)uart_->availableForWrite() < n) return;
   uart_->write(buf, n);

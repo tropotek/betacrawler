@@ -108,7 +108,7 @@ firmware/include/      config.h (project name/version/baud/capacity limits) and
 firmware/src/core/     pure C++, zero Arduino — protocol, params, registry, dispatch,
                         triangle, led_pattern, health, tlm_format, boot_log, version,
                         device_params. Native-tested (Unity).
-firmware/src/features/ behaviours, one folder per module (tank_drive/)
+firmware/src/features/ behaviours, one folder per module (drive/)
 firmware/src/hardware/ device drivers, one folder per module (system/, button/, servo/, rx/;
                         WiFi and other peripherals go here)
 firmware/src/modules.cpp  THE wiring file — one #if block per module. Compiled by BOTH envs.
@@ -205,8 +205,8 @@ PA10, PA3, and PB6/PB7 all block DFU under a deliberate flood of the byte its au
 watches for) — PA3 works because real, linked ELRS traffic never happens to emit that byte, not
 because of any property of the pin itself. Crossfire/TBS is untested and may behave differently;
 don't assume PA3 is safe for a receiver protocol that hasn't been checked. `RX_TX_PIN` stays
-outbound-only deliberately: it can't trigger the race regardless of protocol. `esc1` moved to PB8
-(from PB6) and WiFi moved to PB6/PB7 (from PA2/PA3) to make room — `esc1`'s pin is safe by
+outbound-only deliberately: it can't trigger the race regardless of protocol. `motor1` moved to PB8
+(from PB6) and WiFi moved to PB6/PB7 (from PA2/PA3) to make room — `motor1`'s pin is safe by
 directionality alone (motor output never receives external data), and WiFi's new pins carry the
 same untested-for-its-own-traffic caveat PA3 no longer needs. Reasoning and full bench methodology:
 `docs/development/architecture.md`, "CRSF pin choice and the bootloader race".

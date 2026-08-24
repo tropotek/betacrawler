@@ -186,7 +186,7 @@ document.addEventListener('alpine:init', () => {
     invalid: {},
 
     // Looked up by key, for the hand-curated pages -- `def: null` when the
-    // connected board's schema doesn't carry this key at all (e.g. esc1.* on
+    // connected board's schema doesn't carry this key at all (e.g. motor1.* on
     // a board with FEATURE_ESC1 0). A curated page names specific keys, so it
     // must handle a missing one explicitly.
     field(key) {
@@ -214,9 +214,9 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
-    // One control over several independent params -- esc0/esc1 keep separate
+    // One control over several independent params -- motor0/motor1 keep separate
     // params (notify() only ever reaches the owning module, so one shared
-    // param would leave the other ESC un-notified), but two motors on one
+    // param would leave the other motor un-notified), but two motors on one
     // vehicle running different values has no use case, so the UI offers one
     // control. Each key is written, marked and rolled back on its own result:
     // a refusal partway through must not leave the form showing a value the
@@ -240,24 +240,20 @@ document.addEventListener('alpine:init', () => {
       if (failed) showError(`${label}: ${failed.message}`);
     },
 
-    setBothDirections(v) {
-      return this.setAll(['esc0.direction', 'esc1.direction'], v, 'Direction');
-    },
-
     setBothEscRates(v) {
-      return this.setAll(['esc0.rate', 'esc1.rate'], v, 'PWM Rate');
+      return this.setAll(['motor0.rate', 'motor1.rate'], v, 'PWM Rate');
     },
 
     setBothEscTypes(v) {
-      return this.setAll(['esc0.type', 'esc1.type'], v, 'Type');
+      return this.setAll(['motor0.type', 'motor1.type'], v, 'Type');
     },
 
     setBothEscFreq(v) {
-      return this.setAll(['esc0.freq', 'esc1.freq'], v, 'Switch Freq', Number);
+      return this.setAll(['motor0.freq', 'motor1.freq'], v, 'Switch Freq', Number);
     },
 
     setBothEscBrake(v) {
-      return this.setAll(['esc0.brake', 'esc1.brake'], v, 'At Zero');
+      return this.setAll(['motor0.brake', 'motor1.brake'], v, 'At Zero');
     },
 
     // Betaflight's own formula: new = old * (measured / reported). The

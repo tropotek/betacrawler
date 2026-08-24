@@ -56,7 +56,7 @@ Work through these in order:
 ## Channels move but the tracks do not
 
 The vehicle is not armed. Check on the **Modes** page that the arm channel's live marker sits
-inside the highlighted band, and that `tank_drive.arm_src` names the channel your switch is
+inside the highlighted band, and that `drive.arm_src` names the channel your switch is
 actually on.
 
 If the switch looks right, centre the throttle and wait two seconds — arming also requires the
@@ -64,17 +64,37 @@ throttle to have been at neutral for that long before it takes effect.
 
 ## One track runs backwards
 
-Swap any two of the three motor wires on that ESC, or reverse that motor's direction in BLHeli
+Set `Invert` for that motor on the Configuration page — it works for both brushless and brushed,
+and needs no rewiring, which matters on a sealed model. Otherwise swap any two of the three motor
+wires on that ESC, or reverse that motor's direction in BLHeli
 Configurator. Either works.
 
 ## The two tracks are swapped left-for-right
 
-No need to rewire. Swap `esc0.src` and `esc1.src` between `drive_left` and `drive_right`.
+No need to rewire. Swap `motor0.src` and `motor1.src` between `drive_left` and `drive_right`.
 
 ## It will not reverse
 
-The ESC is not in bidirectional mode. Set it in BLHeli Configurator — the firmware already
-expects bidirectional and cannot make an ESC reverse that is not configured for it.
+The ESC does not treat centre-stick as stop. A surface ESC already does; a BLHeli_S drone ESC
+needs its motor direction set to **Bidirectional** in BLHeli Configurator. The firmware always
+commands 1500 µs for stop and cannot make an ESC reverse that is not configured for it.
+
+## Nothing happens at all — no motor, no telemetry movement
+
+Check `Motor → mode` on the Configuration page. A board that has never been configured, or one
+whose settings a firmware update reset, ships with both motors `off` and drives nothing. Set
+`Type` to match your hardware, then mode to `input`, then **Save to flash**.
+
+## A motor never arms — `arm0` or `arm1` stays at 1
+
+The module is stuck in its arm-hold: it waits for a commanded value near neutral before it will
+drive, and it is not seeing one.
+
+Most often the ESC is a drone ESC still in its default aircraft mode, where stop is 1000 µs.
+Set its motor direction to **Bidirectional** in BLHeli Configurator, or fit a surface ESC.
+
+Otherwise check the throttle stick really does rest at centre on the Controller page, and that
+the arm switch is active — `motor<N>.mode` must be `input` and the link must be live.
 
 ## It creeps with the sticks centred
 

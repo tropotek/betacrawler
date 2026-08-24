@@ -3,9 +3,9 @@
           </div>
           <fieldset class="card" :disabled="!$store.app.connected" x-data="{
             rows: [
-              { title: 'Throttle',  channelKey: 'tank_drive.throttle_src', rangeKeys: null, directionSelect: true },
-              { title: 'Direction', channelKey: 'tank_drive.steer_src',    rangeKeys: null, directionSelect: false },
-              { title: 'Arm',       channelKey: 'tank_drive.arm_src',      rangeKeys: ['tank_drive.arm_min', 'tank_drive.arm_max'], directionSelect: false },
+              { title: 'Throttle', channelKey: 'drive.throttle_src', rangeKeys: null },
+              { title: 'Steer',    channelKey: 'drive.steer_src',    rangeKeys: null },
+              { title: 'Arm',      channelKey: 'drive.arm_src',      rangeKeys: ['drive.arm_min', 'drive.arm_max'] },
             ],
           }">
             <div class="card-body">
@@ -13,15 +13,6 @@
                 <div class="mode-row d-flex gap-3 align-items-start">
                   <div class="mode-name">
                     <div class="mode-title" x-text="row.title"></div>
-                    <template x-if="row.directionSelect">
-                      <select class="form-select form-select-sm mt-2" aria-label="ESC direction"
-                              x-model="$store.config.values['esc0.direction']"
-                              @change="$store.config.setBothDirections($event.target.value)">
-                        <template x-for="opt in $store.config.field('esc0.direction').def?.options ?? []" :key="opt">
-                          <option :value="opt" :selected="opt === $store.config.values['esc0.direction']" x-text="opt"></option>
-                        </template>
-                      </select>
-                    </template>
                   </div>
 
                   <div class="mode-channel">

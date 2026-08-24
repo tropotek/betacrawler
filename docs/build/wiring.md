@@ -14,12 +14,13 @@ position on the diagram.
 
 | Signal | Board pin | Goes to |
 |---|---|---|
-| ESC 0 | PA6 | ESC 0 signal wire — the **left** track |
-| ESC 1 | PB6 | ESC 1 signal wire — the **right** track |
-| Receiver | PB7 | The receiver's CRSF **TX** pad |
+| Motor 0 | PA6 | Motor 0 signal wire — the **left** track |
+| Motor 1 | PB8 | Motor 1 signal wire — the **right** track |
+| Steering servo | PB10 | Servo signal wire — `car` drive mode only |
+| Receiver | PA3 | The receiver's CRSF **TX** pad |
 | Receiver power | 5V, GND | The receiver's + and − |
 | Board power | 5V, GND | The PDB's 5V BEC output |
-| Telemetry | PA9 | The receiver's CRSF **RX** pad |
+| Telemetry | PA2 | The receiver's CRSF **RX** pad |
 | Battery sense *(optional)* | PA1 | The sense divider's output |
 | Status LED | PC13 | On the board already, nothing to wire |
 
@@ -76,17 +77,43 @@ the bench.
 
 ## Which track is which
 
-`esc0` drives the left track and `esc1` the right. If they turn out swapped once you are driving,
-you do not need to rewire: change `esc0.src` and `esc1.src` between `drive_left` and
+`motor0` drives the left track and `motor1` the right. If they turn out swapped once you are driving,
+you do not need to rewire: change `motor0.src` and `motor1.src` between `drive_left` and
 `drive_right` in the app.
 
 If a single track runs backwards, swap any two of the three motor wires on that ESC.
 
 Next: [Flashing the firmware](flashing.md).
 
+## Wiring for a car (one motor + steering servo)
+
+Set `Drive Mode` to `car` on the Configuration page — no reflash needed. `motor0` keeps PA6 and
+takes the mixer's throttle output; the steering servo goes on **PB10** and takes its steer output.
+`motor1` is unused on a single-motor car, so leave its mode `off`.
+
+The ESC must treat centre-stick as stop, which a surface (car/boat) ESC already does. Its BEC
+powers the board, the receiver and the servo.
+
+[![Wiring a Black Pill to a surface ESC, one brushless motor, a steering servo on PB10, and a CRSF receiver](../assets/screenshots/wiring-diagram-car.png)](../assets/screenshots/wiring-diagram-car-large.png){target=_blank}
+
+**Click the diagram to open it full size** in a new tab.
+
+If the wheels steer the wrong way, set `Invert` on the servo rather than turning the horn round;
+if they sit off-straight with the stick centred, nudge `Trim`.
+
 ## Wiring for brushed motors (H-Bridge)
 
-`esc0`/`esc1` can drive a DRV8833-class H-bridge instead of a brushless ESC — pick `brushed` for
+!!! warning "Fit pulldowns on the H-bridge inputs"
+
+    Put a 10k resistor from each H-bridge input to ground — four in total for two motors.
+
+    The STM32's pins are floating whenever the firmware is not driving them: during a firmware
+    update, between pressing NRST and the firmware booting, and from the moment the pack is
+    connected until the board has started. An H-bridge reads a floating input as undefined, so
+    without pulldowns the motor can run during any of those windows. With them, floating means
+    off. Check whether your module already has them before adding your own.
+
+`motor0`/`motor1` can drive a DRV8833-class H-bridge instead of a brushless ESC — pick `brushed` for
 `Type` on the Configuration page, no reflash needed. The pack feeds the H-bridge module directly;
 the board's own 5V still comes from USB or the receiver, same as an ESC build — a brushed build
 does not power the board from the drive-motor pack.
@@ -109,7 +136,7 @@ does not power the board from the drive-motor pack.
 
 !!! danger "Set Type to `brushed` and save before connecting the drive pack"
 
-    Out of the box `esc0.type`/`esc1.type` are `brushless`, and an ESC's
+    Out of the box `motor0.type`/`motor1.type` are `brushless`, and an ESC's
     idle command is a 1500 µs pulse in a 5000 µs frame — into an H-bridge that
     is a 30% duty cycle, so both motors run at a third throttle from the
     moment the board powers up, with no receiver and no arming. Set `Type` to

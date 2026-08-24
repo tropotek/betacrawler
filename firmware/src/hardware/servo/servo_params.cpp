@@ -12,14 +12,19 @@ using core::TlmType;
 // the name, the driver receives the index.
 static const char* const kModes[] = {"off", "hold", "sweep", "input"};
 
-// Order must match core::Inputs' slot indices directly -- "ch1" is slot 0,
-// so servo.src's enum index IS the bus index, no offset math anywhere. Named
-// to match the RX module's own ch1..ch16 telemetry fields, which are the
-// same values before this module ever sees them.
+// ch1..ch12 index core::Inputs' slots directly -- "ch1" is slot 0 -- named to
+// match the RX module's own ch1..ch16 telemetry fields. Indices 12/13 select
+// the drive bus instead, and the driver subtracts kDriveSrcBase to reach its
+// slot.
 static const char* const kSrcNames[] = {
   "ch1", "ch2", "ch3", "ch4", "ch5", "ch6",
   "ch7", "ch8", "ch9", "ch10", "ch11", "ch12",
+  // Indices 12/13: the drive module's own bus (core::Registry::driveOutputs()),
+  // not a raw rx channel. Same convention motor0.src/motor1.src use.
+  "drive_left", "drive_right",
 };
+
+static const char* const kInvertOpts[] = {"normal", "reversed"};
 
 static const ParamDef kParams[] = {
   // key            type             label    unit  min   max   opts    n  maxlen def       defStr group
@@ -47,15 +52,15 @@ static const ParamDef kParams[] = {
   // restore still accept it regardless (showIf is display-only, never an
   // access rule).
   //
-  // Defaults to ch2 (roll -- right stick horizontal under this bench's Mode
-  // 2 TX), confirmed on real hardware, not inferred: an earlier ch4 default
-  // assumed a TAER channel order that turned out to be wrong. Paired
-  // deliberately with the ESC module's ch3 (pitch) default -- both self-
-  // center, unlike the throttle stick, which is what makes bidirectional
-  // ESC throttle safe to release, and puts steering+throttle on one stick
-  // for single-stick car/crawler control. See _notes/spec-esc.md's
-  // "Amendment 2" for the full reasoning.
-  {"servo.src",     ParamType::Enum, "Source", nullptr, 0, 0, kSrcNames, 12, 0, 1, nullptr, nullptr, "servo.mode", "input"},
+  // Defaults to ch2 (roll -- right stick horizontal on a Mode 2 TX), paired
+  // with the motor module's own ch3 (pitch) default: both self-center, unlike
+  // the throttle stick, putting steering and throttle on one stick.
+  {"servo.src",     ParamType::Enum, "Source", nullptr, 0, 0, kSrcNames, 14, 0, 1, nullptr, nullptr, "servo.mode", "input"},
+  // Linkage properties, so they apply in every output mode -- hold, sweep and
+  // input alike. Invert runs first, then trim, then the range clamp, so trim
+  // always moves the horn the same physical direction either way round.
+  {"servo.invert",  ParamType::Enum, "Invert", nullptr, 0, 0, kInvertOpts, 2, 0, INVERT_NORMAL, nullptr, nullptr},
+  {"servo.trim_us", ParamType::U8,   "Trim",   "\xc2\xb5s", -250, 250, nullptr, 0, 0, 0, nullptr, nullptr},
 };
 
 // The commanded pulse width, or 0 when off. There is no position feedback --
@@ -104,6 +109,15 @@ uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs) {
   if (us < (int32_t)minUs) return minUs;
   if (us > (int32_t)maxUs) return maxUs;
   return (uint16_t)us;
+}
+
+uint16_t applyInvert(uint16_t us, uint16_t minUs, uint16_t maxUs, bool inverted) {
+  if (!inverted) return us;
+  return clampUs((int32_t)minUs + (int32_t)maxUs - (int32_t)us, minUs, maxUs);
+}
+
+uint16_t applyTrim(uint16_t us, int32_t trimUs, uint16_t minUs, uint16_t maxUs) {
+  return clampUs((int32_t)us + trimUs, minUs, maxUs);
 }
 
 }  // namespace servo

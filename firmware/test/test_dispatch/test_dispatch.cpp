@@ -46,7 +46,7 @@ static const ModuleDesc kFakeDesc = {"fake", "Fake", kFakeParams, 2, kFakeTlm, 2
 // Registry::notify() could hand drivers the GLOBAL index instead of the
 // module-local one and every assertion in this file would still pass -- while
 // on the real multi-module board a revert would drive the rx module with
-// index 3 and esc1 with index 0, misapplying every parameter.
+// index 3 and motor1 with index 0, misapplying every parameter.
 //
 // Deliberately no telemetry (tlm = nullptr, tlmCount = 0): the telemetry
 // assertions here are about kFakeDesc's single field, and a second module
@@ -360,7 +360,7 @@ void test_hello_lists_the_enabled_modules() {
   d.handle(q, out, sizeof(out));
   TEST_ASSERT_NOT_NULL(strstr(
       out,
-      "\"mods\":[\"device\",\"system\",\"vbat\",\"rx\",\"tank_drive\",\"esc0\",\"esc1\"]"));
+      "\"mods\":[\"device\",\"system\",\"servo\",\"vbat\",\"rx\",\"drive\",\"motor0\",\"motor1\"]"));
 }
 
 void test_schema_lists_all_params_and_fits_buffer() {
@@ -417,7 +417,7 @@ void test_schema_carries_groups_and_the_telemetry_descriptor() {
   TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"Device\""));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"Telemetry\""));   // tlm.rate's override
   TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"System\""));
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"ESC 0\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"group\":\"Motor 0\""));
   // vdd is the field that proves display hints survive: millivolts on the
   // wire, volts in the browser.
   TEST_ASSERT_NOT_NULL(strstr(out, "\"key\":\"vdd\""));

@@ -91,30 +91,36 @@
 // #define SERVO_TIMER  TIM4
 // #define SERVO_PIN    PB6      // TIM4_CH1
 
-// Required when FEATURE_ESC0 is 1: a brushless ESC on its own timer channel,
+// Required when FEATURE_MOTOR0 is 1: a brushless ESC on its own timer channel,
 // separate from FEATURE_SERVO's timer -- see the note in blackpill_f411ce.h
 // for why sharing one is unsafe. The channel IS derived from the pin, so the
 // two must agree; nothing checks that at compile time.
-// ESC0_FRAME_US (optional, 20000/50Hz), ESC0_ARM_HOLD_MS (optional, 2000),
-// ESC0_INPUT_STALE_MS (optional, 500) and ESC0_ARM_LOW_MARGIN_US (optional,
-// 50) are all defaulted in esc0_driver.cpp.
+// MOTOR0_FRAME_US (optional, 20000/50Hz), MOTOR0_ARM_HOLD_MS (optional, 2000),
+// MOTOR0_INPUT_STALE_MS (optional, 500) and MOTOR0_ARM_LOW_MARGIN_US (optional,
+// 50) are all defaulted in motor0_driver.cpp.
 //
-// A second ESC (FEATURE_ESC1 with ESC1_PIN/ESC1_TIMER, same shape) needs a
+// A second ESC (FEATURE_MOTOR1 with MOTOR1_PIN/MOTOR1_TIMER, same shape) needs a
 // DIFFERENT PHYSICAL TIMER PERIPHERAL from the first, not just a different
 // channel of the same one -- two independently-constructed HardwareTimer
 // objects sharing one peripheral fight over its shared overflow/period
 // register.
 //
 // Power the motor/ESC from its own supply, never this board's 5V/VBUS pin.
-// #define ESC0_TIMER  TIM3
-// #define ESC0_PIN    PA6      // TIM3_CH1
+// #define MOTOR0_TIMER  TIM3
+// #define MOTOR0_PIN    PA6      // TIM3_CH1
 
-// Required when FEATURE_TANK_DRIVE is 1: no pins, no macros -- this module
-// touches no hardware, only rx's bus and its own. The one thing that DOES
-// matter: in src/modules.cpp's registerModules(), it must register after rx
-// and before esc0/esc1, or esc0/esc1 will mix stale (one-loop-old) throttle/
-// steer data. See tank_drive_driver.cpp's own comment at the registration
+// Required when FEATURE_DRIVE is 1: no pins, and one optional macro -- this
+// module touches no hardware, only rx's bus and its own. The one thing that
+// DOES matter: in src/modules.cpp's registerModules(), it must register after
+// rx and before motor0/motor1, or they will mix stale (one-loop-old)
+// throttle/steer data. See drive_driver.cpp's own comment at the registration
 // site before reordering anything.
+//
+// DRIVE_MODE_DEFAULT is optional (drive::MODE_SKID): the mixer this board
+// starts on. drive::MODE_CAR suits a board wired as one driven motor plus a
+// steering servo. drive.mode overrides it at runtime; this only decides where
+// an unconfigured board starts, including after a settings reset.
+// #define DRIVE_MODE_DEFAULT  drive::MODE_SKID
 
 // Required when FEATURE_RX is 1: an RC receiver on its own hardware serial
 // port, decoded by the protocol-agnostic rx module.
