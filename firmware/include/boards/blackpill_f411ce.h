@@ -15,7 +15,7 @@
 // --- features ---------------------------------------------------------------
 #define FEATURE_STATUS_LED  1
 #define FEATURE_BUTTON  0
-#define FEATURE_SERVO   0
+#define FEATURE_SERVO   1
 #define FEATURE_RX         1
 #define FEATURE_DRIVE 1
 #define FEATURE_MOTOR0       1
@@ -50,26 +50,21 @@
 // than assuming a polarity.
 #define BUTTON_PIN      USER_BTN
 
-// Hobby servo on TIM4_CH1 -- but TIM4 is now claimed by motor1 (below), which
-// drives PB8/TIM4_CH3, a different channel of the SAME physical peripheral.
-// This board does not ship FEATURE_SERVO on, so the conflict is latent, not
-// live; the #error guard just past ESC1's block below catches the case where
-// someone flips FEATURE_SERVO on here without also reconsidering motor1 -- two
-// independently-constructed HardwareTimer objects on TIM4, even on different
-// channels, still fight over its shared overflow/period register. A servo
-// fork on this board needs a different timer entirely, not any channel of
-// TIM4. Note this part is LQFP48, so port C is only PC13/14/15 and PB11 is
-// not bonded out -- most of the timer maps a generic F4 pinout table offers
-// do not exist here.
+// Hobby servo on TIM2_CH3. Its own timer peripheral, separate from motor0's
+// TIM3 and motor1's TIM4 -- two HardwareTimer objects on one peripheral fight
+// over its shared overflow/period register even on different channels. PB10 is
+// PB_10's only PinMap_TIM entry on this part, so it needs no _ALT alias.
 //
 // SERVO_FRAME_US (20000, i.e. 50Hz) is optional, defaulted in the driver.
 //
 // Power the servo from the 5V pin (USB VBUS), never 3V3, with a 470-1000uF
 // bulk cap at the connector. Current steps from a moving servo can droop VBUS
 // far enough to reset the MCU and drop the USB CDC link, which presents as a
-// configurator disconnect rather than as anything obviously electrical.
-#define SERVO_TIMER     TIM4
-#define SERVO_PIN       PB6
+// configurator disconnect rather than as anything obviously electrical. A
+// separate BEC on the battery side avoids this entirely; tie its ground to the
+// board's.
+#define SERVO_TIMER     TIM2
+#define SERVO_PIN       PB10
 
 // Brushless ESCs on TIM3_CH1 and TIM4_CH3. Each is a separate timer
 // peripheral, on purpose -- two independently-constructed HardwareTimer
@@ -147,17 +142,6 @@
 #define MOTOR0_FRAME_US   5000
 #define MOTOR1_FRAME_US   5000
 
-// Both motor1 and (if ever enabled) servo drive TIM4 -- motor1 on CH3 (PB8),
-// servo on CH1 (PB6) -- different channels of the SAME physical peripheral,
-// which still fight over its shared overflow/period register even though
-// they no longer share a pin. FEATURE_SERVO ships 0 on this board today, so
-// nothing conflicts yet -- but if someone flips it on here without also
-// reconsidering motor1, both servo::ServoDriver and motor1::MotorDriver would
-// construct their own HardwareTimer(TIM4) and fight over its shared period
-// register. Catch that at compile time instead.
-#if FEATURE_SERVO && FEATURE_MOTOR1
-#error "servo and motor1 both claim TIM4 on this board -- move one to another timer/pin before enabling both"
-#endif
 
 // CRSF receiver on USART2's native pins. Both DFU entry paths reboot into
 // the STM32 ROM bootloader, which arms multiple peripherals at once, each

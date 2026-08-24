@@ -28,7 +28,7 @@
 // --- features ---------------------------------------------------------------
 #define FEATURE_STATUS_LED  1
 #define FEATURE_BUTTON  0
-#define FEATURE_SERVO   0
+#define FEATURE_SERVO   1
 #define FEATURE_RX         1
 #define FEATURE_DRIVE 1
 #define FEATURE_MOTOR0       1
@@ -59,17 +59,13 @@
 // than assuming a polarity.
 #define BUTTON_PIN      USER_BTN
 
-// Hobby servo on TIM4_CH1 -- but TIM4 is now claimed by motor1 (below), which
-// drives PB8/TIM4_CH3, a different channel of the SAME peripheral. Same
-// latent conflict as blackpill_f411ce.h: this board does not ship
-// FEATURE_SERVO on, so the #error guard just past motor1's block below only
-// fires if someone flips FEATURE_SERVO on here without also reconsidering
-// motor1.
+// Hobby servo on TIM2_CH3, same pin and reasoning as blackpill_f411ce.h: its
+// own timer peripheral, separate from motor0's TIM3 and motor1's TIM4.
 //
 // Power the servo from the 5V pin (USB VBUS), never 3V3, with a 470-1000uF
 // bulk cap at the connector -- see the note in blackpill_f411ce.h.
-#define SERVO_TIMER     TIM4
-#define SERVO_PIN       PB6
+#define SERVO_TIMER     TIM2
+#define SERVO_PIN       PB10
 
 // Brushless ESCs on TIM3_CH1 and TIM4_CH3, same pins and reasoning as
 // blackpill_f411ce.h's motor0/motor1: two separate timer peripherals, not two
@@ -95,11 +91,6 @@
 #define MOTOR0_FRAME_US   5000
 #define MOTOR1_FRAME_US   5000
 
-// Both motor1 and (if ever enabled) servo drive TIM4 -- see
-// blackpill_f411ce.h's identical guard for the full hazard explanation.
-#if FEATURE_SERVO && FEATURE_MOTOR1
-#error "servo and motor1 both claim TIM4 on this board -- move one to another timer/pin before enabling both"
-#endif
 
 // Battery voltage sense on ADC1_IN1, same pin, divider and scale as
 // blackpill_f411ce.h; see that header for the ratio and what vbat.scale means.
