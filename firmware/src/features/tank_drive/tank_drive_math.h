@@ -9,9 +9,9 @@ namespace tank_drive {
 int16_t deadbanded(int16_t us, int16_t centerUs, uint16_t deadbandUs);
 
 // True when the bus proved itself alive within staleMs of nowMs. A small,
-// deliberate duplication of hardware/esc/esc_math.h's own isLinkFresh rather
+// deliberate duplication of hardware/motor/motor_math.h's own isLinkFresh rather
 // than a new cross-module dependency on it -- this module stays
-// self-contained, the same reasoning esc0/esc1 use for duplicating their own
+// self-contained, the same reasoning motor0/motor1 use for duplicating their own
 // kSrcNames tables rather than sharing one. lastFreshMs == 0 is
 // core::Inputs' own "never marked" default, not a real timestamp.
 bool linkFresh(uint32_t lastFreshMs, uint32_t nowMs, uint32_t staleMs);

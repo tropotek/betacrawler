@@ -8,10 +8,10 @@ using core::TlmDef;
 using core::TlmType;
 
 // Order must match core::Inputs' slot indices directly -- "ch1" is slot 0 --
-// same convention esc0.src/esc1.src use. A local copy, not shared with their
+// same convention motor0.src/motor1.src use. A local copy, not shared with their
 // tables: no cross-module sharing mechanism exists in this tree, and
-// inventing one for three call sites isn't worth it (same reasoning esc0
-// and esc1's own duplicate tables already establish).
+// inventing one for three call sites isn't worth it (same reasoning motor0
+// and motor1's own duplicate tables already establish).
 static const char* const kSrcNames[] = {
   "ch1", "ch2", "ch3", "ch4", "ch5", "ch6",
   "ch7", "ch8", "ch9", "ch10", "ch11", "ch12",
@@ -37,7 +37,7 @@ static const ParamDef kParams[] = {
   // Independent knobs: capping forward leaves a zero-throttle pivot alone, and
   // capping steer leaves straight-line speed alone. All default to 100
   // (unscaled) -- nothing already deployed changes behavior unless lowered.
-  // These cap at the MIXER, deliberately not via esc<N>.min_us/max_us: that
+  // These cap at the MIXER, deliberately not via motor<N>.min_us/max_us: that
   // range is the ESC's calibration, and narrowing it also moves neutralUs().
   {"tank_drive.forward_ratio", ParamType::U8,   "Forward Ratio", "%",    0, 100, nullptr, 0, 0, 100, nullptr, nullptr, nullptr, nullptr},
   {"tank_drive.reverse_ratio", ParamType::U8,   "Reverse Ratio", "%",    0, 100, nullptr, 0, 0, 100, nullptr, nullptr, nullptr, nullptr},
@@ -60,7 +60,7 @@ static const ParamDef kParams[] = {
 };
 
 // The computed output each side is currently commanding -- "commanded, not
-// measured" honesty, same as esc0/esc1's own telemetry.
+// measured" honesty, same as motor0/motor1's own telemetry.
 static const TlmDef kTlm[T_COUNT] = {
   // key      label    unit         type          div dec fmt      group
   {"drv_l",  "Left",  "\xc2\xb5s", TlmType::U32,  0,  0, nullptr, nullptr},

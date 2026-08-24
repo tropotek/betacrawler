@@ -7,7 +7,7 @@ extern const core::ModuleDesc kDesc;
 
 // Values of a tank_drive.arm_src parameter, in declaration order -- "none"
 // (feature off) first, then ch1..ch12 map to core::Inputs slots 0..11 the
-// same "index - 1 = slot" convention esc0.src/esc1.src's own kSrcNames use.
+// same "index - 1 = slot" convention motor0.src/motor1.src's own kSrcNames use.
 enum : int32_t { ARM_SRC_NONE = 0 };
 
 // Parameter indices *within this module* -- what onParamChanged() receives.

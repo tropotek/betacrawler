@@ -29,8 +29,7 @@ class Inputs {
   // mechanical stop, say) does not by itself mean the link is down, which a
   // naive "has the value changed" check cannot tell apart from a stalled
   // link. Named for what it publishes, not for rx or any consuming module --
-  // core/ never names a feature. See docs/architecture.md's "core::Inputs
-  // bus" section and _notes/spec-esc.md's Revision section.
+  // core/ never names a feature.
   void     markFresh(uint32_t nowMs) { freshMs_ = nowMs; }
   uint32_t lastFreshMs() const { return freshMs_; }
 

@@ -24,22 +24,22 @@
 // (FW_MAX_PARAMS * sizeof(core::Value) is the big one, 36 bytes per slot),
 // which is cheap on a 128KB part. Registry::add() refuses to exceed them
 // rather than overflowing, and a native test covers that path.
-// blackpill_f411ce ships device, system, button, led, rx, tank_drive, esc0
-// and esc1 today -- 8 modules, exactly at the cap, zero headroom left.
+// blackpill_f411ce ships device, system, button, led, rx, tank_drive, motor0
+// and motor1 today -- 8 modules, exactly at the cap, zero headroom left.
 // Turning on servo or WiFi ALONGSIDE this board's mixed-tank
 // build would need FW_MAX_MODULES raised first -- Registry::add() silently
 // refuses the module that doesn't fit rather than overflowing, and a native
 // test covers that path, but nothing today surfaces the refusal to a
 // person, so don't rely on it as a warning.
 #define FW_MAX_MODULES  8
-// esc0/esc1 each carry a `type` param plus three brushed-only params
+// motor0/motor1 each carry a `type` param plus three brushed-only params
 // (`freq`/`invert`/`brake`), taking the param table from 32 (a bare fit) to
 // 40. 48 rather than a bare fit leaves the same kind of headroom FW_MAX_TLM
 // already does below.
 #define FW_MAX_PARAMS   48
-// This board's current build (led, button, esc0, esc1, rx, vbat, tank_drive
+// This board's current build (led, button, motor0, motor1, rx, vbat, tank_drive
 // enabled; servo off) exposes 40 telemetry fields: rx alone
-// publishes 16 channels plus 7 link readings, esc0 and esc1 add 2 each (its
+// publishes 16 channels plus 7 link readings, motor0 and motor1 add 2 each (its
 // pulse width and arm state), vbat 3, and the rest split across
 // system/tank_drive. 48 rather than a bare fit leaves headroom for the next
 // module or field; TlmValue is 4 bytes, so the headroom costs 32 bytes of
@@ -75,11 +75,11 @@
 #ifndef FEATURE_SERVO
 #define FEATURE_SERVO 0
 #endif
-#ifndef FEATURE_ESC0
-#define FEATURE_ESC0 0
+#ifndef FEATURE_MOTOR0
+#define FEATURE_MOTOR0 0
 #endif
-#ifndef FEATURE_ESC1
-#define FEATURE_ESC1 0
+#ifndef FEATURE_MOTOR1
+#define FEATURE_MOTOR1 0
 #endif
 #ifndef FEATURE_TANK_DRIVE
 #define FEATURE_TANK_DRIVE 0

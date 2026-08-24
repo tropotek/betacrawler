@@ -47,14 +47,9 @@ static const ParamDef kParams[] = {
   // restore still accept it regardless (showIf is display-only, never an
   // access rule).
   //
-  // Defaults to ch2 (roll -- right stick horizontal under this bench's Mode
-  // 2 TX), confirmed on real hardware, not inferred: an earlier ch4 default
-  // assumed a TAER channel order that turned out to be wrong. Paired
-  // deliberately with the ESC module's ch3 (pitch) default -- both self-
-  // center, unlike the throttle stick, which is what makes bidirectional
-  // ESC throttle safe to release, and puts steering+throttle on one stick
-  // for single-stick car/crawler control. See _notes/spec-esc.md's
-  // "Amendment 2" for the full reasoning.
+  // Defaults to ch2 (roll -- right stick horizontal on a Mode 2 TX), paired
+  // with the motor module's own ch3 (pitch) default: both self-center, unlike
+  // the throttle stick, putting steering and throttle on one stick.
   {"servo.src",     ParamType::Enum, "Source", nullptr, 0, 0, kSrcNames, 12, 0, 1, nullptr, nullptr, "servo.mode", "input"},
 };
 

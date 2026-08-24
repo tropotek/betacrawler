@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-namespace esc {
+namespace motor {
 
 // Signed duty in permille (-1000..1000): 0 is stop, positive/negative pick
 // direction. `us` must already be clamped into [minUs, maxUs] -- same
@@ -18,4 +18,4 @@ struct PinDuty { uint16_t a; uint16_t b; };
 // touching the sign math above, fixing a wired-backwards motor from the app.
 PinDuty splitPinDuty(int16_t signedDutyPermille, bool inverted, bool brakeOnZero);
 
-}  // namespace esc
+}  // namespace motor

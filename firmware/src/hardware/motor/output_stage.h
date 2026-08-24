@@ -3,7 +3,7 @@
 
 class HardwareTimer;
 
-namespace esc {
+namespace motor {
 
 // Resolves `pin` to its PWM channel on `timer`, or 0 when the pin's channel
 // belongs to a different timer -- the pinmap answers a pin's FIRST timer
@@ -21,7 +21,7 @@ class OutputStage {
   virtual ~OutputStage() {}
 
   // One-time setup against the shared timer (resolving pin->channel maps).
-  // Called once, from EscDriver::begin(), on every possible stage -- not
+  // Called once, from MotorDriver::begin(), on every possible stage -- not
   // just the initially-active one, since `type` can switch at runtime.
   virtual void begin() = 0;
 
@@ -55,4 +55,4 @@ class OutputStage {
   virtual void setBrakeOnZero(bool brakeOnZero) { (void)brakeOnZero; }
 };
 
-}  // namespace esc
+}  // namespace motor

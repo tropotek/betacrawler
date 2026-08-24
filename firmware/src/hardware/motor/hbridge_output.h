@@ -1,9 +1,9 @@
 #pragma once
-#include "hardware/esc/output_stage.h"
+#include "hardware/motor/output_stage.h"
 
 class HardwareTimer;
 
-namespace esc {
+namespace motor {
 
 // Two-pin duty-cycle output stage -- two PWM channels of the same shared
 // timer esc<N>'s EscOutput would otherwise use alone, driven in the "one
@@ -32,4 +32,4 @@ class HbridgeOutput : public OutputStage {
   bool     brakeOnZero_ = false;
 };
 
-}  // namespace esc
+}  // namespace motor

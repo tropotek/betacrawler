@@ -90,7 +90,7 @@ void WifiDriver::onParamChanged(uint8_t local, const core::Params& p) {
       return;
   }
   // Either field changing invalidates whatever join is in flight or already
-  // holds -- re-arm from Idle exactly like esc/rx re-reset on a mode change.
+  // holds -- re-arm from Idle exactly like motor/rx re-reset on a mode change.
   if (ssid_[0] == '\0') {
     state_ = State::Idle;
     status_ = STATUS_OFF;

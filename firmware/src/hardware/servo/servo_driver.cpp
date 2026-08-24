@@ -43,7 +43,7 @@ namespace servo {
 // Storage for the one HardwareTimer, placement-new'd in begin().
 //
 // NOT `new`: this firmware allocates nothing on the heap (see config.h), and
-// this is the module the ESC and receiver modules will be copied from, so the
+// this is the module the motor and receiver modules will be copied from, so the
 // precedent would cost more than the allocation.
 //
 // NOT a file-scope `static HardwareTimer` either -- the display driver's

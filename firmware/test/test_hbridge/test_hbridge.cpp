@@ -1,7 +1,7 @@
 #include <unity.h>
-#include "hardware/esc/hbridge_math.h"
+#include "hardware/motor/hbridge_math.h"
 
-using namespace esc;
+using namespace motor;
 
 // --- signedDutyPermille --------------------------------------------------
 
@@ -26,7 +26,7 @@ void test_duty_halfway_below_neutral_is_half_negative() {
 }
 
 void test_duty_unidirectional_neutral_equals_min() {
-  // esc::neutralUs() returns minUs itself when unidirectional -- confirm the
+  // motor::neutralUs() returns minUs itself when unidirectional -- confirm the
   // degenerate below-neutral span (neutralUs == minUs) doesn't divide by zero.
   TEST_ASSERT_EQUAL_INT16(0, signedDutyPermille(1000, 1000, 2000, 1000));
   TEST_ASSERT_EQUAL_INT16(1000, signedDutyPermille(2000, 1000, 2000, 1000));

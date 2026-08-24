@@ -1,8 +1,8 @@
-#include "hardware/esc/esc_output.h"
+#include "hardware/motor/motor_output.h"
 #include <Arduino.h>
 #include <HardwareTimer.h>
 
-namespace esc {
+namespace motor {
 
 void EscOutput::begin() {
   ch_ = resolveChannel(timer_, pin_);
@@ -37,4 +37,4 @@ void EscOutput::write(uint16_t us, uint16_t, uint16_t, uint16_t) {
   timer_->setCaptureCompare(ch_, us, MICROSEC_COMPARE_FORMAT);
 }
 
-}  // namespace esc
+}  // namespace motor

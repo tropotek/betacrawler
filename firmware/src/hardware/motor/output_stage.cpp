@@ -1,10 +1,10 @@
-#include "hardware/esc/output_stage.h"
+#include "hardware/motor/output_stage.h"
 #include "core/boot_log.h"
 #include <Arduino.h>
 #include <HardwareTimer.h>
 #include <stdio.h>
 
-namespace esc {
+namespace motor {
 
 uint32_t resolveChannel(HardwareTimer* timer, uint32_t pin) {
   const PinName name = digitalPinToPinName(pin);
@@ -18,4 +18,4 @@ uint32_t resolveChannel(HardwareTimer* timer, uint32_t pin) {
   return STM_PIN_CHANNEL(pinmap_function(name, PinMap_TIM));
 }
 
-}  // namespace esc
+}  // namespace motor

@@ -1,10 +1,10 @@
 #pragma once
 #include <stdint.h>
 
-namespace esc {
+namespace motor {
 
 // Values of an esc<N>.mode parameter, in declaration order. Shared by every
-// ESC module instance (esc0, esc1, ...) -- see esc0_params.h / esc1_params.h.
+// ESC module instance (motor0, motor1, ...) -- see esc0_params.h / esc1_params.h.
 enum : int32_t { MODE_OFF = 0, MODE_ARMED = 1, MODE_INPUT = 2 };
 
 // Values of an esc<N>.direction parameter, in declaration order.
@@ -14,7 +14,7 @@ enum : int32_t { DIR_UNIDIRECTIONAL = 0, DIR_BIDIRECTIONAL = 1 };
 // that instance drives, and so which output electronics sit between the two.
 // esc<N>'s shared calibration (min_us/max_us/direction/mode/src) means the
 // same regardless; only the final step (turning a calibrated value into pin
-// output) differs, which is what esc::OutputStage's two implementations
+// output) differs, which is what motor::OutputStage's two implementations
 // (EscOutput for an ESC, HbridgeOutput for an H-bridge) exist to isolate.
 enum : int32_t { TYPE_BRUSHLESS = 0, TYPE_BRUSHED = 1 };
 
@@ -38,7 +38,7 @@ enum : uint32_t { ARM_OFF = 0, ARM_ARMING = 1, ARM_ARMED = 2 };
 // Shared by every ESC module instance. Lives here, not in any one instance's
 // driver, so `pio test -e native` covers the arm-hold state machine and the
 // pulse clamp with no board attached and with no duplicated logic between
-// esc0/esc1 -- the same split servo uses for angleToUs/sweepAngle/rephase.
+// motor0/motor1 -- the same split servo uses for angleToUs/sweepAngle/rephase.
 
 // Clamps a commanded/bus pulse width (microseconds, or 0 for "no signal yet")
 // into the calibrated range.
@@ -46,7 +46,7 @@ uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs);
 
 // One step of the arm-hold state machine -- deliberately independent of the
 // shared TX ARM switch (see tank_drive's design doc): that switch gates the
-// OUTPUT pulse (esc0/esc1's callers clamp to neutralUs() when it's inactive,
+// OUTPUT pulse (motor0/motor1's callers clamp to neutralUs() when it's inactive,
 // after this state machine has already run), not this state machine, so an
 // ESC that has already completed its hold stays ARM_ARMED across the switch
 // being flipped off and on -- no re-hold needed, matching a real ESC's own
@@ -160,4 +160,4 @@ bool rateChangeDemotesArmed(uint32_t armState, bool rateChanged);
 uint16_t nextPulseUs(uint32_t armState, int32_t mode, uint16_t minUs, uint16_t maxUs,
                       uint16_t throttleUs, int16_t inputUs, bool inputStale, uint16_t neutralUs);
 
-}  // namespace esc
+}  // namespace motor

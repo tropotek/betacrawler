@@ -1,6 +1,6 @@
-#include "hardware/esc/esc_math.h"
+#include "hardware/motor/motor_math.h"
 
-namespace esc {
+namespace motor {
 
 uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs) {
   if (us < (int32_t)minUs) return minUs;
@@ -83,4 +83,4 @@ uint16_t nextPulseUs(uint32_t armState, int32_t mode, uint16_t minUs, uint16_t m
   return 0;
 }
 
-}  // namespace esc
+}  // namespace motor

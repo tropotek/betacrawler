@@ -1,19 +1,19 @@
 #pragma once
-#include "hardware/esc0/esc0_params.h"
-#include "hardware/esc/output_stage.h"
-#include "hardware/esc/esc_output.h"
-#include "hardware/esc/hbridge_output.h"
+#include "hardware/motor0/motor0_params.h"
+#include "hardware/motor/output_stage.h"
+#include "hardware/motor/motor_output.h"
+#include "hardware/motor/hbridge_output.h"
 #include "core/inputs.h"
 
 // Forward-declared rather than including <HardwareTimer.h>: this header is
 // pulled in by modules.cpp, and the Arduino timer header is heavy.
 class HardwareTimer;
 
-namespace esc0 {
+namespace motor0 {
 
-// Requires ESC0_PIN/ESC0_TIMER, and ESC0_PIN_B for brushed mode, from the
+// Requires MOTOR0_PIN/MOTOR0_TIMER, and MOTOR0_PIN_B for brushed mode, from the
 // board header.
-class EscDriver : public core::Module {
+class MotorDriver : public core::Module {
  public:
   void attach(const core::Registry& reg, const core::Params& p) override;
   void begin() override;
@@ -27,17 +27,17 @@ class EscDriver : public core::Module {
   const core::Inputs* inputs_ = nullptr;
   const core::Inputs* driveInputs_ = nullptr;
   HardwareTimer*        timer_      = nullptr;
-  esc::EscOutput*        escOut_     = nullptr;
-  esc::HbridgeOutput*    hbridgeOut_ = nullptr;
-  esc::OutputStage*      stage_      = nullptr;
-  int32_t  type_       = esc::TYPE_BRUSHLESS;
-  int32_t  mode_       = esc::MODE_OFF;
+  motor::EscOutput*        escOut_     = nullptr;
+  motor::HbridgeOutput*    hbridgeOut_ = nullptr;
+  motor::OutputStage*      stage_      = nullptr;
+  int32_t  type_       = motor::TYPE_BRUSHLESS;
+  int32_t  mode_       = motor::MODE_OFF;
   uint16_t throttleUs_ = 1000;
   uint8_t  srcIdx_     = 0;
   uint16_t minUs_      = 1000;
   uint16_t maxUs_      = 2000;
-  int32_t  direction_  = esc::DIR_UNIDIRECTIONAL;
-  uint32_t armState_   = esc::ARM_OFF;
+  int32_t  direction_  = motor::DIR_UNIDIRECTIONAL;
+  uint32_t armState_   = motor::ARM_OFF;
   uint32_t armT0_      = 0;
   uint16_t lastUs_     = 0;
   uint8_t  rateIdx_    = 0;
@@ -47,4 +47,4 @@ class EscDriver : public core::Module {
   uint32_t periodUs_   = 0;
 };
 
-}  // namespace esc0
+}  // namespace motor0

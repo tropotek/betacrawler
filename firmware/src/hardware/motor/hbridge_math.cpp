@@ -1,6 +1,6 @@
-#include "hardware/esc/hbridge_math.h"
+#include "hardware/motor/hbridge_math.h"
 
-namespace esc {
+namespace motor {
 
 int16_t signedDutyPermille(uint16_t us, uint16_t minUs, uint16_t maxUs, uint16_t neutralUs) {
   if (us >= neutralUs) {
@@ -25,4 +25,4 @@ PinDuty splitPinDuty(int16_t duty, bool inverted, bool brakeOnZero) {
   return aActive ? PinDuty{mag, (uint16_t)0} : PinDuty{(uint16_t)0, mag};
 }
 
-}  // namespace esc
+}  // namespace motor

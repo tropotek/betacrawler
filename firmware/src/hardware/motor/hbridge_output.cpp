@@ -1,9 +1,9 @@
-#include "hardware/esc/hbridge_output.h"
-#include "hardware/esc/hbridge_math.h"
+#include "hardware/motor/hbridge_output.h"
+#include "hardware/motor/hbridge_math.h"
 #include <Arduino.h>
 #include <HardwareTimer.h>
 
-namespace esc {
+namespace motor {
 
 void HbridgeOutput::begin() {
   chA_ = resolveChannel(timer_, pinA_);
@@ -55,4 +55,4 @@ void HbridgeOutput::write(uint16_t us, uint16_t minUs, uint16_t maxUs, uint16_t 
   timer_->setCaptureCompare(chB_, top * pd.b / 1000u, TICK_COMPARE_FORMAT);
 }
 
-}  // namespace esc
+}  // namespace motor

@@ -1,7 +1,7 @@
 #include <unity.h>
-#include "hardware/esc/esc_math.h"
+#include "hardware/motor/motor_math.h"
 
-using namespace esc;
+using namespace motor;
 
 // --- clampUs -----------------------------------------------------------------
 

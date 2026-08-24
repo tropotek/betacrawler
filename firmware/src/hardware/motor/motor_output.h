@@ -1,9 +1,9 @@
 #pragma once
-#include "hardware/esc/output_stage.h"
+#include "hardware/motor/output_stage.h"
 
 class HardwareTimer;
 
-namespace esc {
+namespace motor {
 
 // Single-pin RC-pulse output stage -- one PWM channel on a shared timer,
 // used for esc<N>.type == TYPE_BRUSHLESS. Owns no timer of its own: constructed
@@ -24,4 +24,4 @@ class EscOutput : public OutputStage {
   uint32_t ch_ = 0;
 };
 
-}  // namespace esc
+}  // namespace motor
