@@ -90,9 +90,13 @@ static const ParamDef kParams[] = {
   // still accept it regardless of mode (showIf is display-only, never an
   // access rule). Defaults to ch1, the conventional throttle channel.
   {"motor0.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 12, nullptr, nullptr, "motor0.mode", "off"},
+  // Reverses which way this motor turns, for both output types: an H-bridge
+  // swaps which pin is A/B, an ESC gets its pulse mirrored about neutral.
+  // Useful when the motor is buried in an enclosed model and swapping two
+  // phase wires means taking the shell off.
+  {"motor0.invert",       ParamType::Enum, "Invert",   nullptr, 0, 0, kInvertOpts, 2, 0, 0, nullptr, nullptr},
   // Brushed-only, shown only for type=brushed.
   {"motor0.freq",         ParamType::U8,   "Switch Freq", "Hz", 1000, 50000, nullptr, 0, 0, 20000, nullptr, "H-Bridge", "motor0.type", "brushed"},
-  {"motor0.invert",       ParamType::Enum, "Invert",   nullptr, 0, 0, kInvertOpts, 2, 0, 0, nullptr, "H-Bridge", "motor0.type", "brushed"},
   {"motor0.brake",        ParamType::Enum, "At Zero",  nullptr, 0, 0, kBrakeOpts, 2, 0, 0, nullptr, "H-Bridge", "motor0.type", "brushed"},
 };
 

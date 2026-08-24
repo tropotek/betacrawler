@@ -106,6 +106,13 @@ bool inputLossDemotesArmed(uint32_t armState, int32_t mode, bool inputFresh);
 // MODE_INPUT; MODE_ARMED never reads the source channel at all.
 bool srcChangeDemotesArmed(uint32_t armState, int32_t mode, bool srcChanged);
 
+// Mirrors a pulse about the centre of the calibrated span, reversing which way
+// the motor turns for a given command. min + max - us, so the range maps
+// exactly onto itself and neutral maps to itself -- the arm-hold pulse, the
+// failsafe value and the arm-switch clamp are all unaffected. Only meaningful
+// for a centre-neutral controller, which is the only kind this firmware drives.
+uint16_t mirrorAboutSpan(uint16_t us, uint16_t minUs, uint16_t maxUs);
+
 // True when the shared ARM switch must force the output to neutral.
 // driveModulePresent is what separates "no drive module on this board, so
 // there is no switch to obey" from "the switch says not armed" -- including

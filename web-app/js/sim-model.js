@@ -240,9 +240,10 @@ class Motor {
 
     let us = nextPulseUs(this.armState, mode, minUs, maxUs, throttleUs, inputUs, inputStale, neutral);
     // The shared ARM switch is a pure output gate outside the hold state
-    // machine: inactive forces neutral instantly, whatever the ESC's own
-    // state says.
-    if (driveEverFresh && drive[DRIVE_ARM_SLOT] === 0) us = neutral;
+    // machine: inactive forces neutral instantly, whatever the motor's own
+    // state says. Gated on the drive module existing, not on the bus having
+    // gone fresh -- a board that has never seen a frame is not armed.
+    if (drive[DRIVE_ARM_SLOT] === 0) us = neutral;
     const effMax = effectiveMaxUs(maxUs, FRAME_US[rate]);
     if (us > effMax) us = effMax;
     if (us > 0) this.lastUs = us;

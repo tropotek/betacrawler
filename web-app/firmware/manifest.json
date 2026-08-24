@@ -1,18 +1,18 @@
 {
   "app_version": "4.0.0",
-  "fw_source_sha256": "addb6a5ff03a830f058a70d535d3455af312ed62d30aa97d0f62c37779fce2de",
+  "fw_source_sha256": "6911824a917ae0f40280d734ca2c0c0494ad773912fbe52ff52cc25b1993f8a1",
   "images": [
     {
       "id": "blackpill_f401ce-betacrawler-4.0.0",
       "board": "blackpill_f401ce",
       "name": "betacrawler",
       "version": "4.0.0",
-      "built": "Aug 24 2026 16:15:24",
+      "built": "Aug 24 2026 16:28:30",
       "proto": 1,
       "method": "dfu",
       "file": "blackpill_f401ce/betacrawler-4.0.0.bin",
-      "size": 70872,
-      "sha256": "ca1486a92ecf532531463f2601ab28cf522168961527f157b2bdd4c83e7b050d",
+      "size": 70920,
+      "sha256": "df57341deb67e2a62d678bc0f1d675561734fd832a55421348eef6857c49e49b",
       "notes": "status_led, servo, rx, drive, motor0, motor1, vbat, dfu"
     },
     {
@@ -20,12 +20,12 @@
       "board": "blackpill_f411ce",
       "name": "betacrawler",
       "version": "4.0.0",
-      "built": "Aug 24 2026 16:15:21",
+      "built": "Aug 24 2026 16:28:27",
       "proto": 1,
       "method": "dfu",
       "file": "blackpill_f411ce/betacrawler-4.0.0.bin",
-      "size": 70960,
-      "sha256": "58a3562aba5744fdbe02092f0a97d153dd7809ab9f03a874fc631ecbbd40ac09",
+      "size": 71008,
+      "sha256": "cc7887d9c249f1ab453956be23123442aaa2e43ac35935d084713175c8ea281b",
       "notes": "status_led, servo, rx, drive, motor0, motor1, vbat, dfu"
     }
   ]

@@ -93,6 +93,13 @@ Both ESCs carry the same settings. `motor0` drives the left track, `motor1` the 
 | Max (µs) | `motor0.max_us` / `motor1.max_us` | `2000` | 1500–2500 |
 | Source | `motor0.src` | `drive_left` | `ch1`–`ch12`, `drive_left`, `drive_right` |
 | Source | `motor1.src` | `drive_right` | `ch1`–`ch12`, `drive_left`, `drive_right` |
+| Invert | `motor0.invert` / `motor1.invert` | `normal` | `normal`, `inverted` |
+
+**Invert** reverses which way that motor turns, per motor, for either output type: an H-bridge
+swaps which pin drives which lead, and an ESC has its pulse mirrored about neutral. Swapping two
+motor wires is the better permanent fix — this is for a motor you cannot reach, sealed inside a
+model. It reverses the signal, not the motor, so braking and the ESC's own reverse behaviour are
+unaffected; if you later swap wires as well, the two cancel out.
 
 **Source** is where the ESC takes its command from. `drive_left` and `drive_right` are the two
 outputs of the tank mixer — that is the normal setting. Pointing an ESC at a raw channel instead
@@ -108,13 +115,10 @@ Shown only when `Type` is `brushed`.
 | Setting | Key | Default | Range |
 |---|---|---|---|
 | Switch Freq (Hz) | `motor0.freq` / `motor1.freq` | `20000` | 1000–50000 |
-| Invert | `motor0.invert` / `motor1.invert` | `normal` | `normal`, `inverted` |
 | At Zero | `motor0.brake` / `motor1.brake` | `coast` | `coast`, `brake` |
 
 **Switch Freq** is the H-bridge's PWM switching frequency — 20 kHz is above the audible range and
 every DRV8833/TB6612-class driver handles it fine.
-
-**Invert** is per motor, not shared — fixes a swapped H-bridge lead pair without rewiring.
 
 **At Zero** decides what happens at zero command: `coast` (both H-bridge inputs low, motor spins
 freely) or `brake` (both high, resisting motion).

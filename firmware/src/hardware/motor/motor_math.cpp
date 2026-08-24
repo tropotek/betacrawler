@@ -52,6 +52,10 @@ bool srcChangeDemotesArmed(uint32_t armState, int32_t mode, bool srcChanged) {
   return armState == ARM_ARMED && mode == MODE_INPUT && srcChanged;
 }
 
+uint16_t mirrorAboutSpan(uint16_t us, uint16_t minUs, uint16_t maxUs) {
+  return clampUs((int32_t)minUs + (int32_t)maxUs - (int32_t)us, minUs, maxUs);
+}
+
 bool armSwitchGates(bool driveModulePresent, int16_t armSlotValue) {
   return driveModulePresent && armSlotValue == 0;
 }

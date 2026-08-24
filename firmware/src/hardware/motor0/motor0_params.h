@@ -11,7 +11,7 @@ extern const core::ModuleDesc kDesc;
 // global table, and adding a module elsewhere can never shift them.
 enum : uint8_t {
   P_TYPE = 0, P_RATE = 1, P_MODE = 2, P_THROTTLE_US = 3,
-  P_MIN_US = 4, P_MAX_US = 5, P_SRC = 6, P_FREQ = 7, P_INVERT = 8, P_BRAKE = 9,
+  P_MIN_US = 4, P_MAX_US = 5, P_SRC = 6, P_INVERT = 7, P_FREQ = 8, P_BRAKE = 9,
 };
 
 // Telemetry indices within this module's slice of the frame.

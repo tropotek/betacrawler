@@ -64,7 +64,9 @@ throttle to have been at neutral for that long before it takes effect.
 
 ## One track runs backwards
 
-Swap any two of the three motor wires on that ESC, or reverse that motor's direction in BLHeli
+Set `Invert` for that motor on the Configuration page — it works for both brushless and brushed,
+and needs no rewiring, which matters on a sealed model. Otherwise swap any two of the three motor
+wires on that ESC, or reverse that motor's direction in BLHeli
 Configurator. Either works.
 
 ## The two tracks are swapped left-for-right

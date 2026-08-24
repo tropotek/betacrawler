@@ -17,11 +17,13 @@ class MotorOutput : public OutputStage {
   void detach() override;
   void setPeriodUs(uint32_t periodUs) override;
   void write(uint16_t us, uint16_t minUs, uint16_t maxUs, uint16_t neutralUs) override;
+  void setInverted(bool inverted) override { inverted_ = inverted; }
 
  private:
   HardwareTimer* timer_;
   uint32_t pin_;
   uint32_t ch_ = 0;
+  bool     inverted_ = false;
 };
 
 }  // namespace motor

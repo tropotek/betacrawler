@@ -404,6 +404,38 @@ void test_arm_switch_gates_before_any_receiver_frame_arrives() {
   TEST_ASSERT_TRUE(armSwitchGates(true, 0));
 }
 
+
+// --- mirrorAboutSpan --------------------------------------------------------
+
+void test_mirror_swaps_forward_and_reverse() {
+  TEST_ASSERT_EQUAL_UINT16(1300, mirrorAboutSpan(1700, 1000, 2000));
+  TEST_ASSERT_EQUAL_UINT16(1700, mirrorAboutSpan(1300, 1000, 2000));
+}
+
+void test_mirror_maps_the_endpoints_onto_each_other() {
+  TEST_ASSERT_EQUAL_UINT16(2000, mirrorAboutSpan(1000, 1000, 2000));
+  TEST_ASSERT_EQUAL_UINT16(1000, mirrorAboutSpan(2000, 1000, 2000));
+}
+
+void test_mirror_leaves_neutral_alone() {
+  // The property the safe states depend on: the arm-hold pulse, the failsafe
+  // value and the arm-switch clamp must all survive being mirrored.
+  const uint16_t n = neutralUs(1000, 2000);
+  TEST_ASSERT_EQUAL_UINT16(n, mirrorAboutSpan(n, 1000, 2000));
+}
+
+void test_mirror_is_its_own_inverse() {
+  TEST_ASSERT_EQUAL_UINT16(1700, mirrorAboutSpan(mirrorAboutSpan(1700, 1000, 2000), 1000, 2000));
+}
+
+void test_mirror_respects_a_narrowed_calibration() {
+  TEST_ASSERT_EQUAL_UINT16(1400, mirrorAboutSpan(1800, 1200, 2000));
+}
+
+void test_mirror_degenerate_span_is_that_one_value() {
+  TEST_ASSERT_EQUAL_UINT16(1500, mirrorAboutSpan(1500, 1500, 1500));
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_clamp_within_range_passes_through);
@@ -475,5 +507,11 @@ int main() {
   RUN_TEST(test_arm_switch_does_not_gate_when_the_slot_reads_armed);
   RUN_TEST(test_arm_switch_never_gates_without_a_drive_module);
   RUN_TEST(test_arm_switch_gates_before_any_receiver_frame_arrives);
+  RUN_TEST(test_mirror_swaps_forward_and_reverse);
+  RUN_TEST(test_mirror_maps_the_endpoints_onto_each_other);
+  RUN_TEST(test_mirror_leaves_neutral_alone);
+  RUN_TEST(test_mirror_is_its_own_inverse);
+  RUN_TEST(test_mirror_respects_a_narrowed_calibration);
+  RUN_TEST(test_mirror_degenerate_span_is_that_one_value);
   return UNITY_END();
 }

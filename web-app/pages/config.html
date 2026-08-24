@@ -202,7 +202,7 @@
                   </div>
                 </template>
 
-                <template x-if="$store.config.values['motor0.type'] === 'brushed'">
+                <template x-if="$store.config.field('motor0.invert').def">
                   <div class="col-md-3">
                     <label class="form-label" for="f-motor0-invert">Motor 0 Invert</label>
                     <select class="form-select" id="f-motor0-invert"
@@ -213,10 +213,14 @@
                         <option :value="opt" :selected="opt === $store.config.values['motor0.invert']" x-text="opt"></option>
                       </template>
                     </select>
+                    <div class="form-text">
+                      Reverses which way this motor turns. Swapping two motor wires is the better
+                      permanent fix — use this when you cannot reach them.
+                    </div>
                   </div>
                 </template>
 
-                <template x-if="$store.config.field('motor1.invert').def && $store.config.values['motor0.type'] === 'brushed'">
+                <template x-if="$store.config.field('motor1.invert').def">
                   <div class="col-md-3">
                     <label class="form-label" for="f-motor1-invert">Motor 1 Invert</label>
                     <select class="form-select" id="f-motor1-invert"

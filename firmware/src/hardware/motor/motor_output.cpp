@@ -1,4 +1,5 @@
 #include "hardware/motor/motor_output.h"
+#include "hardware/motor/motor_math.h"
 #include <Arduino.h>
 #include <HardwareTimer.h>
 
@@ -32,9 +33,13 @@ void MotorOutput::setPeriodUs(uint32_t periodUs) {
   timer_->setOverflow(periodUs, MICROSEC_FORMAT);
 }
 
-void MotorOutput::write(uint16_t us, uint16_t, uint16_t, uint16_t) {
+// Inverted mirrors the pulse about the centre of the calibrated span, which
+// reverses which way the motor turns. Neutral maps to itself, so every safe
+// state is unaffected.
+void MotorOutput::write(uint16_t us, uint16_t minUs, uint16_t maxUs, uint16_t) {
   if (!ch_) return;
-  timer_->setCaptureCompare(ch_, us, MICROSEC_COMPARE_FORMAT);
+  const uint16_t out = inverted_ ? mirrorAboutSpan(us, minUs, maxUs) : us;
+  timer_->setCaptureCompare(ch_, out, MICROSEC_COMPARE_FORMAT);
 }
 
 }  // namespace motor

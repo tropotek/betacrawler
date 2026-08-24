@@ -442,20 +442,6 @@ export const SIM_SCHEMA = {
       }
     },
     {
-      "key": "motor0.freq",
-      "type": "u8",
-      "min": 1000,
-      "max": 50000,
-      "def": 20000,
-      "label": "Switch Freq",
-      "unit": "Hz",
-      "group": "H-Bridge",
-      "showIf": {
-        "key": "motor0.type",
-        "val": "brushed"
-      }
-    },
-    {
       "key": "motor0.invert",
       "type": "enum",
       "options": [
@@ -464,6 +450,16 @@ export const SIM_SCHEMA = {
       ],
       "def": "normal",
       "label": "Invert",
+      "group": "Motor 0"
+    },
+    {
+      "key": "motor0.freq",
+      "type": "u8",
+      "min": 1000,
+      "max": 50000,
+      "def": 20000,
+      "label": "Switch Freq",
+      "unit": "Hz",
       "group": "H-Bridge",
       "showIf": {
         "key": "motor0.type",
@@ -584,20 +580,6 @@ export const SIM_SCHEMA = {
       }
     },
     {
-      "key": "motor1.freq",
-      "type": "u8",
-      "min": 1000,
-      "max": 50000,
-      "def": 20000,
-      "label": "Switch Freq",
-      "unit": "Hz",
-      "group": "H-Bridge",
-      "showIf": {
-        "key": "motor1.type",
-        "val": "brushed"
-      }
-    },
-    {
       "key": "motor1.invert",
       "type": "enum",
       "options": [
@@ -606,6 +588,16 @@ export const SIM_SCHEMA = {
       ],
       "def": "normal",
       "label": "Invert",
+      "group": "Motor 1"
+    },
+    {
+      "key": "motor1.freq",
+      "type": "u8",
+      "min": 1000,
+      "max": 50000,
+      "def": 20000,
+      "label": "Switch Freq",
+      "unit": "Hz",
       "group": "H-Bridge",
       "showIf": {
         "key": "motor1.type",
