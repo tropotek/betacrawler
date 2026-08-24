@@ -61,7 +61,7 @@
 #endif
 
 // "drive_left"/"drive_right" are appended after the 12 raw ch1..ch12
-// options in esc1_params.cpp's kSrcNames -- index 12 is the first one. This
+// options in motor1_params.cpp's kSrcNames -- index 12 is the first one. This
 // is the one place motor1 knows anything about drive's existence, and
 // even this is just a slot-index convention, not a header dependency.
 constexpr uint8_t kDriveSrcBase = 12;

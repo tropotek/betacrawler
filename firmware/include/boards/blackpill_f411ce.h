@@ -76,7 +76,7 @@
 // MOTOR0_ARM_HOLD_MS/MOTOR1_ARM_HOLD_MS (2000), MOTOR0_INPUT_STALE_MS/
 // MOTOR1_INPUT_STALE_MS (500) and MOTOR0_ARM_LOW_MARGIN_US/
 // MOTOR1_ARM_LOW_MARGIN_US (50) are all optional per instance, defaulted in
-// esc0_driver.cpp/esc1_driver.cpp respectively.
+// motor0_driver.cpp/motor1_driver.cpp respectively.
 //
 // Power the motor/ESC from its own supply, never the board's 5V/VBUS pin --
 // an ESC under load draws far more than the servo's own VBUS warning already

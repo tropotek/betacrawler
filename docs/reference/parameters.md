@@ -52,6 +52,7 @@ clamping the outputs to neutral. Only the one matching your protocol applies.
 
 | Setting | Key | Default | Range |
 |---|---|---|---|
+| Drive Mode | `drive.mode` | `skid` | `skid`, `car` |
 | Throttle Src | `drive.throttle_src` | `ch2` | `ch1`–`ch12` |
 | Steer Src | `drive.steer_src` | `ch1` | `ch1`–`ch12` |
 | Forward Ratio (%) | `drive.forward_ratio` | `100` | 0–100 |
@@ -61,7 +62,19 @@ clamping the outputs to neutral. Only the one matching your protocol applies.
 | Arm Min (µs) | `drive.arm_min` | `1700` | 1000–2000 |
 | Arm Max (µs) | `drive.arm_max` | `2000` | 1000–2000 |
 
-The mixer. It takes throttle and steering and produces a speed for each track.
+The mixer. It takes throttle and steering and writes two outputs, which
+`motor<N>.src` and `servo.src` then select with `drive_left` and `drive_right`.
+
+**Drive Mode** decides what those two outputs mean:
+
+| | `drive_left` | `drive_right` |
+|---|---|---|
+| `skid` | left track | right track |
+| `car` | throttle | steer |
+
+`skid` mixes throttle and steer into both sides, so the vehicle turns by driving them at
+different speeds — tracks, a 4WD rover, or a 2WD skid-steer chassis. `car` keeps the two apart:
+throttle drives one motor, steer drives a servo, and neither affects the other.
 
 The three ratios cap authority independently — see [Tuning](../drive/tuning.md). Arming is
 covered in [Arming and modes](arming-and-modes.md).
@@ -105,6 +118,32 @@ every DRV8833/TB6612-class driver handles it fine.
 
 **At Zero** decides what happens at zero command: `coast` (both H-bridge inputs low, motor spins
 freely) or `brake` (both high, resisting motion).
+
+## Servo
+
+| Setting | Key | Default | Range |
+|---|---|---|---|
+| Servo | `servo.mode` | `off` | `off`, `hold`, `sweep`, `input` |
+| Angle (°) | `servo.angle` | `90` | 0–180 |
+| Sweep (s) | `servo.sweep_s` | `4` | 1–30 |
+| Min (µs) | `servo.min_us` | `1000` | 500–1500 |
+| Max (µs) | `servo.max_us` | `2000` | 1500–2500 |
+| Source | `servo.src` | `ch2` | `ch1`–`ch12`, `drive_left`, `drive_right` |
+| Invert | `servo.invert` | `normal` | `normal`, `reversed` |
+| Trim (µs) | `servo.trim_us` | `0` | −250–250 |
+
+**Mode** picks where the pulse comes from: `hold` parks at **Angle**, `sweep` runs back and
+forth over **Sweep** seconds, `input` follows **Source**. `off` detaches the pin so the servo
+relaxes and draws no holding current.
+
+**Source** accepts a raw channel or, for a steered car, `drive_right` — the mixer's steer output.
+
+**Invert** and **Trim** describe the linkage, not the input, so they apply in every mode. Invert
+mirrors travel about the centre of Min/Max; Trim then shifts the centre. Set Invert if the wheels
+turn the wrong way, then use Trim to bring them straight.
+
+There is no arm gate on the servo. Steering keeps working whether or not the vehicle is armed,
+and when the link drops — a vehicle still rolling is better steerable than not.
 
 ## Telemetry values
 

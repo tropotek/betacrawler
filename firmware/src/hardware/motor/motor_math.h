@@ -4,7 +4,7 @@
 namespace motor {
 
 // Values of an motor<N>.mode parameter, in declaration order. Shared by every
-// ESC module instance (motor0, motor1, ...) -- see esc0_params.h / esc1_params.h.
+// motor module instance (motor0, motor1, ...) -- see motor0_params.h / motor1_params.h.
 enum : int32_t { MODE_OFF = 0, MODE_ARMED = 1, MODE_INPUT = 2 };
 
 // Values of an motor<N>.type parameter, in declaration order -- which motor

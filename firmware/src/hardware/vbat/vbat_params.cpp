@@ -21,7 +21,7 @@ static const char* const kCellNames[] = {"auto", "2", "3", "4", "5", "6"};
 
 // The board header states the divider fitted to this hardware; vbat.scale is
 // the runtime override, set by calibrating. Same #ifndef fallback
-// esc0_params.cpp uses for MOTOR0_FRAME_US, and for the same reason: this
+// motor0_params.cpp uses for MOTOR0_FRAME_US, and for the same reason: this
 // descriptor TU is compiled by the native env too, where no board header
 // value is meaningful.
 #ifndef VBAT_SCALE_DEFAULT

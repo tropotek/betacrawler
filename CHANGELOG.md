@@ -5,6 +5,24 @@ records live in the git history, not here.
 
 ## Version 4.0
 
+- **feat: `esc0`/`esc1` are now `motor0`/`motor1`.** They drive a motor through whichever output
+  stage is configured, so naming them after one of the two was wrong. Every parameter key,
+  telemetry key and board-header symbol renames with them.
+
+- **feat: `motor<N>.direction` is gone — neutral is always 1500 µs.** The ESC must treat
+  centre-stick as stop: a surface ESC already does, and a BLHeli_S drone ESC does once set to
+  bidirectional.
+
+- **feat: `tank_drive` is now `drive`, with `drive.mode` = `skid` or `car`.** `skid` is the
+  existing differential mix; `car` sends throttle to one motor and steer to a servo.
+
+- **feat: the servo gains `invert` and `trim_us`, and can follow the drive bus**, so a
+  single-motor car with steering is a supported build. It moves to TIM2/PB10 and ships enabled
+  on both boards.
+
+- **Saved settings reset to defaults on the first boot after flashing** — the stored-record
+  fingerprint changes with the renamed parameters.
+
 - **feat: `esc0`/`esc1` can drive a brushed-motor H-bridge (DRV8833-class) as well as a brushless
   ESC**, switchable per motor from the app with no reflash. New `type`/`freq`/`invert`/`brake`
   params; wiring diagram and setup docs for brushed builds.

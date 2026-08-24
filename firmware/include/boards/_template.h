@@ -97,7 +97,7 @@
 // two must agree; nothing checks that at compile time.
 // MOTOR0_FRAME_US (optional, 20000/50Hz), MOTOR0_ARM_HOLD_MS (optional, 2000),
 // MOTOR0_INPUT_STALE_MS (optional, 500) and MOTOR0_ARM_LOW_MARGIN_US (optional,
-// 50) are all defaulted in esc0_driver.cpp.
+// 50) are all defaulted in motor0_driver.cpp.
 //
 // A second ESC (FEATURE_MOTOR1 with MOTOR1_PIN/MOTOR1_TIMER, same shape) needs a
 // DIFFERENT PHYSICAL TIMER PERIPHERAL from the first, not just a different

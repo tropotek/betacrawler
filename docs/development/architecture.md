@@ -109,6 +109,41 @@ steady, since a real stick at its mechanical endpoint is indistinguishable from 
 value alone. `motor0`/`motor1`'s `mode=input` failsafe is the first consumer of this signal; `servo` does not
 need it (position-hold-on-dropout is its own correct, deliberate design, not a gap).
 
+## The drive bus's two mixers
+
+One module, `drive`, owns the bus in both vehicle layouts, selected by `drive.mode`. A sibling
+`car_drive` module was considered and rejected: it would have duplicated the arm gate and the
+freshness handling, and two producers on one bus needs an arbiter that nothing else here has.
+
+The slots keep their meaning by index, and their wire names never change:
+
+| Slot | `skid` | `car` | Name in `motor<N>.src` / `servo.src` |
+|---|---|---|---|
+| 0 | left track | throttle | `drive_left` |
+| 1 | right track | steer | `drive_right` |
+| 2 | arm | arm | not selectable; read directly |
+
+Stable names keep INI files portable across a mode change and keep `ParamDef.opts` the static
+table it has to be. The curated pages relabel them for humans, which is what curation is for. The
+cost is accepted: `set motor0.src drive_left` reads oddly on a car.
+
+`carMix()` needs no proportional clamp, unlike `mix()`. The skid mixer folds the steer offset into
+both tracks, so a hard turn at full throttle can push one past its limit and both must scale
+together; the car mixer's two outputs are independent and neither can displace the other.
+
+**Steering is never gated.** The servo has no arm gate, no failsafe centring and no
+hold-last-position on link loss: it follows its source in every state the vehicle can reach. A
+disarmed vehicle is not moving, so there is nothing for a steering gate to make safe, and
+freezing or centring the wheels when the link drops takes away the one control still worth having
+on a vehicle that is still rolling. The motors carry the whole arming responsibility, clamping to
+`neutralUs()` whenever the arm switch is inactive or the bus is stale. Bench-confirmed: with the
+vehicle disarmed the motor output sits at neutral while steering keeps tracking the stick.
+
+`neutralUs()` is always the midpoint of `min_us`/`max_us`. There is no parameter to move it,
+deliberately: the one that existed encoded whether the attached controller read 1000µs or 1500µs
+as stop, and its unsafe setting made every safe state in the firmware — arm-hold pulse, failsafe
+value, arm-switch clamp — command full reverse on a centre-neutral ESC.
+
 ## Control latency, and where it actually lives
 
 The stick-to-motor chain is `rx` decode → `drive` mix → `motor0`/`motor1` write. All three run in

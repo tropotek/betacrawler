@@ -16,6 +16,7 @@ position on the diagram.
 |---|---|---|
 | Motor 0 | PA6 | Motor 0 signal wire — the **left** track |
 | Motor 1 | PB8 | Motor 1 signal wire — the **right** track |
+| Steering servo | PB10 | Servo signal wire — `car` drive mode only |
 | Receiver | PA3 | The receiver's CRSF **TX** pad |
 | Receiver power | 5V, GND | The receiver's + and − |
 | Board power | 5V, GND | The PDB's 5V BEC output |
@@ -83,6 +84,22 @@ you do not need to rewire: change `motor0.src` and `motor1.src` between `drive_l
 If a single track runs backwards, swap any two of the three motor wires on that ESC.
 
 Next: [Flashing the firmware](flashing.md).
+
+## Wiring for a car (one motor + steering servo)
+
+Set `Drive Mode` to `car` on the Configuration page — no reflash needed. `motor0` keeps PA6 and
+takes the mixer's throttle output; the steering servo goes on **PB10** and takes its steer output.
+`motor1` is unused on a single-motor car, so leave its mode `off`.
+
+The ESC must treat centre-stick as stop, which a surface (car/boat) ESC already does. Its BEC
+powers the board, the receiver and the servo.
+
+[![Wiring a Black Pill to a surface ESC, one brushless motor, a steering servo on PB10, and a CRSF receiver](../assets/screenshots/wiring-diagram-car.png)](../assets/screenshots/wiring-diagram-car-large.png){target=_blank}
+
+**Click the diagram to open it full size** in a new tab.
+
+If the wheels steer the wrong way, set `Invert` on the servo rather than turning the horn round;
+if they sit off-straight with the stick centred, nudge `Trim`.
 
 ## Wiring for brushed motors (H-Bridge)
 
