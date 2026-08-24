@@ -159,7 +159,7 @@ const ELRS_RF_HZ = [0, 0, 50, 0, 100, 150, 0, 250, 333, 500, 250, 500, 500, 1000
 // One ESC channel: arm state machine and last written pulse. update() detects
 // mode/src/rate changes by comparing against the previous tick, so it carries
 // the firmware's apply() and tick() behaviour in one call.
-class Esc {
+class Motor {
   constructor(prefix) {
     this.prefix = prefix;
     this.armState = ARM_OFF;
@@ -224,7 +224,7 @@ export class SimModel {
     this._defaults = Object.fromEntries(params.map((p) => [p.key, p.def]));
     this._values = { ...this._defaults, ...BOOT_OVERRIDES };
     this._stored = null;
-    this._esc = { esc0: new Esc('esc0'), esc1: new Esc('esc1') };
+    this._motor = { motor0: new Motor('motor0'), motor1: new Motor('motor1') };
     this._driveEverFresh = false;
     this._vbatCells = 0;
     this._tlm = {};
@@ -272,7 +272,7 @@ export class SimModel {
     const [left, right, armed] = this._tank(inputs, rxFresh);
     const drive = [left, right, armed ? 1 : 0];
     if (rxFresh) this._driveEverFresh = true;
-    for (const esc of Object.values(this._esc)) {
+    for (const esc of Object.values(this._motor)) {
       esc.update(nowMs, this, inputs, drive, rxFresh, this._driveEverFresh);
     }
 
@@ -282,8 +282,8 @@ export class SimModel {
     Object.assign(tlm, this._system(nowMs));
     Object.assign(tlm, this._vbat(nowMs));
     tlm.drv_l = left; tlm.drv_r = right;
-    tlm.esc0 = this._esc.esc0.lastUs; tlm.arm0 = this._esc.esc0.armState;
-    tlm.esc1 = this._esc.esc1.lastUs; tlm.arm1 = this._esc.esc1.armState;
+    tlm.motor0 = this._motor.motor0.lastUs; tlm.arm0 = this._motor.motor0.armState;
+    tlm.motor1 = this._motor.motor1.lastUs; tlm.arm1 = this._motor.motor1.armState;
     this._tlm = tlm;
   }
 

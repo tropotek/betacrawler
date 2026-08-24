@@ -92,7 +92,7 @@ construction, not by convention a second module could quietly bend.
 
 `tank_drive` (added later) uses the identical pattern for a second, independent bus
 (`Registry::driveOutputs()`) rather than a second writer sharing `rx`'s own -- each bus still has
-exactly one constructor-wired producer, the pattern is just applied twice. `esc0`/`esc1` read
+exactly one constructor-wired producer, the pattern is just applied twice. `motor0`/`motor1` read
 whichever bus their own `.src` selection points at.
 
 Three shapes for carrying
@@ -106,12 +106,12 @@ The bus also carries one piece of state beyond the channel values themselves: `m
 frame (real or simulated). It exists for the same reason the channel values do — a consumer that
 needs to know whether the link is actually alive cannot infer that from a channel value holding
 steady, since a real stick at its mechanical endpoint is indistinguishable from a dead link by
-value alone. `esc0`/`esc1`'s `mode=input` failsafe is the first consumer of this signal; `servo` does not
+value alone. `motor0`/`motor1`'s `mode=input` failsafe is the first consumer of this signal; `servo` does not
 need it (position-hold-on-dropout is its own correct, deliberate design, not a gap).
 
 ## Control latency, and where it actually lives
 
-The stick-to-motor chain is `rx` decode → `tank_drive` mix → `esc0`/`esc1` write. All three run in
+The stick-to-motor chain is `rx` decode → `tank_drive` mix → `motor0`/`motor1` write. All three run in
 one `Registry::tick()` pass, in that registration order, so a decoded frame reaches the compare
 register in the **same** loop iteration — there is no per-module pipeline delay to tune, and no
 smoothing or ramping anywhere in `esc_math` or `tank_drive_math` to unwind.
@@ -235,7 +235,7 @@ grouping reads best for that page, via `Alpine.store('config').field(key)` /
 `Alpine.store('telemetry').field(key)` — a lookup by key, not an iteration. Adding a firmware
 parameter needs an explicit page decision and a hand-written label before it appears anywhere. A
 curated page must degrade a key its connected board doesn't publish (`field(key).def === null`,
-e.g. `esc1.*` on a board with `FEATURE_ESC1 0`) to an absent/disabled slot rather than crash.
+e.g. `motor1.*` on a board with `FEATURE_MOTOR1 0`) to an absent/disabled slot rather than crash.
 
 Display hints never change what goes over the wire:
 
@@ -369,10 +369,10 @@ USART1's two pin-pair options without fully freeing either.
 
 **`RX_RX_PIN`/`RX_TX_PIN` are PA3/PA2 as shipped** — CRSF moved onto USART2's fully-native mapping,
 verified safe for real ELRS traffic exactly as thoroughly as PB7 was, which fully frees USART1's
-PA9/PA10 as a genuinely standard, unremapped UART pair for a fork's own project. `esc1` moved from
-PB6 to PB8 (TIM4_CH3, still a separate timer peripheral from `esc0`'s TIM3, just a different channel
+PA9/PA10 as a genuinely standard, unremapped UART pair for a fork's own project. `motor1` moved from
+PB6 to PB8 (TIM4_CH3, still a separate timer peripheral from `motor0`'s TIM3, just a different channel
 of TIM4 than before) to make room, and WiFi moved from PA2/PA3 to PB6/PB7 (USART1's alternate
-mapping) to take the pins CRSF vacated. `esc1`'s new pin is safe regardless of any of this bootloader
+mapping) to take the pins CRSF vacated. `motor1`'s new pin is safe regardless of any of this bootloader
 analysis — motor output is always MCU-to-peripheral, never the reverse, so nothing external ever
 transmits into PB8. WiFi's new pins carry the same caveat PA3 needed before it was bench-tested:
 `FEATURE_WIFI` ships 0 by default, and nobody has yet run the ESP8266's real AT-firmware traffic

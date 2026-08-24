@@ -41,7 +41,7 @@ pushed forward. If you arm and nothing happens, centre the throttle and wait a c
 
 ## ESC modes
 
-`esc0.mode` and `esc1.mode` control where each ESC's output comes from:
+`motor0.mode` and `motor1.mode` control where each ESC's output comes from:
 
 | Mode | Behaviour |
 |---|---|

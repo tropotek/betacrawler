@@ -30,7 +30,7 @@ and go up only as far as you need — deadband is dead stick travel, so more is 
 
 ## ESC frame rate
 
-**PWM Rate** (`esc0.rate` / `esc1.rate`) sets how often each ESC is sent a new command: 50, 100,
+**PWM Rate** (`motor0.rate` / `motor1.rate`) sets how often each ESC is sent a new command: 50, 100,
 200 or 400 Hz. The default is 50 Hz, which every analog ESC accepts.
 
 A BLHeli-S ESC handles 400 Hz and cuts up to 20 ms of delay between stick and motor. Raise it if
@@ -38,7 +38,7 @@ the vehicle feels sluggish to respond. Set both ESCs the same.
 
 ## ESC calibration
 
-**Min** and **Max** (`esc0.min_us` / `esc0.max_us`, defaults 1000 and 2000 µs) are the endpoints
+**Min** and **Max** (`motor0.min_us` / `motor0.max_us`, defaults 1000 and 2000 µs) are the endpoints
 the ESC was calibrated to. Change them only to match an ESC that expects a different range. The
 two bounds cannot cross.
 

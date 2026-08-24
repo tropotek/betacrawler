@@ -36,7 +36,7 @@
                   <circle cx="870" cy="700" r="3" /><circle cx="870" cy="770" r="3" />
                 </g>
 
-                <!-- ===== Left stubs: ESC 0 signal ===== -->
+                <!-- ===== Left stubs: Motor 0 signal ===== -->
                 <g class="wire-esc">
                   <line x1="720" y1="222" x2="630" y2="222" />
                   <line x1="720" y1="246" x2="630" y2="246" />
@@ -68,7 +68,7 @@
                   <text x="933" y="293">GND</text>
                 </g>
 
-                <!-- ===== Right stubs: ESC 1 signal ===== -->
+                <!-- ===== Right stubs: Motor 1 signal ===== -->
                 <g class="wire-esc">
                   <line x1="940" y1="502" x2="1020" y2="502" />
                   <line x1="940" y1="526" x2="1020" y2="526" />
@@ -95,10 +95,10 @@
                   <text x="780" y="668">GND</text>
                 </g>
 
-                <!-- ===== ESC 0 card ===== -->
+                <!-- ===== Motor 0 card ===== -->
                 <rect x="360" y="140" width="270" height="340" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
                 <rect x="375" y="154" width="12" height="12" rx="2" class="fill-esc" />
-                <text x="395" y="164" class="lbl-heading fill-ink" font-size="13">Brushless ESC 0</text>
+                <text x="395" y="164" class="lbl-heading fill-ink" font-size="13">Brushless Motor 0</text>
                 <text x="375" y="182" class="lbl-mono fill-muted" font-size="9.5">TIM3 CH1 · left track · module pins</text>
                 <line x1="375" y1="196" x2="615" y2="196" class="stroke-border" stroke-width="1" />
 
@@ -129,7 +129,7 @@
                   <text x="440" y="468">BAT +</text>
                   <text x="500" y="468">BAT −</text>
                 </g>
-                <!-- ESC 0 battery leads, down to the PDB -->
+                <!-- Motor 0 battery leads, down to the PDB -->
                 <g class="wire-pdb">
                   <line x1="440" y1="480" x2="440" y2="960" />
                   <line x1="500" y1="480" x2="500" y2="960" />
@@ -183,10 +183,10 @@
                   <circle cx="1020" cy="270" r="3" /><circle cx="1020" cy="294" r="3" />
                 </g>
 
-                <!-- ===== ESC 1 card ===== -->
+                <!-- ===== Motor 1 card ===== -->
                 <rect x="1020" y="420" width="270" height="280" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
                 <rect x="1035" y="434" width="12" height="12" rx="2" class="fill-esc" />
-                <text x="1055" y="444" class="lbl-heading fill-ink" font-size="13">Brushless ESC 1</text>
+                <text x="1055" y="444" class="lbl-heading fill-ink" font-size="13">Brushless Motor 1</text>
                 <text x="1035" y="462" class="lbl-mono fill-muted" font-size="9.5">TIM4 CH3 · right track · module pins</text>
                 <line x1="1035" y1="476" x2="1275" y2="476" class="stroke-border" stroke-width="1" />
 
@@ -214,7 +214,7 @@
                   <text x="1130" y="688">BAT +</text>
                   <text x="1190" y="688">BAT −</text>
                 </g>
-                <!-- ESC 1 battery leads, down to the PDB -->
+                <!-- Motor 1 battery leads, down to the PDB -->
                 <g class="wire-pdb">
                   <line x1="1130" y1="700" x2="1130" y2="960" />
                   <line x1="1190" y1="700" x2="1190" y2="960" />
@@ -258,7 +258,7 @@
                 <text x="836" y="890" class="lbl-mono fill-muted" font-size="10.5">(PA13/PA14), reach the same bootloader.</text>
 
                 <!-- ===== Battery sense card =====
-                     Sits in the clear corridor between ESC 0's battery leads
+                     Sits in the clear corridor between Motor 0's battery leads
                      (x=440/500) and the board's left edge (x=720). Three leads
                      only, none crossing another: SENSE across to the board, VCC
                      and GND straight down to the PDB. -->
@@ -298,12 +298,12 @@
                 <!-- ===== PDB card ===== -->
                 <rect x="300" y="960" width="980" height="240" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
                 <g class="lbl-mono fill-pdb" font-size="10.5" font-weight="600" text-anchor="middle">
-                  <text x="440" y="980">ESC 0 +</text>
-                  <text x="500" y="980">ESC 0 −</text>
+                  <text x="440" y="980">Motor 0 +</text>
+                  <text x="500" y="980">Motor 0 −</text>
                   <text x="730" y="980">5V BEC</text>
                   <text x="780" y="980">GND</text>
-                  <text x="1130" y="980">ESC 1 +</text>
-                  <text x="1190" y="980">ESC 1 −</text>
+                  <text x="1130" y="980">Motor 1 +</text>
+                  <text x="1190" y="980">Motor 1 −</text>
                 </g>
                 <!-- sense taps, after the card rect so they are not painted over -->
                 <g class="lbl-mono fill-vbat" font-size="10.5" font-weight="600" text-anchor="middle">
@@ -456,7 +456,7 @@
             5V rail (which in turn powers the receiver). Navy = the three motor leads out of each
             ESC. Green = the ESC signal leads, the only motor wiring the board itself touches.
             Violet = the CRSF link, both directions: the receiver's TX carries stick positions in on
-            PA3, and PA2 carries telemetry back out to the handset. ESC 0 drives the left track and ESC 1 the right, both fed by the
+            PA3, and PA2 carries telemetry back out to the handset. Motor 0 drives the left track and Motor 1 the right, both fed by the
             tank mixer rather than by a receiver channel directly.
           </p>
 
@@ -464,7 +464,7 @@
           <p class="text-secondary">
             The same board wired for a DRV8833-class dual H-bridge module driving two brushed DC
             gearmotors instead of brushless ESCs &mdash; pick <code>brushed</code> for <code>Type</code>
-            on the Configuration page, no reflash needed. <code>esc0</code>/<code>esc1</code> use the
+            on the Configuration page, no reflash needed. <code>motor0</code>/<code>motor1</code> use the
             same PA6/PB8 pins either way, plus a second pin each (PA7/PB9) for the H-bridge's other
             input. The battery pack feeds the H-bridge module directly &mdash; the board's own power
             still comes from USB or the receiver, exactly like an ESC build; a brushed build does not
@@ -494,7 +494,7 @@
                   <circle cx="950" cy="530" r="3" /><circle cx="950" cy="600" r="3" />
                 </g>
 
-                <!-- ===== Left stubs: H-bridge signal (esc0 + esc1) ===== -->
+                <!-- ===== Left stubs: H-bridge signal (motor0 + motor1) ===== -->
                 <g class="wire-hbridge">
                   <line x1="840" y1="222" x2="740" y2="222" />
                   <line x1="840" y1="246" x2="740" y2="246" />
@@ -638,7 +638,7 @@
                   <circle cx="520" cy="650" r="3" /><circle cx="590" cy="650" r="3" />
                 </g>
 
-                <!-- ESC0/esc1's power leads, hbridge down to the battery -->
+                <!-- motor0/motor1's power leads, hbridge down to the battery -->
                 <g class="wire-pdb">
                   <line x1="520" y1="520" x2="520" y2="650" />
                   <line x1="590" y1="520" x2="590" y2="650" />
@@ -657,8 +657,8 @@
             </div>
           </div>
           <p class="text-secondary small mt-2">
-            Gold = the H-bridge's control signals from the board (PA6/PA7 to <code>esc0</code>,
-            PB8/PB9 to <code>esc1</code>). Navy = the two motor leads out of each H-bridge channel —
+            Gold = the H-bridge's control signals from the board (PA6/PA7 to <code>motor0</code>,
+            PB8/PB9 to <code>motor1</code>). Navy = the two motor leads out of each H-bridge channel —
             either order runs the motor, swapping a pair reverses it, or set that motor's
             <code>Invert</code> in the app instead. Teal = the power chain: the pack feeds the
             H-bridge's VM/GND directly, with no board or PDB in that path. Violet = the CRSF link,

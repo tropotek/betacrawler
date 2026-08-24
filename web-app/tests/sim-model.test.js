@@ -84,7 +84,7 @@ test('effectiveMaxUs reserves low time inside the frame', () => {
 
 test('values start at the schema defaults except rx.source', () => {
   const mod = makeModel();
-  assert.equal(mod.get('esc0.throttle_us'), 1500);
+  assert.equal(mod.get('motor0.throttle_us'), 1500);
   assert.equal(mod.get('device.name'), 'betacrawler');
   assert.equal(mod.get('rx.source'), 'sim');
 });
@@ -131,26 +131,26 @@ test('steer ratio changes the drive outputs', () => {
 test('esc holds neutral while the arm switch is inactive', () => {
   const tlm = makeModel().telemetry(0);
   assert.equal(tlm.arm0, ARM_ARMING);
-  assert.equal(tlm.esc0, 1500);
+  assert.equal(tlm.motor0, 1500);
 });
 
 test('esc arms after the hold once the arm source allows it', () => {
   const mod = makeModel();
   mod.set('tank_drive.arm_src', 'none', 0);
-  mod.set('esc0.mode', 'armed', 0);
+  mod.set('motor0.mode', 'armed', 0);
   let tlm;
   for (let t = 0; t <= 2000; t += 100) tlm = mod.telemetry(t);
   assert.equal(tlm.arm0, ARM_ARMED);
-  assert.equal(tlm.esc0, 1500);
+  assert.equal(tlm.motor0, 1500);
 });
 
 test('changing the esc rate demotes an armed esc', () => {
   const mod = makeModel();
   mod.set('tank_drive.arm_src', 'none', 0);
-  mod.set('esc0.mode', 'armed', 0);
+  mod.set('motor0.mode', 'armed', 0);
   for (let t = 0; t <= 3000; t += 100) mod.telemetry(t);
   assert.equal(mod.telemetry(3000).arm0, ARM_ARMED);
-  mod.set('esc0.rate', '400', 3000);
+  mod.set('motor0.rate', '400', 3000);
   assert.equal(mod.telemetry(3000).arm0, ARM_ARMING);
 });
 

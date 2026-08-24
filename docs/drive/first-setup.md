@@ -76,7 +76,7 @@ While disarmed, both ESC outputs are held at neutral no matter what the sticks d
 This one is done in **BLHeli Configurator**, not in Betacrawler. Connect each ESC in turn and set
 its motor direction to **Bidirectional**.
 
-The firmware already expects this: `esc0.direction` and `esc1.direction` both default to
+The firmware already expects this: `motor0.direction` and `motor1.direction` both default to
 `bidirectional`. If you skip it, the vehicle will only ever drive forwards.
 
 ### If you're using brushed motors (H-Bridge)
@@ -87,7 +87,7 @@ motors, then press **Save to flash** before connecting the drive pack — with `
 firmware update, which resets stored settings. If a motor spins the wrong way once you're driving, fix it with that motor's `Invert`
 setting rather than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for-brushed-motors-h-bridge).
 
-`esc0.direction`/`esc1.direction` still apply the same way as an ESC build — leave them on
+`motor0.direction`/`motor1.direction` still apply the same way as an ESC build — leave them on
 `bidirectional` unless you specifically want a motor to only ever drive forward.
 
 ## 8. Save
@@ -106,6 +106,6 @@ With the tracks still off the ground, arm and give it a little throttle. Check:
 - Disarming stops both.
 
 If one track runs backwards, swap any two motor wires on that ESC. If the two tracks are swapped
-left-for-right, change `esc0.src` and `esc1.src` rather than rewiring.
+left-for-right, change `motor0.src` and `motor1.src` rather than rewiring.
 
 Then put it on the ground and go to [Tuning](tuning.md).

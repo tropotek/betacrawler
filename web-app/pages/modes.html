@@ -15,10 +15,10 @@
                     <div class="mode-title" x-text="row.title"></div>
                     <template x-if="row.directionSelect">
                       <select class="form-select form-select-sm mt-2" aria-label="ESC direction"
-                              x-model="$store.config.values['esc0.direction']"
+                              x-model="$store.config.values['motor0.direction']"
                               @change="$store.config.setBothDirections($event.target.value)">
-                        <template x-for="opt in $store.config.field('esc0.direction').def?.options ?? []" :key="opt">
-                          <option :value="opt" :selected="opt === $store.config.values['esc0.direction']" x-text="opt"></option>
+                        <template x-for="opt in $store.config.field('motor0.direction').def?.options ?? []" :key="opt">
+                          <option :value="opt" :selected="opt === $store.config.values['motor0.direction']" x-text="opt"></option>
                         </template>
                       </select>
                     </template>

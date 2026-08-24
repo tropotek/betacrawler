@@ -232,7 +232,7 @@ export const SIM_SCHEMA = {
       "group": "Tank Drive"
     },
     {
-      "key": "esc0.type",
+      "key": "motor0.type",
       "type": "enum",
       "options": [
         "brushless",
@@ -240,10 +240,10 @@ export const SIM_SCHEMA = {
       ],
       "def": "brushless",
       "label": "Type",
-      "group": "ESC 0"
+      "group": "Motor 0"
     },
     {
-      "key": "esc0.direction",
+      "key": "motor0.direction",
       "type": "enum",
       "options": [
         "unidirectional",
@@ -251,10 +251,10 @@ export const SIM_SCHEMA = {
       ],
       "def": "bidirectional",
       "label": "Direction",
-      "group": "ESC 0"
+      "group": "Motor 0"
     },
     {
-      "key": "esc0.rate",
+      "key": "motor0.rate",
       "type": "enum",
       "options": [
         "50",
@@ -265,14 +265,14 @@ export const SIM_SCHEMA = {
       "def": "200",
       "label": "PWM Rate",
       "unit": "Hz",
-      "group": "ESC 0",
+      "group": "Motor 0",
       "showIf": {
-        "key": "esc0.type",
+        "key": "motor0.type",
         "val": "brushless"
       }
     },
     {
-      "key": "esc0.mode",
+      "key": "motor0.mode",
       "type": "enum",
       "options": [
         "off",
@@ -280,41 +280,41 @@ export const SIM_SCHEMA = {
         "input"
       ],
       "def": "input",
-      "label": "ESC",
-      "group": "ESC 0"
+      "label": "Motor",
+      "group": "Motor 0"
     },
     {
-      "key": "esc0.throttle_us",
+      "key": "motor0.throttle_us",
       "type": "u8",
       "min": 1000,
       "max": 2000,
       "def": 1500,
       "label": "Throttle",
       "unit": "µs",
-      "group": "ESC 0"
+      "group": "Motor 0"
     },
     {
-      "key": "esc0.min_us",
+      "key": "motor0.min_us",
       "type": "u8",
       "min": 500,
       "max": 1500,
       "def": 1000,
       "label": "Min",
       "unit": "µs",
-      "group": "ESC 0"
+      "group": "Motor 0"
     },
     {
-      "key": "esc0.max_us",
+      "key": "motor0.max_us",
       "type": "u8",
       "min": 1500,
       "max": 2500,
       "def": 2000,
       "label": "Max",
       "unit": "µs",
-      "group": "ESC 0"
+      "group": "Motor 0"
     },
     {
-      "key": "esc0.src",
+      "key": "motor0.src",
       "type": "enum",
       "options": [
         "ch1",
@@ -334,14 +334,14 @@ export const SIM_SCHEMA = {
       ],
       "def": "drive_left",
       "label": "Source",
-      "group": "ESC 0",
+      "group": "Motor 0",
       "showIf": {
-        "key": "esc0.mode",
+        "key": "motor0.mode",
         "val": "off"
       }
     },
     {
-      "key": "esc0.freq",
+      "key": "motor0.freq",
       "type": "u8",
       "min": 1000,
       "max": 50000,
@@ -350,12 +350,12 @@ export const SIM_SCHEMA = {
       "unit": "Hz",
       "group": "H-Bridge",
       "showIf": {
-        "key": "esc0.type",
+        "key": "motor0.type",
         "val": "brushed"
       }
     },
     {
-      "key": "esc0.invert",
+      "key": "motor0.invert",
       "type": "enum",
       "options": [
         "normal",
@@ -365,12 +365,12 @@ export const SIM_SCHEMA = {
       "label": "Invert",
       "group": "H-Bridge",
       "showIf": {
-        "key": "esc0.type",
+        "key": "motor0.type",
         "val": "brushed"
       }
     },
     {
-      "key": "esc0.brake",
+      "key": "motor0.brake",
       "type": "enum",
       "options": [
         "coast",
@@ -380,12 +380,12 @@ export const SIM_SCHEMA = {
       "label": "At Zero",
       "group": "H-Bridge",
       "showIf": {
-        "key": "esc0.type",
+        "key": "motor0.type",
         "val": "brushed"
       }
     },
     {
-      "key": "esc1.type",
+      "key": "motor1.type",
       "type": "enum",
       "options": [
         "brushless",
@@ -393,10 +393,10 @@ export const SIM_SCHEMA = {
       ],
       "def": "brushless",
       "label": "Type",
-      "group": "ESC 1"
+      "group": "Motor 1"
     },
     {
-      "key": "esc1.direction",
+      "key": "motor1.direction",
       "type": "enum",
       "options": [
         "unidirectional",
@@ -404,10 +404,10 @@ export const SIM_SCHEMA = {
       ],
       "def": "bidirectional",
       "label": "Direction",
-      "group": "ESC 1"
+      "group": "Motor 1"
     },
     {
-      "key": "esc1.rate",
+      "key": "motor1.rate",
       "type": "enum",
       "options": [
         "50",
@@ -418,14 +418,14 @@ export const SIM_SCHEMA = {
       "def": "200",
       "label": "PWM Rate",
       "unit": "Hz",
-      "group": "ESC 1",
+      "group": "Motor 1",
       "showIf": {
-        "key": "esc1.type",
+        "key": "motor1.type",
         "val": "brushless"
       }
     },
     {
-      "key": "esc1.mode",
+      "key": "motor1.mode",
       "type": "enum",
       "options": [
         "off",
@@ -433,41 +433,41 @@ export const SIM_SCHEMA = {
         "input"
       ],
       "def": "input",
-      "label": "ESC",
-      "group": "ESC 1"
+      "label": "Motor",
+      "group": "Motor 1"
     },
     {
-      "key": "esc1.throttle_us",
+      "key": "motor1.throttle_us",
       "type": "u8",
       "min": 1000,
       "max": 2000,
       "def": 1500,
       "label": "Throttle",
       "unit": "µs",
-      "group": "ESC 1"
+      "group": "Motor 1"
     },
     {
-      "key": "esc1.min_us",
+      "key": "motor1.min_us",
       "type": "u8",
       "min": 500,
       "max": 1500,
       "def": 1000,
       "label": "Min",
       "unit": "µs",
-      "group": "ESC 1"
+      "group": "Motor 1"
     },
     {
-      "key": "esc1.max_us",
+      "key": "motor1.max_us",
       "type": "u8",
       "min": 1500,
       "max": 2500,
       "def": 2000,
       "label": "Max",
       "unit": "µs",
-      "group": "ESC 1"
+      "group": "Motor 1"
     },
     {
-      "key": "esc1.src",
+      "key": "motor1.src",
       "type": "enum",
       "options": [
         "ch1",
@@ -487,14 +487,14 @@ export const SIM_SCHEMA = {
       ],
       "def": "drive_right",
       "label": "Source",
-      "group": "ESC 1",
+      "group": "Motor 1",
       "showIf": {
-        "key": "esc1.mode",
+        "key": "motor1.mode",
         "val": "off"
       }
     },
     {
-      "key": "esc1.freq",
+      "key": "motor1.freq",
       "type": "u8",
       "min": 1000,
       "max": 50000,
@@ -503,12 +503,12 @@ export const SIM_SCHEMA = {
       "unit": "Hz",
       "group": "H-Bridge",
       "showIf": {
-        "key": "esc1.type",
+        "key": "motor1.type",
         "val": "brushed"
       }
     },
     {
-      "key": "esc1.invert",
+      "key": "motor1.invert",
       "type": "enum",
       "options": [
         "normal",
@@ -518,12 +518,12 @@ export const SIM_SCHEMA = {
       "label": "Invert",
       "group": "H-Bridge",
       "showIf": {
-        "key": "esc1.type",
+        "key": "motor1.type",
         "val": "brushed"
       }
     },
     {
-      "key": "esc1.brake",
+      "key": "motor1.brake",
       "type": "enum",
       "options": [
         "coast",
@@ -533,7 +533,7 @@ export const SIM_SCHEMA = {
       "label": "At Zero",
       "group": "H-Bridge",
       "showIf": {
-        "key": "esc1.type",
+        "key": "motor1.type",
         "val": "brushed"
       }
     }
@@ -807,26 +807,26 @@ export const SIM_SCHEMA = {
       "group": "Tank Drive"
     },
     {
-      "key": "esc0",
-      "label": "ESC 0",
+      "key": "motor0",
+      "label": "Motor 0",
       "unit": "µs",
-      "group": "ESC 0"
+      "group": "Motor 0"
     },
     {
       "key": "arm0",
       "label": "Armed",
-      "group": "ESC 0"
+      "group": "Motor 0"
     },
     {
-      "key": "esc1",
-      "label": "ESC 1",
+      "key": "motor1",
+      "label": "Motor 1",
       "unit": "µs",
-      "group": "ESC 1"
+      "group": "Motor 1"
     },
     {
       "key": "arm1",
       "label": "Armed",
-      "group": "ESC 1"
+      "group": "Motor 1"
     }
   ]
 };

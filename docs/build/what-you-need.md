@@ -49,7 +49,7 @@ other goes forwards in order to pivot on the spot. In bidirectional mode the ESC
 centre-stick as stop, above centre as forwards and below centre as reverse.
 
 You set this in BLHeli Configurator, on the ESC itself. The firmware already expects it:
-`esc0.direction` and `esc1.direction` both default to `bidirectional`.
+`motor0.direction` and `motor1.direction` both default to `bidirectional`.
 
 An ESC left in its normal unidirectional mode will only ever drive one way, and the vehicle will
 not steer.

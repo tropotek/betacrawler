@@ -66,21 +66,21 @@ The mixer. It takes throttle and steering and produces a speed for each track.
 The three ratios cap authority independently — see [Tuning](../drive/tuning.md). Arming is
 covered in [Arming and modes](arming-and-modes.md).
 
-## ESC 0 and ESC 1
+## Motor 0 and Motor 1
 
-Both ESCs carry the same settings. `esc0` drives the left track, `esc1` the right.
+Both ESCs carry the same settings. `motor0` drives the left track, `motor1` the right.
 
 | Setting | Key | Default | Range |
 |---|---|---|---|
-| Type | `esc0.type` / `esc1.type` | `brushless` | `brushless`, `brushed` |
-| Direction | `esc0.direction` / `esc1.direction` | `bidirectional` | `unidirectional`, `bidirectional` |
-| PWM Rate (Hz) | `esc0.rate` / `esc1.rate` | `50` | `50`, `100`, `200`, `400` |
-| ESC mode | `esc0.mode` / `esc1.mode` | `input` | `off`, `armed`, `input` |
-| Throttle (µs) | `esc0.throttle_us` / `esc1.throttle_us` | `1500` | 1000–2000 |
-| Min (µs) | `esc0.min_us` / `esc1.min_us` | `1000` | 500–1500 |
-| Max (µs) | `esc0.max_us` / `esc1.max_us` | `2000` | 1500–2500 |
-| Source | `esc0.src` | `drive_left` | `ch1`–`ch12`, `drive_left`, `drive_right` |
-| Source | `esc1.src` | `drive_right` | `ch1`–`ch12`, `drive_left`, `drive_right` |
+| Type | `motor0.type` / `motor1.type` | `brushless` | `brushless`, `brushed` |
+| Direction | `motor0.direction` / `motor1.direction` | `bidirectional` | `unidirectional`, `bidirectional` |
+| PWM Rate (Hz) | `motor0.rate` / `motor1.rate` | `50` | `50`, `100`, `200`, `400` |
+| ESC mode | `motor0.mode` / `motor1.mode` | `input` | `off`, `armed`, `input` |
+| Throttle (µs) | `motor0.throttle_us` / `motor1.throttle_us` | `1500` | 1000–2000 |
+| Min (µs) | `motor0.min_us` / `motor1.min_us` | `1000` | 500–1500 |
+| Max (µs) | `motor0.max_us` / `motor1.max_us` | `2000` | 1500–2500 |
+| Source | `motor0.src` | `drive_left` | `ch1`–`ch12`, `drive_left`, `drive_right` |
+| Source | `motor1.src` | `drive_right` | `ch1`–`ch12`, `drive_left`, `drive_right` |
 
 **Direction** must match how the ESC itself is configured in BLHeli Configurator. Bidirectional
 means centre-stick is stop, above is forward, below is reverse.
@@ -98,9 +98,9 @@ Shown only when `Type` is `brushed`.
 
 | Setting | Key | Default | Range |
 |---|---|---|---|
-| Switch Freq (Hz) | `esc0.freq` / `esc1.freq` | `20000` | 1000–50000 |
-| Invert | `esc0.invert` / `esc1.invert` | `normal` | `normal`, `inverted` |
-| At Zero | `esc0.brake` / `esc1.brake` | `coast` | `coast`, `brake` |
+| Switch Freq (Hz) | `motor0.freq` / `motor1.freq` | `20000` | 1000–50000 |
+| Invert | `motor0.invert` / `motor1.invert` | `normal` | `normal`, `inverted` |
+| At Zero | `motor0.brake` / `motor1.brake` | `coast` | `coast`, `brake` |
 
 **Switch Freq** is the H-bridge's PWM switching frequency — 20 kHz is above the audible range and
 every DRV8833/TB6612-class driver handles it fine.
@@ -120,8 +120,8 @@ Read-only values the board reports. These are displayed, never set.
 | RC Channels | CH1–CH16, in µs |
 | RC Link | Link, LQ (%), RSSI (dBm), Rate (Hz), Errors, RF Rate (Hz), TX Power (mW) |
 | Tank Drive | Left and Right output, in µs |
-| ESC 0 | Output (µs), Armed |
-| ESC 1 | Output (µs), Armed |
+| Motor 0 | Output (µs), Armed |
+| Motor 1 | Output (µs), Armed |
 
 **Fault** reads `None` on a healthy board. **Worst Pass** is the longest single loop iteration
 seen, which is the number that matters if control ever feels laggy.

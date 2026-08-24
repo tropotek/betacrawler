@@ -14,12 +14,12 @@ position on the diagram.
 
 | Signal | Board pin | Goes to |
 |---|---|---|
-| ESC 0 | PA6 | ESC 0 signal wire — the **left** track |
-| ESC 1 | PB6 | ESC 1 signal wire — the **right** track |
-| Receiver | PB7 | The receiver's CRSF **TX** pad |
+| Motor 0 | PA6 | Motor 0 signal wire — the **left** track |
+| Motor 1 | PB8 | Motor 1 signal wire — the **right** track |
+| Receiver | PA3 | The receiver's CRSF **TX** pad |
 | Receiver power | 5V, GND | The receiver's + and − |
 | Board power | 5V, GND | The PDB's 5V BEC output |
-| Telemetry | PA9 | The receiver's CRSF **RX** pad |
+| Telemetry | PA2 | The receiver's CRSF **RX** pad |
 | Battery sense *(optional)* | PA1 | The sense divider's output |
 | Status LED | PC13 | On the board already, nothing to wire |
 
@@ -76,8 +76,8 @@ the bench.
 
 ## Which track is which
 
-`esc0` drives the left track and `esc1` the right. If they turn out swapped once you are driving,
-you do not need to rewire: change `esc0.src` and `esc1.src` between `drive_left` and
+`motor0` drives the left track and `motor1` the right. If they turn out swapped once you are driving,
+you do not need to rewire: change `motor0.src` and `motor1.src` between `drive_left` and
 `drive_right` in the app.
 
 If a single track runs backwards, swap any two of the three motor wires on that ESC.
@@ -86,7 +86,7 @@ Next: [Flashing the firmware](flashing.md).
 
 ## Wiring for brushed motors (H-Bridge)
 
-`esc0`/`esc1` can drive a DRV8833-class H-bridge instead of a brushless ESC — pick `brushed` for
+`motor0`/`motor1` can drive a DRV8833-class H-bridge instead of a brushless ESC — pick `brushed` for
 `Type` on the Configuration page, no reflash needed. The pack feeds the H-bridge module directly;
 the board's own 5V still comes from USB or the receiver, same as an ESC build — a brushed build
 does not power the board from the drive-motor pack.
@@ -109,7 +109,7 @@ does not power the board from the drive-motor pack.
 
 !!! danger "Set Type to `brushed` and save before connecting the drive pack"
 
-    Out of the box `esc0.type`/`esc1.type` are `brushless`, and an ESC's
+    Out of the box `motor0.type`/`motor1.type` are `brushless`, and an ESC's
     idle command is a 1500 µs pulse in a 5000 µs frame — into an H-bridge that
     is a 30% duty cycle, so both motors run at a third throttle from the
     moment the board powers up, with no receiver and no arming. Set `Type` to

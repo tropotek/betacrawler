@@ -69,7 +69,7 @@ Configurator. Either works.
 
 ## The two tracks are swapped left-for-right
 
-No need to rewire. Swap `esc0.src` and `esc1.src` between `drive_left` and `drive_right`.
+No need to rewire. Swap `motor0.src` and `motor1.src` between `drive_left` and `drive_right`.
 
 ## It will not reverse
 
