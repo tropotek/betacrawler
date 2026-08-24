@@ -73,11 +73,12 @@ While disarmed, both ESC outputs are held at neutral no matter what the sticks d
 
 ### If you're using brushless ESCs
 
-This one is done in **BLHeli Configurator**, not in Betacrawler. Connect each ESC in turn and set
-its motor direction to **Bidirectional**.
+A surface ESC (sold for cars or boats) needs nothing here — it already treats centre-stick as
+stop.
 
-The firmware already expects this: `motor0.direction` and `motor1.direction` both default to
-`bidirectional`. If you skip it, the vehicle will only ever drive forwards.
+A BLHeli_S drone ESC does: in **BLHeli Configurator**, not in Betacrawler, connect each ESC in
+turn and set its motor direction to **Bidirectional**. Skip it and the ESC will not arm, because
+it never sees the low throttle it waits for at power-on.
 
 ### If you're using brushed motors (H-Bridge)
 
@@ -86,9 +87,6 @@ motors, then press **Save to flash** before connecting the drive pack — with `
 `brushless` an H-bridge sees a 30% duty cycle and both motors run, receiver or not. Redo this after any
 firmware update, which resets stored settings. If a motor spins the wrong way once you're driving, fix it with that motor's `Invert`
 setting rather than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for-brushed-motors-h-bridge).
-
-`motor0.direction`/`motor1.direction` still apply the same way as an ESC build — leave them on
-`bidirectional` unless you specifically want a motor to only ever drive forward.
 
 ## 8. Save
 

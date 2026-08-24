@@ -5,7 +5,7 @@ namespace motor {
 
 // Signed duty in permille (-1000..1000): 0 is stop, positive/negative pick
 // direction. `us` must already be clamped into [minUs, maxUs] -- same
-// contract esc_math.h's clampUs callers already follow.
+// contract motor_math.h's clampUs callers already follow.
 int16_t signedDutyPermille(uint16_t us, uint16_t minUs, uint16_t maxUs, uint16_t neutralUs);
 
 struct PinDuty { uint16_t a; uint16_t b; };

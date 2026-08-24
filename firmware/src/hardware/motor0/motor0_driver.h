@@ -27,7 +27,7 @@ class MotorDriver : public core::Module {
   const core::Inputs* inputs_ = nullptr;
   const core::Inputs* driveInputs_ = nullptr;
   HardwareTimer*        timer_      = nullptr;
-  motor::EscOutput*        escOut_     = nullptr;
+  motor::MotorOutput*        escOut_     = nullptr;
   motor::HbridgeOutput*    hbridgeOut_ = nullptr;
   motor::OutputStage*      stage_      = nullptr;
   int32_t  type_       = motor::TYPE_BRUSHLESS;
@@ -36,7 +36,6 @@ class MotorDriver : public core::Module {
   uint8_t  srcIdx_     = 0;
   uint16_t minUs_      = 1000;
   uint16_t maxUs_      = 2000;
-  int32_t  direction_  = motor::DIR_UNIDIRECTIONAL;
   uint32_t armState_   = motor::ARM_OFF;
   uint32_t armT0_      = 0;
   uint16_t lastUs_     = 0;

@@ -8,8 +8,8 @@ uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs) {
   return (uint16_t)us;
 }
 
-uint16_t neutralUs(uint16_t minUs, uint16_t maxUs, bool bidirectional) {
-  return bidirectional ? (uint16_t)(((uint32_t)minUs + maxUs) / 2) : minUs;
+uint16_t neutralUs(uint16_t minUs, uint16_t maxUs) {
+  return (uint16_t)(((uint32_t)minUs + maxUs) / 2);
 }
 
 uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool enteringFromOff,
@@ -24,7 +24,7 @@ uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool enteringFromOff,
 }
 
 bool isCommandedLow(int32_t mode, uint16_t throttleUs, int16_t inputUs, bool inputFresh,
-                     uint16_t neutralUs, uint16_t lowMarginUs, bool bidirectional) {
+                     uint16_t neutralUs, uint16_t lowMarginUs) {
   int32_t v;
   if (mode == MODE_ARMED) {
     v = throttleUs;
@@ -34,12 +34,9 @@ bool isCommandedLow(int32_t mode, uint16_t throttleUs, int16_t inputUs, bool inp
   } else {
     return false;
   }
-  if (bidirectional) {
-    int32_t d = v - (int32_t)neutralUs;
-    if (d < 0) d = -d;
-    return d <= (int32_t)lowMarginUs;
-  }
-  return v <= (int32_t)neutralUs + (int32_t)lowMarginUs;
+  int32_t d = v - (int32_t)neutralUs;
+  if (d < 0) d = -d;
+  return d <= (int32_t)lowMarginUs;
 }
 
 bool isLinkFresh(uint32_t lastFreshMs, uint32_t nowMs, uint32_t staleMs) {

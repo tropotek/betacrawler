@@ -47,7 +47,7 @@
 
 // No core::Inputs::markFresh() call (i.e. no frame decoded by rx) for this
 // long -> treated as a dead link and failed toward neutral (motor::neutralUs()'s
-// result -- min_us when unidirectional, center when bidirectional),
+// result -- the centre of the calibrated range),
 // overriding whatever the last decoded value was. Measured at the bus, not
 // per-channel.
 #ifndef MOTOR0_INPUT_STALE_MS
@@ -81,7 +81,7 @@ namespace motor0 {
 // instance's storage lives in its own translation unit, so motor0 and motor1
 // never share it.
 alignas(HardwareTimer) static uint8_t s_timerMem[sizeof(HardwareTimer)];
-alignas(motor::EscOutput) static uint8_t s_escOutMem[sizeof(motor::EscOutput)];
+alignas(motor::MotorOutput) static uint8_t s_escOutMem[sizeof(motor::MotorOutput)];
 alignas(motor::HbridgeOutput) static uint8_t s_hbridgeOutMem[sizeof(motor::HbridgeOutput)];
 
 void MotorDriver::begin() {
@@ -89,7 +89,7 @@ void MotorDriver::begin() {
   periodUs_ = MOTOR0_FRAME_US;
   timer_->setOverflow(periodUs_, MICROSEC_FORMAT);
   timer_->resume();
-  escOut_ = new (s_escOutMem) motor::EscOutput(timer_, MOTOR0_PIN);
+  escOut_ = new (s_escOutMem) motor::MotorOutput(timer_, MOTOR0_PIN);
   hbridgeOut_ = new (s_hbridgeOutMem) motor::HbridgeOutput(timer_, MOTOR0_PIN, MOTOR0_PIN_B);
   escOut_->begin();
   hbridgeOut_->begin();
@@ -113,7 +113,6 @@ void MotorDriver::apply(const core::Params& p) {
   throttleUs_ = (uint16_t)p.num(globalParam(P_THROTTLE_US));
   minUs_      = (uint16_t)p.num(globalParam(P_MIN_US));
   maxUs_      = (uint16_t)p.num(globalParam(P_MAX_US));
-  direction_  = p.num(globalParam(P_DIRECTION));
   srcIdx_     = (uint8_t)p.num(globalParam(P_SRC));
   rateIdx_    = (uint8_t)p.num(globalParam(P_RATE));
   freqHz_     = (uint32_t)p.num(globalParam(P_FREQ));
@@ -144,8 +143,7 @@ void MotorDriver::apply(const core::Params& p) {
   const bool srcChanged = (srcIdx_ != prevSrcIdx);
   const bool rateChanged = (rateIdx_ != prevRateIdx);
   const uint32_t now = millis();
-  const bool bidirectional = (direction_ == motor::DIR_BIDIRECTIONAL);
-  const uint16_t neutral   = motor::neutralUs(minUs_, maxUs_, bidirectional);
+  const uint16_t neutral = motor::neutralUs(minUs_, maxUs_);
 
   const bool usesDriveBus = (srcIdx_ >= kDriveSrcBase);
   const core::Inputs* src = usesDriveBus ? driveInputs_ : inputs_;
@@ -165,7 +163,7 @@ void MotorDriver::apply(const core::Params& p) {
 
   if (enteringFromOff) armT0_ = now;
   const bool commandedLow = motor::isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, neutral,
-                                                 MOTOR0_ARM_LOW_MARGIN_US, bidirectional);
+                                                 MOTOR0_ARM_LOW_MARGIN_US);
   if (armState_ == motor::ARM_ARMING && !commandedLow) armT0_ = now;
   armState_ = motor::nextArmState(armState_, mode_ == motor::MODE_OFF, enteringFromOff, now, armT0_,
                                  MOTOR0_ARM_HOLD_MS, commandedLow);
@@ -201,8 +199,7 @@ void MotorDriver::onParamChanged(uint8_t local, const core::Params& p) {
 void MotorDriver::tick(uint32_t nowMs) {
   if (mode_ == motor::MODE_OFF) return;
 
-  const bool bidirectional = (direction_ == motor::DIR_BIDIRECTIONAL);
-  const uint16_t neutral   = motor::neutralUs(minUs_, maxUs_, bidirectional);
+  const uint16_t neutral = motor::neutralUs(minUs_, maxUs_);
 
   const bool usesDriveBus = (srcIdx_ >= kDriveSrcBase);
   const core::Inputs* src = usesDriveBus ? driveInputs_ : inputs_;
@@ -219,7 +216,7 @@ void MotorDriver::tick(uint32_t nowMs) {
   }
 
   const bool commandedLow = motor::isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, neutral,
-                                                 MOTOR0_ARM_LOW_MARGIN_US, bidirectional);
+                                                 MOTOR0_ARM_LOW_MARGIN_US);
   if (armState_ == motor::ARM_ARMING && !commandedLow) armT0_ = nowMs;
   armState_ = motor::nextArmState(armState_, false, false, nowMs, armT0_, MOTOR0_ARM_HOLD_MS, commandedLow);
 

@@ -6,11 +6,11 @@ class HardwareTimer;
 namespace motor {
 
 // Single-pin RC-pulse output stage -- one PWM channel on a shared timer,
-// used for esc<N>.type == TYPE_BRUSHLESS. Owns no timer of its own: constructed
-// with the pin its esc<N> instance already claims in the board header.
-class EscOutput : public OutputStage {
+// used for motor<N>.type == TYPE_BRUSHLESS. Owns no timer of its own: constructed
+// with the pin its motor<N> instance already claims in the board header.
+class MotorOutput : public OutputStage {
  public:
-  EscOutput(HardwareTimer* timer, uint32_t pin) : timer_(timer), pin_(pin) {}
+  MotorOutput(HardwareTimer* timer, uint32_t pin) : timer_(timer), pin_(pin) {}
 
   void begin() override;
   void attachOutput() override;

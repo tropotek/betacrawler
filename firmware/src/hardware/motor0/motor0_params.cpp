@@ -26,8 +26,6 @@ static const char* const kSrcNames[] = {
   "drive_left", "drive_right",
 };
 
-static const char* const kDirections[] = {"unidirectional", "bidirectional"};
-
 // Order must match motor::RATE_*. Bare numbers, so Terminal `set motor0.rate 400`
 // and an INI line read the way a user would write them.
 static const char* const kRates[] = {"50", "100", "200", "400"};
@@ -63,9 +61,8 @@ static const ParamDef kParams[] = {
   // become known during a one-at-a-time apply sequence (INI restore, or a
   // human typing Terminal set commands). Putting motor0.type first guarantees
   // it is always already known -- it decides which OutputStage runs at all,
-  // even more foundational than motor0.direction/motor0.rate below it.
+  // even more foundational than motor0.rate below it.
   {"motor0.type",         ParamType::Enum, "Type",      nullptr, 0, 0, kTypes, 2, 0, MOTOR0_TYPE_DEFAULT, nullptr, nullptr},
-  {"motor0.direction",    ParamType::Enum, "Direction", nullptr, 0, 0, kDirections, 2, 0, motor::DIR_BIDIRECTIONAL, nullptr, nullptr},
   // Shown only for type=esc: meaningless for a straight duty-cycle output.
   {"motor0.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr, "motor0.type", "brushless"},
   // Defaults to input: the shared ARM switch (tank_drive.arm_src, itself

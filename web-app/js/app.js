@@ -216,7 +216,7 @@ document.addEventListener('alpine:init', () => {
 
     // One control over several independent params -- motor0/motor1 keep separate
     // params (notify() only ever reaches the owning module, so one shared
-    // param would leave the other ESC un-notified), but two motors on one
+    // param would leave the other motor un-notified), but two motors on one
     // vehicle running different values has no use case, so the UI offers one
     // control. Each key is written, marked and rolled back on its own result:
     // a refusal partway through must not leave the form showing a value the
@@ -238,10 +238,6 @@ document.addEventListener('alpine:init', () => {
         }
       }
       if (failed) showError(`${label}: ${failed.message}`);
-    },
-
-    setBothDirections(v) {
-      return this.setAll(['motor0.direction', 'motor1.direction'], v, 'Direction');
     },
 
     setBothEscRates(v) {

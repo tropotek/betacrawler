@@ -4,17 +4,17 @@
 
 namespace motor {
 
-void EscOutput::begin() {
+void MotorOutput::begin() {
   ch_ = resolveChannel(timer_, pin_);
 }
 
-void EscOutput::attachOutput() {
+void MotorOutput::attachOutput() {
   if (!ch_) return;
   timer_->setMode(ch_, TIMER_OUTPUT_COMPARE_PWM1, pin_);
   timer_->resumeChannel(ch_);
 }
 
-void EscOutput::detach() {
+void MotorOutput::detach() {
   if (!ch_) return;
   // A real detach, not a zero-width pulse: no pulse train at all while off.
   timer_->pauseChannel(ch_);
@@ -28,11 +28,11 @@ void EscOutput::detach() {
   digitalWrite(pin_, LOW);
 }
 
-void EscOutput::setPeriodUs(uint32_t periodUs) {
+void MotorOutput::setPeriodUs(uint32_t periodUs) {
   timer_->setOverflow(periodUs, MICROSEC_FORMAT);
 }
 
-void EscOutput::write(uint16_t us, uint16_t, uint16_t, uint16_t) {
+void MotorOutput::write(uint16_t us, uint16_t, uint16_t, uint16_t) {
   if (!ch_) return;
   timer_->setCaptureCompare(ch_, us, MICROSEC_COMPARE_FORMAT);
 }

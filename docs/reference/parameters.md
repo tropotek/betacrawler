@@ -73,7 +73,6 @@ Both ESCs carry the same settings. `motor0` drives the left track, `motor1` the 
 | Setting | Key | Default | Range |
 |---|---|---|---|
 | Type | `motor0.type` / `motor1.type` | `brushless` | `brushless`, `brushed` |
-| Direction | `motor0.direction` / `motor1.direction` | `bidirectional` | `unidirectional`, `bidirectional` |
 | PWM Rate (Hz) | `motor0.rate` / `motor1.rate` | `50` | `50`, `100`, `200`, `400` |
 | ESC mode | `motor0.mode` / `motor1.mode` | `input` | `off`, `armed`, `input` |
 | Throttle (µs) | `motor0.throttle_us` / `motor1.throttle_us` | `1500` | 1000–2000 |
@@ -81,9 +80,6 @@ Both ESCs carry the same settings. `motor0` drives the left track, `motor1` the 
 | Max (µs) | `motor0.max_us` / `motor1.max_us` | `2000` | 1500–2500 |
 | Source | `motor0.src` | `drive_left` | `ch1`–`ch12`, `drive_left`, `drive_right` |
 | Source | `motor1.src` | `drive_right` | `ch1`–`ch12`, `drive_left`, `drive_right` |
-
-**Direction** must match how the ESC itself is configured in BLHeli Configurator. Bidirectional
-means centre-stick is stop, above is forward, below is reverse.
 
 **Source** is where the ESC takes its command from. `drive_left` and `drive_right` are the two
 outputs of the tank mixer — that is the normal setting. Pointing an ESC at a raw channel instead

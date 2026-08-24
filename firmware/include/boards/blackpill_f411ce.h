@@ -99,7 +99,7 @@
 #define MOTOR1_TIMER      TIM4
 #define MOTOR1_PIN        PB8
 
-// motor0/motor1's second PWM pin, used only when that instance's esc<N>.type is
+// motor0/motor1's second PWM pin, used only when that instance's motor<N>.type is
 // brushed (a runtime choice -- both macros are always defined whenever
 // FEATURE_MOTOR0/FEATURE_MOTOR1 are on, regardless of which type is selected).
 // PA7 is TIM3_CH2 -- the same physical timer as motor0's own PA6 (TIM3_CH1),
@@ -118,7 +118,7 @@
 #define MOTOR1_PIN_B  PB9
 
 // Which motor each instance starts on -- motor::TYPE_BRUSHLESS (an ESC) or
-// motor::TYPE_BRUSHED (an H-bridge). esc<N>.type overrides it at runtime; this
+// motor::TYPE_BRUSHED (an H-bridge). motor<N>.type overrides it at runtime; this
 // only decides where an unconfigured board starts, including after a settings
 // reset. Both are TYPE_BRUSHLESS because this image serves either wiring: a
 // fork committed to brushed motors sets TYPE_BRUSHED here so a reset can never

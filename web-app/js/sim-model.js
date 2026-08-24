@@ -1,5 +1,5 @@
 // Reactive device simulation ported from firmware math (tank_drive_math.cpp,
-// esc_math.cpp, RxDriver's sim source). Pure and deterministic: no timers, no I/O.
+// motor_math.cpp, RxDriver's sim source). Pure and deterministic: no timers, no I/O.
 
 const CENTER_US = 1500;
 const DRIVE_MIN_US = 1000;
@@ -16,7 +16,7 @@ const ARM_LOW_MARGIN_US = 50;
 const MIN_LOW_US = 125;
 export const FRAME_US = { 50: 20000, 100: 10000, 200: 5000, 400: 2500 };
 
-// esc<N>.src option indices 0..11 are ch1..ch12; 12 and 13 are the tank drive
+// motor<N>.src option indices 0..11 are ch1..ch12; 12 and 13 are the tank drive
 // bus's left/right slots. Slot 2 of that bus is the shared ARM switch.
 const DRIVE_SRC_BASE = 12;
 const DRIVE_ARM_SLOT = 2;
@@ -103,11 +103,11 @@ export function computeArmed(rxFresh, armSrcIsNone, armSrcUs, armMinUs, armMaxUs
   return armMinUs <= armSrcUs && armSrcUs <= armMaxUs;
 }
 
-export function neutralUs(minUs, maxUs, bidirectional) {
-  return bidirectional ? Math.floor((minUs + maxUs) / 2) : minUs;
+export function neutralUs(minUs, maxUs) {
+  return Math.floor((minUs + maxUs) / 2);
 }
 
-function isCommandedLow(mode, throttleUs, inputUs, inputFresh, neutral, lowMarginUs, bidirectional) {
+function isCommandedLow(mode, throttleUs, inputUs, inputFresh, neutral, lowMarginUs) {
   let v;
   if (mode === MODE_ARMED) {
     v = throttleUs;
@@ -117,7 +117,7 @@ function isCommandedLow(mode, throttleUs, inputUs, inputFresh, neutral, lowMargi
   } else {
     return false;
   }
-  if (bidirectional) return Math.abs(v - neutral) <= lowMarginUs;
+  return Math.abs(v - neutral) <= lowMarginUs;
   return v <= neutral + lowMarginUs;
 }
 
@@ -175,7 +175,6 @@ class Motor {
     const throttleUs = p.num(`${this.prefix}.throttle_us`);
     const minUs = p.num(`${this.prefix}.min_us`);
     const maxUs = p.num(`${this.prefix}.max_us`);
-    const bidirectional = p.text(`${this.prefix}.direction`) === 'bidirectional';
     const srcIdx = p.enumIndex(`${this.prefix}.src`);
     const rate = p.text(`${this.prefix}.rate`);
 
@@ -184,7 +183,7 @@ class Motor {
     const rateChanged = this._prevRate !== null && rate !== this._prevRate;
     this._prevMode = mode; this._prevSrc = srcIdx; this._prevRate = rate;
 
-    const neutral = neutralUs(minUs, maxUs, bidirectional);
+    const neutral = neutralUs(minUs, maxUs);
     const rawInput = srcIdx >= DRIVE_SRC_BASE ? drive[srcIdx - DRIVE_SRC_BASE] : inputs[srcIdx];
     const inputFresh = mode === MODE_INPUT && rxFresh;
     const inputStale = mode === MODE_INPUT && !inputFresh;
@@ -200,7 +199,7 @@ class Motor {
     if (enteringFromOff) this.armT0 = nowMs;
 
     const commandedLow = isCommandedLow(
-      mode, throttleUs, inputUs, inputFresh, neutral, ARM_LOW_MARGIN_US, bidirectional);
+      mode, throttleUs, inputUs, inputFresh, neutral, ARM_LOW_MARGIN_US);
     if (this.armState === ARM_ARMING && !commandedLow) this.armT0 = nowMs;
     this.armState = nextArmState(
       this.armState, mode === MODE_OFF, enteringFromOff, nowMs, this.armT0, ARM_HOLD_MS, commandedLow);

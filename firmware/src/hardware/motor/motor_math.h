@@ -3,22 +3,19 @@
 
 namespace motor {
 
-// Values of an esc<N>.mode parameter, in declaration order. Shared by every
+// Values of an motor<N>.mode parameter, in declaration order. Shared by every
 // ESC module instance (motor0, motor1, ...) -- see esc0_params.h / esc1_params.h.
 enum : int32_t { MODE_OFF = 0, MODE_ARMED = 1, MODE_INPUT = 2 };
 
-// Values of an esc<N>.direction parameter, in declaration order.
-enum : int32_t { DIR_UNIDIRECTIONAL = 0, DIR_BIDIRECTIONAL = 1 };
-
-// Values of an esc<N>.type parameter, in declaration order -- which motor
+// Values of an motor<N>.type parameter, in declaration order -- which motor
 // that instance drives, and so which output electronics sit between the two.
-// esc<N>'s shared calibration (min_us/max_us/direction/mode/src) means the
+// motor<N>'s shared calibration (min_us/max_us/mode/src) means the
 // same regardless; only the final step (turning a calibrated value into pin
 // output) differs, which is what motor::OutputStage's two implementations
-// (EscOutput for an ESC, HbridgeOutput for an H-bridge) exist to isolate.
+// (MotorOutput for an ESC, HbridgeOutput for an H-bridge) exist to isolate.
 enum : int32_t { TYPE_BRUSHLESS = 0, TYPE_BRUSHED = 1 };
 
-// Values of an esc<N>.rate parameter, in declaration order -- the PWM frame
+// Values of an motor<N>.rate parameter, in declaration order -- the PWM frame
 // rate the output runs at. 50Hz is what every analog ESC auto-detects; a
 // BLHeli_S-class ESC handles the rest and cuts the 0-20ms wait for the next
 // frame that dominates rx-to-ESC latency at 50Hz.
@@ -26,10 +23,10 @@ enum : int32_t { RATE_50 = 0, RATE_100 = 1, RATE_200 = 2, RATE_400 = 3 };
 
 // Low period reserved between pulses, so the ESC always sees a pulse train
 // rather than a line held high. Matters only at 400Hz, where the frame is
-// 2500us and esc<N>.max_us is settable to exactly that.
+// 2500us and motor<N>.max_us is settable to exactly that.
 constexpr uint16_t kMinLowUs = 125;
 
-// Arm-hold state, and the exact value an esc<N> module's `arm` telemetry
+// Arm-hold state, and the exact value an motor<N> module's `arm` telemetry
 // field carries -- a plain number, following rx's `link` field precedent
 // that a status reading is just a number, extended to three states here.
 enum : uint32_t { ARM_OFF = 0, ARM_ARMING = 1, ARM_ARMED = 2 };
@@ -66,37 +63,23 @@ uint32_t nextArmState(uint32_t prevState, bool modeIsOff, bool enteringFromOff,
                        uint32_t nowMs, uint32_t armT0Ms, uint32_t armHoldMs,
                        bool commandedIsLow);
 
-// The safe/idle pulse width for a given direction: min_us for a
-// unidirectional ESC (the low end is stop; everything above it is
-// forward-only), or the midpoint of min_us/max_us for a bidirectional one
-// (center is stop; below is reverse, above is forward). Single source of
-// truth for "where is safe" -- every place that used to hardcode min_us as
-// the arm-hold/failsafe value now takes this instead.
-uint16_t neutralUs(uint16_t minUs, uint16_t maxUs, bool bidirectional);
+// The safe/idle pulse width: the midpoint of min_us/max_us. Centre is stop,
+// below is reverse, above is forward. Single source of truth for "where is
+// safe" -- the arm-hold pulse, the failsafe value and the arm-switch-inactive
+// clamp all take this.
+uint16_t neutralUs(uint16_t minUs, uint16_t maxUs);
 
-// True when the value that would be honoured on promotion to ARMED is at or
-// near neutralUs (see neutralUs() above) -- the arm-completion precondition.
-// The MODE_ARMED case checks the bench throttle value directly; MODE_INPUT
-// additionally requires inputFresh on top of a CONFIRMED reading
-// (inputUs > 0) -- arming must never complete against a link the module's
-// own freshness check has already flagged as dead. Any other mode (only
-// MODE_OFF in practice, handled elsewhere by the caller) is defensively
-// "not low".
-//
-// `bidirectional` changes the SHAPE of the check, not just the reference
-// point: unidirectional keeps a one-sided check (anything at or below
-// neutralUs + lowMarginUs counts, since clampUs makes "further below" just
-// as safe). Bidirectional needs a two-sided band around neutralUs, since
-// drifting either direction away from center is a real hazard there (fast
-// reverse or fast forward), not a clamped, harmless extreme. A single
-// unified symmetric check was considered and rejected: it silently
-// misclassifies a legal unidirectional configuration where min_us has been
-// raised well above the throttle parameter's own 1000us range floor -- a low
-// throttle value far below the raised min_us is still perfectly safe
-// (clamped up to min_us regardless), but a symmetric distance check would
-// wrongly reject it as "too far from neutral".
+// True when the value that would be honoured on promotion to ARMED sits
+// within lowMarginUs either side of neutralUs -- the arm-completion
+// precondition. MODE_ARMED checks the bench throttle value directly;
+// MODE_INPUT additionally requires inputFresh on top of a confirmed reading
+// (inputUs > 0), so arming never completes against a link the module's own
+// freshness check has already flagged as dead. Any other mode is defensively
+// "not low". The band is two-sided because drifting either way from centre is
+// a real hazard -- fast reverse or fast forward -- not a harmlessly clamped
+// extreme.
 bool isCommandedLow(int32_t mode, uint16_t throttleUs, int16_t inputUs, bool inputFresh,
-                     uint16_t neutralUs, uint16_t lowMarginUs, bool bidirectional);
+                     uint16_t neutralUs, uint16_t lowMarginUs);
 
 // True when the bus proved itself alive within staleMs of nowMs -- see
 // core::Inputs::markFresh()'s doc comment for why this is measured at the
@@ -129,7 +112,7 @@ bool srcChangeDemotesArmed(uint32_t armState, int32_t mode, bool srcChanged);
 uint32_t frameUsForRate(uint8_t rateIdx);
 
 // The largest pulse that still leaves kMinLowUs of low time inside one frame.
-// This is where esc<N>.max_us and esc<N>.rate meet: both are independently
+// This is where motor<N>.max_us and motor<N>.rate meet: both are independently
 // valid parameters (core::Params validates each against its own min/max and
 // has no cross-parameter seam), so the combination is resolved here, at the
 // point of use, rather than by refusing one of them.

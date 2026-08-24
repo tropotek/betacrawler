@@ -243,17 +243,6 @@ export const SIM_SCHEMA = {
       "group": "Motor 0"
     },
     {
-      "key": "motor0.direction",
-      "type": "enum",
-      "options": [
-        "unidirectional",
-        "bidirectional"
-      ],
-      "def": "bidirectional",
-      "label": "Direction",
-      "group": "Motor 0"
-    },
-    {
       "key": "motor0.rate",
       "type": "enum",
       "options": [
@@ -393,17 +382,6 @@ export const SIM_SCHEMA = {
       ],
       "def": "brushless",
       "label": "Type",
-      "group": "Motor 1"
-    },
-    {
-      "key": "motor1.direction",
-      "type": "enum",
-      "options": [
-        "unidirectional",
-        "bidirectional"
-      ],
-      "def": "bidirectional",
-      "label": "Direction",
       "group": "Motor 1"
     },
     {

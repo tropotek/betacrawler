@@ -6,9 +6,9 @@ class HardwareTimer;
 namespace motor {
 
 // Two-pin duty-cycle output stage -- two PWM channels of the same shared
-// timer esc<N>'s EscOutput would otherwise use alone, driven in the "one
+// timer motor<N>'s MotorOutput would otherwise use alone, driven in the "one
 // pin carries the duty, the other stays low/high" pattern a DRV8833-class
-// H-bridge expects. Used for esc<N>.type == TYPE_BRUSHED.
+// H-bridge expects. Used for motor<N>.type == TYPE_BRUSHED.
 class HbridgeOutput : public OutputStage {
  public:
   HbridgeOutput(HardwareTimer* timer, uint32_t pinA, uint32_t pinB)

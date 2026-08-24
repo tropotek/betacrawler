@@ -10,8 +10,8 @@ extern const core::ModuleDesc kDesc;
 // Local, so nothing outside motor1/ depends on where these landed in the
 // global table, and adding a module elsewhere can never shift them.
 enum : uint8_t {
-  P_TYPE = 0, P_DIRECTION = 1, P_RATE = 2, P_MODE = 3, P_THROTTLE_US = 4,
-  P_MIN_US = 5, P_MAX_US = 6, P_SRC = 7, P_FREQ = 8, P_INVERT = 9, P_BRAKE = 10,
+  P_TYPE = 0, P_RATE = 1, P_MODE = 2, P_THROTTLE_US = 3,
+  P_MIN_US = 4, P_MAX_US = 5, P_SRC = 6, P_FREQ = 7, P_INVERT = 8, P_BRAKE = 9,
 };
 
 // Telemetry indices within this module's slice of the frame.

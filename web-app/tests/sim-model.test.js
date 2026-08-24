@@ -56,9 +56,10 @@ test('computeArmed rules', () => {
   assert.equal(computeArmed(true, false, 1500, 1700, 2000), false);
 });
 
-test('neutralUs depends on direction', () => {
-  assert.equal(neutralUs(1000, 2000, true), 1500);
-  assert.equal(neutralUs(1000, 2000, false), 1000);
+test('neutralUs is always the midpoint of the calibrated span', () => {
+  assert.equal(neutralUs(1000, 2000), 1500);
+  assert.equal(neutralUs(1200, 2000), 1600);
+  assert.equal(neutralUs(1500, 1500), 1500);
 });
 
 test('arm state promotes only after the hold with throttle low', () => {

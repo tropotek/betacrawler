@@ -42,17 +42,23 @@ are not evidence.
 Once the board is running Betacrawler, the **Help** page reports which chip its firmware was built
 for, and the **Firmware** page offers the matching image by default.
 
-## Why the ESCs must be bidirectional
+## The ESC must treat centre-stick as stop
 
-A tracked vehicle needs reverse, and it needs to be able to spin one track backwards while the
-other goes forwards in order to pivot on the spot. In bidirectional mode the ESC treats
-centre-stick as stop, above centre as forwards and below centre as reverse.
+The firmware always commands 1500 µs for stop, above that for forwards and below it for reverse.
+The ESC has to agree, or nothing else works: a vehicle needs reverse, and a tracked or
+skid-steer one needs to spin one side backwards while the other goes forwards to pivot on the
+spot.
 
-You set this in BLHeli Configurator, on the ESC itself. The firmware already expects it:
-`motor0.direction` and `motor1.direction` both default to `bidirectional`.
+Two kinds of ESC do this:
 
-An ESC left in its normal unidirectional mode will only ever drive one way, and the vehicle will
-not steer.
+- A **surface ESC**, sold for cars and boats. Centre-stick neutral is how they already behave —
+  nothing to configure.
+- A **BLHeli_S drone ESC set to bidirectional** (also called 3D mode) in BLHeli Configurator.
+  Out of the box these treat 1000 µs as stop and only drive one way; switching to bidirectional
+  moves neutral to centre.
+
+An ESC left in its default aircraft mode will not arm on this firmware, because it never sees
+the low throttle it waits for at power-on.
 
 New to flashing and configuring BLHeli_S ESCs? Oscar Liang's
 **[connecting and flashing BLHeli_S ESCs guide](https://oscarliang.com/connect-flash-blheli-s-esc/)**

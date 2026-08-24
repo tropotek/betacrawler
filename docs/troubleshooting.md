@@ -73,8 +73,20 @@ No need to rewire. Swap `motor0.src` and `motor1.src` between `drive_left` and `
 
 ## It will not reverse
 
-The ESC is not in bidirectional mode. Set it in BLHeli Configurator — the firmware already
-expects bidirectional and cannot make an ESC reverse that is not configured for it.
+The ESC does not treat centre-stick as stop. A surface ESC already does; a BLHeli_S drone ESC
+needs its motor direction set to **Bidirectional** in BLHeli Configurator. The firmware always
+commands 1500 µs for stop and cannot make an ESC reverse that is not configured for it.
+
+## A motor never arms — `arm0` or `arm1` stays at 1
+
+The module is stuck in its arm-hold: it waits for a commanded value near neutral before it will
+drive, and it is not seeing one.
+
+Most often the ESC is a drone ESC still in its default aircraft mode, where stop is 1000 µs.
+Set its motor direction to **Bidirectional** in BLHeli Configurator, or fit a surface ESC.
+
+Otherwise check the throttle stick really does rest at centre on the Controller page, and that
+the arm switch is active — `motor<N>.mode` must be `input` and the link must be live.
 
 ## It creeps with the sticks centred
 
