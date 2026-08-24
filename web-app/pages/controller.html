@@ -123,12 +123,12 @@
                       </div>
                     </template>
                   </template>
-                  <div class="col-6 col-md-3">
+                  <div class="col-6">
                     <div class="text-secondary small"
                          x-text="($store.config.values['drive.mode'] === 'car' ? 'Throttle' : 'Left') + ' Output (µs)'"></div>
                     <div class="fs-4" x-text="$store.telemetry.field('drv_l').value ?? '–'"></div>
                   </div>
-                  <div class="col-6 col-md-3">
+                  <div class="col-6">
                     <div class="text-secondary small"
                          x-text="($store.config.values['drive.mode'] === 'car' ? 'Steer' : 'Right') + ' Output (µs)'"></div>
                     <div class="fs-4" x-text="$store.telemetry.field('drv_r').value ?? '–'"></div>
