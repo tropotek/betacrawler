@@ -22,6 +22,19 @@ jobs:
           ' CHANGELOG.md > notes.md
           [ -s notes.md ] || echo "See CHANGELOG.md." > notes.md
 
-      - run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md web-app/firmware/*/*.bin
+      # Every board builds the same filename, and release assets share one
+      # namespace, so each image is qualified by its board before upload.
+      - run: |
+          mkdir -p dist
+          for bin in web-app/firmware/*/*.bin; do
+            board="$(basename "$(dirname "$bin")")"
+            cp "$bin" "dist/$(basename "$bin" .bin)-$board.bin"
+          done
+          ls -l dist
+
+      - run: |
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md \
+            || gh release edit "$GITHUB_REF_NAME" --notes-file notes.md
+          gh release upload "$GITHUB_REF_NAME" dist/*.bin --clobber
         env:
           GH_TOKEN: ${{ github.token }}
