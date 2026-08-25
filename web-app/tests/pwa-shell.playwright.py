@@ -1,10 +1,11 @@
 import json
 import re
+import os
 import sys
 import urllib.request
 from playwright.sync_api import sync_playwright
 
-BASE = "http://localhost:9091"
+BASE = os.environ.get("BETACRAWLER_BASE", "http://localhost:9091")
 
 
 def fetch(path):

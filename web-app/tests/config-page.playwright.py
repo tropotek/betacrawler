@@ -2,10 +2,11 @@
 
 Serve web-app/ on 9091 first, then: ~/.pwvenv/bin/python3 tests/config-page.playwright.py
 """
+import os
 import sys
 from playwright.sync_api import sync_playwright
 
-BASE = "http://localhost:9091"
+BASE = os.environ.get("BETACRAWLER_BASE", "http://localhost:9091")
 
 errors = []
 failures = []

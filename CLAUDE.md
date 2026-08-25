@@ -56,24 +56,29 @@ invoke it rather than reading this file for those steps.
 **web-app** (from `web-app/`):
 ```
 python3 -m http.server 9091   # serves the static site; open http://localhost:9091
-node --test                   # unit tests for js/*.js, no board needed
+node --test                   # unit tests AND the browser suites, no board needed
 ```
 Web Serial, WebUSB and service workers all require a secure context — `localhost` or HTTPS.
 Serving this tree from a LAN IP over plain HTTP will not work, and it needs a Chromium-based
 browser (Chrome, Edge, Brave, Opera); Firefox and Safari have no Web Serial API.
 
-There is no build step, and no automated test suite for the *rendered* UI, by design — but
-"therefore you cannot check the UI" does not follow, and believing it has cost real defects.
-**A working headless browser is installed at `~/.pwvenv`** (Playwright + Chromium):
+There is no build step. The rendered UI IS covered: `tests/*.playwright.py` drive a real
+headless Chromium, and `tests/ui.test.js` runs every one of them under `node --test`, starting a
+server on 9091 if one is not already up. Add a browser suite by dropping in a new
+`tests/<name>.playwright.py` — it is discovered, not listed. It reads its base URL from
+`BETACRAWLER_BASE`, and reports failures by printing them and exiting non-zero.
+
+**The browser is installed at `~/.pwvenv`** (Playwright + Chromium). `node --test` skips the
+browser suites, visibly, when it is missing:
 
 ```
-~/.pwvenv/bin/python3 script.py    # sync_playwright(), p.chromium.launch(headless=True)
+~/.pwvenv/bin/python3 tests/config-page.playwright.py   # one suite, server already up
 ```
 
 Use it to read rendered text, click through a page and collect console/`pageerror` events before
-claiming a UI change works. Point it at `http://localhost:9091`; for a state the hardware cannot
-be made to produce, install a fake `navigator.serial` with `add_init_script()` before the page
-loads and answer the wire protocol from it.
+claiming a UI change works. For a state the hardware cannot be made to produce, install a fake
+`navigator.serial` with `add_init_script()` before the page loads and answer the wire protocol
+from it.
 
 Do NOT try apt's `python3-playwright` (its client and the packaged Node driver speak incompatible
 protocol versions) or `firefox --headless --screenshot` (hangs on framebuffer mapping here).
@@ -125,8 +130,9 @@ web-app/                the configurator: static HTML/JS, talking to the board d
                         markup. `js/*.js` is the logic below the `Api` seam:
                         protocol/webserial-link/device-model/terminal/settings-ini/dfu,
                         vanilla ES modules with no build step, no npm dependencies and no
-                        Python. Unit-tested with `node --test`, run from `web-app/` (it
-                        discovers `tests/*.test.js` itself).
+                        Python. Tested with `node --test`, run from `web-app/` (it
+                        discovers `tests/*.test.js` itself, and those pull in the
+                        `tests/*.playwright.py` browser suites).
 web-app/firmware/       the firmware images this site flashes, plus manifest.json. COMMITTED:
                         a static site has no server to build one on demand. Written at
                         release time by the `bundle-firmware` skill's script, which the
