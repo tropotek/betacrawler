@@ -131,7 +131,7 @@ freely) or `brake` (both high, resisting motion).
 
 | Setting | Key | Default | Range |
 |---|---|---|---|
-| Servo | `servo.mode` | `off` | `off`, `hold`, `sweep`, `input` |
+| Servo | `servo.mode` | `off` | `off`, `hold`, `sweep`, `input` — set by **Drive Mode** |
 | Angle (°) | `servo.angle` | `90` | 0–180 |
 | Sweep (s) | `servo.sweep_s` | `4` | 1–30 |
 | Min (µs) | `servo.min_us` | `1000` | 500–1500 |
@@ -142,7 +142,9 @@ freely) or `brake` (both high, resisting motion).
 
 **Mode** picks where the pulse comes from: `hold` parks at **Angle**, `sweep` runs back and
 forth over **Sweep** seconds, `input` follows **Source**. `off` detaches the pin so the servo
-relaxes and draws no holding current.
+relaxes and draws no holding current. The Configuration page sets this from **Drive Mode** —
+`car` gives `input`, `skid` gives `off` — so it is only worth setting by hand from the Terminal,
+to reach `hold` or `sweep` for a bench test.
 
 **Source** defaults to `drive_steer`, the mixer's steering output, so a car steers without
 touching it. A raw channel bypasses the mixer's steer ratio. Set from the Terminal; no page shows

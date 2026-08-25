@@ -91,7 +91,8 @@ Next: [Flashing the firmware](flashing.md).
 
 ## Wiring for a car (one motor + steering servo)
 
-Set `Drive Mode` to `car` and `Servo` to `input` on the Configuration page — no reflash needed.
+Set `Drive Mode` to `car` on the Configuration page — no reflash needed, and it switches the
+steering servo on for you.
 Both motor outputs carry throttle in car mode, so a single motor drives whichever of PA6 or PB8 it
 is wired to, and a two-wheel-drive car works by wiring both. The steering servo goes on **PB10**
 and follows the mixer's steer output on stock settings.

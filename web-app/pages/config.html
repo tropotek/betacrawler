@@ -82,7 +82,7 @@
                   <select class="form-select" id="f-drive-mode"
                           :class="{ 'is-invalid': $store.config.invalid['drive.mode'] }"
                           x-model="$store.config.values['drive.mode']"
-                          @change="$store.config.commit($store.config.field('drive.mode').def)">
+                          @change="$store.config.setDriveMode($event.target.value)">
                     <template x-for="opt in $store.config.field('drive.mode').def?.options ?? []" :key="opt">
                       <option :value="opt" :selected="opt === $store.config.values['drive.mode']" x-text="opt"></option>
                     </template>
@@ -90,38 +90,19 @@
                   <div class="help-body d-none">
                     <strong>skid</strong> mixes throttle and steer into a left and a right output —
                     tracks, or a wheeled rover that turns by driving its sides at different speeds.
-                    <strong>car</strong> sends throttle to one motor and steer to a servo.
+                    <strong>car</strong> sends throttle to both motor outputs and steer to the
+                    servo on PB10, which it switches on for you.
                   </div>
                 </div>
               </div>
             </fieldset>
           </template>
 
-          <template x-if="$store.config.field('servo.invert').def">
+          <template x-if="$store.config.field('servo.invert').def
+                           && $store.config.values['drive.mode'] === 'car'">
             <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>
               <legend class="card-header h6 text-secondary mb-0 py-2">Steering Servo</legend>
               <div class="card-body row g-3">
-                <template x-if="$store.config.field('servo.mode').def">
-                  <div class="col-md-6">
-                    <div class="d-flex align-items-center mb-2">
-                      <label class="form-label mb-0" for="f-servo-mode">Servo</label>
-                      <span class="help-icon" tabindex="0" role="button"><svg class="bi" aria-hidden="true"><use href="#question-circle-fill"/></svg></span>
-                    </div>
-                    <select class="form-select" id="f-servo-mode"
-                            :class="{ 'is-invalid': $store.config.invalid['servo.mode'] }"
-                            x-model="$store.config.values['servo.mode']"
-                            @change="$store.config.commit($store.config.field('servo.mode').def)">
-                      <template x-for="opt in $store.config.field('servo.mode').def?.options ?? []" :key="opt">
-                        <option :value="opt" :selected="opt === $store.config.values['servo.mode']" x-text="opt"></option>
-                      </template>
-                    </select>
-                    <div class="help-body d-none">
-                      <strong>input</strong> follows the steering — what a car build wants.
-                      <strong>off</strong> detaches the pin. <strong>hold</strong> and
-                      <strong>sweep</strong> are for testing a servo on the bench.
-                    </div>
-                  </div>
-                </template>
                 <div class="col-md-6">
                   <div class="d-flex align-items-center mb-2">
                     <label class="form-label mb-0" for="f-servo-invert">Invert</label>

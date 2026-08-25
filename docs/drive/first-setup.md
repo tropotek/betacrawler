@@ -110,10 +110,10 @@ than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for
 
 Skip this if your vehicle drives both sides. For one motor plus a steering servo:
 
-1. **Configuration → Drive Mode** = `car`.
+1. **Configuration → Drive Mode** = `car`. This switches the steering servo on and reveals its
+   settings; `skid` switches it off again.
 2. **Configuration → Type** = whatever your motor is, same as any other build.
-3. **Configuration → Servo** = `input`.
-4. Wire the servo signal to **PB10**, with its own 5&nbsp;V supply and a shared ground. Never run
+3. Wire the servo signal to **PB10**, with its own 5&nbsp;V supply and a shared ground. Never run
    it from 3V3.
 
 Then, with the wheels off the ground, check the steering:

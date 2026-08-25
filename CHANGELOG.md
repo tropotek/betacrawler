@@ -10,8 +10,9 @@ records live in the git history, not here.
   slot that `servo.src` now selects by default. A car needs no Terminal: pick the drive mode, the
   motor type, and switch the servo on.
 
-- **feat: `servo.mode` is on the Configuration page**, so enabling the steering servo no longer
-  needs the Terminal. `servo.src` and `motor<N>.src` stay Terminal-only.
+- **feat: Drive Mode switches the steering servo on and off.** `car` enables it and shows its
+  settings, `skid` disables them and hides the card — a skid build has no steering servo, so it is
+  never asked about. `servo.mode` stays a Terminal override for bench testing.
 
 ## Version 4.1
 
