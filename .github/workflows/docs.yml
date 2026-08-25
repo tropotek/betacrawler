@@ -1,9 +1,11 @@
 name: docs
 
+# Deploys only ever run from main: a Pages deployment created from a tag ref
+# reports success but is never promoted to the live site. The release workflow
+# dispatches this one after tagging, and the build below picks the tag up.
 on:
   push:
     branches: [main]
-    tags: ["[0-9]+.[0-9]+.[0-9]+"]
   workflow_dispatch:
 
 permissions:

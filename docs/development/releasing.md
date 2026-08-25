@@ -61,4 +61,7 @@ last bundled on `main`.
 
 `.github/workflows/docs.yml` builds all three from one job and uploads them as a single Pages
 artifact — a deploy replaces the whole site, so the release site and the dev app are always built
-together.
+together. It runs on pushes to `main` and resolves the newest tag itself, so a push publishes the
+released site rather than main's; `.github/workflows/release.yml` dispatches it after tagging.
+Deploys run only from `main`: a Pages deployment created from a tag ref reports success but is
+never promoted to the live site.

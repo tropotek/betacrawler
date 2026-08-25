@@ -6,10 +6,15 @@ records live in the git history, not here.
 Merged work lands under `## Unreleased`. Cutting a release renames that heading to the version
 number being tagged, and a fresh `## Unreleased` opens above it.
 
+## Unreleased
+
+- **fix: tagging publishes the site again.** Pages deploys run from `main` and resolve the newest
+  tag themselves, because a deployment created from a tag ref never goes live.
+
 ## 4.2.1
 
 - **fix: a tagged release can actually publish.** Release assets are qualified by board before
-  upload, and the `github-pages` environment accepts `X.Y.Z` tags. Stored settings survive this
+  upload, so the second image no longer collides with the first. Stored settings survive this
   update.
 
 ## 4.2.0

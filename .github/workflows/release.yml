@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   release:
@@ -36,5 +37,10 @@ jobs:
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md \
             || gh release edit "$GITHUB_REF_NAME" --notes-file notes.md
           gh release upload "$GITHUB_REF_NAME" dist/*.bin --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # Publishing the new tag has to run from main -- see docs.yml.
+      - run: gh workflow run docs.yml --ref main
         env:
           GH_TOKEN: ${{ github.token }}
