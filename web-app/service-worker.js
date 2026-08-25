@@ -14,8 +14,8 @@ const SHELL_FILES = [
   './pages/firmware.html',
   // Pre-cached so a board can be re-flashed with no network at all.
   './firmware/manifest.json',
-  './firmware/blackpill_f401ce/betacrawler-4.2.0.bin',
-  './firmware/blackpill_f411ce/betacrawler-4.2.0.bin',
+  './firmware/blackpill_f401ce/betacrawler-4.2.1.bin',
+  './firmware/blackpill_f411ce/betacrawler-4.2.1.bin',
   './favicon.ico', './tank-hero.svg',
   './icons/icon-192.png', './icons/icon-512.png',
 ];

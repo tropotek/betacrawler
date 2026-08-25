@@ -17,6 +17,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <string>
+#include "config.h"
 #include "core/dispatch.h"
 #include "core/protocol.h"
 #include "core/registry.h"
@@ -342,10 +343,12 @@ void test_hello_reports_build_identity_from_config() {
   d.handle(q, out, sizeof(out));
 
   TEST_ASSERT_NOT_NULL(strstr(out, "\"name\":\"betacrawler\""));
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"ver\":\"4.2.0\""));
+  // The version comes from config.h so a release bump does not fail this;
+  // name and board stay literal, which is what proves BOARD_HEADER was wired.
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"ver\":\"" FW_VERSION "\""));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"board\":\"blackpill_f411ce\""));
   // `fw` must survive as a display string -- app.js and docs/api.md read it.
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler 4.2.0\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler " FW_VERSION "\""));
   // Exact build timestamp is unassertable; that it is present and non-empty
   // is the part that can actually regress.
   TEST_ASSERT_NOT_NULL(strstr(out, "\"built\":\""));
@@ -751,7 +754,7 @@ void test_hello_keeps_its_existing_fields_alongside_caps() {
 
   Request q = parseRequest("{\"id\":26,\"op\":\"hello\"}");
   d.handle(q, out, sizeof(out));
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler 4.2.0\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler " FW_VERSION "\""));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"proto\":1"));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"mods\":["));
 }

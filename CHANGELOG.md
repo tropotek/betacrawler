@@ -3,6 +3,12 @@
 Summaries of completed work, one to two lines each. Detail, reasoning and hardware-verification
 records live in the git history, not here.
 
+## 4.2.1
+
+- **fix: a tagged release can actually publish.** Release assets are qualified by board before
+  upload, and the `github-pages` environment accepts `X.Y.Z` tags. Stored settings survive this
+  update.
+
 ## 4.2.0
 
 - **Saved settings reset to defaults on the first boot after flashing** — `drive_steer` joins the
