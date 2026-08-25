@@ -3,7 +3,11 @@
 Summaries of completed work, one to two lines each. Detail, reasoning and hardware-verification
 records live in the git history, not here.
 
-## Version 4.2
+## 4.2.0
+
+- **docs: releases are cut as tags, and the published site is built from the newest one.** `main`
+  becomes staging and is served unlisted at `/app-dev/`; `docs/development/releasing.md` is the
+  policy.
 
 - **fix: the Save button disables itself while the flash write runs.** It reads "Saving…" for the
   second the erase stalls the board, so the pause no longer looks like a click that did nothing.
@@ -23,14 +27,14 @@ records live in the git history, not here.
   settings, `skid` disables them and hides the card — a skid build has no steering servo, so it is
   never asked about. `servo.mode` stays a Terminal override for bench testing.
 
-## Version 4.1
+## 4.1.0
 
 - **feat: `motor<N>.type` gains `none`, and it is now the default.** An output with no type
   chosen detaches its pin, so choosing the type is the one step that brings a motor to life —
   `motor<N>.mode` goes back to defaulting to `input`. Adding the option changes the settings
   fingerprint, so stored settings are discarded once on this update.
 
-## Version 4.0
+## 4.0.0
 
 - **feat: `esc0`/`esc1` are now `motor0`/`motor1`.** They drive a motor through whichever output
   stage is configured, so naming them after one of the two was wrong. Every parameter key,
@@ -163,7 +167,7 @@ records live in the git history, not here.
 - **feat(web): the Configuration page names the firmware's fault**, rendered in red when
   non-zero.
 
-## Version 1.0.0 (2026-07-29)
+## 1.0.0 (2026-07-29)
 
 - **feat(firmware): split the single-instance `esc` module into independent `esc0`/`esc1`
   modules**, enabled by default on `blackpill_f411ce.h` alongside `rx`. Breaking rename for

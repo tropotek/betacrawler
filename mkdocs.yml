@@ -45,6 +45,7 @@ nav:
   - Development:
       - Setup: development/setup.md
       - Contributing: development/contributing.md
+      - Releasing: development/releasing.md
       - Architecture: development/architecture.md
       - Protocol: development/protocol.md
 

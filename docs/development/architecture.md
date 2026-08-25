@@ -486,3 +486,7 @@ in `firmware/include/config.h`, reported over the wire by `hello` (`name`/`ver`/
 alongside the unchanged `fw` display string). App: `APP_VERSION` at the top of
 `web-app/js/app.js`. Both are kept equal by hand — a mismatch means one was bumped without the
 other.
+
+That same string is the git tag, and the tag is what the published site is built from: `main` is
+staging, and merging to it publishes nothing. The full policy, including what each digit means and
+the steps a tag requires, is [Releasing](releasing.md).

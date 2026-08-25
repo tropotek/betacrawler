@@ -3,6 +3,7 @@ name: docs
 on:
   push:
     branches: [main]
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
   workflow_dispatch:
 
 permissions:
@@ -19,14 +20,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
       - run: pip install -r tools/requirements.txt
+
+      # The published docs and configurator come from the newest release tag, so
+      # merging to main publishes nothing. Falls back to main when no tag exists.
+      - id: release
+        run: |
+          ref="$(git tag --list '[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)"
+          echo "ref=${ref:-origin/main}" >> "$GITHUB_OUTPUT"
+          echo "Release site builds from ${ref:-origin/main}"
+      - run: git checkout --force '${{ steps.release.outputs.ref }}'
       - run: mkdocs build --strict
-      # The configurator is published alongside the docs, at /betacrawler/app/.
-      # It is a static site with no build step, so it ships as-is.
+      # The configurator is a static site with no build step, so it ships as-is.
       - run: cp -r web-app site/app
+
+      # /app-dev/ tracks main, for testing a merge against hardware before tagging.
+      - run: git checkout --force origin/main
+      - run: cp -r web-app site/app-dev
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

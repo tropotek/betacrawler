@@ -226,7 +226,14 @@ change.
 **Nothing can identify a board in DFU mode** — every STM32F4 bootloader reports `0483:df11`.
 
 **Firmware and app share one version number** — `FW_VERSION` (`firmware/include/config.h`) and
-`APP_VERSION` (`web-app/js/app.js`) are bumped together, not independently.
+`APP_VERSION` (`web-app/js/app.js`) are bumped together, not independently. That same `X.Y.Z`
+string is the git tag, and the published site is built from the newest tag, so `main` is staging
+and merging to it publishes nothing. `docs/development/releasing.md` is the policy; follow its
+checklist before any tag. **Recommend the bump before tagging** — say which digit should move and
+why, and wait for the decision. MAJOR is the maintainer's call alone and is never implied by a
+code change; MINOR and PATCH move as the work warrants. Whichever digit moves, a release that
+changes the settings fingerprint needs the settings-reset line at the top of its CHANGELOG
+section. CHANGELOG headings are bare `## X.Y.Z`, matching the tag.
 
 **Page convention** — every page fragment under `web-app/pages/` ends with a `<p>&nbsp;</p>`
 spacer as its last child so content doesn't sit flush against the viewport bottom. Add one when you
