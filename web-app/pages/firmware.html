@@ -63,11 +63,6 @@
           <div class="d-flex gap-2 flex-wrap align-items-center mb-3">
             <button id="fw-flash" class="btn btn-danger"
                     :disabled="!$store.firmware.canFlash">Flash selected firmware</button>
-            <span class="text-secondary small"
-                  x-show="!$store.firmware.dfuPresent && !$store.firmware.deviceConnected">
-              Connect the board, or put it in DFU mode first. If it is already in DFU and this
-              stays disabled, use <strong>Select DFU device…</strong> below to grant access once.
-            </span>
             <!-- A board already in DFU has never said `hello`, so nothing may be
                  recommended and nothing preselected. Say why the button is dead
                  rather than leaving it dead and silent. -->
@@ -77,6 +72,14 @@
               Choose which image to flash above.
             </span>
           </div>
+
+          <p class="text-secondary small">
+            Flashing needs the board either connected over serial — click <strong>Connect</strong>
+            at the top and it reboots itself into DFU — or already in DFU mode by hand, see
+            <a href="#fw-dfu-by-hand">Getting into DFU mode</a> below. If it is in DFU and this
+            button stays disabled, use <strong>Select DFU device…</strong> there to grant this
+            browser access once.
+          </p>
 
           <div x-show="$store.firmware.phase !== 'idle'" class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-1">
@@ -103,7 +106,7 @@
 
           <hr class="my-4">
 
-          <h2 class="h5">Getting into DFU mode</h2>
+          <h2 class="h5" id="fw-dfu-by-hand">Getting into DFU mode</h2>
           <p class="text-secondary small">
             Flashing does this by itself, so none of it is part of the normal path. It matters when
             the firmware on the board is broken, and when you want the board left in DFU for an

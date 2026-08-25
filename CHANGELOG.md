@@ -5,6 +5,15 @@ records live in the git history, not here.
 
 ## Version 4.2
 
+- **fix: the Save button disables itself while the flash write runs.** It reads "Saving…" for the
+  second the erase stalls the board, so the pause no longer looks like a click that did nothing.
+
+- **fix: Discard changes is disabled until there is something to discard.** It follows the same
+  dirty flag as the "applied — not saved to flash" note.
+
+- **fix: the Firmware page says what flashing needs.** A line under the flash button explains that
+  the board has to be connected or already in DFU, and links to the by-hand instructions below.
+
 - **feat: car mode drives both motor slots and gets its own steering output.** Throttle reaches
   either motor pin, so whichever wheel is wired is driven, and steer moves to its own drive-bus
   slot that `servo.src` now selects by default. A car needs no Terminal: pick the drive mode, the

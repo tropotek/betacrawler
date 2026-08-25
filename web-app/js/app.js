@@ -176,6 +176,7 @@ document.addEventListener('alpine:init', () => {
     version: APP_VERSION,
     connected: false,
     dirty: false,
+    saving: false,
     revertNote: false,
     fwSummary: 'not connected',
   });
@@ -719,10 +720,18 @@ function setDirty(dirty) {
   app.revertNote = false;
 }
 
+// Flash erase stalls the board ~1s; telemetry will gap. That is expected --
+// `saving` disables the button and relabels it for that second, so the pause
+// doesn't read as a click that did nothing.
 async function saveToFlash() {
-  // Flash erase stalls the board ~1s; telemetry will gap. That is expected.
-  await Api.save();
-  setDirty(false);
+  const app = window.Alpine?.store('app');
+  if (app) app.saving = true;
+  try {
+    await Api.save();
+    setDirty(false);
+  } finally {
+    if (app) app.saving = false;
+  }
 }
 
 // --- global actions (shell-level: save/discard/defaults live in every page
