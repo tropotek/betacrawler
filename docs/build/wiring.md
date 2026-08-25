@@ -28,13 +28,17 @@ The two Black Pill variants are pin-compatible, so everything here is the same w
 carries an STM32F411CE or an STM32F401CE. Only the firmware image differs — see
 [Which Black Pill](what-you-need.md#which-black-pill).
 
-PA9 is the board's CRSF transmit line. It carries telemetry back to your handset &mdash; pack
+PA2 is the board's CRSF transmit line. It carries telemetry back to your handset &mdash; pack
 voltage today, and anything added later.
 
-Receive is on **PB7**, not the PA10 you may expect from USART1. The STM32's built-in bootloader
-picks its host interface by watching for traffic, and a powered receiver on PA10 always wins that
-race &mdash; leaving the board unable to appear in DFU mode for flashing. PB7 is the same UART on
-its alternate pin and the bootloader cannot mistake it. Wire the receiver's TX to PB7.
+Receive is on **PA3**, not the PA10 you may expect from USART1. The STM32's built-in bootloader
+picks its host interface by watching several UART pins at once for a sync byte, and a receiver that
+happens to send that byte at the wrong moment wins the race &mdash; leaving the board unable to
+appear in DFU mode for flashing. A linked ELRS receiver never does, and putting CRSF here leaves
+PA9/PA10 as a standard, unclaimed UART pair for your own additions. Wire the receiver's TX to PA3.
+
+Crossfire has not been checked against this. If the board stops appearing for flashing while the
+receiver is powered, unplug the receiver's TX lead before entering DFU.
 
 Both ESC grounds connect to the board's ground.
 
