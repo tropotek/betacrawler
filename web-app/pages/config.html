@@ -84,7 +84,7 @@
                           x-model="$store.config.values['drive.mode']"
                           @change="$store.config.commit($store.config.field('drive.mode').def)">
                     <template x-for="opt in $store.config.field('drive.mode').def?.options ?? []" :key="opt">
-                      <option :value="opt" x-text="opt"></option>
+                      <option :value="opt" :selected="opt === $store.config.values['drive.mode']" x-text="opt"></option>
                     </template>
                   </select>
                   <div class="help-body d-none">
@@ -111,7 +111,7 @@
                           x-model="$store.config.values['servo.invert']"
                           @change="$store.config.commit($store.config.field('servo.invert').def)">
                     <template x-for="opt in $store.config.field('servo.invert').def?.options ?? []" :key="opt">
-                      <option :value="opt" x-text="opt"></option>
+                      <option :value="opt" :selected="opt === $store.config.values['servo.invert']" x-text="opt"></option>
                     </template>
                   </select>
                   <div class="help-body d-none">
@@ -276,7 +276,7 @@
                           x-model="$store.config.values['vbat.cells']"
                           @change="$store.config.commit($store.config.field('vbat.cells').def)">
                     <template x-for="opt in $store.config.field('vbat.cells').def?.options ?? []" :key="opt">
-                      <option :value="opt" x-text="opt"></option>
+                      <option :value="opt" :selected="opt === $store.config.values['vbat.cells']" x-text="opt"></option>
                     </template>
                   </select>
                   <div class="help-body d-none">
