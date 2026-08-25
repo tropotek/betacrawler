@@ -3,6 +3,9 @@
 Summaries of completed work, one to two lines each. Detail, reasoning and hardware-verification
 records live in the git history, not here.
 
+Merged work lands under `## Unreleased`. Cutting a release renames that heading to the version
+number being tagged, and a fresh `## Unreleased` opens above it.
+
 ## 4.2.1
 
 - **fix: a tagged release can actually publish.** Release assets are qualified by board before

@@ -11,7 +11,8 @@ constants: `web-app/firmware/manifest.json`, the board's `fw` string reported by
 version in the app footer. Nothing renders a shortened form, so the string a user reads in the app
 and the string their board reports are directly comparable.
 
-CHANGELOG headings use the same token: `## 4.2.0`.
+CHANGELOG headings use the same token: `## 4.2.0`. Merged work accumulates under `## Unreleased`
+until a release is cut, which renames that heading to the version being tagged.
 
 ## What each digit means
 
@@ -26,9 +27,12 @@ release that changes the settings fingerprint opens its section with:
 
 ## Cutting a release
 
+The version number is the maintainer's decision. Several merges may wait under `## Unreleased`
+before any of them is released.
+
 1. Bump `FW_VERSION` and `APP_VERSION` together.
-2. Write the CHANGELOG section under an `## X.Y.Z` heading, including the settings-reset line
-   above if the fingerprint moved.
+2. Rename `## Unreleased` to `## X.Y.Z`, and check it carries the settings-reset line above if the
+   fingerprint moved.
 3. Run the firmware bundler and commit `web-app/firmware/` — the tagged site flashes those images,
    and `web-app/tests/firmware-bundle.test.js` fails if they no longer match the sources.
 4. `pio test -e native` from `firmware/`, `node --test` from `web-app/`.

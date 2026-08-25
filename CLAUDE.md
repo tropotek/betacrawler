@@ -229,11 +229,13 @@ change.
 `APP_VERSION` (`web-app/js/app.js`) are bumped together, not independently. That same `X.Y.Z`
 string is the git tag, and the published site is built from the newest tag, so `main` is staging
 and merging to it publishes nothing. `docs/development/releasing.md` is the policy; follow its
-checklist before any tag. **Recommend the bump before tagging** — say which digit should move and
-why, and wait for the decision. MAJOR is the maintainer's call alone and is never implied by a
-code change; MINOR and PATCH move as the work warrants. Whichever digit moves, a release that
-changes the settings fingerprint needs the settings-reset line at the top of its CHANGELOG
-section. CHANGELOG headings are bare `## X.Y.Z`, matching the tag.
+checklist before any tag. **Never bump the version or cut a tag unasked** — recommend a number,
+say which digit should move and why, and wait. The maintainer decides it, and may hold several
+merged PRs before releasing any of them. MAJOR is their call alone and is never implied by a code
+change; MINOR and PATCH move as the work warrants. Whichever digit moves, a release that changes
+the settings fingerprint needs the settings-reset line at the top of its CHANGELOG section.
+Merged work goes under `## Unreleased`; cutting a release renames that heading to the bare
+`## X.Y.Z` matching the tag.
 
 **Page convention** — every page fragment under `web-app/pages/` ends with a `<p>&nbsp;</p>`
 spacer as its last child so content doesn't sit flush against the viewport bottom. Add one when you
