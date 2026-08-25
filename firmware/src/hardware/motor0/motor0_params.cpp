@@ -23,7 +23,7 @@ static const char* const kSrcNames[] = {
   // Indices 12/13: drive's own bus (see core::Registry::driveOutputs()),
   // not a raw rx channel. motor0 doesn't otherwise know drive exists --
   // this is the one place that convention is spelled out.
-  "drive_left", "drive_right",
+  "drive_left", "drive_right", "drive_steer",
 };
 
 // Order must match motor::RATE_*. Bare numbers, so Terminal `set motor0.rate 400`
@@ -89,7 +89,7 @@ static const ParamDef kParams[] = {
   // an accidental change is easy to make. Terminal `set` and INI restore
   // still accept it regardless of mode (showIf is display-only, never an
   // access rule). Defaults to ch1, the conventional throttle channel.
-  {"motor0.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 12, nullptr, nullptr},
+  {"motor0.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 15, 0, 12, nullptr, nullptr},
   // Reverses which way this motor turns, for both output types: an H-bridge
   // swaps which pin is A/B, an ESC gets its pulse mirrored about neutral.
   // Useful when the motor is buried in an enclosed model and swapping two

@@ -91,15 +91,12 @@ export const SIM_SCHEMA = {
         "ch11",
         "ch12",
         "drive_left",
-        "drive_right"
+        "drive_right",
+        "drive_steer"
       ],
-      "def": "ch2",
+      "def": "drive_steer",
       "label": "Source",
-      "group": "Servo",
-      "showIf": {
-        "key": "servo.mode",
-        "val": "input"
-      }
+      "group": "Servo"
     },
     {
       "key": "servo.invert",
@@ -432,7 +429,8 @@ export const SIM_SCHEMA = {
         "ch11",
         "ch12",
         "drive_left",
-        "drive_right"
+        "drive_right",
+        "drive_steer"
       ],
       "def": "drive_left",
       "label": "Source",
@@ -567,7 +565,8 @@ export const SIM_SCHEMA = {
         "ch11",
         "ch12",
         "drive_left",
-        "drive_right"
+        "drive_right",
+        "drive_steer"
       ],
       "def": "drive_right",
       "label": "Source",

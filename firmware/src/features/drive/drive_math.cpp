@@ -61,6 +61,9 @@ MixResult mix(int16_t throttleUs, int16_t steerUs, int16_t centerUs,
   MixResult r;
   r.leftUs  = clampToRange(centerUs + leftOffset, minUs, maxUs);
   r.rightUs = clampToRange(centerUs + rightOffset, minUs, maxUs);
+  // Unscaled by the proportional clamp above: that exists to keep the two
+  // track offsets in proportion, and the steering slot is not one of them.
+  r.steerUs = clampToRange(centerUs + steerOffset, minUs, maxUs);
   return r;
 }
 
@@ -79,8 +82,10 @@ MixResult carMix(int16_t throttleUs, int16_t steerUs, int16_t centerUs,
   const int32_t steerOut = centerUs + (steer - centerUs) * (int32_t)steerRatioPct / 100;
 
   MixResult r;
-  r.leftUs  = clampToRange(throttle, minUs, maxUs);
-  r.rightUs = clampToRange(steerOut, minUs, maxUs);
+  const uint16_t throttleOut = clampToRange(throttle, minUs, maxUs);
+  r.leftUs  = throttleOut;
+  r.rightUs = throttleOut;
+  r.steerUs = clampToRange(steerOut, minUs, maxUs);
   return r;
 }
 

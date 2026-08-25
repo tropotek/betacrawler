@@ -3,6 +3,16 @@
 Summaries of completed work, one to two lines each. Detail, reasoning and hardware-verification
 records live in the git history, not here.
 
+## Version 4.2
+
+- **feat: car mode drives both motor slots and gets its own steering output.** Throttle reaches
+  either motor pin, so whichever wheel is wired is driven, and steer moves to its own drive-bus
+  slot that `servo.src` now selects by default. A car needs no Terminal: pick the drive mode, the
+  motor type, and switch the servo on.
+
+- **feat: `servo.mode` is on the Configuration page**, so enabling the steering servo no longer
+  needs the Terminal. `servo.src` and `motor<N>.src` stay Terminal-only.
+
 ## Version 4.1
 
 - **feat: `motor<N>.type` gains `none`, and it is now the default.** An output with no type

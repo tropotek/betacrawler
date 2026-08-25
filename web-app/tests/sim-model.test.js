@@ -31,23 +31,23 @@ test('deadbanded snaps to centre inside the band', () => {
 });
 
 test('mix: forward drives both tracks equally', () => {
-  assert.deepEqual(mix(1600, 1500, 1500, 1000, 2000, 100, 100, 100, 0), [1600, 1600]);
+  assert.deepEqual(mix(1600, 1500, 1500, 1000, 2000, 100, 100, 100, 0), [1600, 1600, 1500]);
 });
 
 test('mix: steer ratio scales the turn only', () => {
-  assert.deepEqual(mix(1500, 2000, 1500, 1000, 2000, 100, 100, 50, 0), [1750, 1250]);
+  assert.deepEqual(mix(1500, 2000, 1500, 1000, 2000, 100, 100, 50, 0), [1750, 1250, 1750]);
 });
 
 test('mix: reverse ratio scales reverse only', () => {
-  assert.deepEqual(mix(1000, 1500, 1500, 1000, 2000, 100, 50, 100, 0), [1250, 1250]);
+  assert.deepEqual(mix(1000, 1500, 1500, 1000, 2000, 100, 50, 100, 0), [1250, 1250, 1500]);
 });
 
 test('mix: clamps proportionally rather than saturating', () => {
-  assert.deepEqual(mix(2000, 2000, 1500, 1000, 2000, 100, 100, 100, 0), [2000, 1500]);
+  assert.deepEqual(mix(2000, 2000, 1500, 1000, 2000, 100, 100, 100, 0), [2000, 1500, 2000]);
 });
 
 test('mix: uses C truncation for the ratio scaling', () => {
-  assert.deepEqual(mix(1499, 1500, 1500, 1000, 2000, 100, 30, 100, 0), [1500, 1500]);
+  assert.deepEqual(mix(1499, 1500, 1500, 1000, 2000, 100, 30, 100, 0), [1500, 1500, 1500]);
 });
 
 test('computeArmed rules', () => {
@@ -209,23 +209,23 @@ test('loadDefaults resets every value', () => {
 });
 
 test('carMix: throttle and steer pass through independently', () => {
-  assert.deepEqual(carMix(1700, 1300, 1500, 1000, 2000, 100, 100, 100, 0), [1700, 1300]);
+  assert.deepEqual(carMix(1700, 1300, 1500, 1000, 2000, 100, 100, 100, 0), [1700, 1700, 1300]);
 });
 
 test('carMix: full steer at zero throttle leaves throttle at centre', () => {
-  assert.deepEqual(carMix(1500, 2000, 1500, 1000, 2000, 100, 100, 100, 0), [1500, 2000]);
+  assert.deepEqual(carMix(1500, 2000, 1500, 1000, 2000, 100, 100, 100, 0), [1500, 1500, 2000]);
 });
 
 test('carMix: steer ratio scales steer only', () => {
-  assert.deepEqual(carMix(1500, 2000, 1500, 1000, 2000, 100, 100, 50, 0), [1500, 1750]);
+  assert.deepEqual(carMix(1500, 2000, 1500, 1000, 2000, 100, 100, 50, 0), [1500, 1500, 1750]);
 });
 
 test('carMix: reverse ratio scales reverse only', () => {
-  assert.deepEqual(carMix(1000, 1500, 1500, 1000, 2000, 100, 25, 100, 0), [1375, 1500]);
+  assert.deepEqual(carMix(1000, 1500, 1500, 1000, 2000, 100, 25, 100, 0), [1375, 1375, 1500]);
 });
 
 test('carMix: clamps to the output range', () => {
-  assert.deepEqual(carMix(2500, 500, 1500, 1000, 2000, 100, 100, 100, 0), [2000, 1000]);
+  assert.deepEqual(carMix(2500, 500, 1500, 1000, 2000, 100, 100, 100, 0), [2000, 2000, 1000]);
 });
 
 test('applyInvert mirrors about the calibrated midpoint', () => {
@@ -263,11 +263,11 @@ test('car mode drives the bus without cross-coupling', () => {
   // range -- at t=0 they start at 988 and the mixer's clamp would mask the
   // pass-through this is checking.
   const t = mod.telemetry(1000);
-  // ch2 is throttle and ch1 is steer by default; in car mode each lands on its
-  // own slot untouched.
+  // ch2 is throttle by default, and in car mode BOTH motor slots carry it --
+  // either motor pin drives whichever wheel is wired to it.
   assert.equal(t.drv_l, t.ch2);
-  assert.equal(t.drv_r, t.ch1);
-  assert.notEqual(t.ch1, t.ch2);   // and they really are different values
+  assert.equal(t.drv_r, t.ch2);
+  assert.notEqual(t.ch1, t.ch2);   // steer really is a different value
 });
 
 test('the two mixers produce different buses from the same channels', () => {
@@ -285,5 +285,25 @@ test('the two mixers produce different buses from the same channels', () => {
   // throttle and steer on their own slots.
   assert.notDeepEqual([a.drv_l, a.drv_r], [b.drv_l, b.drv_r]);
   assert.equal(b.drv_l, b.ch2);
-  assert.equal(b.drv_r, b.ch1);
+  assert.equal(b.drv_r, b.ch2);
+});
+
+test('a car steers on stock settings, with only the servo switched on', () => {
+  // servo.src defaults to the drive steering slot, so enabling the servo is
+  // the only step between a default board and a working car.
+  const mod = makeModel();
+  mod.set('rx.source', 'sim', 0);
+  mod.set('drive.mode', 'car', 0);
+  mod.set('servo.mode', 'input', 0);
+  const t = mod.telemetry(1000);
+  assert.equal(t.srv, t.ch1);          // ch1 is steer by default
+  assert.notEqual(t.ch1, t.ch2);
+  assert.equal(t.drv_l, t.ch2);        // and throttle still reaches the motors
+});
+
+test('the servo ignores steering in skid mode unless it is switched on', () => {
+  const mod = makeModel();
+  mod.set('rx.source', 'sim', 0);
+  const t = mod.telemetry(1000);
+  assert.equal(t.srv, 0);              // detached, servo.mode defaults off
 });

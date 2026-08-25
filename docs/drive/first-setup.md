@@ -60,8 +60,8 @@ Those defaults suit a Mode 2 handset, which puts elevator on channel 2 and ailer
 the pair that falls under your thumbs. Change them if your handset differs.
 
 Watch the **Left Output** and **Right Output** values as you move the sticks. Push throttle
-forward and both should rise together; steer and they should move apart. (In `car` mode these
-read **Throttle Output** and **Steer Output**, and move independently.)
+forward and both should rise together; steer and they should move apart. (In `car` mode both
+carry throttle and move together, and steering goes to the servo instead.)
 
 ## 7. Set the arming switch
 
@@ -111,8 +111,8 @@ than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for
 Skip this if your vehicle drives both sides. For one motor plus a steering servo:
 
 1. **Configuration → Drive Mode** = `car`.
-2. **Motor 0 → Source** = `drive_left` — that slot carries throttle in car mode.
-3. **Servo → Mode** = `input` and **Source** = `drive_right` — the steer output.
+2. **Configuration → Type** = whatever your motor is, same as any other build.
+3. **Configuration → Servo** = `input`.
 4. Wire the servo signal to **PB10**, with its own 5&nbsp;V supply and a shared ground. Never run
    it from 3V3.
 
@@ -122,7 +122,7 @@ Then, with the wheels off the ground, check the steering:
 - With the stick centred, if the wheels sit off-straight, nudge **Servo → Trim** until they are.
   Negative values go the other way.
 
-Motor 1 is unused on a single-motor car; leave its mode `off`.
+Both motor outputs carry throttle in car mode, so it makes no difference which pin you wire a single motor to, and a two-wheel-drive car works by wiring both.
 
 ## 10. Save
 

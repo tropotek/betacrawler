@@ -70,7 +70,7 @@ constexpr uint8_t kDriveSrcBase = 12;
 // unconditionally below regardless of what motor0.src currently selects. Same
 // duplicated-literal convention as kDriveSrcBase just above; drive_driver.cpp
 // names this same value kArmSlot.
-constexpr uint8_t kDriveArmSlot = 2;
+constexpr uint8_t kDriveArmSlot = 3;
 
 namespace motor0 {
 

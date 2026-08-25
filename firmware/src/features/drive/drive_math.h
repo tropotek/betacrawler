@@ -16,10 +16,13 @@ int16_t deadbanded(int16_t us, int16_t centerUs, uint16_t deadbandUs);
 // core::Inputs' own "never marked" default, not a real timestamp.
 bool linkFresh(uint32_t lastFreshMs, uint32_t nowMs, uint32_t staleMs);
 
-// The two computed track outputs, in microseconds.
+// The computed drive outputs, in microseconds. leftUs/rightUs are the two
+// motor slots, steerUs the steering slot a servo reads. All three are
+// published in both drive modes; only what the motor slots carry differs.
 struct MixResult {
   uint16_t leftUs;
   uint16_t rightUs;
+  uint16_t steerUs;
 };
 
 // Arcade-style differential mix. Deadbands both inputs around centerUs, then
@@ -39,12 +42,12 @@ MixResult mix(int16_t throttleUs, int16_t steerUs, int16_t centerUs,
               uint8_t forwardRatioPct, uint8_t reverseRatioPct,
               uint8_t steerRatioPct, uint16_t deadbandUs);
 
-// Car-style mix: one driven motor plus a steering servo. Deadbands both
-// inputs around centerUs, scales throttle's distance from centre by
-// forwardRatioPct above and reverseRatioPct below, and scales steer's by
-// steerRatioPct. leftUs carries throttle, rightUs carries steer -- the two are
-// independent, so neither can push the other out of range and no proportional
-// clamp is needed.
+// Car-style mix: driven wheels plus a steering servo. Deadbands both inputs
+// around centerUs, scales throttle's distance from centre by forwardRatioPct
+// above and reverseRatioPct below, and scales steer's by steerRatioPct. BOTH
+// motor slots carry throttle, so either motor pin drives whichever wheel is
+// wired to it, and steerUs carries steer alone -- the two are independent, so
+// neither can push the other out of range and no proportional clamp is needed.
 MixResult carMix(int16_t throttleUs, int16_t steerUs, int16_t centerUs,
                  uint16_t minUs, uint16_t maxUs,
                  uint8_t forwardRatioPct, uint8_t reverseRatioPct,

@@ -81,9 +81,9 @@ the bench.
 
 ## Which track is which
 
-`motor0` drives the left track and `motor1` the right. If they turn out swapped once you are driving,
-you do not need to rewire: change `motor0.src` and `motor1.src` between `drive_left` and
-`drive_right` in the app.
+`motor0` drives the left track and `motor1` the right. If they turn out swapped once you are
+driving, you do not need to rewire: swap `motor0.src` and `motor1.src` between `drive_left` and
+`drive_right` from the Terminal.
 
 If a single track runs backwards, swap any two of the three motor wires on that ESC.
 
@@ -91,9 +91,10 @@ Next: [Flashing the firmware](flashing.md).
 
 ## Wiring for a car (one motor + steering servo)
 
-Set `Drive Mode` to `car` on the Configuration page — no reflash needed. `motor0` keeps PA6 and
-takes the mixer's throttle output; the steering servo goes on **PB10** and takes its steer output.
-`motor1` is unused on a single-motor car, so leave its mode `off`.
+Set `Drive Mode` to `car` and `Servo` to `input` on the Configuration page — no reflash needed.
+Both motor outputs carry throttle in car mode, so a single motor drives whichever of PA6 or PB8 it
+is wired to, and a two-wheel-drive car works by wiring both. The steering servo goes on **PB10**
+and follows the mixer's steer output on stock settings.
 
 The ESC must treat centre-stick as stop, which a surface (car/boat) ESC already does. Its BEC
 powers the board, the receiver and the servo.
