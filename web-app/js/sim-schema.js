@@ -347,10 +347,11 @@ export const SIM_SCHEMA = {
       "key": "motor0.type",
       "type": "enum",
       "options": [
+        "none",
         "brushless",
         "brushed"
       ],
-      "def": "brushless",
+      "def": "none",
       "label": "Type",
       "group": "Motor 0"
     },
@@ -380,7 +381,7 @@ export const SIM_SCHEMA = {
         "armed",
         "input"
       ],
-      "def": "off",
+      "def": "input",
       "label": "Motor",
       "group": "Motor 0"
     },
@@ -435,11 +436,7 @@ export const SIM_SCHEMA = {
       ],
       "def": "drive_left",
       "label": "Source",
-      "group": "Motor 0",
-      "showIf": {
-        "key": "motor0.mode",
-        "val": "off"
-      }
+      "group": "Motor 0"
     },
     {
       "key": "motor0.invert",
@@ -485,10 +482,11 @@ export const SIM_SCHEMA = {
       "key": "motor1.type",
       "type": "enum",
       "options": [
+        "none",
         "brushless",
         "brushed"
       ],
-      "def": "brushless",
+      "def": "none",
       "label": "Type",
       "group": "Motor 1"
     },
@@ -518,7 +516,7 @@ export const SIM_SCHEMA = {
         "armed",
         "input"
       ],
-      "def": "off",
+      "def": "input",
       "label": "Motor",
       "group": "Motor 1"
     },
@@ -573,11 +571,7 @@ export const SIM_SCHEMA = {
       ],
       "def": "drive_right",
       "label": "Source",
-      "group": "Motor 1",
-      "showIf": {
-        "key": "motor1.mode",
-        "val": "off"
-      }
+      "group": "Motor 1"
     },
     {
       "key": "motor1.invert",

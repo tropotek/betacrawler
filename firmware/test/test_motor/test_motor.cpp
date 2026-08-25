@@ -376,6 +376,54 @@ void test_rate_change_demotes_regardless_of_mode() {
   TEST_ASSERT_TRUE(rateChangeDemotesArmed(ARM_ARMED, true));
 }
 
+// --- type = none, and the output-disabled interlock ---------------------------
+
+void test_type_none_is_the_first_type_value() {
+  // The enum values ARE the motor<N>.type option indices, so "none" must sit
+  // at 0 or a stored value maps to the wrong electronics.
+  TEST_ASSERT_EQUAL_INT32(0, TYPE_NONE);
+  TEST_ASSERT_EQUAL_INT32(1, TYPE_BRUSHLESS);
+  TEST_ASSERT_EQUAL_INT32(2, TYPE_BRUSHED);
+}
+
+void test_output_disabled_when_type_is_none() {
+  // An unconfigured board: the mode says drive, but nothing is known to be on
+  // the end of the wire, so the pin must stay detached.
+  TEST_ASSERT_TRUE(outputDisabled(MODE_INPUT, TYPE_NONE));
+  TEST_ASSERT_TRUE(outputDisabled(MODE_ARMED, TYPE_NONE));
+}
+
+void test_output_disabled_when_mode_is_off() {
+  TEST_ASSERT_TRUE(outputDisabled(MODE_OFF, TYPE_BRUSHED));
+  TEST_ASSERT_TRUE(outputDisabled(MODE_OFF, TYPE_BRUSHLESS));
+}
+
+void test_output_enabled_once_a_type_is_chosen_and_the_mode_drives() {
+  TEST_ASSERT_FALSE(outputDisabled(MODE_INPUT, TYPE_BRUSHED));
+  TEST_ASSERT_FALSE(outputDisabled(MODE_INPUT, TYPE_BRUSHLESS));
+  TEST_ASSERT_FALSE(outputDisabled(MODE_ARMED, TYPE_BRUSHED));
+}
+
+void test_choosing_a_type_counts_as_entering_from_off() {
+  // The whole point of the none default: selecting a type is what starts the
+  // arm hold, so the first movement still costs the neutral wait.
+  TEST_ASSERT_TRUE(enteringEnabled(MODE_INPUT, TYPE_NONE, MODE_INPUT, TYPE_BRUSHED));
+}
+
+void test_leaving_mode_off_still_counts_as_entering_from_off() {
+  TEST_ASSERT_TRUE(enteringEnabled(MODE_OFF, TYPE_BRUSHED, MODE_INPUT, TYPE_BRUSHED));
+}
+
+void test_swapping_type_while_already_live_is_not_entering_from_off() {
+  // Still demoted, but by the type-changed path, not this one.
+  TEST_ASSERT_FALSE(enteringEnabled(MODE_INPUT, TYPE_BRUSHLESS, MODE_INPUT, TYPE_BRUSHED));
+}
+
+void test_still_disabled_is_not_entering_from_off() {
+  TEST_ASSERT_FALSE(enteringEnabled(MODE_OFF, TYPE_NONE, MODE_INPUT, TYPE_NONE));
+  TEST_ASSERT_FALSE(enteringEnabled(MODE_INPUT, TYPE_NONE, MODE_OFF, TYPE_BRUSHED));
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -513,5 +561,14 @@ int main() {
   RUN_TEST(test_mirror_is_its_own_inverse);
   RUN_TEST(test_mirror_respects_a_narrowed_calibration);
   RUN_TEST(test_mirror_degenerate_span_is_that_one_value);
+  RUN_TEST(test_type_none_is_the_first_type_value);
+  RUN_TEST(test_output_disabled_when_type_is_none);
+  RUN_TEST(test_output_disabled_when_mode_is_off);
+  RUN_TEST(test_output_enabled_once_a_type_is_chosen_and_the_mode_drives);
+  RUN_TEST(test_choosing_a_type_counts_as_entering_from_off);
+  RUN_TEST(test_leaving_mode_off_still_counts_as_entering_from_off);
+  RUN_TEST(test_swapping_type_while_already_live_is_not_entering_from_off);
+  RUN_TEST(test_still_disabled_is_not_entering_from_off);
   return UNITY_END();
+
 }

@@ -130,7 +130,7 @@ test('steer ratio changes the drive outputs', () => {
   assert.notEqual(mod.telemetry(0).drv_l, before);
 });
 
-test('a motor drives nothing until its mode is set', () => {
+test('a motor drives nothing until its type is set', () => {
   // The safety default: an unconfigured board cannot know what is on the end
   // of the wire, so it emits no pulse at all. Neutral would be safe for an
   // ESC and 30% duty for an H-bridge.
@@ -140,9 +140,24 @@ test('a motor drives nothing until its mode is set', () => {
   assert.equal(tlm.motor1, 0);
 });
 
+test('choosing a type starts the arm hold rather than driving at once', () => {
+  const mod = makeModel();
+  mod.set('motor0.type', 'brushed', 0);
+  assert.equal(mod.telemetry(0).arm0, ARM_ARMING);
+});
+
+test('setting the mode off silences a configured motor again', () => {
+  const mod = makeModel();
+  mod.set('motor0.type', 'brushed', 0);
+  mod.set('motor0.mode', 'off', 0);
+  const tlm = mod.telemetry(0);
+  assert.equal(tlm.arm0, ARM_OFF);
+  assert.equal(tlm.motor0, 0);
+});
+
 test('a motor holds neutral while the arm switch is inactive', () => {
   const mod = makeModel();
-  mod.set('motor0.mode', 'input', 0);
+  mod.set('motor0.type', 'brushed', 0);
   const tlm = mod.telemetry(0);
   assert.equal(tlm.arm0, ARM_ARMING);
   assert.equal(tlm.motor0, 1500);
@@ -151,6 +166,7 @@ test('a motor holds neutral while the arm switch is inactive', () => {
 test('esc arms after the hold once the arm source allows it', () => {
   const mod = makeModel();
   mod.set('drive.arm_src', 'none', 0);
+  mod.set('motor0.type', 'brushless', 0);
   mod.set('motor0.mode', 'armed', 0);
   let tlm;
   for (let t = 0; t <= 2000; t += 100) tlm = mod.telemetry(t);
@@ -161,6 +177,7 @@ test('esc arms after the hold once the arm source allows it', () => {
 test('changing the esc rate demotes an armed esc', () => {
   const mod = makeModel();
   mod.set('drive.arm_src', 'none', 0);
+  mod.set('motor0.type', 'brushless', 0);
   mod.set('motor0.mode', 'armed', 0);
   for (let t = 0; t <= 3000; t += 100) mod.telemetry(t);
   assert.equal(mod.telemetry(3000).arm0, ARM_ARMED);

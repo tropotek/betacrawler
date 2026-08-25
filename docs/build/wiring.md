@@ -138,16 +138,17 @@ does not power the board from the drive-motor pack.
 | Telemetry | PA2 | The receiver's CRSF **RX** pad |
 | Board power | 5V, GND | USB, or the receiver's own supply |
 
-!!! danger "Set Type to `brushed` and save before connecting the drive pack"
+!!! danger "Set Type to `brushed`, never `brushless`, with an H-bridge wired"
 
-    Out of the box `motor0.type`/`motor1.type` are `brushless`, and an ESC's
-    idle command is a 1500 µs pulse in a 5000 µs frame — into an H-bridge that
-    is a 30% duty cycle, so both motors run at a third throttle from the
-    moment the board powers up, with no receiver and no arming. Set `Type` to
-    `brushed` on the Configuration page, press **Save to flash**, and only
-    then connect the pack. The same applies after every firmware update: an
-    update changes the settings fingerprint, the stored record is discarded,
-    and `Type` is back to `brushless` on the next boot.
+    An ESC's idle command is a 1500 µs pulse in a 5000 µs frame. Into an
+    H-bridge that is a 30% duty cycle, so both motors run at a third throttle
+    with no receiver and no arming. Set `Type` to `brushed` on the
+    Configuration page and press **Save to flash** before connecting the drive
+    pack.
+
+    `Type` ships as `none`, which detaches the pin entirely, so a board you
+    have not configured drives nothing — but `brushless` on an H-bridge build
+    is the one setting that turns a motor on its own.
 
 !!! warning "The module's SLEEP pin must be jumpered to VCC"
 

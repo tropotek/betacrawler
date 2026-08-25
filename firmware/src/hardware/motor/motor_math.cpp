@@ -8,6 +8,14 @@ uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs) {
   return (uint16_t)us;
 }
 
+bool outputDisabled(int32_t mode, int32_t type) {
+  return mode == MODE_OFF || type == TYPE_NONE;
+}
+
+bool enteringEnabled(int32_t prevMode, int32_t prevType, int32_t mode, int32_t type) {
+  return outputDisabled(prevMode, prevType) && !outputDisabled(mode, type);
+}
+
 uint16_t neutralUs(uint16_t minUs, uint16_t maxUs) {
   return (uint16_t)(((uint32_t)minUs + maxUs) / 2);
 }

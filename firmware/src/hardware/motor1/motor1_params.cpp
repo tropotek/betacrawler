@@ -8,7 +8,7 @@ using core::ParamType;
 using core::TlmDef;
 using core::TlmType;
 
-static const char* const kTypes[] = {"brushless", "brushed"};
+static const char* const kTypes[] = {"none", "brushless", "brushed"};
 
 // Order must match motor::MODE_* -- the wire carries the name, the driver
 // receives the index.
@@ -45,7 +45,7 @@ static const char* const kBrakeOpts[] = {"coast", "brake"};
 // above uses, and for the same reason: this descriptor TU is compiled by the
 // native env too.
 #ifndef MOTOR1_TYPE_DEFAULT
-#define MOTOR1_TYPE_DEFAULT motor::TYPE_BRUSHLESS
+#define MOTOR1_TYPE_DEFAULT motor::TYPE_NONE
 #endif
 
 static constexpr int32_t kDefaultRate =
@@ -62,7 +62,7 @@ static const ParamDef kParams[] = {
   // human typing Terminal set commands). Putting motor1.type first guarantees
   // it is always already known -- it decides which OutputStage runs at all,
   // even more foundational than motor1.rate below it.
-  {"motor1.type",         ParamType::Enum, "Type",      nullptr, 0, 0, kTypes, 2, 0, MOTOR1_TYPE_DEFAULT, nullptr, nullptr},
+  {"motor1.type",         ParamType::Enum, "Type",      nullptr, 0, 0, kTypes, 3, 0, MOTOR1_TYPE_DEFAULT, nullptr, nullptr},
   // Shown only for type=esc: meaningless for a straight duty-cycle output.
   {"motor1.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr, "motor1.type", "brushless"},
   // Defaults to off, like servo.mode and for the same reason: an unconfigured
@@ -72,7 +72,7 @@ static const ParamDef kParams[] = {
   // pulse in a 5000us frame as 30% duty and runs the motor. Saved settings
   // ARE re-applied at boot by main.cpp's notify pass, so a configured board
   // still starts driving at power-on and its ESC still arms once, there.
-  {"motor1.mode",         ParamType::Enum, "Motor",    nullptr, 0,    0,    kModes, 3, 0, motor::MODE_OFF, nullptr, nullptr},
+  {"motor1.mode",         ParamType::Enum, "Motor",    nullptr, 0,    0,    kModes, 3, 0, motor::MODE_INPUT, nullptr, nullptr},
   // Direct microseconds, not a percentage: the wire and the param are the
   // same unit, so motor::clampUs alone maps it.
   {"motor1.throttle_us",  ParamType::U8,   "Throttle", "µs",    1000, 2000, nullptr, 0, 0, 1500,     nullptr, nullptr},
@@ -89,7 +89,7 @@ static const ParamDef kParams[] = {
   // an accidental change is easy to make. Terminal `set` and INI restore
   // still accept it regardless of mode (showIf is display-only, never an
   // access rule). Defaults to ch1, the conventional throttle channel.
-  {"motor1.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 13, nullptr, nullptr, "motor1.mode", "off"},
+  {"motor1.src",          ParamType::Enum, "Source",   nullptr, 0, 0, kSrcNames, 14, 0, 13, nullptr, nullptr},
   // Reverses which way this motor turns, for both output types: an H-bridge
   // swaps which pin is A/B, an ESC gets its pulse mirrored about neutral.
   // Useful when the motor is buried in an enclosed model and swapping two

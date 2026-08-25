@@ -144,7 +144,7 @@
           <template x-if="$store.config.field('motor0.type').def">
             <fieldset class="card mb-3" :disabled="!$store.app.connected" x-data>
               <legend class="card-header h6 text-secondary mb-0 py-2"
-                      x-text="$store.config.values['motor0.type'] === 'brushed' ? 'Motor Output' : 'ESC'"></legend>
+                      x-text="{ brushed: 'Motor Output', brushless: 'ESC' }[$store.config.values['motor0.type']] ?? 'Motor'"></legend>
               <div class="card-body row g-3">
                 <div class="col-md-6">
                   <div class="d-flex align-items-center mb-2">
@@ -159,6 +159,7 @@
                     </template>
                   </select>
                   <div class="help-body d-none">
+                    <strong>none</strong> detaches the output, so nothing is driven until you choose.
                     <strong>brushless</strong> drives a BLHeli-class ESC. <strong>brushed</strong> drives a
                     DRV8833-class H-bridge — see the Wiring page for both.
                   </div>

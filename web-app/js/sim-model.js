@@ -10,6 +10,17 @@ const WIRE_CHANNELS = 16;
 const PROTO_CHANNELS = { crossfire: 12, elrs: 16 };
 
 export const MODE_OFF = 0, MODE_ARMED = 1, MODE_INPUT = 2;
+export const TYPE_NONE = 0, TYPE_BRUSHLESS = 1, TYPE_BRUSHED = 2;
+
+// An output drives nothing with no type chosen or the mode off; choosing a
+// type is what moves it from disabled to live, and so starts the arm hold.
+export function outputDisabled(mode, type) {
+  return mode === MODE_OFF || type === TYPE_NONE;
+}
+
+export function enteringEnabled(prevMode, prevType, mode, type) {
+  return outputDisabled(prevMode, prevType) && !outputDisabled(mode, type);
+}
 export const ARM_OFF = 0, ARM_ARMING = 1, ARM_ARMED = 2;
 const ARM_HOLD_MS = 2000;
 const ARM_LOW_MARGIN_US = 50;
@@ -199,22 +210,24 @@ class Motor {
     this.armT0 = 0;
     this.lastUs = 0;
     this._prevMode = MODE_OFF;
+    this._prevType = TYPE_NONE;
     this._prevSrc = null;
     this._prevRate = null;
   }
 
   update(nowMs, p, inputs, drive, rxFresh, driveEverFresh) {
     const mode = p.enumIndex(`${this.prefix}.mode`);
+    const type = p.enumIndex(`${this.prefix}.type`);
     const throttleUs = p.num(`${this.prefix}.throttle_us`);
     const minUs = p.num(`${this.prefix}.min_us`);
     const maxUs = p.num(`${this.prefix}.max_us`);
     const srcIdx = p.enumIndex(`${this.prefix}.src`);
     const rate = p.text(`${this.prefix}.rate`);
 
-    const enteringFromOff = this._prevMode === MODE_OFF && mode !== MODE_OFF;
+    const enteringFromOff = enteringEnabled(this._prevMode, this._prevType, mode, type);
     const srcChanged = this._prevSrc !== null && srcIdx !== this._prevSrc;
     const rateChanged = this._prevRate !== null && rate !== this._prevRate;
-    this._prevMode = mode; this._prevSrc = srcIdx; this._prevRate = rate;
+    this._prevMode = mode; this._prevType = type; this._prevSrc = srcIdx; this._prevRate = rate;
 
     const neutral = neutralUs(minUs, maxUs);
     const rawInput = srcIdx >= DRIVE_SRC_BASE ? drive[srcIdx - DRIVE_SRC_BASE] : inputs[srcIdx];
@@ -235,8 +248,8 @@ class Motor {
       mode, throttleUs, inputUs, inputFresh, neutral, ARM_LOW_MARGIN_US);
     if (this.armState === ARM_ARMING && !commandedLow) this.armT0 = nowMs;
     this.armState = nextArmState(
-      this.armState, mode === MODE_OFF, enteringFromOff, nowMs, this.armT0, ARM_HOLD_MS, commandedLow);
-    if (mode === MODE_OFF) return;
+      this.armState, outputDisabled(mode, type), enteringFromOff, nowMs, this.armT0, ARM_HOLD_MS, commandedLow);
+    if (outputDisabled(mode, type)) { this.lastUs = 0; return; }
 
     let us = nextPulseUs(this.armState, mode, minUs, maxUs, throttleUs, inputUs, inputStale, neutral);
     // The shared ARM switch is a pure output gate outside the hold state

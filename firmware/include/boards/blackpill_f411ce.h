@@ -112,15 +112,16 @@
 #define MOTOR0_PIN_B  PA7_ALT1
 #define MOTOR1_PIN_B  PB9
 
-// Which motor each instance starts on -- motor::TYPE_BRUSHLESS (an ESC) or
-// motor::TYPE_BRUSHED (an H-bridge). motor<N>.type overrides it at runtime; this
-// only decides where an unconfigured board starts, including after a settings
-// reset. Both are TYPE_BRUSHLESS because this image serves either wiring: a
-// fork committed to brushed motors sets TYPE_BRUSHED here so a reset can never
+// Which motor each instance starts on -- motor::TYPE_NONE (nothing, pin
+// detached), TYPE_BRUSHLESS (an ESC) or TYPE_BRUSHED (an H-bridge).
+// motor<N>.type overrides it at runtime; this only decides where an
+// unconfigured board starts, including after a settings reset. Both are
+// TYPE_NONE because this image serves either wiring and cannot guess. A fork
+// committed to brushed motors sets TYPE_BRUSHED here, so a reset can never
 // leave an H-bridge driven by an RC pulse train (a 1500us pulse in a 5000us
 // frame is 30% duty).
-#define MOTOR0_TYPE_DEFAULT  motor::TYPE_BRUSHLESS
-#define MOTOR1_TYPE_DEFAULT  motor::TYPE_BRUSHLESS
+#define MOTOR0_TYPE_DEFAULT  motor::TYPE_NONE
+#define MOTOR1_TYPE_DEFAULT  motor::TYPE_NONE
 
 // Battery voltage sense on ADC1_IN1. PA1 is unclaimed on this board: the LED
 // is PC13, the button PA0, the ESCs PA6/PB8, CRSF PA2/PA3, USB PA11/PA12 and

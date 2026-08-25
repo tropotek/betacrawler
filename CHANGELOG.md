@@ -3,6 +3,13 @@
 Summaries of completed work, one to two lines each. Detail, reasoning and hardware-verification
 records live in the git history, not here.
 
+## Version 4.1
+
+- **feat: `motor<N>.type` gains `none`, and it is now the default.** An output with no type
+  chosen detaches its pin, so choosing the type is the one step that brings a motor to life —
+  `motor<N>.mode` goes back to defaulting to `input`. Adding the option changes the settings
+  fingerprint, so stored settings are discarded once on this update.
+
 ## Version 4.0
 
 - **feat: `esc0`/`esc1` are now `motor0`/`motor1`.** They drive a motor through whichever output

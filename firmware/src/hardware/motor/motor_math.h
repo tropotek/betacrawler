@@ -13,7 +13,9 @@ enum : int32_t { MODE_OFF = 0, MODE_ARMED = 1, MODE_INPUT = 2 };
 // same regardless; only the final step (turning a calibrated value into pin
 // output) differs, which is what motor::OutputStage's two implementations
 // (MotorOutput for an ESC, HbridgeOutput for an H-bridge) exist to isolate.
-enum : int32_t { TYPE_BRUSHLESS = 0, TYPE_BRUSHED = 1 };
+// TYPE_NONE is the default: a board that has not been told what it drives
+// commands nothing, so the pin stays detached whatever the mode says.
+enum : int32_t { TYPE_NONE = 0, TYPE_BRUSHLESS = 1, TYPE_BRUSHED = 2 };
 
 // Values of an motor<N>.rate parameter, in declaration order -- the PWM frame
 // rate the output runs at. 50Hz is what every analog ESC auto-detects; a
@@ -40,6 +42,14 @@ enum : uint32_t { ARM_OFF = 0, ARM_ARMING = 1, ARM_ARMED = 2 };
 // Clamps a commanded/bus pulse width (microseconds, or 0 for "no signal yet")
 // into the calibrated range.
 uint16_t clampUs(int32_t us, uint16_t minUs, uint16_t maxUs);
+
+// True when this output must drive nothing at all -- no type chosen, or the
+// mode is off. Both mean the pin is detached rather than held at neutral.
+bool outputDisabled(int32_t mode, int32_t type);
+
+// True when an apply() moved this output from disabled to live. Drives the
+// arm hold, so choosing a type costs the same neutral wait leaving off does.
+bool enteringEnabled(int32_t prevMode, int32_t prevType, int32_t mode, int32_t type);
 
 // One step of the arm-hold state machine -- deliberately independent of the
 // shared TX ARM switch (see drive's design doc): that switch gates the

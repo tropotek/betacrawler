@@ -82,10 +82,10 @@ While disarmed, both ESC outputs are held at neutral no matter what the sticks d
 
 ## 8. Set up your drive electronics
 
-Both motors ship set to `off`, so a freshly flashed board drives nothing at all. That is
-deliberate — it cannot know whether an ESC or an H-bridge is on the other end of the wire, and
-the wrong guess turns a motor. Set `Type` to match your hardware **first**, then set each motor's
-mode to `input`.
+Both motors ship with `Type` set to `none`, so a freshly flashed board drives nothing at all. That
+is deliberate — it cannot know whether an ESC or an H-bridge is on the other end of the wire, and
+the wrong guess turns a motor. Setting `Type` to match your hardware is the one step that brings
+the output to life; `Motor` is already on `input`, following the drive mixer.
 
 ### If you're using brushless ESCs
 
@@ -99,12 +99,12 @@ it never sees the low throttle it waits for at power-on.
 ### If you're using brushed motors (H-Bridge)
 
 No external configurator needed. On the **Configuration** page, set `Type` to `brushed` for both
-motors, then press **Save to flash** before connecting the drive pack — with `Type` left on
-`brushless` an H-bridge reads the ESC pulse train as a 30% duty cycle and both motors run. The
-`off` mode default means a just-flashed board is safe until you set the mode, but set `Type`
-before you do. Redo this after any
-firmware update, which resets stored settings. If a motor spins the wrong way once you're driving, fix it with that motor's `Invert`
-setting rather than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for-brushed-motors-h-bridge).
+motors, then press **Save to flash** before connecting the drive pack — pick `brushless` by
+mistake and an H-bridge reads the ESC pulse train as a 30% duty cycle, running both motors. The
+`none` default keeps a just-flashed board silent until you choose, so the only wrong move is
+choosing `brushless`. Redo this after any firmware update, which resets stored settings. If a
+motor spins the wrong way once you're driving, fix it with that motor's `Invert` setting rather
+than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for-brushed-motors-h-bridge).
 
 ## 9. If you are building a car
 
