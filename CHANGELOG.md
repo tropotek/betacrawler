@@ -5,6 +5,9 @@ records live in the git history, not here.
 
 ## 4.2.0
 
+- **Saved settings reset to defaults on the first boot after flashing** — `drive_steer` joins the
+  source lists, changing the stored-record fingerprint.
+
 - **docs: releases are cut as tags, and the published site is built from the newest one.** `main`
   becomes staging and is served unlisted at `/app-dev/`; `docs/development/releasing.md` is the
   policy.
