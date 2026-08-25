@@ -19,9 +19,10 @@ static const char* const kModes[] = {"off", "hold", "sweep", "input"};
 static const char* const kSrcNames[] = {
   "ch1", "ch2", "ch3", "ch4", "ch5", "ch6",
   "ch7", "ch8", "ch9", "ch10", "ch11", "ch12",
-  // Indices 12/13: the drive module's own bus (core::Registry::driveOutputs()),
-  // not a raw rx channel. Same convention motor0.src/motor1.src use.
-  "drive_left", "drive_right",
+  // Indices 12/13/14: the drive module's own bus
+  // (core::Registry::driveOutputs()), not a raw rx channel. Same convention
+  // motor0.src/motor1.src use.
+  "drive_left", "drive_right", "drive_steer",
 };
 
 static const char* const kInvertOpts[] = {"normal", "reversed"};
@@ -52,10 +53,10 @@ static const ParamDef kParams[] = {
   // restore still accept it regardless (showIf is display-only, never an
   // access rule).
   //
-  // Defaults to ch2 (roll -- right stick horizontal on a Mode 2 TX), paired
-  // with the motor module's own ch3 (pitch) default: both self-center, unlike
-  // the throttle stick, putting steering and throttle on one stick.
-  {"servo.src",     ParamType::Enum, "Source", nullptr, 0, 0, kSrcNames, 14, 0, 1, nullptr, nullptr, "servo.mode", "input"},
+  // Defaults to the drive module's steering slot, so a car works on stock
+  // settings: the mixer has already applied drive.steer_src and steer_ratio,
+  // and the same slot carries steer in both drive modes.
+  {"servo.src",     ParamType::Enum, "Source", nullptr, 0, 0, kSrcNames, 15, 0, 14, nullptr, nullptr},
   // Linkage properties, so they apply in every output mode -- hold, sweep and
   // input alike. Invert runs first, then trim, then the range clamp, so trim
   // always moves the horn the same physical direction either way round.

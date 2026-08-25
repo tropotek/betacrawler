@@ -56,3 +56,20 @@ test('every manifest image is present, the right size, and matches its sha256', 
                  `${img.file} does not match its manifest sha256`);
   }
 });
+
+// The service worker pre-caches the firmware images so a board can be flashed
+// with no network. cache.addAll() rejects as a whole if any entry 404s, so a
+// version bump that renames the binaries without updating this list costs the
+// app its entire offline shell -- silently, since install just fails.
+test('the service worker pre-caches the firmware images that exist', () => {
+  const sw = readFileSync(`${here}../service-worker.js`, 'utf8');
+  const listed = [...sw.matchAll(/'\.\/(firmware\/[^']*\.bin)'/g)].map((m) => m[1]).sort();
+  const manifest = JSON.parse(readFileSync(`${bundle}/manifest.json`, 'utf8'));
+  const bundled = manifest.images.map((i) => `firmware/${i.file}`).sort();
+
+  assert.deepEqual(
+    listed, bundled,
+    'service-worker.js SHELL_FILES and web-app/firmware/manifest.json disagree -- '
+    + 're-run tools/bundle_firmware.py, which rewrites both',
+  );
+});

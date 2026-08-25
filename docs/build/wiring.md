@@ -81,9 +81,9 @@ the bench.
 
 ## Which track is which
 
-`motor0` drives the left track and `motor1` the right. If they turn out swapped once you are driving,
-you do not need to rewire: change `motor0.src` and `motor1.src` between `drive_left` and
-`drive_right` in the app.
+`motor0` drives the left track and `motor1` the right. If they turn out swapped once you are
+driving, you do not need to rewire: swap `motor0.src` and `motor1.src` between `drive_left` and
+`drive_right` from the Terminal.
 
 If a single track runs backwards, swap any two of the three motor wires on that ESC.
 
@@ -91,9 +91,11 @@ Next: [Flashing the firmware](flashing.md).
 
 ## Wiring for a car (one motor + steering servo)
 
-Set `Drive Mode` to `car` on the Configuration page — no reflash needed. `motor0` keeps PA6 and
-takes the mixer's throttle output; the steering servo goes on **PB10** and takes its steer output.
-`motor1` is unused on a single-motor car, so leave its mode `off`.
+Set `Drive Mode` to `car` on the Configuration page — no reflash needed, and it switches the
+steering servo on for you.
+Both motor outputs carry throttle in car mode, so a single motor drives whichever of PA6 or PB8 it
+is wired to, and a two-wheel-drive car works by wiring both. The steering servo goes on **PB10**
+and follows the mixer's steer output on stock settings.
 
 The ESC must treat centre-stick as stop, which a surface (car/boat) ESC already does. Its BEC
 powers the board, the receiver and the servo.
@@ -138,16 +140,17 @@ does not power the board from the drive-motor pack.
 | Telemetry | PA2 | The receiver's CRSF **RX** pad |
 | Board power | 5V, GND | USB, or the receiver's own supply |
 
-!!! danger "Set Type to `brushed` and save before connecting the drive pack"
+!!! danger "Set Type to `brushed`, never `brushless`, with an H-bridge wired"
 
-    Out of the box `motor0.type`/`motor1.type` are `brushless`, and an ESC's
-    idle command is a 1500 µs pulse in a 5000 µs frame — into an H-bridge that
-    is a 30% duty cycle, so both motors run at a third throttle from the
-    moment the board powers up, with no receiver and no arming. Set `Type` to
-    `brushed` on the Configuration page, press **Save to flash**, and only
-    then connect the pack. The same applies after every firmware update: an
-    update changes the settings fingerprint, the stored record is discarded,
-    and `Type` is back to `brushless` on the next boot.
+    An ESC's idle command is a 1500 µs pulse in a 5000 µs frame. Into an
+    H-bridge that is a 30% duty cycle, so both motors run at a third throttle
+    with no receiver and no arming. Set `Type` to `brushed` on the
+    Configuration page and press **Save to flash** before connecting the drive
+    pack.
+
+    `Type` ships as `none`, which detaches the pin entirely, so a board you
+    have not configured drives nothing — but `brushless` on an H-bridge build
+    is the one setting that turns a motor on its own.
 
 !!! warning "The module's SLEEP pin must be jumpered to VCC"
 

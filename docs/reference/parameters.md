@@ -62,15 +62,19 @@ clamping the outputs to neutral. Only the one matching your protocol applies.
 | Arm Min (µs) | `drive.arm_min` | `1700` | 1000–2000 |
 | Arm Max (µs) | `drive.arm_max` | `2000` | 1000–2000 |
 
-The mixer. It takes throttle and steering and writes two outputs, which
-`motor<N>.src` and `servo.src` then select with `drive_left` and `drive_right`.
+The mixer. It takes throttle and steering and writes three outputs, which
+`motor<N>.src` and `servo.src` then select with `drive_left`, `drive_right` and `drive_steer`.
 
-**Drive Mode** decides what those two outputs mean:
+**Drive Mode** decides what the two motor outputs carry. `drive_steer` carries the steering
+command in both modes, which is why a servo pointed at it works either way:
 
-| | `drive_left` | `drive_right` |
-|---|---|---|
-| `skid` | left track | right track |
-| `car` | throttle | steer |
+| | `drive_left` | `drive_right` | `drive_steer` |
+|---|---|---|---|
+| `skid` | left track | right track | steer |
+| `car` | throttle | throttle | steer |
+
+In `car` mode both motor outputs carry the same throttle, so a single motor drives whichever pin
+it is wired to and a two-wheel-drive car works by wiring both.
 
 `skid` mixes throttle and steer into both sides, so the vehicle turns by driving them at
 different speeds — tracks, a 4WD rover, or a 2WD skid-steer chassis. `car` keeps the two apart:
@@ -85,14 +89,14 @@ Both ESCs carry the same settings. `motor0` drives the left track, `motor1` the 
 
 | Setting | Key | Default | Range |
 |---|---|---|---|
-| Type | `motor0.type` / `motor1.type` | `brushless` | `brushless`, `brushed` |
+| Type | `motor0.type` / `motor1.type` | `none` | `none`, `brushless`, `brushed` |
 | PWM Rate (Hz) | `motor0.rate` / `motor1.rate` | `50` | `50`, `100`, `200`, `400` |
-| Motor mode | `motor0.mode` / `motor1.mode` | `off` | `off`, `armed`, `input` |
+| Motor mode | `motor0.mode` / `motor1.mode` | `input` | `off`, `armed`, `input` |
 | Throttle (µs) | `motor0.throttle_us` / `motor1.throttle_us` | `1500` | 1000–2000 |
 | Min (µs) | `motor0.min_us` / `motor1.min_us` | `1000` | 500–1500 |
 | Max (µs) | `motor0.max_us` / `motor1.max_us` | `2000` | 1500–2500 |
-| Source | `motor0.src` | `drive_left` | `ch1`–`ch12`, `drive_left`, `drive_right` |
-| Source | `motor1.src` | `drive_right` | `ch1`–`ch12`, `drive_left`, `drive_right` |
+| Source | `motor0.src` | `drive_left` | `ch1`–`ch12`, `drive_left`, `drive_right`, `drive_steer` |
+| Source | `motor1.src` | `drive_right` | `ch1`–`ch12`, `drive_left`, `drive_right`, `drive_steer` |
 | Invert | `motor0.invert` / `motor1.invert` | `normal` | `normal`, `inverted` |
 
 **Invert** reverses which way that motor turns, per motor, for either output type: an H-bridge
@@ -101,9 +105,9 @@ motor wires is the better permanent fix — this is for a motor you cannot reach
 model. It reverses the signal, not the motor, so braking and the ESC's own reverse behaviour are
 unaffected; if you later swap wires as well, the two cancel out.
 
-**Source** is where the ESC takes its command from. `drive_left` and `drive_right` are the two
-outputs of the tank mixer — that is the normal setting. Pointing an ESC at a raw channel instead
-bypasses the mixer entirely.
+**Source** is where the ESC takes its command from. `drive_left` and `drive_right` are the
+mixer's two motor outputs — that is the normal setting. Pointing an ESC at a raw channel instead
+bypasses the mixer entirely. Set from the Terminal; no page shows it.
 
 **Throttle** is a manual output used when the mode is not `input`. **Min** and **Max** are the
 ESC's calibrated endpoints; they cannot cross.
@@ -127,20 +131,24 @@ freely) or `brake` (both high, resisting motion).
 
 | Setting | Key | Default | Range |
 |---|---|---|---|
-| Servo | `servo.mode` | `off` | `off`, `hold`, `sweep`, `input` |
+| Servo | `servo.mode` | `off` | `off`, `hold`, `sweep`, `input` — set by **Drive Mode** |
 | Angle (°) | `servo.angle` | `90` | 0–180 |
 | Sweep (s) | `servo.sweep_s` | `4` | 1–30 |
 | Min (µs) | `servo.min_us` | `1000` | 500–1500 |
 | Max (µs) | `servo.max_us` | `2000` | 1500–2500 |
-| Source | `servo.src` | `ch2` | `ch1`–`ch12`, `drive_left`, `drive_right` |
+| Source | `servo.src` | `drive_steer` | `ch1`–`ch12`, `drive_left`, `drive_right`, `drive_steer` |
 | Invert | `servo.invert` | `normal` | `normal`, `reversed` |
 | Trim (µs) | `servo.trim_us` | `0` | −250–250 |
 
 **Mode** picks where the pulse comes from: `hold` parks at **Angle**, `sweep` runs back and
 forth over **Sweep** seconds, `input` follows **Source**. `off` detaches the pin so the servo
-relaxes and draws no holding current.
+relaxes and draws no holding current. The Configuration page sets this from **Drive Mode** —
+`car` gives `input`, `skid` gives `off` — so it is only worth setting by hand from the Terminal,
+to reach `hold` or `sweep` for a bench test.
 
-**Source** accepts a raw channel or, for a steered car, `drive_right` — the mixer's steer output.
+**Source** defaults to `drive_steer`, the mixer's steering output, so a car steers without
+touching it. A raw channel bypasses the mixer's steer ratio. Set from the Terminal; no page shows
+it.
 
 **Invert** and **Trim** describe the linkage, not the input, so they apply in every mode. Invert
 mirrors travel about the centre of Min/Max; Trim then shifts the centre. Set Invert if the wheels

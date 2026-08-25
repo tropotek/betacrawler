@@ -83,8 +83,8 @@
 
 // Default motor type per instance, same reasoning as
 // blackpill_f411ce.h.
-#define MOTOR0_TYPE_DEFAULT  motor::TYPE_BRUSHLESS
-#define MOTOR1_TYPE_DEFAULT  motor::TYPE_BRUSHLESS
+#define MOTOR0_TYPE_DEFAULT  motor::TYPE_NONE
+#define MOTOR1_TYPE_DEFAULT  motor::TYPE_NONE
 
 // 200Hz frame on both, same reasoning as blackpill_f411ce.h. Without these the
 // module default of 20000us applies, which is 50Hz.

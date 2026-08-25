@@ -342,10 +342,10 @@ void test_hello_reports_build_identity_from_config() {
   d.handle(q, out, sizeof(out));
 
   TEST_ASSERT_NOT_NULL(strstr(out, "\"name\":\"betacrawler\""));
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"ver\":\"4.0.0\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"ver\":\"4.2.0\""));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"board\":\"blackpill_f411ce\""));
   // `fw` must survive as a display string -- app.js and docs/api.md read it.
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler 4.0.0\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler 4.2.0\""));
   // Exact build timestamp is unassertable; that it is present and non-empty
   // is the part that can actually regress.
   TEST_ASSERT_NOT_NULL(strstr(out, "\"built\":\""));
@@ -566,6 +566,54 @@ void test_schema_omits_secret_key_when_unset() {
   TEST_ASSERT_NULL(strstr(slice.c_str(), "\"secret\""));
 }
 
+// Slice of the schema JSON covering exactly one param object.
+static std::string paramSlice(const char* json, const char* key) {
+  const char* start = strstr(json, key);
+  if (!start) return std::string();
+  const char* next = strstr(start + strlen(key), "\"key\":");
+  return next ? std::string(start, next - start) : std::string(start);
+}
+
+void test_motor_type_defaults_to_none() {
+  // An unconfigured board has not been told what electronics it drives, so it
+  // picks nothing and the pin stays detached whatever the mode says.
+  Params p(realReg); MockStore store;
+  Dispatcher d(realReg, p, store);
+  Request q = parseRequest("{\"id\":21,\"op\":\"schema\"}");
+  TEST_ASSERT_TRUE(d.handle(q, out, sizeof(out)) > 0);
+
+  std::string slice = paramSlice(out, "\"key\":\"motor0.type\"");
+  TEST_ASSERT_TRUE(slice.size() > 0);
+  TEST_ASSERT_NOT_NULL(strstr(slice.c_str(), "\"options\":[\"none\",\"brushless\",\"brushed\"]"));
+  TEST_ASSERT_NOT_NULL(strstr(slice.c_str(), "\"def\":\"none\""));
+}
+
+void test_motor_mode_defaults_to_input() {
+  // type=none is the interlock now, so mode no longer has to be the one that
+  // holds an unconfigured board silent -- choosing a type is the only step.
+  Params p(realReg); MockStore store;
+  Dispatcher d(realReg, p, store);
+  Request q = parseRequest("{\"id\":22,\"op\":\"schema\"}");
+  TEST_ASSERT_TRUE(d.handle(q, out, sizeof(out)) > 0);
+
+  std::string slice = paramSlice(out, "\"key\":\"motor0.mode\"");
+  TEST_ASSERT_TRUE(slice.size() > 0);
+  TEST_ASSERT_NOT_NULL(strstr(slice.c_str(), "\"def\":\"input\""));
+}
+
+void test_motor_src_carries_no_show_if() {
+  // motor<N>.src is Terminal-only: no page curates it, so a display hint on
+  // it has nothing to act on.
+  Params p(realReg); MockStore store;
+  Dispatcher d(realReg, p, store);
+  Request q = parseRequest("{\"id\":23,\"op\":\"schema\"}");
+  TEST_ASSERT_TRUE(d.handle(q, out, sizeof(out)) > 0);
+
+  std::string slice = paramSlice(out, "\"key\":\"motor0.src\"");
+  TEST_ASSERT_TRUE(slice.size() > 0);
+  TEST_ASSERT_NULL(strstr(slice.c_str(), "\"showIf\""));
+}
+
 // Golden fixture: web-app/tools/gen-sim-schema.js regenerates web-app/js/sim-schema.js
 // from this exact file, so a firmware schema change (e.g. a bumped `max`) that
 // isn't reflected here becomes a visible mismatch web-app/tests/sim-schema-drift.test.js
@@ -703,7 +751,7 @@ void test_hello_keeps_its_existing_fields_alongside_caps() {
 
   Request q = parseRequest("{\"id\":26,\"op\":\"hello\"}");
   d.handle(q, out, sizeof(out));
-  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler 4.0.0\""));
+  TEST_ASSERT_NOT_NULL(strstr(out, "\"fw\":\"betacrawler 4.2.0\""));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"proto\":1"));
   TEST_ASSERT_NOT_NULL(strstr(out, "\"mods\":["));
 }
@@ -911,6 +959,9 @@ int main() {
   RUN_TEST(test_a_show_if_hidden_param_is_still_settable);
   RUN_TEST(test_schema_marks_a_secret_param);
   RUN_TEST(test_schema_omits_secret_key_when_unset);
+  RUN_TEST(test_motor_type_defaults_to_none);
+  RUN_TEST(test_motor_mode_defaults_to_input);
+  RUN_TEST(test_motor_src_carries_no_show_if);
   RUN_TEST(test_schema_golden_fixture_matches_firmware);
   RUN_TEST(test_dfu_op_arms_the_bootloader_exactly_once);
   RUN_TEST(test_dfu_op_answers_before_any_reset);

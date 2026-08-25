@@ -70,7 +70,7 @@ constexpr uint8_t kDriveSrcBase = 12;
 // unconditionally below regardless of what motor0.src currently selects. Same
 // duplicated-literal convention as kDriveSrcBase just above; drive_driver.cpp
 // names this same value kArmSlot.
-constexpr uint8_t kDriveArmSlot = 2;
+constexpr uint8_t kDriveArmSlot = 3;
 
 namespace motor0 {
 
@@ -140,7 +140,7 @@ void MotorDriver::apply(const core::Params& p) {
       : motor::frameUsForRate(rateIdx_);
   stage_->setPeriodUs(periodUs_);
 
-  const bool enteringFromOff = (prevMode == motor::MODE_OFF && mode_ != motor::MODE_OFF);
+  const bool enteringFromOff = motor::enteringEnabled(prevMode, prevType, mode_, type_);
   const bool srcChanged = (srcIdx_ != prevSrcIdx);
   const bool rateChanged = (rateIdx_ != prevRateIdx);
   const uint32_t now = millis();
@@ -166,10 +166,10 @@ void MotorDriver::apply(const core::Params& p) {
   const bool commandedLow = motor::isCommandedLow(mode_, throttleUs_, inputUs, inputFresh, neutral,
                                                  MOTOR0_ARM_LOW_MARGIN_US);
   if (armState_ == motor::ARM_ARMING && !commandedLow) armT0_ = now;
-  armState_ = motor::nextArmState(armState_, mode_ == motor::MODE_OFF, enteringFromOff, now, armT0_,
+  armState_ = motor::nextArmState(armState_, motor::outputDisabled(mode_, type_), enteringFromOff, now, armT0_,
                                  MOTOR0_ARM_HOLD_MS, commandedLow);
 
-  if (mode_ == motor::MODE_OFF) { stage_->detach(); lastUs_ = 0; return; }
+  if (motor::outputDisabled(mode_, type_)) { stage_->detach(); lastUs_ = 0; return; }
   if (enteringFromOff || typeChanged) stage_->attachOutput();
 
   uint16_t us = motor::nextPulseUs(armState_, mode_, minUs_, maxUs_, throttleUs_, inputUs,
@@ -196,7 +196,7 @@ void MotorDriver::onParamChanged(uint8_t local, const core::Params& p) {
 }
 
 void MotorDriver::tick(uint32_t nowMs) {
-  if (mode_ == motor::MODE_OFF) return;
+  if (motor::outputDisabled(mode_, type_)) return;
 
   const uint16_t neutral = motor::neutralUs(minUs_, maxUs_);
 

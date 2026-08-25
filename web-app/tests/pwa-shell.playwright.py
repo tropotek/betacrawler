@@ -1,10 +1,11 @@
 import json
 import re
+import os
 import sys
 import urllib.request
 from playwright.sync_api import sync_playwright
 
-BASE = "http://localhost:9091"
+BASE = os.environ.get("BETACRAWLER_BASE", "http://localhost:9091")
 
 
 def fetch(path):
@@ -49,8 +50,10 @@ with sync_playwright() as p:
 
     nav_pages = page.eval_on_selector_all(
         "[data-page]", "els => els.map(el => el.dataset.page)")
-    assert "firmware" not in nav_pages, nav_pages
-    assert set(["home", "config", "controller", "modes", "terminal", "wiring", "help"]) <= set(nav_pages), nav_pages
+    # Firmware is in the nav on purpose: it is the recovery tool, so it must be
+    # reachable with no board connected.
+    assert set(["home", "firmware", "config", "controller", "modes", "terminal",
+                "wiring", "help"]) <= set(nav_pages), nav_pages
 
     # app.js is a module, so its top-level functions are NOT globals. These
     # four have to be put back on window by hand because pages/config.html

@@ -60,8 +60,8 @@ Those defaults suit a Mode 2 handset, which puts elevator on channel 2 and ailer
 the pair that falls under your thumbs. Change them if your handset differs.
 
 Watch the **Left Output** and **Right Output** values as you move the sticks. Push throttle
-forward and both should rise together; steer and they should move apart. (In `car` mode these
-read **Throttle Output** and **Steer Output**, and move independently.)
+forward and both should rise together; steer and they should move apart. (In `car` mode both
+carry throttle and move together, and steering goes to the servo instead.)
 
 ## 7. Set the arming switch
 
@@ -82,10 +82,10 @@ While disarmed, both ESC outputs are held at neutral no matter what the sticks d
 
 ## 8. Set up your drive electronics
 
-Both motors ship set to `off`, so a freshly flashed board drives nothing at all. That is
-deliberate — it cannot know whether an ESC or an H-bridge is on the other end of the wire, and
-the wrong guess turns a motor. Set `Type` to match your hardware **first**, then set each motor's
-mode to `input`.
+Both motors ship with `Type` set to `none`, so a freshly flashed board drives nothing at all. That
+is deliberate — it cannot know whether an ESC or an H-bridge is on the other end of the wire, and
+the wrong guess turns a motor. Setting `Type` to match your hardware is the one step that brings
+the output to life; `Motor` is already on `input`, following the drive mixer.
 
 ### If you're using brushless ESCs
 
@@ -99,21 +99,21 @@ it never sees the low throttle it waits for at power-on.
 ### If you're using brushed motors (H-Bridge)
 
 No external configurator needed. On the **Configuration** page, set `Type` to `brushed` for both
-motors, then press **Save to flash** before connecting the drive pack — with `Type` left on
-`brushless` an H-bridge reads the ESC pulse train as a 30% duty cycle and both motors run. The
-`off` mode default means a just-flashed board is safe until you set the mode, but set `Type`
-before you do. Redo this after any
-firmware update, which resets stored settings. If a motor spins the wrong way once you're driving, fix it with that motor's `Invert`
-setting rather than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for-brushed-motors-h-bridge).
+motors, then press **Save to flash** before connecting the drive pack — pick `brushless` by
+mistake and an H-bridge reads the ESC pulse train as a 30% duty cycle, running both motors. The
+`none` default keeps a just-flashed board silent until you choose, so the only wrong move is
+choosing `brushless`. Redo this after any firmware update, which resets stored settings. If a
+motor spins the wrong way once you're driving, fix it with that motor's `Invert` setting rather
+than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for-brushed-motors-h-bridge).
 
 ## 9. If you are building a car
 
 Skip this if your vehicle drives both sides. For one motor plus a steering servo:
 
-1. **Configuration → Drive Mode** = `car`.
-2. **Motor 0 → Source** = `drive_left` — that slot carries throttle in car mode.
-3. **Servo → Mode** = `input` and **Source** = `drive_right` — the steer output.
-4. Wire the servo signal to **PB10**, with its own 5&nbsp;V supply and a shared ground. Never run
+1. **Configuration → Drive Mode** = `car`. This switches the steering servo on and reveals its
+   settings; `skid` switches it off again.
+2. **Configuration → Type** = whatever your motor is, same as any other build.
+3. Wire the servo signal to **PB10**, with its own 5&nbsp;V supply and a shared ground. Never run
    it from 3V3.
 
 Then, with the wheels off the ground, check the steering:
@@ -122,7 +122,7 @@ Then, with the wheels off the ground, check the steering:
 - With the stick centred, if the wheels sit off-straight, nudge **Servo → Trim** until they are.
   Negative values go the other way.
 
-Motor 1 is unused on a single-motor car; leave its mode `off`.
+Both motor outputs carry throttle in car mode, so it makes no difference which pin you wire a single motor to, and a two-wheel-drive car works by wiring both.
 
 ## 10. Save
 

@@ -486,6 +486,38 @@ def write_manifest(bundle: Path, data: dict) -> None:
     path = manifest_path(bundle)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + "\n")
+    write_service_worker_shell(bundle, data)
+
+
+# The service worker pre-caches the firmware images so a board can be flashed
+# offline. cache.addAll() rejects as a whole on a single 404, so a renamed
+# binary costs the app its entire offline shell -- rewritten here, with the
+# manifest, so the two cannot drift.
+def write_service_worker_shell(bundle: Path, data: dict) -> None:
+    path = bundle.parent / "service-worker.js"
+    if not path.is_file():
+        return
+    text = path.read_text()
+    entries = [f"  './firmware/{img['file']}'," for img in data.get("images", [])]
+    if not entries:
+        return
+    pattern = re.compile(r"^[ \t]*'\./firmware/[^']*\.bin',[ \t]*\n", re.MULTILINE)
+    if not pattern.search(text):
+        raise BundleError(f"{path} has no firmware .bin entries to rewrite")
+    replacement = "\n".join(entries) + "\n"
+    first = True
+
+    def sub(_match):
+        nonlocal first
+        if first:
+            first = False
+            return replacement
+        return ""
+
+    updated = pattern.sub(sub, text)
+    if updated != text:
+        path.write_text(updated)
+        print(f"updated  {path.relative_to(path.parent.parent)} shell list")
 
 
 def prune(bundle: Path, old: dict, new: dict) -> list[Path]:

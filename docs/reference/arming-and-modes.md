@@ -45,19 +45,19 @@ pushed forward. If you arm and nothing happens, centre the throttle and wait a c
 
 | Mode | Behaviour |
 |---|---|
-| `off` | The pin is detached and held low. Nothing is driven. **This is the default.** |
-| `input` | Normal driving. The motor follows its Source — the drive mixer by default. |
+| `off` | The pin is detached and held low. Nothing is driven. |
+| `input` | Normal driving. The motor follows its Source — the drive mixer by default. **This is the default.** |
 | `armed` | Live, but following the manual `throttle_us` value rather than the sticks. |
 
-**A board that has never been configured drives nothing.** `off` is the default because the
-firmware cannot know what is wired to the pin: neutral is a stop command to an ESC, but an
-H-bridge on a brushless-configured output reads that same pulse as 30% duty and runs the motor.
-So nothing is commanded until you ask for it. Set `Type` to match your hardware first, then set
-the mode to `input` and save.
+**A board that has never been configured drives nothing**, because `Type` defaults to `none` and
+an output with no type detaches its pin whatever the mode says. The firmware cannot know what is
+wired there: neutral is a stop command to an ESC, but an H-bridge on a brushless-configured output
+reads that same pulse as 30% duty and runs the motor. Choosing `Type` is the single step that
+brings the output to life, and it starts the arm hold like any other transition out of `off`.
 
 Once saved, settings are restored at boot, so a configured board starts driving at power-on as
-usual and its ESC arms once, there — this default only affects a board that has never been set
-up, or one whose settings were reset by a firmware update.
+usual and its ESC arms once, there — the `none` default only affects a board that has never been
+set up, or one whose settings were reset by a firmware update.
 
 `armed` is a bench-testing tool: it will spin a motor from a value typed into the app, so keep
 the wheels off the ground when using it.

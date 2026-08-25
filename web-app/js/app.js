@@ -3,7 +3,7 @@ import { assessBrowser } from './browser-support.js';
 
 // Shared with FW_VERSION in firmware/include/config.h -- betacrawler tracks
 // one project-wide version number across firmware and app.
-const APP_VERSION = '4.0.0';
+const APP_VERSION = '4.2.0';
 
 const el = (id) => document.getElementById(id);
 let connected = false;
@@ -246,6 +246,16 @@ document.addEventListener('alpine:init', () => {
 
     setBothEscTypes(v) {
       return this.setAll(['motor0.type', 'motor1.type'], v, 'Type');
+    },
+
+    // The steering servo belongs to the car build alone, so drive.mode already
+    // answers whether one exists and the page never asks separately. Terminal
+    // `set servo.mode` still reaches hold/sweep for bench testing.
+    async setDriveMode(v) {
+      await this.setAll(['drive.mode'], v, 'Drive Mode');
+      if (this.field('servo.mode').def) {
+        await this.setAll(['servo.mode'], v === 'car' ? 'input' : 'off', 'Servo');
+      }
     },
 
     setBothEscFreq(v) {

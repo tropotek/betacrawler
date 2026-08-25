@@ -3,6 +3,24 @@
 Summaries of completed work, one to two lines each. Detail, reasoning and hardware-verification
 records live in the git history, not here.
 
+## Version 4.2
+
+- **feat: car mode drives both motor slots and gets its own steering output.** Throttle reaches
+  either motor pin, so whichever wheel is wired is driven, and steer moves to its own drive-bus
+  slot that `servo.src` now selects by default. A car needs no Terminal: pick the drive mode, the
+  motor type, and switch the servo on.
+
+- **feat: Drive Mode switches the steering servo on and off.** `car` enables it and shows its
+  settings, `skid` disables them and hides the card — a skid build has no steering servo, so it is
+  never asked about. `servo.mode` stays a Terminal override for bench testing.
+
+## Version 4.1
+
+- **feat: `motor<N>.type` gains `none`, and it is now the default.** An output with no type
+  chosen detaches its pin, so choosing the type is the one step that brings a motor to life —
+  `motor<N>.mode` goes back to defaulting to `input`. Adding the option changes the settings
+  fingerprint, so stored settings are discarded once on this update.
+
 ## Version 4.0
 
 - **feat: `esc0`/`esc1` are now `motor0`/`motor1`.** They drive a motor through whichever output

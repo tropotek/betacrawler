@@ -93,25 +93,35 @@ void test_mix_applies_deadband_to_both_inputs() {
 
 // --- carMix ------------------------------------------------------------------
 
-void test_car_mix_passes_throttle_and_steer_through_independently() {
+void test_car_mix_sends_throttle_to_both_motor_slots() {
+  // A car drives one or two wheels off the same throttle -- whichever motor
+  // pins are wired get the same command, and steering never reaches them.
   MixResult r = carMix(1700, 1300, 1500, 1000, 2000, 100, 100, 100, 0);
-  TEST_ASSERT_EQUAL_UINT16(1700, r.leftUs);    // slot 0 = throttle
-  TEST_ASSERT_EQUAL_UINT16(1300, r.rightUs);   // slot 1 = steer
+  TEST_ASSERT_EQUAL_UINT16(1700, r.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1700, r.rightUs);
 }
 
-void test_car_mix_never_cross_couples_the_two_channels() {
-  // Full steer at zero throttle must leave throttle at centre -- the whole
-  // difference from the skid mixer.
+void test_car_mix_puts_steer_on_its_own_output() {
+  MixResult r = carMix(1700, 1300, 1500, 1000, 2000, 100, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(1300, r.steerUs);
+}
+
+void test_car_mix_never_cross_couples_throttle_and_steer() {
+  // Full steer at zero throttle must leave both motor slots at centre -- the
+  // whole difference from the skid mixer.
   MixResult r = carMix(1500, 2000, 1500, 1000, 2000, 100, 100, 100, 0);
   TEST_ASSERT_EQUAL_UINT16(1500, r.leftUs);
-  TEST_ASSERT_EQUAL_UINT16(2000, r.rightUs);
+  TEST_ASSERT_EQUAL_UINT16(1500, r.rightUs);
+  TEST_ASSERT_EQUAL_UINT16(2000, r.steerUs);
 }
 
 void test_car_mix_scales_forward_and_reverse_independently() {
   MixResult fwd = carMix(2000, 1500, 1500, 1000, 2000, 50, 100, 100, 0);
   TEST_ASSERT_EQUAL_UINT16(1750, fwd.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1750, fwd.rightUs);
   MixResult rev = carMix(1000, 1500, 1500, 1000, 2000, 100, 25, 100, 0);
   TEST_ASSERT_EQUAL_UINT16(1375, rev.leftUs);
+  TEST_ASSERT_EQUAL_UINT16(1375, rev.rightUs);
 }
 
 void test_car_mix_forward_ratio_never_scales_reverse() {
@@ -121,25 +131,40 @@ void test_car_mix_forward_ratio_never_scales_reverse() {
 
 void test_car_mix_scales_steer_by_its_own_ratio() {
   MixResult r = carMix(1500, 2000, 1500, 1000, 2000, 100, 100, 50, 0);
-  TEST_ASSERT_EQUAL_UINT16(1750, r.rightUs);
+  TEST_ASSERT_EQUAL_UINT16(1750, r.steerUs);
 }
 
 void test_car_mix_steer_ratio_zero_locks_steering_straight() {
   MixResult r = carMix(1800, 2000, 1500, 1000, 2000, 100, 100, 0, 0);
   TEST_ASSERT_EQUAL_UINT16(1800, r.leftUs);
-  TEST_ASSERT_EQUAL_UINT16(1500, r.rightUs);
+  TEST_ASSERT_EQUAL_UINT16(1500, r.steerUs);
 }
 
 void test_car_mix_applies_the_deadband_to_both_channels() {
   MixResult r = carMix(1510, 1490, 1500, 1000, 2000, 100, 100, 100, 20);
   TEST_ASSERT_EQUAL_UINT16(1500, r.leftUs);
-  TEST_ASSERT_EQUAL_UINT16(1500, r.rightUs);
+  TEST_ASSERT_EQUAL_UINT16(1500, r.steerUs);
 }
 
 void test_car_mix_clamps_to_the_output_range() {
   MixResult r = carMix(2500, 500, 1500, 1000, 2000, 100, 100, 100, 0);
   TEST_ASSERT_EQUAL_UINT16(2000, r.leftUs);
-  TEST_ASSERT_EQUAL_UINT16(1000, r.rightUs);
+  TEST_ASSERT_EQUAL_UINT16(2000, r.rightUs);
+  TEST_ASSERT_EQUAL_UINT16(1000, r.steerUs);
+}
+
+// --- the steer output exists in skid mode too ---------------------------------
+
+void test_skid_mix_publishes_steer_on_its_own_output() {
+  // Same slot in both modes, so a servo pointed at it works either way and
+  // the mode only changes what the motor slots carry.
+  MixResult r = mix(1500, 2000, 1500, 1000, 2000, 100, 100, 100, 0);
+  TEST_ASSERT_EQUAL_UINT16(2000, r.steerUs);
+}
+
+void test_skid_mix_scales_its_steer_output_by_the_steer_ratio() {
+  MixResult r = mix(1500, 2000, 1500, 1000, 2000, 100, 100, 50, 0);
+  TEST_ASSERT_EQUAL_UINT16(1750, r.steerUs);
 }
 
 // --- computeArmed ----------------------------------------------------------------
@@ -271,8 +296,11 @@ int main() {
   RUN_TEST(test_mix_forward_and_steer_ratios_combine);
   RUN_TEST(test_mix_proportional_clamp_preserves_turn_ratio);
   RUN_TEST(test_mix_applies_deadband_to_both_inputs);
-  RUN_TEST(test_car_mix_passes_throttle_and_steer_through_independently);
-  RUN_TEST(test_car_mix_never_cross_couples_the_two_channels);
+  RUN_TEST(test_car_mix_sends_throttle_to_both_motor_slots);
+  RUN_TEST(test_car_mix_puts_steer_on_its_own_output);
+  RUN_TEST(test_car_mix_never_cross_couples_throttle_and_steer);
+  RUN_TEST(test_skid_mix_publishes_steer_on_its_own_output);
+  RUN_TEST(test_skid_mix_scales_its_steer_output_by_the_steer_ratio);
   RUN_TEST(test_car_mix_scales_forward_and_reverse_independently);
   RUN_TEST(test_car_mix_forward_ratio_never_scales_reverse);
   RUN_TEST(test_car_mix_scales_steer_by_its_own_ratio);

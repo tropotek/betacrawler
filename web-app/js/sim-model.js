@@ -10,6 +10,17 @@ const WIRE_CHANNELS = 16;
 const PROTO_CHANNELS = { crossfire: 12, elrs: 16 };
 
 export const MODE_OFF = 0, MODE_ARMED = 1, MODE_INPUT = 2;
+export const TYPE_NONE = 0, TYPE_BRUSHLESS = 1, TYPE_BRUSHED = 2;
+
+// An output drives nothing with no type chosen or the mode off; choosing a
+// type is what moves it from disabled to live, and so starts the arm hold.
+export function outputDisabled(mode, type) {
+  return mode === MODE_OFF || type === TYPE_NONE;
+}
+
+export function enteringEnabled(prevMode, prevType, mode, type) {
+  return outputDisabled(prevMode, prevType) && !outputDisabled(mode, type);
+}
 export const ARM_OFF = 0, ARM_ARMING = 1, ARM_ARMED = 2;
 const ARM_HOLD_MS = 2000;
 const ARM_LOW_MARGIN_US = 50;
@@ -19,7 +30,8 @@ export const FRAME_US = { 50: 20000, 100: 10000, 200: 5000, 400: 2500 };
 // motor<N>.src option indices 0..11 are ch1..ch12; 12 and 13 are the tank drive
 // bus's left/right slots. Slot 2 of that bus is the shared ARM switch.
 const DRIVE_SRC_BASE = 12;
-const DRIVE_ARM_SLOT = 2;
+const DRIVE_STEER_SLOT = 2;
+const DRIVE_ARM_SLOT = 3;
 
 // C integer division: truncates toward zero, where JS's Math.floor floors.
 export function truncDiv(a, b) {
@@ -94,12 +106,15 @@ export function mix(throttleUs, steerUs, centerUs, minUs, maxUs, fwdPct, revPct,
 
   const left = centerUs + truncDiv(leftOffset * scale, 100);
   const right = centerUs + truncDiv(rightOffset * scale, 100);
-  return [Math.max(minUs, Math.min(maxUs, left)), Math.max(minUs, Math.min(maxUs, right))];
+  // Steer is published unscaled by the proportional clamp: that keeps the two
+  // track offsets in proportion, and the steering slot is not one of them.
+  const clamp = (v) => Math.max(minUs, Math.min(maxUs, v));
+  return [clamp(left), clamp(right), clamp(centerUs + steerOffset)];
 }
 
-// Car mix: throttle to slot 0, steer to slot 1, no cross-coupling. The two
-// outputs are independent, so the differential mixer's proportional clamp has
-// nothing to do here.
+// Car mix: throttle to both motor slots, steer to the steering slot, no
+// cross-coupling. The outputs are independent, so the differential mixer's
+// proportional clamp has nothing to do here.
 export function carMix(throttleUs, steerUs, centerUs, minUs, maxUs, fwdPct, revPct, steerPct, deadbandUs) {
   let throttle = deadbanded(throttleUs, centerUs, deadbandUs);
   const steer = deadbanded(steerUs, centerUs, deadbandUs);
@@ -112,7 +127,8 @@ export function carMix(throttleUs, steerUs, centerUs, minUs, maxUs, fwdPct, revP
   const steerOut = centerUs + truncDiv((steer - centerUs) * steerPct, 100);
 
   const clamp = (v) => Math.max(minUs, Math.min(maxUs, v));
-  return [clamp(throttle), clamp(steerOut)];
+  const throttleOut = clamp(throttle);
+  return [throttleOut, throttleOut, clamp(steerOut)];
 }
 
 // Servo linkage: mirror about the calibrated midpoint, then offset, then clamp.
@@ -199,22 +215,24 @@ class Motor {
     this.armT0 = 0;
     this.lastUs = 0;
     this._prevMode = MODE_OFF;
+    this._prevType = TYPE_NONE;
     this._prevSrc = null;
     this._prevRate = null;
   }
 
   update(nowMs, p, inputs, drive, rxFresh, driveEverFresh) {
     const mode = p.enumIndex(`${this.prefix}.mode`);
+    const type = p.enumIndex(`${this.prefix}.type`);
     const throttleUs = p.num(`${this.prefix}.throttle_us`);
     const minUs = p.num(`${this.prefix}.min_us`);
     const maxUs = p.num(`${this.prefix}.max_us`);
     const srcIdx = p.enumIndex(`${this.prefix}.src`);
     const rate = p.text(`${this.prefix}.rate`);
 
-    const enteringFromOff = this._prevMode === MODE_OFF && mode !== MODE_OFF;
+    const enteringFromOff = enteringEnabled(this._prevMode, this._prevType, mode, type);
     const srcChanged = this._prevSrc !== null && srcIdx !== this._prevSrc;
     const rateChanged = this._prevRate !== null && rate !== this._prevRate;
-    this._prevMode = mode; this._prevSrc = srcIdx; this._prevRate = rate;
+    this._prevMode = mode; this._prevType = type; this._prevSrc = srcIdx; this._prevRate = rate;
 
     const neutral = neutralUs(minUs, maxUs);
     const rawInput = srcIdx >= DRIVE_SRC_BASE ? drive[srcIdx - DRIVE_SRC_BASE] : inputs[srcIdx];
@@ -235,8 +253,8 @@ class Motor {
       mode, throttleUs, inputUs, inputFresh, neutral, ARM_LOW_MARGIN_US);
     if (this.armState === ARM_ARMING && !commandedLow) this.armT0 = nowMs;
     this.armState = nextArmState(
-      this.armState, mode === MODE_OFF, enteringFromOff, nowMs, this.armT0, ARM_HOLD_MS, commandedLow);
-    if (mode === MODE_OFF) return;
+      this.armState, outputDisabled(mode, type), enteringFromOff, nowMs, this.armT0, ARM_HOLD_MS, commandedLow);
+    if (outputDisabled(mode, type)) { this.lastUs = 0; return; }
 
     let us = nextPulseUs(this.armState, mode, minUs, maxUs, throttleUs, inputUs, inputStale, neutral);
     // The shared ARM switch is a pure output gate outside the hold state
@@ -302,8 +320,8 @@ export class SimModel {
     const rxFresh = this._values['rx.source'] === 'sim';
     const channels = this._channels(nowMs, rxFresh);
     const inputs = channels.map((v) => deadbanded(v, CENTER_US, this.num('rx.deadband_us')));
-    const [left, right, armed] = this._tank(inputs, rxFresh);
-    const drive = [left, right, armed ? 1 : 0];
+    const [left, right, steer, armed] = this._tank(inputs, rxFresh);
+    const drive = [left, right, steer, armed ? 1 : 0];
     if (rxFresh) this._driveEverFresh = true;
     for (const esc of Object.values(this._motor)) {
       esc.update(nowMs, this, inputs, drive, rxFresh, this._driveEverFresh);
@@ -334,10 +352,10 @@ export class SimModel {
   }
 
   _tank(inputs, rxFresh) {
-    let left, right;
+    let left, right, steer;
     if (rxFresh) {
       const mixer = this.text('drive.mode') === 'car' ? carMix : mix;
-      [left, right] = mixer(
+      [left, right, steer] = mixer(
         inputs[this.enumIndex('drive.throttle_src')],
         inputs[this.enumIndex('drive.steer_src')],
         CENTER_US, DRIVE_MIN_US, DRIVE_MAX_US,
@@ -346,14 +364,14 @@ export class SimModel {
         this.num('drive.steer_ratio'), 0,
       );
     } else {
-      left = right = CENTER_US;
+      left = right = steer = CENTER_US;
     }
     const armSrc = this.text('drive.arm_src');
     const isNone = armSrc === 'none';
     const armUs = isNone ? 0 : inputs[Number(armSrc.slice(2)) - 1];
     const armed = computeArmed(rxFresh, isNone, armUs,
       this.num('drive.arm_min'), this.num('drive.arm_max'));
-    return [left, right, armed];
+    return [left, right, steer, armed];
   }
 
   // Mirrors ServoDriver: a base pulse from the mode, then invert, trim and the
@@ -374,6 +392,7 @@ export class SimModel {
       const src = this.text('servo.src');
       const v = src === 'drive_left' ? drive[0]
         : src === 'drive_right' ? drive[1]
+        : src === 'drive_steer' ? drive[DRIVE_STEER_SLOT]
         : (rxFresh ? inputs[Number(src.slice(2)) - 1] : 0);
       if (!(v > 0)) return this._lastSrv ?? 0;
       base = Math.max(minUs, Math.min(maxUs, v));
