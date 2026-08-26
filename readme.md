@@ -1,6 +1,6 @@
 # Betacrawler
 
-![Betacrawler](docs/assets/tank-hero.png)
+![Betacrawler](docs/assets/hero.png)
 
 **This project is currently under construction. If you want to contribute hit up our disscussion forum and get involved.**
 

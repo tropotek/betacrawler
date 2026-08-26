@@ -320,7 +320,7 @@ export class SimModel {
     const rxFresh = this._values['rx.source'] === 'sim';
     const channels = this._channels(nowMs, rxFresh);
     const inputs = channels.map((v) => deadbanded(v, CENTER_US, this.num('rx.deadband_us')));
-    const [left, right, steer, armed] = this._tank(inputs, rxFresh);
+    const [left, right, steer, armed] = this._mix(inputs, rxFresh);
     const drive = [left, right, steer, armed ? 1 : 0];
     if (rxFresh) this._driveEverFresh = true;
     for (const esc of Object.values(this._motor)) {
@@ -351,7 +351,7 @@ export class SimModel {
     return us;
   }
 
-  _tank(inputs, rxFresh) {
+  _mix(inputs, rxFresh) {
     let left, right, steer;
     if (rxFresh) {
       const mixer = this.text('drive.mode') === 'car' ? carMix : mix;

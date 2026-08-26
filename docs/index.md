@@ -1,6 +1,6 @@
 # Betacrawler
 
-![A Betacrawler](assets/tank-hero.png)
+![A Betacrawler](assets/hero.png)
 
 Betacrawler is a radio-controlled vehicle. An STM32 board reads your RC receiver, mixes the
 sticks into motor commands, and drives your motors — two independently driven sides for a
