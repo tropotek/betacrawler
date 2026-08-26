@@ -10,7 +10,7 @@
 #define FW_PROJECT_NAME "betacrawler"
 // Shared with APP_VERSION in web-app/js/app.js -- betacrawler tracks one
 // project-wide version number across firmware and app.
-#define FW_VERSION      "4.2.1"
+#define FW_VERSION      "4.2.2"
 
 // --- link -------------------------------------------------------------------
 // Must match `monitor_speed` in platformio.ini. There is no way to share one

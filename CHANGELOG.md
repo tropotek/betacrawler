@@ -6,7 +6,7 @@ records live in the git history, not here.
 Merged work lands under `## Unreleased`. Cutting a release renames that heading to the version
 number being tagged, and a fresh `## Unreleased` opens above it.
 
-## Unreleased
+## 4.2.2
 
 - **feat: new BetaCrawler mark, and the name is capitalised.** A badge split between tracked
   running gear and a road wheel replaces the tank hero, and the same mark becomes the favicon and
