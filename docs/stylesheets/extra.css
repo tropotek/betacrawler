@@ -24,7 +24,13 @@
     linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.05) 75%);
 }
 
-/* The logo table's first column carries a preview above its caption, so it needs
-   the room; the download column only ever holds a short list of links. */
-.md-typeset table:has(.logo-preview) td:first-child { width: 58%; }
+/* The logo table's first column carries a preview above its caption, so it takes
+   most of the width; the download column only ever holds a short list of links,
+   centred under its heading. */
+/* :not([align]) matches the specificity of Material's own alignment rule,
+   which otherwise wins and pins the headings left. */
+.md-typeset table:has(.logo-preview) th:not([align]) { text-align: center; }
+.md-typeset table:has(.logo-preview) th:first-child,
+.md-typeset table:has(.logo-preview) td:first-child { width: 70%; }
+.md-typeset table:has(.logo-preview) td:last-child { text-align: center; }
 .md-typeset table:has(.logo-preview) td { vertical-align: top; }
