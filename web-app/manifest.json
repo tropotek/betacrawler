@@ -1,6 +1,6 @@
 {
-  "name": "betacrawler configurator",
-  "short_name": "betacrawler",
+  "name": "BetaCrawler configurator",
+  "short_name": "BetaCrawler",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",

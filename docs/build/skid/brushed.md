@@ -1,7 +1,7 @@
 # Skid steer with brushed motors
 
 Two brushed motors driven through a single dual H-bridge module. This is the cheapest and simplest
-way into Betacrawler: one module drives both sides, reverse comes free, and there is no ESC to
+way into BetaCrawler: one module drives both sides, reverse comes free, and there is no ESC to
 configure.
 
 If your chassis is heavy enough that a brushed motor would stall, [brushless](brushless.md) is the

@@ -41,7 +41,7 @@ before any of them is released.
 6. Tag `main` and push:
 
     ```
-    git tag -a 4.2.0 -m "betacrawler 4.2.0"
+    git tag -a 4.2.0 -m "BetaCrawler 4.2.0"
     git push origin 4.2.0
     ```
 

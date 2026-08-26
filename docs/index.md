@@ -1,8 +1,8 @@
-# Betacrawler
+# BetaCrawler
 
-![A Betacrawler](assets/hero.png)
+![A BetaCrawler](assets/hero.png)
 
-Betacrawler is a radio-controlled vehicle. An STM32 board reads your RC receiver, mixes the
+BetaCrawler is a radio-controlled vehicle. An STM32 board reads your RC receiver, mixes the
 sticks into motor commands, and drives your motors — two independently driven sides for a
 skid-steer or tracked model, or a single drive motor and a steering servo for a car. Everything
 about how it drives — which channels the sticks live on, the speed and steering limits, the

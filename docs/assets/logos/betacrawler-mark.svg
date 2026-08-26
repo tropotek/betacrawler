@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-192 -192 384 384" role="img"
+     aria-label="BetaCrawler mark: a circle split between tracked running gear and a road wheel">
+  <circle r="176" fill="none" stroke="#b5652f" stroke-width="1.5" opacity="0.22"/>
+  <circle r="150" fill="#171d25" stroke="#b5652f" stroke-width="4"/>
+  <path d="M0-150a150 150 0 0 0 0 300z" fill="#1c242e"/>
+
+  <!-- left: tracked running gear -->
+  <path d="M-118 34a30 30 0 0 1 30-30h84v60h-84a30 30 0 0 1-30-30z" fill="#4c8c3c"/>
+  <path d="M-110 34a22 22 0 0 1 22-22h76v44h-76a22 22 0 0 1-22-22z" fill="#3a6f2d"/>
+  <g fill="#a8c99b"><circle cx="-86" cy="34" r="10.5"/><circle cx="-50" cy="34" r="8"/><circle cx="-16" cy="34" r="8"/></g>
+  <path d="M-104 4h88v-30h-70z" fill="#5da24b"/>
+  <path d="M-80-26h64v-24h-50z" fill="#6cb457"/>
+
+  <!-- right: road wheel -->
+  <circle cx="62" cy="26" r="62" fill="#232b35"/>
+  <circle cx="62" cy="26" r="62" fill="none" stroke="#39434f" stroke-width="9"/>
+  <circle cx="62" cy="26" r="41" fill="#2b3440"/>
+  <circle cx="62" cy="26" r="33" fill="#b5652f"/>
+  <circle cx="62" cy="26" r="12" fill="#12161c"/>
+  <circle cx="79.0" cy="26.0" r="4.6" fill="#12161c"/><circle cx="67.3" cy="42.2" r="4.6" fill="#12161c"/><circle cx="48.2" cy="36.0" r="4.6" fill="#12161c"/><circle cx="48.2" cy="16.0" r="4.6" fill="#12161c"/><circle cx="67.3" cy="9.8" r="4.6" fill="#12161c"/>
+
+  <line x1="0" y1="-150" x2="0" y2="150" stroke="#b5652f" stroke-width="3" opacity="0.5"/>
+</svg>

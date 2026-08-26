@@ -1,6 +1,6 @@
 # Choose your build
 
-Betacrawler drives two kinds of vehicle. Answer two questions and follow the page you land on —
+BetaCrawler drives two kinds of vehicle. Answer two questions and follow the page you land on —
 each one is a complete build, start to finish, with nothing to cross-reference.
 
 ## 1. How does it steer?

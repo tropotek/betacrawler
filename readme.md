@@ -1,12 +1,12 @@
-# Betacrawler
+# BetaCrawler
 
-![Betacrawler](docs/assets/hero.png)
+![BetaCrawler](docs/assets/hero.png)
 
 **This project is currently under construction. If you want to contribute hit up our disscussion forum and get involved.**
 
 ----
 
-Betacrawler is a radio-controlled vehicle. An STM32 Black Pill reads an ELRS receiver, mixes the
+BetaCrawler is a radio-controlled vehicle. An STM32 Black Pill reads an ELRS receiver, mixes the
 sticks into motor commands, and drives your motors — two independently driven sides for a
 skid-steer or tracked model, or a drive motor and a steering servo for a car. You set it up and
 tune it from a browser, with the vehicle plugged in over USB — channel assignment, speed and
