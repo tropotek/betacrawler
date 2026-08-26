@@ -21,14 +21,14 @@ The mark is a circle split down the middle: tracked running gear on one side, a 
 other, for the two kinds of vehicle the firmware drives. Use whichever file suits — the SVGs are
 the originals and scale to any size.
 
-| | Download |
+| Preview | Download |
 |---|---|
-| **Mark** — the badge alone, transparent background | [SVG](assets/logos/betacrawler-mark.svg) · [512px](assets/logos/betacrawler-mark-512.png) · [256px](assets/logos/betacrawler-mark-256.png) · [128px](assets/logos/betacrawler-mark-128.png) |
-| **Lockup, dark** — mark and wordmark on the dark ground | [SVG](assets/logos/betacrawler-lockup-dark.svg) · [PNG](assets/logos/betacrawler-lockup-dark.png) |
-| **Lockup, light** — the same on a light ground | [SVG](assets/logos/betacrawler-lockup-light.svg) · [PNG](assets/logos/betacrawler-lockup-light.png) |
-| **Hero** — the full banner, 1200×500 | [SVG](assets/logos/betacrawler-hero.svg) · [PNG](assets/logos/betacrawler-hero.png) |
+| ![The BetaCrawler mark](assets/logos/betacrawler-mark.svg){ .logo-preview }<br>**Mark** — the badge on its own, transparent background. Use it where the name already appears elsewhere. | [SVG](assets/logos/betacrawler-mark.svg) · [512px](assets/logos/betacrawler-mark-512.png) · [256px](assets/logos/betacrawler-mark-256.png) · [128px](assets/logos/betacrawler-mark-128.png) |
+| ![The BetaCrawler lockup on a dark ground](assets/logos/betacrawler-lockup-dark.png){ .logo-preview }<br>**Lockup, dark** — mark and wordmark together, for dark backgrounds. | [SVG](assets/logos/betacrawler-lockup-dark.svg) · [PNG](assets/logos/betacrawler-lockup-dark.png) |
+| ![The BetaCrawler lockup on a light ground](assets/logos/betacrawler-lockup-light.png){ .logo-preview }<br>**Lockup, light** — the same, for light backgrounds. | [SVG](assets/logos/betacrawler-lockup-light.svg) · [PNG](assets/logos/betacrawler-lockup-light.png) |
+| ![The BetaCrawler hero banner](assets/logos/betacrawler-hero.png){ .logo-preview }<br>**Hero** — the full banner at 1200×500, with both drive modes and their pins. | [SVG](assets/logos/betacrawler-hero.svg) · [PNG](assets/logos/betacrawler-hero.png) |
 
-[![The BetaCrawler lockup on a dark ground](assets/logos/betacrawler-lockup-dark.png)](assets/logos/betacrawler-lockup-dark.png){target=_blank}
+Previews are scaled to fit; every file downloads at its full size.
 
 The wordmark is set in **Archivo Narrow** Bold and the technical labels in **IBM Plex Mono**, both
 under the SIL Open Font License. The SVGs carry those glyphs embedded as a subset, so they render

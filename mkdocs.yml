@@ -60,6 +60,9 @@ nav:
       - Architecture: development/architecture.md
       - Protocol: development/protocol.md
 
+extra_css:
+  - stylesheets/extra.css
+
 markdown_extensions:
   - admonition
   - attr_list

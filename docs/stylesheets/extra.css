@@ -1,0 +1,30 @@
+/* Logo previews on the About page: bound both dimensions so a square mark and a
+   wide lockup both sit comfortably in the same table cell. The chequerboard
+   shows through the transparent PNGs. */
+.logo-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 110px;
+  width: auto;
+  margin: 0 auto 0.6rem;
+  border-radius: 4px;
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, rgba(0, 0, 0, 0.06) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.06) 75%),
+    linear-gradient(45deg, rgba(0, 0, 0, 0.06) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.06) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+
+/* Material's dark palette: keep the chequerboard, drop the glare. */
+[data-md-color-scheme="slate"] .logo-preview {
+  background-color: #2b313b;
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.05) 75%),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.05) 75%);
+}
+
+/* The logo table's first column carries a preview above its caption, so it needs
+   the room; the download column only ever holds a short list of links. */
+.md-typeset table:has(.logo-preview) td:first-child { width: 58%; }
+.md-typeset table:has(.logo-preview) td { vertical-align: top; }
