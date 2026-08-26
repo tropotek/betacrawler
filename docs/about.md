@@ -23,10 +23,10 @@ the originals and scale to any size.
 
 | Preview | Download |
 |---|---|
-| ![The BetaCrawler mark](assets/logos/betacrawler-mark.svg){ .logo-preview }<br>**Mark** — the badge on its own, transparent background. Use it where the name already appears elsewhere. | [SVG](assets/logos/betacrawler-mark.svg) · [512px](assets/logos/betacrawler-mark-512.png) · [256px](assets/logos/betacrawler-mark-256.png) · [128px](assets/logos/betacrawler-mark-128.png) |
-| ![The BetaCrawler lockup on a dark ground](assets/logos/betacrawler-lockup-dark.png){ .logo-preview }<br>**Lockup, dark** — mark and wordmark together, for dark backgrounds. | [SVG](assets/logos/betacrawler-lockup-dark.svg) · [PNG](assets/logos/betacrawler-lockup-dark.png) |
-| ![The BetaCrawler lockup on a light ground](assets/logos/betacrawler-lockup-light.png){ .logo-preview }<br>**Lockup, light** — the same, for light backgrounds. | [SVG](assets/logos/betacrawler-lockup-light.svg) · [PNG](assets/logos/betacrawler-lockup-light.png) |
-| ![The BetaCrawler hero banner](assets/logos/betacrawler-hero.png){ .logo-preview }<br>**Hero** — the full banner at 1200×500, with both drive modes and their pins. | [SVG](assets/logos/betacrawler-hero.svg) · [PNG](assets/logos/betacrawler-hero.png) |
+| ![The BetaCrawler mark](assets/logos/betacrawler-mark.svg){ .logo-preview }**Mark** — the badge on its own, transparent background. Use it where the name already appears elsewhere. | [SVG](assets/logos/betacrawler-mark.svg) · [512px](assets/logos/betacrawler-mark-512.png) · [256px](assets/logos/betacrawler-mark-256.png) · [128px](assets/logos/betacrawler-mark-128.png) |
+| ![The BetaCrawler lockup on a dark ground](assets/logos/betacrawler-lockup-dark.png){ .logo-preview }**Lockup, dark** — mark and wordmark together, for dark backgrounds. | [SVG](assets/logos/betacrawler-lockup-dark.svg) · [PNG](assets/logos/betacrawler-lockup-dark.png) |
+| ![The BetaCrawler lockup on a light ground](assets/logos/betacrawler-lockup-light.png){ .logo-preview }**Lockup, light** — the same, for light backgrounds. | [SVG](assets/logos/betacrawler-lockup-light.svg) · [PNG](assets/logos/betacrawler-lockup-light.png) |
+| ![The BetaCrawler hero banner](assets/logos/betacrawler-hero.png){ .logo-preview }**Hero** — the full banner at 1200×500, with both drive modes and their pins. | [SVG](assets/logos/betacrawler-hero.svg) · [PNG](assets/logos/betacrawler-hero.png) |
 
 Previews are scaled to fit; every file downloads at its full size.
 
