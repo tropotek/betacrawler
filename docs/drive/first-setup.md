@@ -3,11 +3,11 @@
 This is the page that decides whether your vehicle drives properly. Work through it in order —
 each step depends on the one before it.
 
-!!! danger "Chock the tracks up off the ground"
+!!! danger "Get the wheels or tracks off the ground"
 
-    Until you have been all the way through this page at least once, prop the chassis up so the
-    tracks spin free. An arming switch in the wrong place or a mis-assigned channel means the
-    vehicle takes off across the room the moment it arms.
+    Until you have been all the way through this page at least once, prop the chassis up so they
+    spin free. An arming switch in the wrong place or a mis-assigned channel means the vehicle
+    takes off across the room the moment it arms.
 
 ## 1. Bind the receiver
 
@@ -133,13 +133,13 @@ save. Power-cycle without saving and you are back to where you started.
 
 ## 11. First drive
 
-With the tracks still off the ground, arm and give it a little throttle. Check:
+With the wheels or tracks still off the ground, arm and give it a little throttle. Check:
 
-- Both tracks turn the same way for forward throttle.
+- Both sides turn the same way for forward throttle.
 - Steering makes them differ.
 - Disarming stops both.
 
-If one track runs backwards, swap any two motor wires on that ESC. If the two tracks are swapped
+If one side runs backwards, swap any two motor wires on that ESC. If the two sides are swapped
 left-for-right, change `motor0.src` and `motor1.src` rather than rewiring.
 
 Then put it on the ground and go to [Tuning](tuning.md).

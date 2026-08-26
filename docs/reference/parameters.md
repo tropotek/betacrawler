@@ -85,7 +85,7 @@ covered in [Arming and modes](arming-and-modes.md).
 
 ## Motor 0 and Motor 1
 
-Both ESCs carry the same settings. `motor0` drives the left track, `motor1` the right.
+Both ESCs carry the same settings. `motor0` drives the left side, `motor1` the right.
 
 | Setting | Key | Default | Range |
 |---|---|---|---|

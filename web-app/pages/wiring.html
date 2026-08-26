@@ -6,7 +6,7 @@
 
           <h2 class="h5 mt-4">Wiring a Black Pill</h2>
           <p class="text-secondary">
-            WeAct STM32F411CE Black Pill wired for the tank build's full stack &mdash; LiPo into a
+            WeAct STM32F411CE Black Pill wired for the full skid-steer brushless stack &mdash; LiPo into a
             power distribution board, PDB into both ESCs and the board's 5V rail, ESCs out to the
             brushless motors, and a CRSF receiver on the serial port. Pin names come straight from
             <code>boards/blackpill_f411ce.h</code> &mdash; this is a schematic wiring map, not the
@@ -457,7 +457,7 @@
             ESC. Green = the ESC signal leads, the only motor wiring the board itself touches.
             Violet = the CRSF link, both directions: the receiver's TX carries stick positions in on
             PA3, and PA2 carries telemetry back out to the handset. Motor 0 drives the left track and Motor 1 the right, both fed by the
-            tank mixer rather than by a receiver channel directly.
+            drive mixer rather than by a receiver channel directly.
           </p>
 
           <h2 class="h5 mt-4">Wiring a Black Pill for a car</h2>

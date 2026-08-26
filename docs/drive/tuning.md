@@ -12,7 +12,7 @@ Three independent caps, each a percentage of full authority, all defaulting to 1
 |---|---|---|
 | Forward Ratio | 0–100% | Caps forward speed |
 | Reverse Ratio | 0–100% | Caps reverse speed |
-| Steer Ratio | 0–100% | Caps how much steering can differ the two tracks |
+| Steer Ratio | 0–100% | Caps how much steering can differ the two sides |
 
 They are deliberately independent. Capping forward speed leaves your pivot-on-the-spot alone,
 because a pivot happens at zero throttle. Capping steering leaves straight-line speed alone.
@@ -63,7 +63,7 @@ to drive just as much as anything on the Controller page.
 
 ### Expo
 
-A tracked vehicle is twitchy right around centre stick, where the full stick throw doesn't leave
+A skid-steer vehicle is twitchy right around centre stick, where the full stick throw doesn't leave
 much room for fine control. Adding **exponential** to the Throttle and Steer inputs softens the
 response near centre while still reaching full authority at the stick's ends.
 

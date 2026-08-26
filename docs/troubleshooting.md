@@ -53,7 +53,7 @@ Work through these in order:
 4. **TX and RX are the wrong way round.** The receiver's *TX* pad goes to the board's PA3
    (not PA10 &mdash; see the wiring guide for why), and its *RX* pad to PA2.
 
-## Channels move but the tracks do not
+## Channels move but the motors do not
 
 The vehicle is not armed. Check on the **Modes** page that the arm channel's live marker sits
 inside the highlighted band, and that `drive.arm_src` names the channel your switch is
@@ -62,14 +62,14 @@ actually on.
 If the switch looks right, centre the throttle and wait two seconds — arming also requires the
 throttle to have been at neutral for that long before it takes effect.
 
-## One track runs backwards
+## One motor runs backwards
 
 Set `Invert` for that motor on the Configuration page — it works for both brushless and brushed,
 and needs no rewiring, which matters on a sealed model. Otherwise swap any two of the three motor
 wires on that ESC, or reverse that motor's direction in BLHeli
 Configurator. Either works.
 
-## The two tracks are swapped left-for-right
+## The two sides are swapped left-for-right
 
 No need to rewire. Swap `motor0.src` and `motor1.src` between `drive_left` and `drive_right`.
 

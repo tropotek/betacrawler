@@ -26,7 +26,7 @@
 // rather than overflowing, and a native test covers that path.
 // blackpill_f411ce ships device, system, button, led, rx, drive, motor0
 // and motor1 today -- 8 modules, exactly at the cap, zero headroom left.
-// Turning on servo or WiFi ALONGSIDE this board's mixed-tank
+// Turning on servo or WiFi ALONGSIDE this board's mixed skid-steer
 // build would need FW_MAX_MODULES raised first -- Registry::add() silently
 // refuses the module that doesn't fit rather than overflowing, and a native
 // test covers that path, but nothing today surfaces the refusal to a

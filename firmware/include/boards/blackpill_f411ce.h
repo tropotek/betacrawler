@@ -103,12 +103,10 @@
 // PA7_ALT1: PA7's FIRST entry in this part's PinMap_TIM is TIM1_CH1N, and
 // the pinmap lookup answers that one for a bare PA7. PB9 is TIM4_CH4, same
 // relationship to motor1's PB8 (TIM4_CH3), and its first entry already, so it
-// needs no alias. Both bench-validated
-// (_notes/docs/research/brushed-tank-variant.md, section 5a). Neither
-// carries the ROM-bootloader-race hazard RX_RX_PIN does: motor output is
-// always MCU-to-peripheral, never the reverse, so nothing external ever
-// transmits into either pin (docs/development/architecture.md, "CRSF pin
-// choice and the bootloader race").
+// needs no alias. Both bench-validated. Neither carries the
+// ROM-bootloader-race hazard RX_RX_PIN does: motor output is always
+// MCU-to-peripheral, never the reverse, so nothing external ever transmits
+// into either pin.
 #define MOTOR0_PIN_B  PA7_ALT1
 #define MOTOR1_PIN_B  PB9
 

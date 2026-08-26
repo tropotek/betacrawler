@@ -1,6 +1,6 @@
 # Arming and modes
 
-Arming is the safety interlock between your handset and the motors. Disarmed, the tracks cannot
+Arming is the safety interlock between your handset and the motors. Disarmed, the motors cannot
 turn no matter what the sticks do.
 
 ## The arm switch
