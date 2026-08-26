@@ -241,8 +241,10 @@ string is the git tag, and the published site is built from the newest tag, so `
 and merging to it publishes nothing. `docs/development/releasing.md` is the policy; follow its
 checklist before any tag. **Never bump the version or cut a tag unasked** — recommend a number,
 say which digit should move and why, and wait. The maintainer decides it, and may hold several
-merged PRs before releasing any of them. MAJOR is their call alone and is never implied by a code
-change; MINOR and PATCH move as the work warrants. Whichever digit moves, a release that changes
+merged PRs before releasing any of them. **PATCH is the default** — recommend it unless there is
+a specific reason not to. MINOR needs a compelling reason (a firmware change a user cannot carry
+forward is the clearest); features landing is not one. MAJOR is their call alone and is never
+implied by a code change. Whichever digit moves, a release that changes
 the settings fingerprint needs the settings-reset line at the top of its CHANGELOG section.
 Merged work goes under `## Unreleased`; cutting a release renames that heading to the bare
 `## X.Y.Z` matching the tag.

@@ -16,9 +16,17 @@ until a release is cut, which renames that heading to the version being tagged.
 
 ## What each digit means
 
+- **PATCH** — the default. Fixes, docs, features, refactors: unless there is a specific reason
+  to move another digit, the patch number moves.
+- **MINOR** — the maintainer's decision, and it needs a compelling reason. Features landing is
+  not one. The clearest case is a firmware change a user cannot carry forward — settings or
+  hardware that will not survive the update — where the version itself should warn them.
 - **MAJOR** — the maintainer's decision. No code change forces it.
-- **MINOR** and **PATCH** — moved as the work warrants: PATCH for fixes, docs and small
-  corrections, MINOR when features land or enough has accumulated.
+
+Keeping MINOR still is deliberate: ongoing work should not push it into triple digits. The cost
+of a disruptive change is also low while the project has few users and few settings, so
+reconfiguring after a flash is quick. That is a condition, not a law — as real users arrive and
+the parameter set grows, the bar for calling something PATCH rises with it.
 
 The number does not say whether a release wipes stored settings, so the CHANGELOG does. Any
 release that changes the settings fingerprint opens its section with:
