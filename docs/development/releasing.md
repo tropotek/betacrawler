@@ -36,7 +36,9 @@ before any of them is released.
 3. Run the firmware bundler and commit `web-app/firmware/` — the tagged site flashes those images,
    and `web-app/tests/firmware-bundle.test.js` fails if they no longer match the sources.
 4. `pio test -e native` from `firmware/`, `node --test` from `web-app/`.
-5. Tag `main` and push:
+5. `tools/preview_site.sh main` and read the site you are about to publish. Merging to `main`
+   publishes nothing, so this is the last chance to see it before the tag makes it live.
+6. Tag `main` and push:
 
     ```
     git tag -a 4.2.0 -m "betacrawler 4.2.0"

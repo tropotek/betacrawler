@@ -53,6 +53,16 @@ are left in place as unused dead code, so support is cheap to resurrect later; s
 Building and bundling release firmware images is covered by the `bundle-firmware` skill —
 invoke it rather than reading this file for those steps.
 
+**Docs site** (from the repo root):
+```
+docs/.venv/bin/mkdocs serve        # live reload; open http://127.0.0.1:8000/betacrawler/
+tools/preview_site.sh              # the whole Pages site (docs + /app/ + /app-dev/) from main
+tools/preview_site.sh release      # what the live site serves: the newest version tag
+```
+`mkdocs serve` mounts under `site_url`'s path, so the bare host:port 404s. `preview_site.sh` takes
+any ref plus an optional port, exports it with `git archive`, and leaves the working tree and the
+current branch alone.
+
 **web-app** (from `web-app/`):
 ```
 python3 -m http.server 9091   # serves the static site; open http://localhost:9091
