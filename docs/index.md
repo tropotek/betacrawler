@@ -37,9 +37,11 @@ Safari cannot drive a board, and the app says so on load rather than failing lat
 
 ## Where to start
 
-Work through the Build section in order — [What you need](build/what-you-need.md),
-[Wiring](build/wiring.md), [Flashing the firmware](build/flashing.md) — then Drive it, where
-[Connect to the board](drive/install-and-connect.md) opens the app and finds your vehicle, and
-[First setup](drive/first-setup.md) decides whether it actually drives.
+[Choose your build](build/index.md) asks two questions — how your vehicle steers, and what kind of
+motors it has — and sends you to one of four complete build guides. Each covers its own parts,
+wiring and settings end to end.
+
+After that, [Connect to the board](drive/install-and-connect.md) opens the app and finds your
+vehicle, and [First setup](drive/first-setup.md) decides whether it actually drives.
 
 If something is not behaving, [Troubleshooting](troubleshooting.md) lists the usual causes.
