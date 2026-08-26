@@ -27,7 +27,7 @@ a serial monitor, or another tab running the app.
 
 You flashed the wrong chip's image. An F411 build on an F401 hard-faults before USB comes up, so
 the board neither enumerates nor blinks — see
-[Which Black Pill](build/what-you-need.md#which-black-pill).
+the **Which Black Pill** section on your [build page](build/index.md).
 
 Read the marking on the chip, then flash the matching build: hold **BOOT0**, tap **NRST**, release
 **BOOT0**, and pick the right image on the **Firmware** page.

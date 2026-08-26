@@ -104,7 +104,7 @@ mistake and an H-bridge reads the ESC pulse train as a 30% duty cycle, running b
 `none` default keeps a just-flashed board silent until you choose, so the only wrong move is
 choosing `brushless`. Redo this after any firmware update, which resets stored settings. If a
 motor spins the wrong way once you're driving, fix it with that motor's `Invert` setting rather
-than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for-brushed-motors-h-bridge).
+than re-wiring — see your build page.
 
 ## 9. If you are building a car
 

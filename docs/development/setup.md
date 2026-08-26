@@ -2,7 +2,7 @@
 
 This page is for working on betacrawler itself — firmware, the web app, or these docs. If you
 just want to build and drive one, you don't need any of this: flash it from
-**[the app](https://tropotek.github.io/betacrawler/app/)** and follow **[Build](../build/what-you-need.md)**.
+**[the app](https://tropotek.github.io/betacrawler/app/)** and follow **[Choose your build](../build/index.md)**.
 
 ## Clone and open the workspace
 

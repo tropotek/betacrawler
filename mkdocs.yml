@@ -39,8 +39,6 @@ nav:
           - Brushless motors: build/car/brushless.md
       - Flashing the firmware: build/flashing.md
       - Chassis examples: build/chassis-examples.md
-      - What you need: build/what-you-need.md
-      - Wiring: build/wiring.md
   - Add-ons:
       - addons/index.md
       - Battery sense: addons/battery-sense.md
