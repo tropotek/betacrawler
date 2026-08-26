@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-160 -160 320 320" role="img"
+     aria-label="BetaCrawler mark: a circle split between tracked running gear and a road wheel">
+  <circle r="150" fill="#171d25" stroke="#b5652f" stroke-width="16"/>
+  <path d="M0-150a150 150 0 0 0 0 300z" fill="#1c242e"/>
+  <path d="M-120 40a34 34 0 0 1 34-34h82v68h-82a34 34 0 0 1-34-34z" fill="#4c8c3c"/>
+  <path d="M-104 6h84v-46h-66z" fill="#6cb457"/>
+  <circle cx="62" cy="26" r="66" fill="#2b3440"/>
+  <circle cx="62" cy="26" r="34" fill="#b5652f"/>
+  <line x1="0" y1="-150" x2="0" y2="150" stroke="#b5652f" stroke-width="14" opacity="0.75"/>
+</svg>

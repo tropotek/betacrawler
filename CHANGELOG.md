@@ -8,6 +8,11 @@ number being tagged, and a fresh `## Unreleased` opens above it.
 
 ## Unreleased
 
+- **feat: new BetaCrawler mark, and the name is capitalised.** A badge split between tracked
+  running gear and a road wheel replaces the tank hero, and the same mark becomes the favicon and
+  PWA icon. `betacrawler` stays the identifier — repo, URL, PlatformIO envs, and the `fw` string.
+- **docs: an About page**, with the logos to download as SVG and PNG, the palette, and the
+  licence terms for using them.
 - **docs: the Build section is four self-contained build paths.** Skid steer or car, brushed or
   brushless, each with its own parts, wiring, settings and starter INI.
 - **docs: optional hardware moved to its own Add-ons section**, with wiring that adds onto a base

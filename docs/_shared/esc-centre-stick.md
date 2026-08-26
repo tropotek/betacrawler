@@ -18,4 +18,4 @@ New to flashing and configuring BLHeli_S ESCs? Oscar Liang's
 **[connecting and flashing BLHeli_S ESCs guide](https://oscarliang.com/connect-flash-blheli-s-esc/)**
 covers it well. You don't need BLHeli Configurator installed either — the browser-based
 **[ESC Configurator](https://esc-configurator.com/)** talks to the ESC directly, the same way
-Betacrawler's own configurator talks to the board.
+BetaCrawler's own configurator talks to the board.

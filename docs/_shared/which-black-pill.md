@@ -1,6 +1,6 @@
 ## Which Black Pill
 
-WeAct sells the same board with either an **STM32F411CE** or an **STM32F401CE** on it. Betacrawler
+WeAct sells the same board with either an **STM32F411CE** or an **STM32F401CE** on it. BetaCrawler
 supports both, and ships a firmware image for each. The pinout, the wiring and every setting on
 this page are identical — the F401 is the smaller chip (96 KB of RAM at 84 MHz against the F411's
 128 KB at 100 MHz), and nothing here needs the difference.
@@ -15,5 +15,5 @@ answer — read the top line on the square chip in the middle of the board, `STM
 populated with an F401 are common enough to be worth ruling out; the silkscreen and the listing
 are not evidence.
 
-Once the board is running Betacrawler, the **Help** page reports which chip its firmware was built
+Once the board is running BetaCrawler, the **Help** page reports which chip its firmware was built
 for, and the **Firmware** page offers the matching image by default.

@@ -1,6 +1,6 @@
 # Chassis examples
 
-Betacrawler is electronics, not a chassis — this page collects printable and buildable models that
+BetaCrawler is electronics, not a chassis — this page collects printable and buildable models that
 can house them. These are starting points, not a definitive list.
 
 Check a model's own page for scale, motor mounts and battery space before committing to it; fit

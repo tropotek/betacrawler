@@ -57,7 +57,7 @@ was built for, which is the confirmation that you flashed the right image.
 
 ## Updating later
 
-Once the board runs Betacrawler you do not need BOOT0 and NRST either. With the board connected,
+Once the board runs BetaCrawler you do not need BOOT0 and NRST either. With the board connected,
 the **Firmware** page offers the image matching it, reboots it into the bootloader itself, writes
 the image and lets it restart — one click, no buttons.
 

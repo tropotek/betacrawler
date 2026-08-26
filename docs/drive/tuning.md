@@ -58,7 +58,7 @@ vehicle drives.
 
 ## Radio setup (EdgeTX)
 
-These settings live on your handset, not in Betacrawler — but they change how the vehicle feels
+These settings live on your handset, not in BetaCrawler — but they change how the vehicle feels
 to drive just as much as anything on the Controller page.
 
 ### Expo
@@ -83,4 +83,4 @@ among it — but EdgeTX only shows sensors it already knows about.
    `RQly` so both are visible without leaving the main display.
 
 This is a one-time setup per model on the handset — it has nothing to do with the live telemetry
-Betacrawler's own app shows over USB.
+BetaCrawler's own app shows over USB.

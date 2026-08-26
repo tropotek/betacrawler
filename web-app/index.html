@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>betacrawler configurator</title>
-  <link rel="icon" href="favicon.ico">
+  <title>BetaCrawler configurator</title>
+  <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="vendor/bootstrap.min.css">
   <style>
@@ -99,13 +100,11 @@
     .wiring-diagram .wire-copper { stroke: var(--wd-copper); stroke-width: 1.75; fill: none; }
     .wiring-diagram .wire-reserved { stroke-dasharray: 3 3; opacity: 0.55; }
 
-    /* Home page hero: a hand-drawn comic/arcade-poster illustration
-       (hero.svg). object-fit:contain (not cover) so nothing is
-       ever cropped off the top/bottom on wide screens, where the main
-       column can get much wider than the artwork's own 1200x500 aspect
-       ratio -- the background color matches the SVG's own so letterboxing
-       on ultra-wide screens is invisible instead of showing bars. */
-    .hero { height: 340px; overflow: hidden; border-radius: .5rem; margin-bottom: 1rem; background: #13230f; }
+    /* Home page hero (hero.svg). object-fit:contain (not cover) so nothing is
+       ever cropped off the top/bottom on wide screens, where the main column can
+       get much wider than the artwork's own 1200x500 aspect ratio -- the
+       background matches the SVG's own so letterboxing is invisible. */
+    .hero { height: 340px; overflow: hidden; border-radius: .5rem; margin-bottom: 1rem; background: #12161c; }
     .hero img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
     /* Modes page: one row per function -- a name plate, its channel select,
@@ -228,7 +227,7 @@
   <header class="navbar navbar-dark sticky-top bg-dark p-0 shadow">
     <div class="container-fluid flex-wrap gap-2 py-2">
       <a href="#" class="navbar-brand me-0 px-3 flex-shrink-0" data-page="home">
-        betacrawler
+        BetaCrawler
         <!-- This app's own version, filled in from APP_VERSION in app.js. The
              FIRMWARE's version is separate and appears in #fw once connected. -->
         <span id="app-version" class="fs-6 fw-normal text-secondary"></span>
@@ -257,7 +256,7 @@
         <div class="offcanvas-md offcanvas-start bg-body-tertiary" tabindex="-1" id="sidebarMenu"
              aria-labelledby="sidebarMenuLabel">
           <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="sidebarMenuLabel">betacrawler</h5>
+            <h5 class="offcanvas-title" id="sidebarMenuLabel">BetaCrawler</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"
                     data-bs-target="#sidebarMenu" aria-label="Close"></button>
           </div>

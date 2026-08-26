@@ -1,8 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img"
-     aria-label="BetaCrawler: a circular badge split between tracked running gear and a road wheel, beside the wordmark and a strip showing both drive modes in line art with the board pins that carry them">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 320" role="img"
+     aria-label="BetaCrawler logo: the split badge beside the wordmark">
   <defs>
-    <!-- Archivo Narrow 700 and IBM Plex Mono 500, subset to the glyphs used here and
-         embedded, so the wordmark renders identically wherever this file is opened. -->
     <style>
       @font-face { font-family: "BC Display"; font-weight: 700; font-display: block;
         src: url(data:font/woff2;base64,d09GMgABAAAAAASAAA8AAAAACDQAAAQoAAMAgwAAAAAAAAAAAAAAAAAAAAAAAAAAGhYbIBwqBmA/U1RBVEQAZBEICoVAhFABNgIkAyQLFAAEIAWEMAcgG60GM6PCxgGA6v9A/M8Em+66Aiu8kWM2dTvPoC4JeGTyHeSC/4aNvn/oQXz/Tv09kuzGukHgIqCn+XLKwG4fMAbA0TaRTOgfMUkbaVtSya/ghyiqcEWdAJ3tmbic/tj2YKu1hUKek7I1sIvCtYASfKDX9hR5sQLrAgqMA6TUXQmSqsfZ90skgACuAICGoOGCIIBJKOFIbf3lI7lgAPwvABDAJJ5ENIgw91H9h1oKBILMNuSidgELaA6tG9ByKUT6kC2liLVwUNvWt6O0hWqmGuq/OxjBkgH7C2ju2iEgEh1BcEEDfNGAWLSpQ9NBBoZPwqVsQTDwRADE0C4AOoImVgAEAA3QAV90BPDFoB3giSc6UEN/BjOKCUxi6v+C6s3nOttsttYKyy1NEAtB/pcHlI3DvQFX4CuQSADAAAgyi4aMjb1ttrAUV78mhrd/MoSyuDW+fMm8F7k3V6IvzC6q8bHYn5mmNOA6cCne3/Eqx5wKOs60vzIdL2DeS9XoFGXCdHacOndshtOpxH7IdBwAc5U9P4Y2b6dSrDhhOi4Fm3sedGk8v13EceMC8/Z2pi2B68uXzmx8yR7KfgxeuqIsypiu7qw2X1eNOwXTceYIWmfHo1eim6K6KhSmNo89ovpARTa+3CrKavt2Z0RXNbV269aNJbl5+/aQ9EvpZXZZt22TmPYNWwI7lR5KyO+UnNEyp6S03WUjo657dXFB+54pBbvGL0tsmZxozV4wviH9WnTC5/EOspV98cGTpxYfsDcbX1A1uff8dtWt8pvWTRqaPbTppOaF1a3azu5RNXlcEUuV99uL96Y3rW47ObJVQUheTNxyH4/Jhtmkul/b9r26tGuh+0SYgZ1XBIfE/rrI0melNjAs4ueI8JjvJkWHXOYbxYc1LFo0rKF/3z4Ni8IVdTGtUiNyM6YOHt5vc8sFRd9FxaeT/3zacwrcB7m1sm6Zmhiwm0kpwTe3Z8RxVmV286uMScwbnOe1fMiKVoNbxaUkR3e/vhr7XLdpWc4JLq1yMaptLQelvp6W+iZ7SqccjKoBq/PSpb2BOdr0nL9aFCZWknr2CP8GQACd+dN/2qz39Sj91UXXvwCcq5a5Aby//O6O/3uYnqsvRbCiASDwsSJ6LoD4sSMQpNomv6C1o7Sz0XLH/d0i+IR8qaBAvLBpcxAEsNEDC20xaBxb8xQOdMSwAddAlQuhXJNruPCeXKeYz+QG8RIptxAs9TIrsdJPT8BVGroMqqhYjtAlUrJyy5QNB2jWLkvSAYV+sEGflKNdR9NsAnTDXQczeiiVOaeDAT0OLHS9X6f+JkPTbz0vyYZ0JC6FyrtXdUbG3vmsDfdCqK3DG+F91j2ULHJ9P4zv19sxJg45xi1c3g1U//Gup6F2u2zdTeLPH6D8OOAyqdMXVC+qVaiyIRQA) format("woff2"); }
@@ -12,14 +10,8 @@
       .mn { font-family: "BC Mono", "IBM Plex Mono", ui-monospace, monospace; font-weight: 500; }
     </style>
   </defs>
-
-  <rect width="1200" height="500" fill="#12161c"/>
-  <g stroke="#e8edf4" stroke-width="1" opacity="0.05">
-    <path d="M0 40H1200M0 80H1200M0 120H1200M0 160H1200M0 200H1200M0 240H1200M0 280H1200M0 320H1200M0 360H1200M0 400H1200M0 440H1200M0 480H1200"/>
-    <path d="M40 0V500M80 0V500M120 0V500M160 0V500M200 0V500M240 0V500M280 0V500M320 0V500M360 0V500M400 0V500M440 0V500M480 0V500M520 0V500M560 0V500M600 0V500M640 0V500M680 0V500M720 0V500M760 0V500M800 0V500M840 0V500M880 0V500M920 0V500M960 0V500M1000 0V500M1040 0V500M1080 0V500M1120 0V500M1160 0V500"/>
-  </g>
-
-  <g transform="translate(238 236)">
+  <rect width="1000" height="320" fill="#f5f7fa"/>
+  <g transform="translate(172 160) scale(0.82)">
   <circle r="176" fill="none" stroke="#b5652f" stroke-width="1.5" opacity="0.22"/>
   <circle r="150" fill="#171d25" stroke="#b5652f" stroke-width="4"/>
   <path d="M0-150a150 150 0 0 0 0 300z" fill="#1c242e"/>
@@ -41,44 +33,7 @@
 
   <line x1="0" y1="-150" x2="0" y2="150" stroke="#b5652f" stroke-width="3" opacity="0.5"/>
   </g>
-
-  <text x="470" y="196" class="wm" font-size="80" fill="#e8edf4" letter-spacing="-1">Beta<tspan fill="#e08a4d">Crawler</tspan></text>
-  <line x1="472" y1="224" x2="1128" y2="224" stroke="#b5652f" stroke-width="2" opacity="0.45"/>
-  <text x="472" y="258" class="mn" font-size="18" fill="#b6c0cd" letter-spacing="0.4">Tracks or wheels, one board, tuned from your browser.</text>
-
-  <g transform="translate(472 296)">
-    <g fill="none" stroke="#e8edf4" stroke-width="2.2" stroke-linejoin="round" opacity="0.9">
-      <path d="M6 62a19 19 0 0 1 19-19h86a19 19 0 0 1 0 38H25a19 19 0 0 1-19-19z"/>
-      <circle cx="29" cy="62" r="7"/><circle cx="58" cy="62" r="5.5"/><circle cx="85" cy="62" r="5.5"/><circle cx="110" cy="62" r="7"/>
-      <path d="M16 43h108l-9-18H26z"/>
-      <rect x="52" y="9" width="34" height="16" rx="4"/>
-    </g>
-    <g stroke="#b5652f" stroke-width="1.6" fill="none"><path d="M32 82v14h-20"/><path d="M104 82v14h20"/></g>
-    <g fill="#b5652f"><circle cx="32" cy="82" r="3"/><circle cx="104" cy="82" r="3"/></g>
-    <g class="mn" font-size="11" fill="#e08a4d">
-      <text x="8" y="100" text-anchor="end">PA6</text><text x="130" y="100">PB8</text>
-    </g>
-    <text x="66" y="126" text-anchor="middle" class="mn" font-size="10" fill="#7d8794" letter-spacing="1.4">SKID</text>
-
-    <line x1="212" y1="6" x2="212" y2="112" stroke="#e8edf4" stroke-width="1" opacity="0.14"/>
-
-    <g transform="translate(292 0)" fill="none" stroke="#e8edf4" stroke-width="2.2" stroke-linejoin="round" opacity="0.9">
-      <path d="M18 62h108a7 7 0 0 0 7-7v-9a9 9 0 0 0-9-9h-17l-15-18a10 10 0 0 0-8-4H53a10 10 0 0 0-8 4L31 37H18a9 9 0 0 0-9 9v9a7 7 0 0 0 9 7z"/>
-      <path d="M56 20h25v17H48z" opacity="0.55"/>
-      <circle cx="40" cy="62" r="16"/><circle cx="112" cy="62" r="16"/>
-    </g>
-    <g stroke="#b5652f" stroke-width="1.6" fill="none"><path d="M332 82v14h-20"/><path d="M404 62v34h24"/></g>
-    <g fill="#b5652f"><circle cx="332" cy="82" r="3"/><circle cx="404" cy="62" r="3"/></g>
-    <g class="mn" font-size="11" fill="#e08a4d">
-      <text x="308" y="100" text-anchor="end">PA6</text><text x="434" y="100">PB10</text>
-    </g>
-    <text x="366" y="126" text-anchor="middle" class="mn" font-size="10" fill="#7d8794" letter-spacing="1.4">CAR</text>
-
-    <line x1="512" y1="6" x2="512" y2="112" stroke="#e8edf4" stroke-width="1" opacity="0.14"/>
-    <g class="mn" font-size="11" fill="#7d8794" letter-spacing="1.4">
-      <text x="540" y="46">STM32F4x1CE</text>
-      <text x="540" y="68">WEB SERIAL</text>
-      <text x="540" y="90">NO INSTALL</text>
-    </g>
-  </g>
+  <text x="330" y="158" class="wm" font-size="76" fill="#161b22" letter-spacing="-1">Beta<tspan fill="#b5652f">Crawler</tspan></text>
+  <line x1="332" y1="186" x2="946" y2="186" stroke="#b5652f" stroke-width="2" opacity="0.45"/>
+  <text x="332" y="220" class="mn" font-size="17" fill="#5b6673" letter-spacing="0.4">Tracks or wheels, one board, tuned from your browser.</text>
 </svg>

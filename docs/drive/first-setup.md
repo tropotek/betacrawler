@@ -11,7 +11,7 @@ each step depends on the one before it.
 
 ## 1. Bind the receiver
 
-Bind the receiver to your handset using its own procedure — Betacrawler is not involved and
+Bind the receiver to your handset using its own procedure — BetaCrawler is not involved and
 cannot help here.
 
 ## 2. Switch the receiver pad to CRSF

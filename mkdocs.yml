@@ -1,4 +1,4 @@
-site_name: betacrawler
+site_name: BetaCrawler
 site_description: Build and tune a radio-controlled vehicle — skid-steer or car — with a browser-based configurator.
 site_url: https://tropotek.github.io/betacrawler/
 repo_url: https://github.com/tropotek/betacrawler
@@ -52,6 +52,7 @@ nav:
       - Status LED: reference/status-led.md
       - Terminal and backup: reference/terminal-and-backup.md
   - Troubleshooting: troubleshooting.md
+  - About: about.md
   - Development:
       - Setup: development/setup.md
       - Contributing: development/contributing.md
