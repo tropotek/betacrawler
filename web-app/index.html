@@ -107,6 +107,8 @@
     /* The wordmark's copper half, matching hero.svg. Light copper, not the
        #b5652f base, so it holds contrast on the dark navbar. */
     .brand-accent { color: #e08a4d; }
+    /* The badge from favicon.svg, already precached for the tab icon. */
+    .brand-mark { width: 26px; height: 26px; vertical-align: -6px; margin-right: .35rem; }
 
     .hero { height: 340px; overflow: hidden; border-radius: .5rem; margin-bottom: 1rem; background: #12161c; }
     .hero img { width: 100%; height: 100%; object-fit: contain; display: block; }
@@ -230,8 +232,8 @@
 
   <header class="navbar navbar-dark sticky-top bg-dark p-0 shadow">
     <div class="container-fluid flex-wrap gap-2 py-2">
-      <a href="#" class="navbar-brand me-0 px-3 flex-shrink-0" data-page="home">
-        Beta<span class="brand-accent">Crawler</span>
+      <a href="#" class="navbar-brand fw-bold me-0 px-3 flex-shrink-0" data-page="home">
+        <img src="favicon.svg" alt="" class="brand-mark">Beta<span class="brand-accent">Crawler</span>
         <!-- This app's own version, filled in from APP_VERSION in app.js. The
              FIRMWARE's version is separate and appears in #fw once connected. -->
         <span id="app-version" class="fs-6 fw-normal text-secondary"></span>
@@ -260,7 +262,7 @@
         <div class="offcanvas-md offcanvas-start bg-body-tertiary" tabindex="-1" id="sidebarMenu"
              aria-labelledby="sidebarMenuLabel">
           <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="sidebarMenuLabel">Beta<span class="brand-accent">Crawler</span></h5>
+            <h5 class="offcanvas-title fw-bold" id="sidebarMenuLabel">Beta<span class="brand-accent">Crawler</span></h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"
                     data-bs-target="#sidebarMenu" aria-label="Close"></button>
           </div>
