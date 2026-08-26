@@ -910,4 +910,290 @@
             common ground between the pack, the module, and the board is required, not optional.
           </p>
 
+          <h2 class="h5 mt-4">Wiring a Black Pill for a brushed car</h2>
+          <p class="text-secondary">
+            A DRV8833-class H-bridge driving the car's brushed motor, plus a steering servo on
+            <code>PB10</code> &mdash; set <code>Drive Mode</code> to <code>car</code> and
+            <code>Type</code> to <code>brushed</code> on the Configuration page, no reflash needed.
+            Both motor outputs carry throttle in car mode, so a single motor works on either pair of
+            pins and a two-wheel-drive car works by wiring both. Unlike a brushless car there is no
+            ESC BEC to borrow, so a separate 5&nbsp;V BEC off the pack feeds the board, the receiver
+            and the servo.
+          </p>
+
+          <div class="wiring-diagram">
+            <div class="diagram-card">
+              <svg viewBox="0 0 1450 1100" xmlns="http://www.w3.org/2000/svg" role="img"
+                   aria-label="Wiring diagram connecting a battery pack to a DRV8833 dual H-bridge module and a 5V BEC, a Black Pill STM32F411CE board driving the H-bridge on PA6/PA7 and PB8/PB9 and a steering servo on PB10, two brushed DC motors, a CRSF receiver, and a USB host">
+
+                <!-- ===== Board ===== -->
+                <rect x="840" y="90" width="220" height="440" rx="20" class="fill-surface2 stroke-border" stroke-width="1.5" />
+                <text x="950" y="128" text-anchor="middle" class="lbl-heading fill-ink" font-size="16">STM32F411CE</text>
+                <text x="950" y="146" text-anchor="middle" class="lbl-mono fill-muted" font-size="10.5" letter-spacing="0.05em">WEACT BLACK PILL</text>
+                <line x1="872" y1="160" x2="1028" y2="160" class="stroke-border" stroke-width="1" />
+
+                <!-- onboard badges -->
+                <text x="852" y="356" class="lbl-mono fill-muted" font-size="9">PC13 · LED (LOW=on, onboard)</text>
+                <text x="852" y="381" class="lbl-mono fill-muted" font-size="9">PA0 · KEY button (onboard)</text>
+                <text x="852" y="406" class="lbl-mono fill-muted" font-size="9">PA13/PA14 · SWD (alt. flash)</text>
+
+                <!-- USB-C nub + lead -->
+                <rect x="925" y="510" width="50" height="20" rx="3" class="fill-copper" />
+                <line x1="950" y1="530" x2="950" y2="650" class="wire-copper" />
+                <g class="fill-copper">
+                  <circle cx="950" cy="530" r="3" /><circle cx="950" cy="650" r="3" />
+                </g>
+
+                <!-- ===== Left stubs: H-bridge signal (motor0 + motor1) ===== -->
+                <g class="wire-hbridge">
+                  <line x1="840" y1="222" x2="740" y2="222" />
+                  <line x1="840" y1="246" x2="740" y2="246" />
+                  <line x1="840" y1="270" x2="740" y2="270" />
+                  <line x1="840" y1="294" x2="740" y2="294" />
+                </g>
+                <g class="fill-hbridge">
+                  <circle cx="840" cy="222" r="3" /><circle cx="840" cy="246" r="3" />
+                  <circle cx="840" cy="270" r="3" /><circle cx="840" cy="294" r="3" />
+                </g>
+                <!-- STM pin names, inside the board's own border -->
+                <g class="lbl-mono fill-hbridge" font-size="10.5" font-weight="600">
+                  <text x="847" y="221">PA6</text>
+                  <text x="847" y="245">PA7</text>
+                  <text x="847" y="269">PB8</text>
+                  <text x="847" y="293">PB9</text>
+                </g>
+
+                <!-- ===== Right stubs: Receiver group ===== -->
+                <g class="wire-receiver">
+                  <line x1="1060" y1="222" x2="1140" y2="222" />
+                  <line x1="1060" y1="246" x2="1140" y2="246" />
+                  <line x1="1060" y1="270" x2="1140" y2="270" />
+                  <line x1="1060" y1="294" x2="1140" y2="294" />
+                </g>
+                <g class="fill-receiver">
+                  <circle cx="1060" cy="222" r="3" /><circle cx="1060" cy="246" r="3" />
+                  <circle cx="1060" cy="270" r="3" /><circle cx="1060" cy="294" r="3" />
+                </g>
+                <g class="lbl-mono fill-receiver" font-size="10.5" font-weight="600" text-anchor="end">
+                  <text x="1053" y="221">PA3</text>
+                  <text x="1053" y="245">PA2</text>
+                  <text x="1053" y="269">5V</text>
+                  <text x="1053" y="293">GND</text>
+                </g>
+
+                <!-- ===== Right stubs: Steering servo ===== -->
+                <g class="wire-servo">
+                  <line x1="1060" y1="466" x2="1140" y2="466" />
+                  <line x1="1060" y1="490" x2="1140" y2="490" />
+                  <line x1="1060" y1="514" x2="1140" y2="514" />
+                </g>
+                <g class="fill-servo">
+                  <circle cx="1060" cy="466" r="3" /><circle cx="1060" cy="490" r="3" />
+                  <circle cx="1060" cy="514" r="3" />
+                </g>
+                <g class="lbl-mono fill-servo" font-size="10.5" font-weight="600" text-anchor="end">
+                  <text x="1053" y="465">PB10</text>
+                  <text x="1053" y="489">5V</text>
+                  <text x="1053" y="513">GND</text>
+                </g>
+
+                <!-- ===== Bottom stubs: board 5V rail, fed by the BEC ===== -->
+                <g class="wire-pdb">
+                  <line x1="862" y1="530" x2="862" y2="870" />
+                  <line x1="894" y1="530" x2="894" y2="870" />
+                </g>
+                <g class="fill-pdb">
+                  <circle cx="862" cy="530" r="3" /><circle cx="894" cy="530" r="3" />
+                  <circle cx="862" cy="870" r="3" /><circle cx="894" cy="870" r="3" />
+                </g>
+                <g class="lbl-mono fill-pdb" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="862" y="518">5V</text>
+                  <text x="894" y="518">GND</text>
+                </g>
+
+                <!-- ===== H-Bridge module card ===== -->
+                <rect x="440" y="140" width="300" height="380" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="455" y="154" width="12" height="12" rx="2" class="fill-hbridge" />
+                <text x="475" y="164" class="lbl-heading fill-ink" font-size="13">DRV8833 dual H-bridge</text>
+                <text x="455" y="182" class="lbl-mono fill-muted" font-size="9.5">components101 module · IN1-4 / OUT1-4</text>
+                <line x1="455" y1="196" x2="725" y2="196" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="725" y="221">IN1</text>
+                  <text x="725" y="245">IN2</text>
+                  <text x="725" y="269">IN3</text>
+                  <text x="725" y="293">IN4</text>
+                </g>
+                <line x1="455" y1="310" x2="725" y2="310" class="stroke-border" stroke-width="1" />
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="455" y="343">OUT1</text>
+                  <text x="455" y="367">OUT2</text>
+                  <text x="455" y="391">OUT3</text>
+                  <text x="455" y="415">OUT4</text>
+                </g>
+                <line x1="455" y1="432" x2="725" y2="432" class="stroke-border" stroke-width="1" />
+                <text x="455" y="452" class="lbl-mono fill-muted" font-size="10">Both outputs carry throttle in car mode,</text>
+                <text x="455" y="468" class="lbl-mono fill-muted" font-size="10">so one motor works on either pair.</text>
+                <text x="455" y="484" class="lbl-mono fill-muted" font-size="10">SLEEP → VCC; FAULT unused.</text>
+                <g class="fill-hbridge">
+                  <circle cx="740" cy="222" r="3" /><circle cx="740" cy="246" r="3" />
+                  <circle cx="740" cy="270" r="3" /><circle cx="740" cy="294" r="3" />
+                </g>
+                <g class="fill-motor">
+                  <circle cx="440" cy="344" r="3" /><circle cx="440" cy="368" r="3" />
+                  <circle cx="440" cy="392" r="3" /><circle cx="440" cy="416" r="3" />
+                </g>
+                <!-- bottom-edge power pins, reaching down to the battery -->
+                <g class="lbl-mono fill-pdb" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="520" y="508">VM+</text>
+                  <text x="590" y="508">VM−</text>
+                </g>
+                <g class="fill-pdb">
+                  <circle cx="520" cy="520" r="3" /><circle cx="590" cy="520" r="3" />
+                </g>
+
+                <!-- ===== Motors card ===== -->
+                <rect x="140" y="260" width="260" height="230" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="155" y="274" width="12" height="12" rx="2" class="fill-motor" />
+                <text x="175" y="284" class="lbl-heading fill-ink" font-size="13">Brushed drive motors</text>
+                <text x="155" y="302" class="lbl-mono fill-muted" font-size="9.5">DC · 2-wire each · motor leads</text>
+                <line x1="155" y1="316" x2="385" y2="316" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="385" y="343">MOTOR 0 +</text>
+                  <text x="385" y="367">MOTOR 0 −</text>
+                  <text x="385" y="391">MOTOR 1 +</text>
+                  <text x="385" y="415">MOTOR 1 −</text>
+                </g>
+                <line x1="155" y1="432" x2="385" y2="432" class="stroke-border" stroke-width="1" />
+                <text x="155" y="452" class="lbl-mono fill-muted" font-size="10">One motor? Wire either pair.</text>
+                <text x="155" y="468" class="lbl-mono fill-muted" font-size="10">Driving backwards? Set Invert.</text>
+                <g class="fill-motor">
+                  <circle cx="400" cy="344" r="3" /><circle cx="400" cy="368" r="3" />
+                  <circle cx="400" cy="392" r="3" /><circle cx="400" cy="416" r="3" />
+                </g>
+                <g class="wire-motor">
+                  <line x1="400" y1="344" x2="440" y2="344" />
+                  <line x1="400" y1="368" x2="440" y2="368" />
+                  <line x1="400" y1="392" x2="440" y2="392" />
+                  <line x1="400" y1="416" x2="440" y2="416" />
+                </g>
+
+                <!-- ===== Receiver card ===== -->
+                <rect x="1140" y="140" width="260" height="230" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="1155" y="154" width="12" height="12" rx="2" class="fill-receiver" />
+                <text x="1175" y="164" class="lbl-heading fill-ink" font-size="13">CRSF receiver</text>
+                <text x="1155" y="182" class="lbl-mono fill-muted" font-size="9.5">TBS / ELRS · module pins</text>
+                <line x1="1155" y1="196" x2="1385" y2="196" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="1155" y="222">TX (out to STM)</text>
+                  <text x="1155" y="246">RX (telemetry in)</text>
+                  <text x="1155" y="270">+</text>
+                  <text x="1155" y="294">GND</text>
+                </g>
+                <line x1="1155" y1="314" x2="1385" y2="314" class="stroke-border" stroke-width="1" />
+                <text x="1155" y="336" class="lbl-mono fill-muted" font-size="10">Nano-RX pads default to PWM out —</text>
+                <text x="1155" y="352" class="lbl-mono fill-muted" font-size="10">switch to CRSF in its own menu first.</text>
+                <g class="fill-receiver">
+                  <circle cx="1140" cy="222" r="3" /><circle cx="1140" cy="246" r="3" />
+                  <circle cx="1140" cy="270" r="3" /><circle cx="1140" cy="294" r="3" />
+                </g>
+
+                <!-- ===== Steering servo card ===== -->
+                <rect x="1140" y="400" width="260" height="220" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="1155" y="414" width="12" height="12" rx="2" class="fill-servo" />
+                <text x="1175" y="424" class="lbl-heading fill-ink" font-size="13">Steering servo</text>
+                <text x="1155" y="442" class="lbl-mono fill-muted" font-size="9.5">TIM2 CH3 · standard 3-wire lead</text>
+                <line x1="1155" y1="452" x2="1385" y2="452" class="stroke-border" stroke-width="1" />
+
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="1155" y="470">SIGNAL</text>
+                  <text x="1155" y="494">+</text>
+                  <text x="1155" y="518">−</text>
+                </g>
+                <line x1="1155" y1="536" x2="1385" y2="536" class="stroke-border" stroke-width="1" />
+                <text x="1155" y="556" class="lbl-mono fill-muted" font-size="10">Turns the wrong way? Set Invert.</text>
+                <text x="1155" y="572" class="lbl-mono fill-muted" font-size="10">Off-centre? Nudge Trim.</text>
+                <text x="1155" y="596" class="lbl-mono fill-power" font-size="10">Never 3V3. Size the BEC to include it.</text>
+                <g class="fill-servo">
+                  <circle cx="1140" cy="466" r="3" /><circle cx="1140" cy="490" r="3" />
+                  <circle cx="1140" cy="514" r="3" />
+                </g>
+
+                <!-- ===== USB card ===== -->
+                <rect x="920" y="650" width="290" height="140" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <rect x="936" y="666" width="12" height="12" rx="2" class="fill-copper" />
+                <text x="956" y="676" class="lbl-heading fill-ink" font-size="13">USB-C · to host PC</text>
+                <text x="936" y="700" class="lbl-mono fill-muted" font-size="10.5">Powers the board on the bench — never</text>
+                <text x="936" y="716" class="lbl-mono fill-muted" font-size="10.5">the H-bridge's VM or the servo. Both</text>
+                <text x="936" y="732" class="lbl-mono fill-muted" font-size="10.5">draw past what USB can source.</text>
+                <text x="936" y="754" class="lbl-mono fill-muted" font-size="10.5">No cable? BOOT0+NRST by hand, or SWD</text>
+                <text x="936" y="770" class="lbl-mono fill-muted" font-size="10.5">(PA13/PA14), reach the same bootloader.</text>
+
+                <!-- ===== 5V BEC card ===== -->
+                <rect x="740" y="870" width="290" height="200" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <g class="lbl-mono fill-pdb" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="862" y="890">5V</text>
+                  <text x="894" y="890">GND</text>
+                </g>
+                <line x1="755" y1="900" x2="1015" y2="900" class="stroke-border" stroke-width="1" />
+                <rect x="755" y="908" width="12" height="12" rx="2" class="fill-pdb" />
+                <text x="775" y="918" class="lbl-heading fill-ink" font-size="13">5V BEC (UBEC)</text>
+                <text x="755" y="936" class="lbl-mono fill-muted" font-size="9.5">pack in · 5V out · 3A or better</text>
+                <line x1="755" y1="950" x2="1015" y2="950" class="stroke-border" stroke-width="1" />
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500">
+                  <text x="755" y="980">IN +</text>
+                  <text x="755" y="1004">IN −</text>
+                </g>
+                <line x1="755" y1="1016" x2="1015" y2="1016" class="stroke-border" stroke-width="1" />
+                <text x="755" y="1036" class="lbl-mono fill-muted" font-size="10">Feeds the board, the receiver and the</text>
+                <text x="755" y="1052" class="lbl-mono fill-muted" font-size="10">servo. A brushless car uses its ESC's.</text>
+                <g class="fill-pdb">
+                  <circle cx="862" cy="870" r="3" /><circle cx="894" cy="870" r="3" />
+                  <circle cx="740" cy="976" r="3" /><circle cx="740" cy="1000" r="3" />
+                </g>
+
+                <!-- ===== Battery pack card ===== -->
+                <rect x="380" y="830" width="300" height="190" rx="10" class="fill-surface stroke-border" stroke-width="1.5" />
+                <g class="lbl-mono fill-pdb" font-size="10.5" font-weight="600" text-anchor="middle">
+                  <text x="520" y="850">PACK +</text>
+                  <text x="590" y="850">PACK −</text>
+                </g>
+                <line x1="395" y1="864" x2="665" y2="864" class="stroke-border" stroke-width="1" />
+                <rect x="395" y="872" width="12" height="12" rx="2" class="fill-pdb" />
+                <text x="415" y="882" class="lbl-heading fill-ink" font-size="13">Drive pack</text>
+                <text x="395" y="900" class="lbl-mono fill-muted" font-size="9.5">2S–3S · XT60/JST lead</text>
+                <line x1="395" y1="914" x2="665" y2="914" class="stroke-border" stroke-width="1" />
+                <text x="395" y="934" class="lbl-mono fill-muted" font-size="10">Connect last, once everything else is</text>
+                <text x="395" y="950" class="lbl-mono fill-muted" font-size="10">wired. Never the board's 5V pin direct.</text>
+                <line x1="395" y1="962" x2="665" y2="962" class="stroke-border" stroke-width="1" />
+                <g class="lbl-mono fill-ink" font-size="12.5" font-weight="500" text-anchor="end">
+                  <text x="665" y="980">TO BEC +</text>
+                  <text x="665" y="1004">TO BEC −</text>
+                </g>
+                <g class="fill-pdb">
+                  <circle cx="520" cy="830" r="3" /><circle cx="590" cy="830" r="3" />
+                  <circle cx="680" cy="976" r="3" /><circle cx="680" cy="1000" r="3" />
+                </g>
+
+                <!-- pack up to the H-bridge's VM, and across to the BEC's input -->
+                <g class="wire-pdb">
+                  <line x1="520" y1="520" x2="520" y2="830" />
+                  <line x1="590" y1="520" x2="590" y2="830" />
+                  <line x1="680" y1="976" x2="740" y2="976" />
+                  <line x1="680" y1="1000" x2="740" y2="1000" />
+                </g>
+              </svg>
+            </div>
+          </div>
+          <p class="text-secondary small mt-2">
+            Gold = the H-bridge's control signals from the board. Navy = the motor leads out of each
+            H-bridge channel. Orange = the steering servo: only its signal comes from the board, on
+            <code>PB10</code>. Teal = the power chain — the pack feeds the H-bridge's VM directly and
+            the BEC alongside it, and the BEC's 5V rail is what the board, the receiver and the servo
+            all run from. Violet = the CRSF link, unchanged from every other build. A common ground
+            between the pack, the module, the BEC and the board is required, not optional.
+          </p>
+
           <p>&nbsp;</p>

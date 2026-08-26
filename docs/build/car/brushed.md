@@ -66,12 +66,14 @@ have. Only the firmware image differs.
 
 ## Steering servo
 
-The servo's signal wire goes to **PB10**. Its power comes from the 5 V BEC, and its ground is
-shared with the board and the H-bridge. **Never run a servo from the board's 3V3 pin**; it is
-neither the right voltage nor able to supply the current.
+The servo's signal wire goes to **PB10**. Its + and − go to the same 5 V rail the board runs
+from — the Black Pill's 5V pin is that rail, not a regulator output, so tapping it there and
+tapping the BEC directly are the same connection. **Never run a servo from the board's 3V3 pin**;
+that one *is* a regulator output, and it is neither the right voltage nor able to supply the
+current.
 
-A servo under load draws more than the board's own 5 V rail can give, so feed it from the BEC
-directly rather than daisy-chaining it off the board's 5V pin.
+What matters is the BEC's rating: it carries the board, the receiver and the servo together, and a
+servo under load is by far the largest of the three. Size it for all three, not for the board.
 
 On stock settings the servo follows the mixer's steer output, so it works as soon as Drive Mode is
 `car`.
