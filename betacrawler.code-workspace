@@ -38,6 +38,30 @@
                 }
             },
             {
+                "label": "docs: Serve docs (live reload)",
+                "type": "shell",
+                "command": "${workspaceFolder:betacrawler}/docs/.venv/bin/mkdocs serve",
+                "detail": "Live-reloading preview of the working tree. Open http://127.0.0.1:8000/betacrawler/ -- the bare host:port 404s.",
+                "problemMatcher": [],
+                "presentation": {
+                    "panel": "dedicated",
+                    "clear": true,
+                    "focus": false
+                }
+            },
+            {
+                "label": "docs: Preview the Pages site",
+                "type": "shell",
+                "command": "${workspaceFolder:betacrawler}/tools/preview_site.sh ${input:previewRef}",
+                "detail": "Docs + /app/ + /app-dev/, built the way the deploy workflow does. Open http://127.0.0.1:8777/",
+                "problemMatcher": [],
+                "presentation": {
+                    "panel": "dedicated",
+                    "clear": true,
+                    "focus": true
+                }
+            },
+            {
                 "label": "Build release firmware",
                 "type": "shell",
                 "command": "python3 ${workspaceFolder:betacrawler}/tools/bundle_firmware.py ${input:releaseBoards}",
@@ -66,6 +90,12 @@
                 "type": "promptString",
                 "description": "PlatformIO env(s) to build and ship, space-separated",
                 "default": "blackpill_f411ce"
+            },
+            {
+                "id": "previewRef",
+                "type": "promptString",
+                "description": "Ref to preview: main, release (newest tag -- what the live site serves), or any branch/tag/commit",
+                "default": "main"
             }
         ]
     }

@@ -61,7 +61,7 @@ tools/preview_site.sh release      # what the live site serves: the newest versi
 ```
 `mkdocs serve` mounts under `site_url`'s path, so the bare host:port 404s. `preview_site.sh` takes
 any ref plus an optional port, exports it with `git archive`, and leaves the working tree and the
-current branch alone.
+current branch alone. Both are also **docs:** tasks in `betacrawler.code-workspace`.
 
 **web-app** (from `web-app/`):
 ```
