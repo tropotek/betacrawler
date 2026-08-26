@@ -32,5 +32,10 @@
 .md-typeset table:has(.logo-preview) th:not([align]) { text-align: center; }
 .md-typeset table:has(.logo-preview) th:first-child,
 .md-typeset table:has(.logo-preview) td:first-child { width: 70%; }
-.md-typeset table:has(.logo-preview) td:last-child { text-align: center; }
 .md-typeset table:has(.logo-preview) td { vertical-align: top; }
+/* The links carry no height of their own, so they sit against the middle of the
+   preview beside them rather than stranded at the top of a tall row. */
+.md-typeset table:has(.logo-preview) td:last-child {
+  text-align: center;
+  vertical-align: middle;
+}
