@@ -35,8 +35,8 @@ Open **[the configurator](https://tropotek.github.io/betacrawler/app/)** and go 
 2. Choose the image for your chip — `blackpill_f411ce` or `blackpill_f401ce`. **Pick this
    yourself.** A board in DFU mode cannot say what it is: every STM32F4 bootloader reports the
    same USB identity, so the app has nothing to recommend from until it has spoken to the board
-   over serial. See [Which Black Pill](what-you-need.md#which-black-pill) if you are not sure
-   which one you have.
+   over serial. Your build page's **Which Black Pill** section says how to tell them apart if you
+   are not sure which one you have.
 3. Click **Flash selected firmware**. The board resets into the new firmware on its own.
 
 Only have the one board you are flashing plugged in — for the same reason the app cannot pick the

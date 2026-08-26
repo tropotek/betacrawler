@@ -1,4 +1,4 @@
-"""Render web-app/tank-hero.svg to docs/assets/tank-hero.png.
+"""Render web-app/hero.svg to docs/assets/hero.png.
 
 GitHub's markdown sanitiser will not render the SVG reliably, so the README
 uses a raster copy. Re-run after editing the SVG:
@@ -11,8 +11,8 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SRC = REPO_ROOT / "web-app" / "tank-hero.svg"
-OUT = REPO_ROOT / "docs" / "assets" / "tank-hero.png"
+SRC = REPO_ROOT / "web-app" / "hero.svg"
+OUT = REPO_ROOT / "docs" / "assets" / "hero.png"
 WIDTH, HEIGHT, SCALE = 1200, 500, 2
 
 

@@ -3,11 +3,11 @@
 This is the page that decides whether your vehicle drives properly. Work through it in order —
 each step depends on the one before it.
 
-!!! danger "Chock the tracks up off the ground"
+!!! danger "Get the wheels or tracks off the ground"
 
-    Until you have been all the way through this page at least once, prop the chassis up so the
-    tracks spin free. An arming switch in the wrong place or a mis-assigned channel means the
-    vehicle takes off across the room the moment it arms.
+    Until you have been all the way through this page at least once, prop the chassis up so they
+    spin free. An arming switch in the wrong place or a mis-assigned channel means the vehicle
+    takes off across the room the moment it arms.
 
 ## 1. Bind the receiver
 
@@ -37,15 +37,19 @@ watch them move.
 If nothing moves, stop here — steps 1 to 3 have not taken. Everything after this depends on the
 channels arriving.
 
-## 5. Pick the drive layout
+## 5. Apply your build's settings
 
-On the **Configuration** page, set **Drive Mode**:
+Your build page's **Configuration** section lists the settings that make the board match your
+hardware — the drive mode, each motor's type, and the steering servo on a car. Set them now, or
+restore that page's starter INI from the **Terminal** page.
 
-- **skid** — two driven sides that turn by running at different speeds. Tracks, a 4WD rover, a
-  2WD skid-steer chassis. This is the default.
-- **car** — one driven motor plus a steering servo.
+Both motors ship with `Type` set to `none`, so a freshly flashed board drives nothing at all. That
+is deliberate: the board cannot know whether an ESC or an H-bridge is on the other end of the wire,
+and the wrong guess turns a motor. This is the step that brings the outputs to life.
 
-The rest of this page assumes `skid`; the car build has its own step at the end.
+Redo it after any firmware update that resets stored settings.
+
+If you have not picked a build yet, [Choose your build](../build/index.md) has all four.
 
 ## 6. Assign the sticks
 
@@ -80,66 +84,23 @@ and check the marker moves in and out of the highlighted band.
 
 While disarmed, both ESC outputs are held at neutral no matter what the sticks do.
 
-## 8. Set up your drive electronics
-
-Both motors ship with `Type` set to `none`, so a freshly flashed board drives nothing at all. That
-is deliberate — it cannot know whether an ESC or an H-bridge is on the other end of the wire, and
-the wrong guess turns a motor. Setting `Type` to match your hardware is the one step that brings
-the output to life; `Motor` is already on `input`, following the drive mixer.
-
-### If you're using brushless ESCs
-
-A surface ESC (sold for cars or boats) needs nothing here — it already treats centre-stick as
-stop.
-
-A BLHeli_S drone ESC does: in **BLHeli Configurator**, not in Betacrawler, connect each ESC in
-turn and set its motor direction to **Bidirectional**. Skip it and the ESC will not arm, because
-it never sees the low throttle it waits for at power-on.
-
-### If you're using brushed motors (H-Bridge)
-
-No external configurator needed. On the **Configuration** page, set `Type` to `brushed` for both
-motors, then press **Save to flash** before connecting the drive pack — pick `brushless` by
-mistake and an H-bridge reads the ESC pulse train as a 30% duty cycle, running both motors. The
-`none` default keeps a just-flashed board silent until you choose, so the only wrong move is
-choosing `brushless`. Redo this after any firmware update, which resets stored settings. If a
-motor spins the wrong way once you're driving, fix it with that motor's `Invert` setting rather
-than re-wiring — see [Wiring for brushed motors](../build/wiring.md#wiring-for-brushed-motors-h-bridge).
-
-## 9. If you are building a car
-
-Skip this if your vehicle drives both sides. For one motor plus a steering servo:
-
-1. **Configuration → Drive Mode** = `car`. This switches the steering servo on and reveals its
-   settings; `skid` switches it off again.
-2. **Configuration → Type** = whatever your motor is, same as any other build.
-3. Wire the servo signal to **PB10**, with its own 5&nbsp;V supply and a shared ground. Never run
-   it from 3V3.
-
-Then, with the wheels off the ground, check the steering:
-
-- Turn the wheel or stick right. If the wheels go left, set **Servo → Invert** to `reversed`.
-- With the stick centred, if the wheels sit off-straight, nudge **Servo → Trim** until they are.
-  Negative values go the other way.
-
-Both motor outputs carry throttle in car mode, so it makes no difference which pin you wire a single motor to, and a two-wheel-drive car works by wiring both.
-
-## 10. Save
+## 8. Save
 
 Press **Save to flash**.
 
 Changes apply to the running board the instant you make them, but they live in RAM until you
 save. Power-cycle without saving and you are back to where you started.
 
-## 11. First drive
+## 9. First drive
 
-With the tracks still off the ground, arm and give it a little throttle. Check:
+With the wheels or tracks still off the ground, arm and give it a little throttle.
 
-- Both tracks turn the same way for forward throttle.
-- Steering makes them differ.
-- Disarming stops both.
+On a skid-steer vehicle, check that both sides turn the same way for forward throttle, that
+steering makes them differ, and that disarming stops both. If one side runs backwards, set that
+motor's `Invert`. If the two sides are swapped left-for-right, change `motor0.src` and
+`motor1.src` rather than rewiring.
 
-If one track runs backwards, swap any two motor wires on that ESC. If the two tracks are swapped
-left-for-right, change `motor0.src` and `motor1.src` rather than rewiring.
+On a car, check that throttle drives the wheels the way you expect and that the steering follows
+the stick. Your build page covers `Invert` and `Trim` if either goes the wrong way.
 
 Then put it on the ground and go to [Tuning](tuning.md).

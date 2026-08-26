@@ -1,24 +1,25 @@
 # Betacrawler
 
-![Betacrawler](docs/assets/tank-hero.png)
+![Betacrawler](docs/assets/hero.png)
 
 **This project is currently under construction. If you want to contribute hit up our disscussion forum and get involved.**
 
 ----
 
-Betacrawler is a radio-controlled tracked vehicle. An STM32 Black Pill reads an ELRS receiver,
-mixes the sticks into left and right track speeds, and drives two brushless ESCs. You set it up
-and tune it from a browser, with the vehicle plugged in over USB — channel assignment, speed and
+Betacrawler is a radio-controlled vehicle. An STM32 Black Pill reads an ELRS receiver, mixes the
+sticks into motor commands, and drives your motors — two independently driven sides for a
+skid-steer or tracked model, or a drive motor and a steering servo for a car. You set it up and
+tune it from a browser, with the vehicle plugged in over USB — channel assignment, speed and
 steering limits, the arming switch, firmware updates.
 
 **[Read the docs →](https://tropotek.github.io/betacrawler/)**
 
 ## What you need
 
-A Black Pill (STM32F411CE or STM32F401CE), an ELRS receiver, two BLHeli-S ESCs in bidirectional
-mode, two brushless motors, a power distribution board, a LiPo, and a tracked chassis. Full list
-and wiring in
-**[What you need](https://tropotek.github.io/betacrawler/build/what-you-need/)**.
+A Black Pill (STM32F411CE or STM32F401CE), an ELRS receiver, motors with either brushless ESCs in
+bidirectional mode or a brushed H-bridge module, a battery, and a chassis. There are four build
+paths — skid-steer or car, brushed or brushless — each with its own parts list and wiring:
+**[Choose your build](https://tropotek.github.io/betacrawler/build/)**.
 
 ## The configurator
 

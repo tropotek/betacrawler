@@ -8,6 +8,11 @@ number being tagged, and a fresh `## Unreleased` opens above it.
 
 ## Unreleased
 
+- **docs: the Build section is four self-contained build paths.** Skid steer or car, brushed or
+  brushless, each with its own parts, wiring, settings and starter INI.
+- **docs: optional hardware moved to its own Add-ons section**, with wiring that adds onto a base
+  build rather than replacing its diagram. Battery sense is the first.
+- **docs: a wiring diagram for a brushed car**, the one base build that had none.
 - **fix: tagging publishes the site again.** Pages deploys run from `main` and resolve the newest
   tag themselves, because a deployment created from a tag ref never goes live.
 
