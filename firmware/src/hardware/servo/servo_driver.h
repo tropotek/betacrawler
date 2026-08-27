@@ -23,19 +23,14 @@ class ServoDriver : public core::Module {
   void detach();
   void writeUs(uint16_t us);
 
-  const core::Inputs* inputs_      = nullptr;
   const core::Inputs* driveInputs_ = nullptr;
   HardwareTimer* timer_ = nullptr;
   uint32_t ch_       = 0;
-  int32_t  mode_     = MODE_OFF;
-  uint8_t  angle_    = 90;
-  uint8_t  srcIdx_   = 0;
   uint16_t minUs_    = 1000;
   uint16_t maxUs_    = 2000;
-  uint32_t periodMs_ = 4000;
-  uint32_t t0_       = 0;
   uint16_t lastUs_   = 0;
   bool     inverted_ = false;
+  bool     attached_ = false;
   int32_t  trimUs_   = 0;
 };
 

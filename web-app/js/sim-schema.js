@@ -22,39 +22,6 @@ export const SIM_SCHEMA = {
       "group": "Telemetry"
     },
     {
-      "key": "servo.mode",
-      "type": "enum",
-      "options": [
-        "off",
-        "hold",
-        "sweep",
-        "input"
-      ],
-      "def": "off",
-      "label": "Servo",
-      "group": "Servo"
-    },
-    {
-      "key": "servo.angle",
-      "type": "u8",
-      "min": 0,
-      "max": 180,
-      "def": 90,
-      "label": "Angle",
-      "unit": "°",
-      "group": "Servo"
-    },
-    {
-      "key": "servo.sweep_s",
-      "type": "u8",
-      "min": 1,
-      "max": 30,
-      "def": 4,
-      "label": "Sweep",
-      "unit": "s",
-      "group": "Servo"
-    },
-    {
       "key": "servo.min_us",
       "type": "u8",
       "min": 500,
@@ -72,30 +39,6 @@ export const SIM_SCHEMA = {
       "def": 2000,
       "label": "Max",
       "unit": "µs",
-      "group": "Servo"
-    },
-    {
-      "key": "servo.src",
-      "type": "enum",
-      "options": [
-        "ch1",
-        "ch2",
-        "ch3",
-        "ch4",
-        "ch5",
-        "ch6",
-        "ch7",
-        "ch8",
-        "ch9",
-        "ch10",
-        "ch11",
-        "ch12",
-        "drive_left",
-        "drive_right",
-        "drive_steer"
-      ],
-      "def": "drive_steer",
-      "label": "Source",
       "group": "Servo"
     },
     {
@@ -884,6 +827,12 @@ export const SIM_SCHEMA = {
     {
       "key": "drv_r",
       "label": "Right",
+      "unit": "µs",
+      "group": "Drive"
+    },
+    {
+      "key": "drv_s",
+      "label": "Steer",
       "unit": "µs",
       "group": "Drive"
     },

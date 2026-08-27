@@ -102,6 +102,22 @@ void test_shared_defines_agree_on_their_value() {
   }
 }
 
+// The servo module reads the drive mixer's output bus and has no source
+// parameter of its own, so a board with a servo and no mixer would compile a
+// module that can never be enabled. servo_driver.cpp #errors on this; checking
+// it here too fails the suite on a header edit, not only the board build.
+void test_servo_requires_drive() {
+  const char* const paths[] = {kF411, kF401};
+  for (size_t i = 0; i < sizeof(paths) / sizeof(paths[0]); i++) {
+    const auto d = defines(paths[i]);
+    const auto servo = d.find("FEATURE_SERVO");
+    if (servo == d.end() || servo->second != "1") continue;
+    const auto drive = d.find("FEATURE_DRIVE");
+    TEST_ASSERT_TRUE_MESSAGE(drive != d.end(), paths[i]);
+    TEST_ASSERT_EQUAL_STRING_MESSAGE("1", drive->second.c_str(), paths[i]);
+  }
+}
+
 // A guard on the guard: if the parse silently returned nothing, every test
 // above would pass while checking nothing at all.
 void test_the_parser_actually_read_both_headers() {
@@ -121,5 +137,6 @@ int main() {
   RUN_TEST(test_both_boards_enable_the_same_features);
   RUN_TEST(test_neither_board_defines_something_the_other_lacks);
   RUN_TEST(test_shared_defines_agree_on_their_value);
+  RUN_TEST(test_servo_requires_drive);
   return UNITY_END();
 }

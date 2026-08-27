@@ -82,7 +82,6 @@ these on the **Configuration** page, then press **Save to flash**:
 | Drive Mode | `drive.mode` | `skid` | Mixes throttle and steering into two independent side commands. Already the default. |
 | Motor 0 Type | `motor0.type` | `brushed` | Drives PA6/PA7 as an H-bridge pair. |
 | Motor 1 Type | `motor1.type` | `brushed` | The same on PB8/PB9. |
-| Servo | `servo.mode` | `off` | No steering servo on a skid-steer vehicle. Already the default. |
 
 --8<-- "_shared/hbridge-type-warning.md"
 

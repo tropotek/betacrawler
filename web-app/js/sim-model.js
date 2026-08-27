@@ -141,11 +141,6 @@ export function applyTrim(us, trimUs, minUs, maxUs) {
   return Math.max(minUs, Math.min(maxUs, us + trimUs));
 }
 
-export function angleToUs(angle, minUs, maxUs) {
-  const a = Math.max(0, Math.min(180, angle));
-  return minUs + truncDiv((maxUs - minUs) * a, 180);
-}
-
 export function computeArmed(rxFresh, armSrcIsNone, armSrcUs, armMinUs, armMaxUs) {
   if (!rxFresh) return false;
   if (armSrcIsNone) return true;
@@ -332,10 +327,13 @@ export class SimModel {
     Object.assign(tlm, this._link(rxFresh));
     Object.assign(tlm, this._system(nowMs));
     Object.assign(tlm, this._vbat(nowMs));
-    tlm.drv_l = left; tlm.drv_r = right;
+    // Mirrors DriveDriver::readTelemetry -- steer skips the stale sentinel and
+    // reports the last real pulse.
+    if (steer > 0) this._lastSteer = steer;
+    tlm.drv_l = left; tlm.drv_r = right; tlm.drv_s = this._lastSteer ?? CENTER_US;
     tlm.motor0 = this._motor.motor0.lastUs; tlm.arm0 = this._motor.motor0.armState;
     tlm.motor1 = this._motor.motor1.lastUs; tlm.arm1 = this._motor.motor1.armState;
-    tlm.srv = this._servo(nowMs, inputs, drive, rxFresh);
+    tlm.srv = this._servo(drive);
     this._tlm = tlm;
   }
 
@@ -364,7 +362,10 @@ export class SimModel {
         this.num('drive.steer_ratio'), 0,
       );
     } else {
-      left = right = steer = CENTER_US;
+      // Steer carries the bus's "no data" sentinel on a stale link, so the
+      // servo below holds its last pulse while the motors fail to neutral.
+      left = right = CENTER_US;
+      steer = 0;
     }
     const armSrc = this.text('drive.arm_src');
     const isNone = armSrc === 'none';
@@ -374,29 +375,17 @@ export class SimModel {
     return [left, right, steer, armed];
   }
 
-  // Mirrors ServoDriver: a base pulse from the mode, then invert, trim and the
-  // range clamp on every path to the pin. 0 means detached, as on the device.
-  _servo(nowMs, inputs, drive, rxFresh) {
-    const mode = this.text('servo.mode');
-    if (mode === 'off') return 0;
+  // Mirrors ServoDriver: attached only in car mode, following the mixer's
+  // steering slot, then invert, trim and the range clamp on the way to the
+  // pin. 0 means detached, as on the device.
+  _servo(drive) {
+    if (this.text('drive.mode') !== 'car') return 0;
     const minUs = this.num('servo.min_us');
     const maxUs = this.num('servo.max_us');
 
-    let base;
-    if (mode === 'hold') {
-      base = angleToUs(this.num('servo.angle'), minUs, maxUs);
-    } else if (mode === 'sweep') {
-      const period = this.num('servo.sweep_s') * 1000;
-      base = angleToUs(Math.floor((trianglePercent(nowMs % period, period) * 180) / 100), minUs, maxUs);
-    } else {
-      const src = this.text('servo.src');
-      const v = src === 'drive_left' ? drive[0]
-        : src === 'drive_right' ? drive[1]
-        : src === 'drive_steer' ? drive[DRIVE_STEER_SLOT]
-        : (rxFresh ? inputs[Number(src.slice(2)) - 1] : 0);
-      if (!(v > 0)) return this._lastSrv ?? 0;
-      base = Math.max(minUs, Math.min(maxUs, v));
-    }
+    const v = drive[DRIVE_STEER_SLOT];
+    if (!(v > 0)) return this._lastSrv ?? 0;
+    const base = Math.max(minUs, Math.min(maxUs, v));
 
     const out = applyTrim(
       applyInvert(base, minUs, maxUs, this.text('servo.invert') === 'reversed'),

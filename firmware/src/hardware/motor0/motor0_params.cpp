@@ -15,7 +15,7 @@ static const char* const kTypes[] = {"none", "brushless", "brushed"};
 static const char* const kModes[] = {"off", "armed", "input"};
 
 // Order must match core::Inputs' slot indices directly -- "ch1" is slot 0 --
-// same convention motor1.src and servo.src use, named to match rx's own
+// same convention motor1.src uses, named to match rx's own
 // ch1..ch16 telemetry naming.
 static const char* const kSrcNames[] = {
   "ch1", "ch2", "ch3", "ch4", "ch5", "ch6",
@@ -65,13 +65,13 @@ static const ParamDef kParams[] = {
   {"motor0.type",         ParamType::Enum, "Type",      nullptr, 0, 0, kTypes, 3, 0, MOTOR0_TYPE_DEFAULT, nullptr, nullptr},
   // Shown only for type=esc: meaningless for a straight duty-cycle output.
   {"motor0.rate",         ParamType::Enum, "PWM Rate", "Hz", 0, 0, kRates, 4, 0, kDefaultRate, nullptr, nullptr, "motor0.type", "brushless"},
-  // Defaults to off, like servo.mode and for the same reason: an unconfigured
-  // board cannot know what is on the other end of the wire, so it commands
-  // nothing until asked. Neutral is only safe for a controller that reads
-  // pulses -- an H-bridge on a brushless-configured output reads a 1500us
-  // pulse in a 5000us frame as 30% duty and runs the motor. Saved settings
-  // ARE re-applied at boot by main.cpp's notify pass, so a configured board
-  // still starts driving at power-on and its ESC still arms once, there.
+  // Defaults to off because an unconfigured board cannot know what is on the
+  // other end of the wire, so it commands nothing until asked. Neutral is
+  // only safe for a controller that reads pulses -- an H-bridge on a
+  // brushless-configured output reads a 1500us pulse in a 5000us frame as 30%
+  // duty and runs the motor. Saved settings ARE re-applied at boot by
+  // main.cpp's notify pass, so a configured board still starts driving at
+  // power-on and its ESC still arms once, there.
   {"motor0.mode",         ParamType::Enum, "Motor",    nullptr, 0,    0,    kModes, 3, 0, motor::MODE_INPUT, nullptr, nullptr},
   // Direct microseconds, not a percentage: the wire and the param are the
   // same unit, so motor::clampUs alone maps it.

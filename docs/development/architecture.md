@@ -71,7 +71,8 @@ fixed after boot.
 
 `core::Inputs` (`core/inputs.h`) is a small shared control-signal bus: a fixed array of µs
 values that lets `rx` publish decoded channels for other modules to read, without `rx` or its
-readers naming each other. `servo`'s `mode=input` is the first consumer; more are expected.
+readers naming each other. `motor0`/`motor1`'s `mode=input` and `drive`'s throttle and steer
+sources are its consumers.
 
 It exists because "observers are const" has no path for one module driving another at all —
 correctly, since `attach()`'s `const Registry&`/`const Params&` exists precisely so a module can
@@ -109,6 +110,31 @@ steady, since a real stick at its mechanical endpoint is indistinguishable from 
 value alone. `motor0`/`motor1`'s `mode=input` failsafe is the first consumer of this signal; `servo` does not
 need it (position-hold-on-dropout is its own correct, deliberate design, not a gap).
 
+## The steering servo is derived, not configured
+
+`servo` has no mode and no source parameter. It attaches its timer channel when the drive bus
+reports car mode and detaches when it reports skid, and while attached it follows the mixer's
+steering slot. Its four parameters — `min_us`, `max_us`, `invert`, `trim_us` — describe the
+linkage and nothing else.
+
+The rule lives in the firmware so that every host path gets it. The alternative, deriving it in
+the configurator when the Drive Mode dropdown changes, is bypassed by an INI restore and by a
+Terminal `set drive.mode`, both of which reach the device below the page that held the rule — and
+the Config page draws no servo mode control to fix the result with.
+
+It rides the bus rather than reading `drive.mode` directly because `Registry::notify()` routes a
+parameter change to the owning module only. An observer holding a resolved `drive.mode` index
+would read the right value in `attach()` and never learn it had changed. Widening `notify()` to
+fan out to observers is exactly what "observers are const" exists to prevent, so `drive` publishes
+the layout on a slot instead — the same shape the ARM slot already uses — and `servo` knows the
+slot number, not that `drive` exists. The slot is written on the rx-stale path too: the layout is
+configuration, not signal, so a lost link must never detach the steering.
+
+**To move a servo on the bench with no receiver bound, set `rx.source = sim`.** `runSim()`
+synthesises ch1 as a 4-second symmetric triangle and `drive.steer_src` defaults to that channel,
+so on a car build the servo sweeps end to end through the real mixer, the real `steer_ratio` and
+the real invert/trim/clamp path — a fuller check than driving the servo's output stage alone.
+
 ## The drive bus's two mixers
 
 One module, `drive`, owns the bus in both vehicle layouts, selected by `drive.mode`. A sibling
@@ -117,11 +143,16 @@ freshness handling, and two producers on one bus needs an arbiter that nothing e
 
 The slots keep their meaning by index, and their wire names never change:
 
-| Slot | `skid` | `car` | Name in `motor<N>.src` / `servo.src` |
+| Slot | `skid` | `car` | Name in `motor<N>.src` |
 |---|---|---|---|
 | 0 | left track | throttle | `drive_left` |
-| 1 | right track | steer | `drive_right` |
-| 2 | arm | arm | not selectable; read directly |
+| 1 | right track | throttle | `drive_right` |
+| 2 | steer | steer | `drive_steer` |
+| 3 | arm | arm | not selectable; read directly |
+| 4 | layout (0) | layout (1) | not selectable; read directly |
+
+Both motor slots carry throttle on a car, so either motor pin drives whichever wheel is wired to
+it, and the steering slot carries steer alone.
 
 Stable names keep INI files portable across a mode change and keep `ParamDef.opts` the static
 table it has to be. The curated pages relabel them for humans, which is what curation is for. The
@@ -131,13 +162,25 @@ cost is accepted: `set motor0.src drive_left` reads oddly on a car.
 both tracks, so a hard turn at full throttle can push one past its limit and both must scale
 together; the car mixer's two outputs are independent and neither can displace the other.
 
-**Steering is never gated.** The servo has no arm gate, no failsafe centring and no
-hold-last-position on link loss: it follows its source in every state the vehicle can reach. A
-disarmed vehicle is not moving, so there is nothing for a steering gate to make safe, and
-freezing or centring the wheels when the link drops takes away the one control still worth having
-on a vehicle that is still rolling. The motors carry the whole arming responsibility, clamping to
-`neutralUs()` whenever the arm switch is inactive or the bus is stale. Bench-confirmed: with the
-vehicle disarmed the motor output sits at neutral while steering keeps tracking the stick.
+**Steering has no arm gate.** The servo follows the steering slot whether or not the vehicle is
+armed: a disarmed vehicle is not moving, so there is nothing for a steering gate to make safe. The
+motors carry the whole arming responsibility, clamping to `neutralUs()` whenever the arm switch is
+inactive or the bus is stale. Bench-confirmed: with the vehicle disarmed the motor output sits at
+neutral while steering keeps tracking the stick.
+
+**On a stale link the steering slot carries 0** — the bus's "this slot carries no data" sentinel,
+and not a reachable mixer output — so the servo takes its hold-last-pulse path and the wheels stay
+where they were. The motors fail to neutral at the same moment, so the vehicle coasts to a stop
+along the curve it was already on. That follows surface-RC practice, where the throttle failsafe
+position is the well-defined one and steering is commonly left to hold: a preset steering angle
+only helps if you already know which way is clear, which the board cannot. A motor pointed at
+`drive_steer` is unaffected, because it reads the same bus's freshness and fails to neutral before
+the sentinel can reach its output stage. Bench-confirmed: with the TX switched off mid-turn the
+servo stays where it was and the motors drop to neutral.
+
+`drv_s` reports the steering output alongside `drv_l`/`drv_r`, skipping the sentinel so it reads
+the pulse the servo is actually holding — the same convention `motor0`/`motor1` use for their own
+`lastUs_`.
 
 `neutralUs()` is always the midpoint of `min_us`/`max_us`. There is no parameter to move it,
 deliberately: the one that existed encoded whether the attached controller read 1000µs or 1500µs

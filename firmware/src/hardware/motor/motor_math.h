@@ -37,7 +37,7 @@ enum : uint32_t { ARM_OFF = 0, ARM_ARMING = 1, ARM_ARMED = 2 };
 // Shared by every ESC module instance. Lives here, not in any one instance's
 // driver, so `pio test -e native` covers the arm-hold state machine and the
 // pulse clamp with no board attached and with no duplicated logic between
-// motor0/motor1 -- the same split servo uses for angleToUs/sweepAngle/rephase.
+// motor0/motor1 -- the same split servo uses for its own pulse maths.
 
 // Clamps a commanded/bus pulse width (microseconds, or 0 for "no signal yet")
 // into the calibrated range.

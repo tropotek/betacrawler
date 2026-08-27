@@ -74,12 +74,13 @@ static const ParamDef kParams[] = {
   {"drive.arm_max", ParamType::U8,   "Arm Max", "µs",    1000, 2000, nullptr, 0, 0, 2000, nullptr, nullptr, nullptr, nullptr},
 };
 
-// The computed output each side is currently commanding -- "commanded, not
-// measured" honesty, same as motor0/motor1's own telemetry.
+// The outputs the mixer is currently commanding -- "commanded, not measured"
+// honesty, same as motor0/motor1's own telemetry.
 static const TlmDef kTlm[T_COUNT] = {
   // key      label    unit         type          div dec fmt      group
   {"drv_l",  "Left",  "\xc2\xb5s", TlmType::U32,  0,  0, nullptr, nullptr},
   {"drv_r",  "Right", "\xc2\xb5s", TlmType::U32,  0,  0, nullptr, nullptr},
+  {"drv_s",  "Steer", "\xc2\xb5s", TlmType::U32,  0,  0, nullptr, nullptr},
 };
 
 const core::ModuleDesc kDesc = {
