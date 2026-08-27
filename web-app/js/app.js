@@ -249,14 +249,8 @@ document.addEventListener('alpine:init', () => {
       return this.setAll(['motor0.type', 'motor1.type'], v, 'Type');
     },
 
-    // The steering servo belongs to the car build alone, so drive.mode already
-    // answers whether one exists and the page never asks separately. Terminal
-    // `set servo.mode` still reaches hold/sweep for bench testing.
-    async setDriveMode(v) {
-      await this.setAll(['drive.mode'], v, 'Drive Mode');
-      if (this.field('servo.mode').def) {
-        await this.setAll(['servo.mode'], v === 'car' ? 'input' : 'off', 'Servo');
-      }
+    setDriveMode(v) {
+      return this.setAll(['drive.mode'], v, 'Drive Mode');
     },
 
     setBothEscFreq(v) {

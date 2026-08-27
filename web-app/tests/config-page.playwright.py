@@ -31,31 +31,25 @@ with sync_playwright() as p:
     page.wait_for_selector("#f-drive-mode", timeout=10000)
     page.wait_for_timeout(500)
 
-    def servo_mode():
-        return page.evaluate("() => Alpine.store('config').values['servo.mode']")
-
     def card_visible():
         return page.is_visible("fieldset:has-text('Steering Servo')")
 
-    # The steering servo belongs to the car build alone. drive.mode already
-    # says whether one exists, so it is never asked about separately.
-    check(not page.is_visible("#f-servo-mode"),
-          "a servo mode control is on the page; drive.mode already decides this")
+    # The firmware derives the servo from drive.mode, so there is no servo mode
+    # to publish or to draw -- the card follows the mixer instead.
+    check(page.evaluate("() => Alpine.store('config').field('servo.mode').def") is None,
+          "servo.mode is still in the schema")
 
     check(not card_visible(), "the Steering Servo card shows on a skid build")
-    check(servo_mode() == "off", f"skid left servo.mode at {servo_mode()!r}, want 'off'")
 
     page.select_option("#f-drive-mode", "car")
     page.wait_for_timeout(600)
     check(card_visible(), "the Steering Servo card is hidden on a car build")
-    check(servo_mode() == "input", f"car left servo.mode at {servo_mode()!r}, want 'input'")
     check(page.is_visible("#f-servo-invert"), "Invert is missing from the car build")
     check(page.is_visible("#f-servo-trim"), "Trim is missing from the car build")
 
     page.select_option("#f-drive-mode", "skid")
     page.wait_for_timeout(600)
     check(not card_visible(), "the Steering Servo card survives going back to skid")
-    check(servo_mode() == "off", f"back to skid left servo.mode at {servo_mode()!r}, want 'off'")
 
     browser.close()
 

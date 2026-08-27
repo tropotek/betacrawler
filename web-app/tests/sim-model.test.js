@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SimModel, truncDiv, trianglePercent, deadbanded, mix, carMix, applyInvert, applyTrim,
-  angleToUs, computeArmed, neutralUs,
+  computeArmed, neutralUs,
   nextArmState, nextPulseUs, effectiveMaxUs, MODE_OFF, MODE_ARMED, MODE_INPUT,
   ARM_OFF, ARM_ARMING, ARM_ARMED, FRAME_US,
 } from '../js/sim-model.js';
@@ -242,17 +242,20 @@ test('applyTrim offsets then clamps at the end stop', () => {
   assert.equal(applyTrim(1050, -200, 1000, 2000), 1000);
 });
 
-test('the model reports a detached servo as 0 and a held one as its angle', () => {
+test('the servo applies invert and trim to the steering slot', () => {
   const mod = makeModel();
-  assert.equal(mod.telemetry(0).srv, 0);
-  mod.set('servo.mode', 'hold', 0);
-  mod.set('servo.angle', 180, 0);
-  assert.equal(mod.telemetry(0).srv, 2000);
+  mod.set('rx.source', 'sim', 0);
+  mod.set('drive.mode', 'car', 0);
+  const plain = mod.telemetry(1000).srv;
+  const min = mod.num('servo.min_us');
+  const max = mod.num('servo.max_us');
+
   mod.set('servo.invert', 'reversed', 0);
-  assert.equal(mod.telemetry(0).srv, 1000);
+  assert.equal(mod.telemetry(1000).srv, min + max - plain);
+
   mod.set('servo.invert', 'normal', 0);
   mod.set('servo.trim_us', -120, 0);
-  assert.equal(mod.telemetry(0).srv, 1880);
+  assert.equal(mod.telemetry(1000).srv, plain - 120);
 });
 
 test('car mode drives the bus without cross-coupling', () => {
@@ -288,22 +291,21 @@ test('the two mixers produce different buses from the same channels', () => {
   assert.equal(b.drv_r, b.ch2);
 });
 
-test('a car steers on stock settings, with only the servo switched on', () => {
-  // servo.src defaults to the drive steering slot, so enabling the servo is
+test('a car steers on stock settings, with no servo parameter to set', () => {
+  // The firmware derives the servo from drive.mode, so picking the mixer is
   // the only step between a default board and a working car.
   const mod = makeModel();
   mod.set('rx.source', 'sim', 0);
   mod.set('drive.mode', 'car', 0);
-  mod.set('servo.mode', 'input', 0);
   const t = mod.telemetry(1000);
   assert.equal(t.srv, t.ch1);          // ch1 is steer by default
   assert.notEqual(t.ch1, t.ch2);
   assert.equal(t.drv_l, t.ch2);        // and throttle still reaches the motors
 });
 
-test('the servo ignores steering in skid mode unless it is switched on', () => {
+test('the servo is detached in skid mode', () => {
   const mod = makeModel();
   mod.set('rx.source', 'sim', 0);
   const t = mod.telemetry(1000);
-  assert.equal(t.srv, 0);              // detached, servo.mode defaults off
+  assert.equal(t.srv, 0);
 });
