@@ -27,6 +27,15 @@
        above -- same specificity, but this block comes later in the cascade
        -- so the disabled state needs its own explicit rule here instead. */
     .sidebar .nav-link.disabled { color: var(--bs-secondary-color); }
+    /* The /app-dev/ identity strip, unhidden by app.js. Bootstrap's <code>
+       pink and link blue are both unreadable on the danger red. */
+    #dev-banner code, #dev-banner a { color: #fff; }
+    #dev-banner a { text-decoration: underline; }
+    /* The strip stays on one line by shedding text at each breakpoint; below
+       the narrowest of those, the shortest wording still needs the room. */
+    @media (max-width: 420px) {
+      #dev-banner { font-size: .75rem; padding-left: .5rem; padding-right: .5rem; }
+    }
     .navbar-brand { padding-top: .75rem; padding-bottom: .75rem; }
     /* Bootstrap's width utilities (unlike margin/display) have no responsive
        breakpoint variants in the default build -- "w-md-auto" isn't a real
@@ -229,6 +238,14 @@
       <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
     </symbol>
   </svg>
+
+  <!-- Each span carries its own leading punctuation, so the line reads correctly
+       at every breakpoint it is trimmed to. -->
+  <div id="dev-banner" class="d-none bg-danger text-white text-center small fw-semibold py-1 px-3">
+    Development build<span class="d-none d-sm-inline"> — not a tagged release</span><span
+      class="d-none d-lg-inline">, built from <code>main</code> and may not match released
+      firmware</span> · <a href="../app/">Use the stable version</a>
+  </div>
 
   <header class="navbar navbar-dark sticky-top bg-dark p-0 shadow">
     <div class="container-fluid flex-wrap gap-2 py-2">

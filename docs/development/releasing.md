@@ -67,7 +67,8 @@ version's CHANGELOG section, for anyone flashing over ST-Link rather than WebUSB
 
 `/app-dev/` is the configurator as it stands on `main`, for testing a merge against real hardware
 before tagging. It is unlisted and unsupported; the firmware images it offers are whatever was
-last bundled on `main`.
+last bundled on `main`. It identifies itself: a red strip above the navbar names it a
+development build and links back to `/app/`, and its version badge reads `-dev`.
 
 `.github/workflows/docs.yml` builds all three from one job and uploads them as a single Pages
 artifact — a deploy replaces the whole site, so the release site and the dev app are always built

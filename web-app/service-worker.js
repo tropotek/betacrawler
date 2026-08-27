@@ -2,12 +2,12 @@
 // favicon.ico, hero.svg) -- installed clients only refetch them once the
 // browser detects service-worker.js itself has new bytes. js/* is network-first
 // below, so it needs no bump to update.
-const CACHE_NAME = 'betacrawler-web-app-v19';
+const CACHE_NAME = 'betacrawler-web-app-v20';
 const SHELL_FILES = [
   './', './index.html', './manifest.json',
   './js/app.js', './js/api.js', './js/webserial-link.js', './js/device-model.js',
   './js/terminal.js', './js/settings-ini.js', './js/protocol.js', './js/line-buffer.js',
-  './js/dfu.js',
+  './js/dfu.js', './js/browser-support.js', './js/build-channel.js',
   './vendor/bootstrap.min.css', './vendor/bootstrap.bundle.min.js', './vendor/alpine.min.js',
   './pages/home.html', './pages/config.html', './pages/controller.html', './pages/modes.html',
   './pages/terminal.html', './pages/help.html', './pages/wiring.html',

@@ -8,6 +8,8 @@ number being tagged, and a fresh `## Unreleased` opens above it.
 
 ## Unreleased
 
+- **feat: the `/app-dev/` build says so.** A red strip above the navbar marks it a development
+  build and links to the stable configurator; its version badge reads `-dev`.
 - **Saved settings reset to defaults on the first boot after flashing** — the servo parameter set
   shrank, changing the stored-record fingerprint.
 - **feat: the steering servo follows `drive.mode`.** The firmware derives it, so an INI restore or

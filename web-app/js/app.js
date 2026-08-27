@@ -1,5 +1,6 @@
 import { Api } from './api.js';
 import { assessBrowser } from './browser-support.js';
+import { buildChannel } from './build-channel.js';
 
 // Shared with FW_VERSION in firmware/include/config.h -- betacrawler tracks
 // one project-wide version number across firmware and app.
@@ -1313,7 +1314,11 @@ function startWatchdog() {
 }
 
 (async function init() {
-  el('app-version').textContent = `v${APP_VERSION}`;
+  // The /app-dev/ deployment carries main's in-progress version number, so it
+  // says so in the navbar as well as in the banner above it.
+  const dev = buildChannel(window.location.pathname) === 'dev';
+  el('app-version').textContent = `v${APP_VERSION}${dev ? '-dev' : ''}`;
+  if (dev) el('dev-banner').classList.remove('d-none');
   initDfuGrantModal();
   // Home is always the landing page, including on a reload while a device is
   // still connected server-side. Nothing navigates for you any more -- page
