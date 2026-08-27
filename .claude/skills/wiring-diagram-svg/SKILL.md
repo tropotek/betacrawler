@@ -27,9 +27,11 @@ The full worked example (Black Pill + battery/PDB/ESC/motor/receiver/USB cards) 
 (the "Motor 0 card" is the smallest complete one) as your starting point — don't build a card from
 a blank SVG.
 
-The docs site carries the same diagram as two PNGs per figure (one inline, one full-size for the
-reader to open and zoom) — `docs/assets/screenshots/wiring-diagram{,-large}.png` and
-`sense-divider{,-large}.png`. Re-capture them after changing the SVG or the docs page goes stale:
+The docs site carries the same diagrams as two PNGs per figure (one inline, one full-size for the
+reader to open and zoom), one pair per `.diagram-card` on the Wiring page — under
+`docs/assets/screenshots/`: `wiring-{skid,car}-{brushed,brushless}{,-large}.png`,
+`addon-battery-sense{,-large}.png` and `sense-divider{,-large}.png`. Re-capture them after
+changing the SVG or the docs page goes stale:
 serve `web-app/` (`python3 -m http.server 9091`), open the Wiring page (no board connection
 needed), and screenshot each `.diagram-card` element at 2x (inline) and 4x (full-size) device
 scale factor — e.g. with `~/.pwvenv`'s Playwright (see `CLAUDE.md`) or `claude-in-chrome`.
