@@ -83,6 +83,9 @@ void DriveDriver::compute(uint32_t nowMs) {
 
   lastLeftUs_  = r.leftUs;
   lastRightUs_ = r.rightUs;
+  // Skips the stale-link sentinel, so this reports the last real pulse the
+  // servo is holding -- the same convention motor0/motor1's own lastUs_ uses.
+  if (r.steerUs > 0) lastSteerUs_ = r.steerUs;
   // Slots 0/1 are this module's own motor-slot convention and slot 2 the
   // steering output; slot 3 (kArmSlot) is the shared ARM switch -- see
   // motor0/motor1's own notes on how they learn about either without
@@ -113,6 +116,7 @@ void DriveDriver::tick(uint32_t nowMs) {
 void DriveDriver::readTelemetry(core::TlmValue* out) {
   out[T_LEFT].u  = lastLeftUs_;
   out[T_RIGHT].u = lastRightUs_;
+  out[T_STEER].u = lastSteerUs_;
 }
 
 }  // namespace drive

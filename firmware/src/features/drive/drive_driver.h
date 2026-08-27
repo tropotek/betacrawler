@@ -35,6 +35,7 @@ class DriveDriver : public core::Module {
   uint16_t armMaxUs_        = 2000;
   uint16_t lastLeftUs_      = 1500;
   uint16_t lastRightUs_     = 1500;
+  uint16_t lastSteerUs_     = 1500;
 };
 
 }  // namespace drive

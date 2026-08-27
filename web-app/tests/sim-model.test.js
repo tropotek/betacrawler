@@ -322,6 +322,17 @@ test('a stale link holds the last steering pulse and centres the motors', () => 
   mod.set('rx.source', 'uart', 0);
   const stale = mod.telemetry(1100);
   assert.equal(stale.srv, live.srv);
+  assert.equal(stale.drv_s, live.drv_s);   // reports the pulse being held
   assert.equal(stale.drv_l, 1500);
   assert.equal(stale.drv_r, 1500);
+});
+
+test('drv_s carries steer alone in car mode', () => {
+  const mod = makeModel();
+  mod.set('drive.mode', 'car', 0);
+  mod.set('rx.source', 'sim', 0);
+  const t = mod.telemetry(1000);
+  assert.equal(t.drv_s, t.ch1);        // ch1 is steer by default
+  assert.equal(t.drv_l, t.ch2);        // and both motor slots carry throttle
+  assert.equal(t.drv_r, t.ch2);
 });

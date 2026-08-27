@@ -831,6 +831,12 @@ export const SIM_SCHEMA = {
       "group": "Drive"
     },
     {
+      "key": "drv_s",
+      "label": "Steer",
+      "unit": "µs",
+      "group": "Drive"
+    },
+    {
       "key": "motor0",
       "label": "Motor 0",
       "unit": "µs",

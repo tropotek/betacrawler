@@ -24,6 +24,6 @@ enum : uint8_t {
 };
 
 // Telemetry indices within this module's slice of the frame.
-enum : uint8_t { T_LEFT = 0, T_RIGHT = 1, T_COUNT = 2 };
+enum : uint8_t { T_LEFT = 0, T_RIGHT = 1, T_STEER = 2, T_COUNT = 3 };
 
 }  // namespace drive

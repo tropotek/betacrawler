@@ -15,6 +15,8 @@ number being tagged, and a fresh `## Unreleased` opens above it.
   `servo.src` are gone.
 - **fix: the steering holds its last position when the link drops**, instead of centring, while
   the motors still fail to neutral.
+- **feat: the steering output is reported as telemetry.** `drv_s` joins `drv_l`/`drv_r`, and the
+  Controller page shows it in place of the duplicated throttle reading on a car.
 - **docs: `rx.source = sim` sweeps a servo with no receiver bound**, through the whole mixer chain.
 
 ## 4.2.2

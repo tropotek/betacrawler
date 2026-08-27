@@ -327,7 +327,10 @@ export class SimModel {
     Object.assign(tlm, this._link(rxFresh));
     Object.assign(tlm, this._system(nowMs));
     Object.assign(tlm, this._vbat(nowMs));
-    tlm.drv_l = left; tlm.drv_r = right;
+    // Mirrors DriveDriver::readTelemetry -- steer skips the stale sentinel and
+    // reports the last real pulse.
+    if (steer > 0) this._lastSteer = steer;
+    tlm.drv_l = left; tlm.drv_r = right; tlm.drv_s = this._lastSteer ?? CENTER_US;
     tlm.motor0 = this._motor.motor0.lastUs; tlm.arm0 = this._motor.motor0.armState;
     tlm.motor1 = this._motor.motor1.lastUs; tlm.arm1 = this._motor.motor1.armState;
     tlm.srv = this._servo(drive);

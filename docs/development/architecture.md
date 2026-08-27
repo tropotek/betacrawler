@@ -175,7 +175,12 @@ along the curve it was already on. That follows surface-RC practice, where the t
 position is the well-defined one and steering is commonly left to hold: a preset steering angle
 only helps if you already know which way is clear, which the board cannot. A motor pointed at
 `drive_steer` is unaffected, because it reads the same bus's freshness and fails to neutral before
-the sentinel can reach its output stage.
+the sentinel can reach its output stage. Bench-confirmed: with the TX switched off mid-turn the
+servo stays where it was and the motors drop to neutral.
+
+`drv_s` reports the steering output alongside `drv_l`/`drv_r`, skipping the sentinel so it reads
+the pulse the servo is actually holding — the same convention `motor0`/`motor1` use for their own
+`lastUs_`.
 
 `neutralUs()` is always the midpoint of `min_us`/`max_us`. There is no parameter to move it,
 deliberately: the one that existed encoded whether the attached controller read 1000µs or 1500µs

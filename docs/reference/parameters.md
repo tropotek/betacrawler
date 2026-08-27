@@ -162,7 +162,7 @@ Read-only values the board reports. These are displayed, never set.
 | System | Uptime, Clock (MHz), Free RAM (kB), Temp (°C), VDD (V), Fault, Loop (Hz), Worst Pass (µs) |
 | RC Channels | CH1–CH16, in µs |
 | RC Link | Link, LQ (%), RSSI (dBm), Rate (Hz), Errors, RF Rate (Hz), TX Power (mW) |
-| Drive | Left and Right output, in µs |
+| Drive | Left, Right and Steer output, in µs |
 | Motor 0 | Output (µs), Armed |
 | Motor 1 | Output (µs), Armed |
 
