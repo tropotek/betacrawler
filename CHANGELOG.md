@@ -6,6 +6,15 @@ records live in the git history, not here.
 Merged work lands under `## Unreleased`. Cutting a release renames that heading to the version
 number being tagged, and a fresh `## Unreleased` opens above it.
 
+## Unreleased
+
+- **Saved settings reset to defaults on the first boot after flashing** — the servo parameter set
+  shrank, changing the stored-record fingerprint.
+- **feat: the steering servo follows `drive.mode`.** The firmware derives it, so an INI restore or
+  a Terminal `set` configures a car correctly; `servo.mode`, `servo.angle`, `servo.sweep_s` and
+  `servo.src` are gone.
+- **docs: `rx.source = sim` sweeps a servo with no receiver bound**, through the whole mixer chain.
+
 ## 4.2.2
 
 - **feat: new BetaCrawler mark, and the name is capitalised.** A badge split between tracked

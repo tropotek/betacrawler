@@ -85,7 +85,6 @@ these on the **Configuration** page, then press **Save to flash**:
 | Drive Mode | `drive.mode` | `skid` | Mixes throttle and steering into two independent side commands. Already the default. |
 | Motor 0 Type | `motor0.type` | `brushless` | Sends an ESC pulse train on PA6. |
 | Motor 1 Type | `motor1.type` | `brushless` | The same on PB8. |
-| Servo | `servo.mode` | `off` | No steering servo on a skid-steer vehicle. Already the default. |
 
 Rather than typing these in: download
 **[skid-brushless.ini](../../assets/presets/skid-brushless.ini)** and restore it from the

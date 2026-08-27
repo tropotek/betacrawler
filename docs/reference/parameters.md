@@ -63,7 +63,7 @@ clamping the outputs to neutral. Only the one matching your protocol applies.
 | Arm Max (µs) | `drive.arm_max` | `2000` | 1000–2000 |
 
 The mixer. It takes throttle and steering and writes three outputs, which
-`motor<N>.src` and `servo.src` then select with `drive_left`, `drive_right` and `drive_steer`.
+`motor<N>.src` selects with `drive_left`, `drive_right` and `drive_steer`.
 
 **Drive Mode** decides what the two motor outputs carry. `drive_steer` carries the steering
 command in both modes, which is why a servo pointed at it works either way:
@@ -131,28 +131,23 @@ freely) or `brake` (both high, resisting motion).
 
 | Setting | Key | Default | Range |
 |---|---|---|---|
-| Servo | `servo.mode` | `off` | `off`, `hold`, `sweep`, `input` — set by **Drive Mode** |
-| Angle (°) | `servo.angle` | `90` | 0–180 |
-| Sweep (s) | `servo.sweep_s` | `4` | 1–30 |
 | Min (µs) | `servo.min_us` | `1000` | 500–1500 |
 | Max (µs) | `servo.max_us` | `2000` | 1500–2500 |
-| Source | `servo.src` | `drive_steer` | `ch1`–`ch12`, `drive_left`, `drive_right`, `drive_steer` |
 | Invert | `servo.invert` | `normal` | `normal`, `reversed` |
 | Trim (µs) | `servo.trim_us` | `0` | −250–250 |
 
-**Mode** picks where the pulse comes from: `hold` parks at **Angle**, `sweep` runs back and
-forth over **Sweep** seconds, `input` follows **Source**. `off` detaches the pin so the servo
-relaxes and draws no holding current. The Configuration page sets this from **Drive Mode** —
-`car` gives `input`, `skid` gives `off` — so it is only worth setting by hand from the Terminal,
-to reach `hold` or `sweep` for a bench test.
+There is nothing to switch on. The firmware drives the servo when **Drive Mode** is `car` and
+detaches the pin when it is `skid`, so the servo relaxes and draws no holding current on a vehicle
+that has none. While driven it follows the mixer's steering output, with `steer_src` and
+`steer_ratio` already applied.
 
-**Source** defaults to `drive_steer`, the mixer's steering output, so a car steers without
-touching it. A raw channel bypasses the mixer's steer ratio. Set from the Terminal; no page shows
-it.
+**Min** and **Max** are the ends of the pulse range, so they bound the travel the linkage can
+reach. **Invert** and **Trim** describe the linkage rather than the input. Invert mirrors travel
+about the centre of Min/Max; Trim then shifts the centre. Set Invert if the wheels turn the wrong
+way, then use Trim to bring them straight.
 
-**Invert** and **Trim** describe the linkage, not the input, so they apply in every mode. Invert
-mirrors travel about the centre of Min/Max; Trim then shifts the centre. Set Invert if the wheels
-turn the wrong way, then use Trim to bring them straight.
+To move the servo on the bench with no receiver bound, set `rx.source = sim` with Drive Mode on
+`car`: the simulated channels sweep the steering end to end through the real mixer.
 
 There is no arm gate on the servo. Steering keeps working whether or not the vehicle is armed,
 and when the link drops — a vehicle still rolling is better steerable than not.

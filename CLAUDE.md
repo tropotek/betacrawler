@@ -193,6 +193,12 @@ it (`#include BOARD_HEADER` is invisible to SCons), and removing it silently rei
 stale-binary builds. Its companion, `force_version_rebuild()` in `bundle_firmware.py`, is what
 makes a shipped image's `built` stamp truthful.
 
+**The servo's enable rule lives in firmware** — `drive` publishes the vehicle layout on output-bus
+slot 4 and `servo` derives attach/detach from it, following the mixer's steering slot. It must not
+migrate back into the UI: a browser-side coupling is bypassed by INI restore and Terminal `set`,
+which is the defect this replaced. The servo has no mode and no source parameter, and
+`FEATURE_SERVO` therefore requires `FEATURE_DRIVE`.
+
 **Flash is written only on explicit `save`** — an erase stalls the MCU ~1s. Set applies to
 RAM/hardware instantly. The stored record is guarded by magic/version/fingerprint/CRC and falls
 back to defaults on any mismatch.

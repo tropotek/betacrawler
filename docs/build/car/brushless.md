@@ -90,12 +90,9 @@ these on the **Configuration** page, then press **Save to flash**:
 | Drive Mode | `drive.mode` | `car` | Throttle to both motor outputs, steering to the servo, unmixed. |
 | Motor 0 Type | `motor0.type` | `brushless` | Sends an ESC pulse train on PA6. |
 | Motor 1 Type | `motor1.type` | `brushless` | The same on PB8, for a second driven wheel. |
-| Servo | `servo.mode` | `input` | Makes the servo follow a channel. |
-| Servo Source | `servo.src` | `drive_steer` | The mixer's steer output, with `steer_src` and `steer_ratio` already applied. Already the default. |
 
-Setting Drive Mode to `car` in the app switches the servo on for you. Restoring an INI does not —
-it goes straight to the device and never passes through the app's Configuration page — so the
-preset below sets `servo.mode` itself.
+The firmware drives the steering servo whenever Drive Mode is `car`, so there is no servo
+setting to remember — in the app, from the Terminal, or in an INI.
 
 Rather than typing these in: download **[car-brushless.ini](../../assets/presets/car-brushless.ini)**
 and restore it from the **Terminal** page's **Restore from INI** button, then press **Save to
