@@ -31,6 +31,9 @@
 #ifndef SERVO_TIMER
 #error "FEATURE_SERVO is on but the board header defines no SERVO_TIMER"
 #endif
+#if !FEATURE_DRIVE
+#error "FEATURE_SERVO requires FEATURE_DRIVE -- the servo follows the drive mixer's steering slot"
+#endif
 
 // 50Hz frame. Overridable from a board header for a digital servo that wants
 // a faster one; analogue servos expect 20ms.

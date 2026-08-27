@@ -55,6 +55,8 @@
 // when the board *could* support something that is deliberately off.
 #define FEATURE_STATUS_LED  1
 #define FEATURE_BUTTON  0
+// The servo follows the drive mixer's steering slot and has no source of its
+// own, so FEATURE_SERVO 1 requires FEATURE_DRIVE 1.
 #define FEATURE_SERVO   0
 // Reboot-to-bootloader, so the app can flash this board over USB without a
 // jumper. Requires DFU_SYSMEM_ADDR below. Only enable it on a part that has a
