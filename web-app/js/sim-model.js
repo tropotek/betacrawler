@@ -359,7 +359,10 @@ export class SimModel {
         this.num('drive.steer_ratio'), 0,
       );
     } else {
-      left = right = steer = CENTER_US;
+      // Steer carries the bus's "no data" sentinel on a stale link, so the
+      // servo below holds its last pulse while the motors fail to neutral.
+      left = right = CENTER_US;
+      steer = 0;
     }
     const armSrc = this.text('drive.arm_src');
     const isNone = armSrc === 'none';

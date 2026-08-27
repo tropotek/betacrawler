@@ -309,3 +309,19 @@ test('the servo is detached in skid mode', () => {
   const t = mod.telemetry(1000);
   assert.equal(t.srv, 0);
 });
+
+test('a stale link holds the last steering pulse and centres the motors', () => {
+  const mod = makeModel();
+  mod.set('drive.mode', 'car', 0);
+  mod.set('rx.source', 'sim', 0);
+  const live = mod.telemetry(1000);
+  assert.ok(live.srv > 0);
+
+  // 'uart' with nothing bound is a dead link: the mixer publishes the no-data
+  // sentinel on the steering slot, so the servo holds rather than centring.
+  mod.set('rx.source', 'uart', 0);
+  const stale = mod.telemetry(1100);
+  assert.equal(stale.srv, live.srv);
+  assert.equal(stale.drv_l, 1500);
+  assert.equal(stale.drv_r, 1500);
+});

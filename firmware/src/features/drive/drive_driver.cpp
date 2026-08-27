@@ -75,7 +75,10 @@ void DriveDriver::compute(uint32_t nowMs) {
   } else {
     r.leftUs  = (uint16_t)kCenterUs;
     r.rightUs = (uint16_t)kCenterUs;
-    r.steerUs = (uint16_t)kCenterUs;
+    // 0 is the bus's "this slot carries no data" sentinel, which makes the
+    // servo hold its last pulse instead of snapping the wheels straight while
+    // the vehicle is still rolling.
+    r.steerUs = 0;
   }
 
   lastLeftUs_  = r.leftUs;

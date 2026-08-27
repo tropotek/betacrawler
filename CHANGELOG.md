@@ -13,6 +13,8 @@ number being tagged, and a fresh `## Unreleased` opens above it.
 - **feat: the steering servo follows `drive.mode`.** The firmware derives it, so an INI restore or
   a Terminal `set` configures a car correctly; `servo.mode`, `servo.angle`, `servo.sweep_s` and
   `servo.src` are gone.
+- **fix: the steering holds its last position when the link drops**, instead of centring, while
+  the motors still fail to neutral.
 - **docs: `rx.source = sim` sweeps a servo with no receiver bound**, through the whole mixer chain.
 
 ## 4.2.2

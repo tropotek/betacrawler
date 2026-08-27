@@ -62,7 +62,7 @@ test('a car preset selects the car mixer', () => {
 test('no preset carries a servo mode', () => {
   for (const file of presets) {
     const text = readFileSync(`${presetDir}/${file}`, 'utf8');
-    const servoSection = text.split('[servo]')[1] ?? '';
+    const servoSection = (text.split('[servo]')[1] ?? '').split(/^\[/m)[0];
     assert.ok(!/^\s*mode\s*=/m.test(servoSection), `${file}: [servo] must not set a mode`);
     assert.ok(!text.includes('servo.mode'), `${file}: no servo.mode`);
   }

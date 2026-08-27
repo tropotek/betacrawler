@@ -60,7 +60,7 @@ void ServoDriver::begin() {
   ch_ = STM_PIN_CHANNEL(pinmap_function(digitalPinToPinName(SERVO_PIN), PinMap_PWM));
   timer_->setOverflow(SERVO_FRAME_US, MICROSEC_FORMAT);
   timer_->resume();
-  detach();   // boot silent; main.cpp's notify pass applies any saved mode next
+  detach();   // boot silent; tick() attaches once the drive bus reports car
 }
 
 void ServoDriver::attachOutput() {
@@ -80,7 +80,7 @@ void ServoDriver::detach() {
 }
 
 // Invert then trim then clamp, on every path to the pin: both describe the
-// linkage, so hold, sweep and input all get them.
+// linkage, so every route to the output gets them.
 void ServoDriver::writeUs(uint16_t us) {
   const uint16_t out = applyTrim(applyInvert(us, minUs_, maxUs_, inverted_),
                                  trimUs_, minUs_, maxUs_);
@@ -122,8 +122,8 @@ void ServoDriver::tick(uint32_t nowMs) {
   if (!attached_) return;
 
   const int16_t v = driveInputs_->get(kSteerSlot);
-  // 0 is the bus's established "this slot carries no data" sentinel and is not
-  // a reachable mixer output. Hold the last pulse rather than actuating to
+  // 0 is the bus's "this slot carries no data" sentinel, published by the
+  // mixer on a stale link. Hold the last pulse rather than actuating to
   // min_us.
   if (v > 0) writeUs(clampUs(v, minUs_, maxUs_));
 }

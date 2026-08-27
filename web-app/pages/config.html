@@ -91,7 +91,7 @@
                     <strong>skid</strong> mixes throttle and steer into a left and a right output —
                     tracks, or a wheeled rover that turns by driving its sides at different speeds.
                     <strong>car</strong> sends throttle to both motor outputs and steer to the
-                    servo on PB10, which it switches on for you.
+                    servo on PB10, which the firmware drives whenever Drive Mode is car.
                   </div>
                 </div>
               </div>
@@ -135,7 +135,7 @@
                            @change="$store.config.commit($store.config.field('servo.trim_us').def)">
                     <div class="help-body d-none">
                       Nudges the centre point so the wheels sit straight. Negative values go the
-                      other way. Applies in every servo mode — it corrects the linkage, not the input.
+                      other way. It corrects the linkage, not the input.
                     </div>
                   </div>
                 </template>

@@ -149,8 +149,9 @@ way, then use Trim to bring them straight.
 To move the servo on the bench with no receiver bound, set `rx.source = sim` with Drive Mode on
 `car`: the simulated channels sweep the steering end to end through the real mixer.
 
-There is no arm gate on the servo. Steering keeps working whether or not the vehicle is armed,
-and when the link drops — a vehicle still rolling is better steerable than not.
+There is no arm gate on the servo: steering keeps working whether or not the vehicle is armed. If
+the link drops the wheels hold where they were and the motors fail to neutral, so the vehicle
+coasts to a stop along the curve it was already on.
 
 ## Telemetry values
 

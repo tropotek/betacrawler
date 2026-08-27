@@ -162,14 +162,20 @@ cost is accepted: `set motor0.src drive_left` reads oddly on a car.
 both tracks, so a hard turn at full throttle can push one past its limit and both must scale
 together; the car mixer's two outputs are independent and neither can displace the other.
 
-**Steering is never gated.** The servo has no arm gate, no failsafe centring and no
-hold-last-position on link loss: it follows the steering slot in every state the vehicle can
-reach. A
-disarmed vehicle is not moving, so there is nothing for a steering gate to make safe, and
-freezing or centring the wheels when the link drops takes away the one control still worth having
-on a vehicle that is still rolling. The motors carry the whole arming responsibility, clamping to
-`neutralUs()` whenever the arm switch is inactive or the bus is stale. Bench-confirmed: with the
-vehicle disarmed the motor output sits at neutral while steering keeps tracking the stick.
+**Steering has no arm gate.** The servo follows the steering slot whether or not the vehicle is
+armed: a disarmed vehicle is not moving, so there is nothing for a steering gate to make safe. The
+motors carry the whole arming responsibility, clamping to `neutralUs()` whenever the arm switch is
+inactive or the bus is stale. Bench-confirmed: with the vehicle disarmed the motor output sits at
+neutral while steering keeps tracking the stick.
+
+**On a stale link the steering slot carries 0** — the bus's "this slot carries no data" sentinel,
+and not a reachable mixer output — so the servo takes its hold-last-pulse path and the wheels stay
+where they were. The motors fail to neutral at the same moment, so the vehicle coasts to a stop
+along the curve it was already on. That follows surface-RC practice, where the throttle failsafe
+position is the well-defined one and steering is commonly left to hold: a preset steering angle
+only helps if you already know which way is clear, which the board cannot. A motor pointed at
+`drive_steer` is unaffected, because it reads the same bus's freshness and fails to neutral before
+the sentinel can reach its output stage.
 
 `neutralUs()` is always the midpoint of `min_us`/`max_us`. There is no parameter to move it,
 deliberately: the one that existed encoded whether the attached controller read 1000µs or 1500µs
