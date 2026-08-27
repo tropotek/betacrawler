@@ -49,13 +49,22 @@ for (const file of presets) {
   });
 }
 
-test('a car preset turns its steering servo on', () => {
+test('a car preset selects the car mixer', () => {
   for (const file of ['car-brushed.ini', 'car-brushless.ini']) {
     const values = new Map(parseIni(readFileSync(`${presetDir}/${file}`, 'utf8'), [...byKey.keys()]));
     assert.equal(values.get('drive.mode'), 'car', `${file}: drive.mode`);
-    assert.equal(values.get('servo.mode'), 'input',
-      `${file}: an INI restore bypasses the app's drive-mode-to-servo coupling, `
-      + 'so the preset has to set servo.mode itself');
+  }
+});
+
+// The firmware derives the servo from drive.mode, so a preset naming a servo
+// mode describes a parameter this firmware does not have -- and an INI restore
+// reports that as a skipped key rather than an error the user notices.
+test('no preset carries a servo mode', () => {
+  for (const file of presets) {
+    const text = readFileSync(`${presetDir}/${file}`, 'utf8');
+    const servoSection = text.split('[servo]')[1] ?? '';
+    assert.ok(!/^\s*mode\s*=/m.test(servoSection), `${file}: [servo] must not set a mode`);
+    assert.ok(!text.includes('servo.mode'), `${file}: no servo.mode`);
   }
 });
 
