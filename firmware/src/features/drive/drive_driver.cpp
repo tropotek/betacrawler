@@ -25,12 +25,14 @@ constexpr uint16_t kDeadbandUs = 0;
 
 // driveOutputs slots. 0/1 are the two motor slots -- left/right in skid mode,
 // both throttle in car mode -- and 2 is the steering slot a servo reads. 3 is
-// the shared ARM switch state (1 armed, 0 not). motor0/motor1 duplicate the
-// arm literal under their own name, the same convention kDriveSrcBase already
-// establishes for the drive_* src options -- they know the slot number, not
-// that drive exists.
+// the shared ARM switch state (1 armed, 0 not) and 4 the vehicle layout
+// (1 car, 0 skid), which is what tells a servo whether to drive its output.
+// motor0/motor1/servo duplicate the slot literals under their own names, the
+// same convention kDriveSrcBase already establishes for the drive_* src
+// options -- they know the slot number, not that drive exists.
 constexpr uint8_t kSteerSlot = 2;
 constexpr uint8_t kArmSlot   = 3;
+constexpr uint8_t kModeSlot  = 4;
 
 // A stale rx link must never leave this module commanding motion. Mirrors
 // MOTOR0_INPUT_STALE_MS/MOTOR1_INPUT_STALE_MS's own 500ms default.
@@ -90,6 +92,10 @@ void DriveDriver::compute(uint32_t nowMs) {
   const int16_t armSrcUs = armSrcIsNone ? 0 : inputs_->get((uint8_t)(armSrcIdx_ - 1));
   const bool armed = computeArmed(rxFresh, armSrcIsNone, armSrcUs, (int16_t)armMinUs_, (int16_t)armMaxUs_);
   driveOutputs_.set(kArmSlot, armed ? 1 : 0);
+
+  // Vehicle layout, not a control signal -- published on the stale path too,
+  // so a lost radio link never detaches the steering servo.
+  driveOutputs_.set(kModeSlot, (mode_ == MODE_CAR) ? 1 : 0);
 
   // Only mark fresh when rx itself is fresh -- a downstream motor0/motor1
   // reading this bus's lastFreshMs() must see staleness propagate, not a
