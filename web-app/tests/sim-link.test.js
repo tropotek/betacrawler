@@ -10,7 +10,7 @@ async function connected() {
   return link;
 }
 
-test('hello identifies itself as a simulator with no dfu/wifi capability', async () => {
+test('hello identifies itself as a simulator with no capabilities', async () => {
   const link = await connected();
   const { response } = await link.requestRaw('hello');
   assert.equal(response.ok, true);
@@ -62,7 +62,6 @@ test('revert reports defaults before a save and flash after', async () => {
 test('unsupported ops answer the way a board without them does', async () => {
   const link = await connected();
   assert.equal((await link.requestRaw('dfu')).response.err, 'nodfu');
-  assert.equal((await link.requestRaw('wifiscan')).response.err, 'nowifi');
   assert.equal((await link.requestRaw('nonsense')).response.err, 'badop');
   await link.disconnect();
 });

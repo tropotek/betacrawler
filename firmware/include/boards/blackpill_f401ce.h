@@ -27,14 +27,12 @@
 
 // --- features ---------------------------------------------------------------
 #define FEATURE_STATUS_LED  1
-#define FEATURE_BUTTON  0
 #define FEATURE_SERVO   1
 #define FEATURE_RX         1
 #define FEATURE_DRIVE 1
 #define FEATURE_MOTOR0       1
 #define FEATURE_MOTOR1       1
 #define FEATURE_VBAT       1
-#define FEATURE_WIFI    0
 // The F401 has the same USB DFU bootloader in ROM as the F411 -- same system
 // memory base, same AN2606 entry. See blackpill_f411ce.h for the rationale.
 #define FEATURE_DFU     1
@@ -55,10 +53,6 @@
 #define LED_PIN         LED_BUILTIN
 #define LED_ACTIVE_LOW  1
 
-// KEY button, pulled up; the driver samples its idle level at boot rather
-// than assuming a polarity.
-#define BUTTON_PIN      USER_BTN
-
 // Hobby servo on TIM2_CH3, same pin and reasoning as blackpill_f411ce.h: its
 // own timer peripheral, separate from motor0's TIM3 and motor1's TIM4.
 //
@@ -69,8 +63,7 @@
 
 // Brushless ESCs on TIM3_CH1 and TIM4_CH3, same pins and reasoning as
 // blackpill_f411ce.h's motor0/motor1: two separate timer peripherals, not two
-// channels of the same one. motor1 moved off PB6 (2026-08-23) to free it for
-// WIFI_TX_PIN below.
+// channels of the same one.
 #define MOTOR0_TIMER      TIM3
 #define MOTOR0_PIN        PA6
 #define MOTOR1_TIMER      TIM4
@@ -102,11 +95,3 @@
 #define RX_RX_PIN       PA3
 #define RX_TX_PIN       PA2
 #define RX_BAUD         420000
-
-// ESP-01 (ESP8266) WiFi module, stock AT firmware, on USART1's alternate
-// mapping. Same pins and reasoning as blackpill_f411ce.h -- FEATURE_WIFI
-// ships 0 on both boards, but the macros are defined here too now so both
-// headers stay symmetric (firmware/test/test_board_headers enforces this).
-#define WIFI_RX_PIN  PB7
-#define WIFI_TX_PIN  PB6
-#define WIFI_BAUD    115200

@@ -23,18 +23,16 @@
 //            -D SERIAL_RX_BUFFER_SIZE=256
 //        lib_deps     = bblanchon/ArduinoJson@^7.0.4
 //
-// A non-STM32 MCU family needs more than swapping `platform`. `[env:esp32_wroom32]`
-// in platformio.ini plus `boards/esp32_wroom32.h` is a worked example -- follow that
-// pair, not this STM32-only template, when the family differs. Three things it had
-// to solve that this template doesn't cover:
+// A non-STM32 MCU family needs more than swapping `platform`, and this template is
+// STM32-only. Two things such a port has to solve that it doesn't cover:
 //   (a) Any shared file with an MCU-specific body (storage.cpp, system_driver.cpp,
-//       wifi_driver.cpp, ...) needs an ESP32-style twin (storage_esp32.cpp, etc.),
-//       each guarded by a new `FW_MCU_<FAMILY>` macro, if the new MCU has its own
-//       peripheral APIs the existing body can't reuse.
-//   (b) If the platform's default C++ standard is older than the rest of the tree
-//       (espressif32 defaults to gnu++11), add `-std=gnu++17` to build_flags AND
-//       `build_unflags = -std=gnu++11` -- the framework appends its own -std after
-//       build_flags, so the flag alone is silently overridden without the unflag.
+//       ...) needs a twin for the new family, each guarded by its own
+//       `FW_MCU_<FAMILY>` macro, if that MCU has peripheral APIs the existing
+//       body can't reuse.
+//   (b) If the platform's default C++ standard is older than the rest of the tree,
+//       add `-std=gnu++17` to build_flags AND the matching `build_unflags` -- the
+//       framework appends its own -std after build_flags, so the flag alone is
+//       silently overridden without the unflag.
 //   (c) `extra_scripts = pre:scripts/config_hash.py` -- already required for every
 //       board (editing a board header doesn't trigger a rebuild without it, since
 //       `#include BOARD_HEADER` is invisible to SCons), just easier to forget while
@@ -54,7 +52,6 @@
 // the board actually has is fine. Listing them explicitly (with 0) is clearer
 // when the board *could* support something that is deliberately off.
 #define FEATURE_STATUS_LED  1
-#define FEATURE_BUTTON  0
 // The servo follows the drive mixer's steering slot and has no source of its
 // own, so FEATURE_SERVO 1 requires FEATURE_DRIVE 1.
 #define FEATURE_SERVO   0
@@ -77,8 +74,6 @@
 // never a silent misconfiguration.
 #define LED_PIN         LED_BUILTIN
 #define LED_ACTIVE_LOW  0        // 1 when driving the pin LOW lights the LED
-
-// #define BUTTON_PIN   USER_BTN   // required when FEATURE_BUTTON is 1
 
 // Required when FEATURE_SERVO is 1: a hobby servo on one timer channel. The
 // timer instance is named here rather than derived from the pin, so which

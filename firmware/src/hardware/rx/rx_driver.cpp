@@ -7,9 +7,7 @@
 // The body (not just the class) must be guarded: PlatformIO compiles every
 // .cpp under src/ as its own translation unit no matter what includes it, so
 // an unguarded file here would still demand RX_RX_PIN/RX_TX_PIN/RX_BAUD on
-// any board that never defines them. Same trap wifi_driver.cpp documents its
-// own guard against, first hit for real by esp32_wroom32 (FEATURE_RX off, no
-// receiver wired to a bare WROOM-32 dev board).
+// any board that never defines them.
 #if FEATURE_RX
 
 #include <Arduino.h>

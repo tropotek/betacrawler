@@ -1,12 +1,6 @@
 #include "storage.h"
 #include "config.h"
 
-// STM32-side body -- see storage_esp32.cpp for the ESP32 counterpart, and
-// wifi_driver.cpp's own comment (firmware/src/hardware/wifi/wifi_driver.cpp)
-// for why each architecture-specific file guards its own body rather than
-// relying on a per-environment build_src_filter.
-#if !FW_MCU_ESP32
-
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <string.h>
@@ -94,4 +88,3 @@ bool FlashStore::load(core::Params* p) {
   return true;
 }
 
-#endif  // !FW_MCU_ESP32

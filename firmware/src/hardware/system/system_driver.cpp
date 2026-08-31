@@ -3,12 +3,6 @@
 #include "core/health.h"
 #include "core/loop_stats.h"
 
-// STM32-side body -- see system_esp32_driver.cpp for the ESP32 counterpart,
-// and wifi_driver.cpp's own comment for why each architecture-specific file
-// guards its own body rather than relying on a per-environment
-// build_src_filter.
-#if !FW_MCU_ESP32
-
 #include <Arduino.h>
 #include "hardware/adc/adc_vref.h"
 
@@ -53,4 +47,3 @@ void SystemDriver::readTelemetry(core::TlmValue* out) {
 
 }  // namespace sys
 
-#endif  // !FW_MCU_ESP32

@@ -29,7 +29,6 @@ host. A host-side check is a convenience, never the guarantee.
 | `revert` | — | `{ok, src}` |
 | `tlm` | `on` | `{ok}` |
 | `dfu` | — | `{ok}` |
-| `wifiscan` | — | `{ok}` |
 
 Every response carries `ok`. A failure adds `err`:
 
@@ -39,7 +38,6 @@ Every response carries `ok`. A failure adds `err`:
 | `range` / `enum` / `toolong` / `badtype` | The value was rejected by the parameter's own descriptor |
 | `flash` | `save` wrote but the read-back did not match |
 | `nodfu` | This build has no bootloader seam (`FEATURE_DFU` off) |
-| `nowifi` / `busy` | No WiFi seam / a scan is already running |
 | `badop` | Unknown `op` |
 
 `fw` is a display string (`"betacrawler 4.0.0"`); `name`/`ver`/`built` are its structured form.
@@ -48,8 +46,8 @@ identical string — which makes "is the board running *this* image?" an exact c
 than a version-number guess, two builds of one version number included.
 
 `mods` lists the modules this build registered; `caps` lists what the device can *do* rather than
-what it has — `"dfu"` and `"wifiscan"`, each present only when the corresponding feature compiled
-in. Both are additive: a firmware predating either omits the key, and a host reads a missing one
+what it has — `"dfu"` is the one currently defined, present only when that feature compiled in.
+Both are additive: a firmware that publishes neither omits the key, and a host reads a missing one
 as empty.
 
 ## Schema
@@ -92,9 +90,9 @@ the rest: the device still validates and accepts a `set` or an INI restore again
 that is currently hidden, so a client must never read `showIf` as an access rule.
 
 `secret` (`true`, omitted otherwise) marks a Str parameter whose value is a credential rather than
-a label — `wifi.password` is the first. Also display-only: the wire and flash carry it as plain
-text like any other setting, and an INI dump therefore contains it in the clear. Masking is a
-rendering convenience, not a storage guarantee.
+a label. No parameter currently sets it. Display-only in any case: the wire and flash carry such a
+value as plain text like any other setting, and an INI dump would contain it in the clear. Masking
+is a rendering convenience, not a storage guarantee.
 
 `fmt` names a renderer, which may be textual (`hms`) or visual (`bar`). It is a **name, not a
 format string**: every renderer has to implement it, and one that does not recognise the name
