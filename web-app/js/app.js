@@ -4,7 +4,7 @@ import { buildChannel } from './build-channel.js';
 
 // Shared with FW_VERSION in firmware/include/config.h -- betacrawler tracks
 // one project-wide version number across firmware and app.
-const APP_VERSION = '4.2.2';
+const APP_VERSION = '4.2.3';
 
 const el = (id) => document.getElementById(id);
 let connected = false;

@@ -6,12 +6,12 @@ records live in the git history, not here.
 Merged work lands under `## Unreleased`. Cutting a release renames that heading to the version
 number being tagged, and a fresh `## Unreleased` opens above it.
 
-## Unreleased
+## 4.2.3
 
-- **feat: the `/app-dev/` build says so.** A red strip above the navbar marks it a development
-  build and links to the stable configurator; its version badge reads `-dev`.
 - **Saved settings reset to defaults on the first boot after flashing** — the servo parameter set
   shrank, changing the stored-record fingerprint.
+- **feat: the `/app-dev/` build says so.** A red strip above the navbar marks it a development
+  build and links to the stable configurator; its version badge reads `-dev`.
 - **feat: the steering servo follows `drive.mode`.** The firmware derives it, so an INI restore or
   a Terminal `set` configures a car correctly; `servo.mode`, `servo.angle`, `servo.sweep_s` and
   `servo.src` are gone.
