@@ -2,7 +2,7 @@
 
 ![BetaCrawler](docs/assets/hero.png)
 
-**This project is currently under construction. If you want to contribute hit up our disscussion forum and get involved.**
+**This project is currently under construction. If you want to contribute hit up our discussion forum and get involved.**
 
 ----
 
