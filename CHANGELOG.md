@@ -16,6 +16,8 @@ tagged.
   to re-bundling the shipped images, each linked to the architecture section behind it.
 - **docs: Setup describes the browser test suite** `node --test` runs, rather than saying there
   isn't one.
+- **test: the Firmware page and the DFU grant modal are covered in a real browser**, including the
+  permission-ladder rung that only a rendered page can reach.
 
 ## 4.2.3
 
