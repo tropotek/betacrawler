@@ -156,7 +156,7 @@ void test_format_ip_zero_renders_all_zeroes() {
 }
 
 void test_formatTlm_dispatches_to_ip_renderer() {
-  TlmDef def{"wifi.ip", "IP", nullptr, TlmType::U32, 0, 0, "ip", nullptr, 0, 0};
+  TlmDef def{"test.ip", "IP", nullptr, TlmType::U32, 0, 0, "ip", nullptr, 0, 0};
   TlmValue v; v.u = 0xC0A80001u;
   char buf[48];
   size_t n = formatTlm(def, v, buf, sizeof(buf));

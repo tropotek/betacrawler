@@ -38,8 +38,7 @@ static uint16_t crossfireRfRateHz(uint8_t idx) {
 // stay hardware-agnostic. rx_driver.cpp's own #ifndef RX_BAUD check is what
 // actually enforces "the board header must define this when FEATURE_RX is
 // on"; this fallback only covers a board with no receiver wired up at all
-// (e.g. esp32_wroom32, FEATURE_RX off), where the value is never read by any
-// running code.
+// (FEATURE_RX off), where the value is never read by any running code.
 #ifndef RX_BAUD
 #define RX_BAUD 420000
 #endif

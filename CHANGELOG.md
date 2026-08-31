@@ -6,6 +6,16 @@ records live in the git history, not here.
 Merged work lands under `## Unreleased`. Cutting a release renames that heading to the version
 number being tagged, and a fresh `## Unreleased` opens above it.
 
+## Unreleased
+
+- **chore: the `button` and `wifi` modules and the ESP32 build target are gone.** Both shipped
+  disabled on every board; the `wifiscan` op and its errors go with them. Stored settings survive
+  this update.
+- **docs: Contributing covers the conventions a change is held to**, from firmware module layout
+  to re-bundling the shipped images, each linked to the architecture section behind it.
+- **docs: Setup describes the browser test suite** `node --test` runs, rather than saying there
+  isn't one.
+
 ## 4.2.3
 
 - **Saved settings reset to defaults on the first boot after flashing** — the servo parameter set

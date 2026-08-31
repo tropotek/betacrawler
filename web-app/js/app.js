@@ -41,7 +41,6 @@ function setState(state, info) {
   // script is not deferred, Alpine's is), and the Firmware page re-syncs on
   // entry anyway.
   window.Alpine?.store('firmware')?.syncDevice(connected, deviceInfo);
-  window.Alpine?.store('wifi')?.syncDevice(connected, deviceInfo);
   window.Alpine?.store('app') && Object.assign(window.Alpine.store('app'), {
     connected,
     fwSummary: connected && info && info.fw

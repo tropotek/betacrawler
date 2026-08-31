@@ -24,24 +24,22 @@
 // (FW_MAX_PARAMS * sizeof(core::Value) is the big one, 36 bytes per slot),
 // which is cheap on a 128KB part. Registry::add() refuses to exceed them
 // rather than overflowing, and a native test covers that path.
-// blackpill_f411ce ships device, system, button, led, rx, drive, motor0
-// and motor1 today -- 8 modules, exactly at the cap, zero headroom left.
-// Turning on servo or WiFi ALONGSIDE this board's mixed skid-steer
-// build would need FW_MAX_MODULES raised first -- Registry::add() silently
-// refuses the module that doesn't fit rather than overflowing, and a native
-// test covers that path, but nothing today surfaces the refusal to a
-// person, so don't rely on it as a warning.
+// blackpill_f411ce registers device, system, servo, vbat, rx, drive, motor0
+// and motor1 -- 8 modules, exactly at the cap, zero headroom left. Enabling
+// another module on that board needs FW_MAX_MODULES raised first:
+// Registry::add() silently refuses the module that doesn't fit rather than
+// overflowing, and a native test covers that path, but nothing surfaces the
+// refusal to a person, so don't rely on it as a warning.
 #define FW_MAX_MODULES  8
 // motor0/motor1 each carry a `type` param plus three brushed-only params
 // (`freq`/`invert`/`brake`), taking the param table from 32 (a bare fit) to
 // 40. 48 rather than a bare fit leaves the same kind of headroom FW_MAX_TLM
 // already does below.
 #define FW_MAX_PARAMS   48
-// This board's current build (led, button, motor0, motor1, rx, vbat, drive
-// enabled; servo off) exposes 40 telemetry fields: rx alone
-// publishes 16 channels plus 7 link readings, motor0 and motor1 add 2 each (its
-// pulse width and arm state), vbat 3, and the rest split across
-// system/drive. 48 rather than a bare fit leaves headroom for the next
+// The shipped Black Pill build's telemetry is dominated by rx, which alone
+// publishes 16 channels plus 7 link readings; motor0 and motor1 add 2 each
+// (pulse width and arm state), vbat 3, and the rest split across
+// system/drive/servo. 48 rather than a bare fit leaves headroom for the next
 // module or field; TlmValue is 4 bytes, so the headroom costs 32 bytes of
 // static RAM in main.cpp's `static TlmValue g_tlm[FW_MAX_TLM]`.
 #define FW_MAX_TLM      48
@@ -69,9 +67,6 @@
 #ifndef FEATURE_STATUS_LED
 #define FEATURE_STATUS_LED 0
 #endif
-#ifndef FEATURE_BUTTON
-#define FEATURE_BUTTON 0
-#endif
 #ifndef FEATURE_SERVO
 #define FEATURE_SERVO 0
 #endif
@@ -89,19 +84,4 @@
 #endif
 #ifndef FEATURE_RX
 #define FEATURE_RX 0
-#endif
-#ifndef FEATURE_WIFI
-#define FEATURE_WIFI 0
-#endif
-
-// Set only by an ESP32 environment's own build_flags (see platformio.ini's
-// [env:esp32_wroom32]) to select the ESP32-native bodies of storage.cpp,
-// hardware/system/system_driver.cpp and hardware/wifi/wifi_driver.cpp --
-// each guards its own STM32-specific body with `#if !FW_MCU_ESP32` and is
-// paired with a `*_esp32_*` file guarded the other way, so every board
-// compiles cleanly with no per-environment build_src_filter bookkeeping.
-// FW_TARGET_ARDUINO alone still answers "is this a real target at all,"
-// exactly as it always has -- this only disambiguates which real target.
-#ifndef FW_MCU_ESP32
-#define FW_MCU_ESP32 0
 #endif

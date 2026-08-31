@@ -120,8 +120,6 @@ export class SimLink {
         return { ok: true };
       case 'dfu':
         return { ok: false, err: 'nodfu' };
-      case 'wifiscan':
-        return { ok: false, err: 'nowifi' };
       default:
         return { ok: false, err: 'badop' };
     }

@@ -449,13 +449,11 @@ USART1's two pin-pair options without fully freeing either.
 verified safe for real ELRS traffic exactly as thoroughly as PB7 was, which fully frees USART1's
 PA9/PA10 as a genuinely standard, unremapped UART pair for a fork's own project. `motor1` moved from
 PB6 to PB8 (TIM4_CH3, still a separate timer peripheral from `motor0`'s TIM3, just a different channel
-of TIM4 than before) to make room, and WiFi moved from PA2/PA3 to PB6/PB7 (USART1's alternate
-mapping) to take the pins CRSF vacated. `motor1`'s new pin is safe regardless of any of this bootloader
-analysis — motor output is always MCU-to-peripheral, never the reverse, so nothing external ever
-transmits into PB8. WiFi's new pins carry the same caveat PA3 needed before it was bench-tested:
-`FEATURE_WIFI` ships 0 by default, and nobody has yet run the ESP8266's real AT-firmware traffic
-against a deliberate flood the way ELRS was — don't extend PA3's proven safety to WiFi's pins
-without doing that test first.
+of TIM4 than before), which leaves USART1's alternate PB6/PB7 pair unclaimed as well. `motor1`'s pin is
+safe regardless of any of this bootloader analysis — motor output is always MCU-to-peripheral, never
+the reverse, so nothing external ever transmits into PB8. Any future peripheral that *receives* on
+PB6/PB7 inherits the untested case: PA3's proven safety comes from real ELRS traffic never emitting
+the byte the ROM autobaud detector watches for, and that is a property of the traffic, not the pin.
 
 A third-party source worth reading but not fully trusting here: Betaflight's own manufacturer
 design guidelines table the exact vulnerable pin-pairs per MCU, and list only PA9/PA10 and PD5/PD6

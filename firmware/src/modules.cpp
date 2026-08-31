@@ -48,17 +48,6 @@ static core::Inputs g_driveOutputs;
 #  define SYSTEM_DRV nullptr
 #endif
 
-#if FEATURE_BUTTON
-#  include "hardware/button/button_params.h"
-#  if FW_TARGET_ARDUINO
-#    include "hardware/button/button_driver.h"
-     static button::ButtonDriver g_button;
-#    define BUTTON_DRV (&g_button)
-#  else
-#    define BUTTON_DRV nullptr
-#  endif
-#endif
-
 #if FEATURE_SERVO
 #  include "hardware/servo/servo_params.h"
 #  if FW_TARGET_ARDUINO
@@ -125,22 +114,6 @@ static core::Inputs g_driveOutputs;
 #  endif
 #endif
 
-#if FEATURE_WIFI
-#  include "hardware/wifi/wifi_params.h"
-#  if FW_TARGET_ARDUINO
-#    if FW_MCU_ESP32
-#      include "hardware/wifi/wifi_esp32_driver.h"
-       static wifi::WifiEsp32Driver g_wifi;
-#    else
-#      include "hardware/wifi/wifi_driver.h"
-       static wifi::WifiDriver g_wifi;
-#    endif
-#    define WIFI_DRV (&g_wifi)
-#  else
-#    define WIFI_DRV nullptr
-#  endif
-#endif
-
 namespace core {
 
 // Registration order fixes the order of the schema, the telemetry frame and
@@ -152,9 +125,6 @@ void registerModules(Registry& reg) {
   reg.setBattery(g_battery);
   reg.add(device::kDesc);            // always: device.name, tlm.rate
   reg.add(sys::kDesc, SYSTEM_DRV);   // always: uptime/clock/ram/temp/vdd
-#if FEATURE_BUTTON
-  reg.add(button::kDesc, BUTTON_DRV);
-#endif
 #if FEATURE_SERVO
   reg.add(servo::kDesc, SERVO_DRV);
 #endif
@@ -179,23 +149,6 @@ void registerModules(Registry& reg) {
 #endif
 #if FEATURE_MOTOR1
   reg.add(motor1::kDesc, MOTOR1_DRV);
-#endif
-#if FEATURE_WIFI
-  reg.add(wifi::kDesc, WIFI_DRV);
-#endif
-}
-
-// Exposes the one wifi driver instance's WifiScanner interface to main.cpp,
-// which cannot otherwise reach a static living in this translation unit.
-// nullptr on any build without FEATURE_WIFI (or without FW_TARGET_ARDUINO,
-// i.e. the native test build) -- Dispatcher::setWifiScanner() already
-// treats a null seam as "this firmware cannot scan," exactly like an absent
-// Bootloader already does for `dfu`.
-WifiScanner* wifiScanner() {
-#if FEATURE_WIFI && FW_TARGET_ARDUINO
-  return &g_wifi;
-#else
-  return nullptr;
 #endif
 }
 

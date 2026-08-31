@@ -14,14 +14,12 @@
 
 // --- features ---------------------------------------------------------------
 #define FEATURE_STATUS_LED  1
-#define FEATURE_BUTTON  0
 #define FEATURE_SERVO   1
 #define FEATURE_RX         1
 #define FEATURE_DRIVE 1
 #define FEATURE_MOTOR0       1
 #define FEATURE_MOTOR1       1
 #define FEATURE_VBAT       1
-#define FEATURE_WIFI    0
 // Reboot-to-bootloader for in-app firmware updates. The F411 has a USB DFU
 // bootloader in ROM, so this costs a magic word and a reset -- no bootloader
 // to flash, and nothing to erase it. Turning it off only removes the app's
@@ -45,10 +43,6 @@
 // PC13 *sinks* the on-board LED: driving it LOW turns the LED ON.
 #define LED_PIN         LED_BUILTIN
 #define LED_ACTIVE_LOW  1
-
-// KEY button, pulled up; the driver samples its idle level at boot rather
-// than assuming a polarity.
-#define BUTTON_PIN      USER_BTN
 
 // Hobby servo on TIM2_CH3. Its own timer peripheral, separate from motor0's
 // TIM3 and motor1's TIM4 -- two HardwareTimer objects on one peripheral fight
@@ -88,9 +82,8 @@
 #define MOTOR0_TIMER      TIM3
 #define MOTOR0_PIN        PA6
 
-// motor1 on TIM4_CH3 -- moved off PB6 (2026-08-23) to free that pin for
-// WIFI_TX_PIN below; still a DIFFERENT physical timer peripheral from motor0's
-// TIM3, not just a different channel of the same one. PB8 is confirmed free.
+// motor1 on TIM4_CH3 -- a DIFFERENT physical timer peripheral from motor0's
+// TIM3, not just a different channel of the same one.
 #define MOTOR1_TIMER      TIM4
 #define MOTOR1_PIN        PB8
 
@@ -155,9 +148,8 @@
 // race".
 //
 // PA2/PA3 chosen over USART1's own pins (default PA9/PA10, or alternate
-// PB6/PB7) specifically to leave PA9/PA10 completely standard and unclaimed
-// -- a fork's own project gets a real, unremapped spare UART. USART1's
-// alternate mapping went to WIFI_RX_PIN/WIFI_TX_PIN below instead.
+// PB6/PB7) specifically to leave USART1 completely standard and unclaimed
+// -- a fork's own project gets a real, unremapped spare UART.
 //
 // The driver constructs its own HardwareSerial from these pins rather than
 // using a global Serial2, which the STM32 core only defines when the variant
@@ -175,19 +167,3 @@
 // Wiring: receiver 5V and GND from the board's 5V pin, receiver CRSF TX ->
 // PA3. The Nano RX's pads default to PWM output -- one must be reassigned to
 // CRSF in the TBS menu before anything appears on the wire at all.
-
-// ESP-01 (ESP8266) WiFi module, stock AT firmware, on USART1's alternate
-// mapping. Moved here 2026-08-23 when CRSF moved to PA2/PA3 (USART2),
-// freeing PB6/PB7 -- motor1 no longer claims PB6 (see its own comment above).
-// Bench-testing (_notes/docs/research/rx-uart-bootloader-race.md)
-// characterized CRSF's own receiver traffic against this pin pair's
-// bootloader-hijack risk, not the ESP8266's AT-firmware chatter.
-// FEATURE_WIFI ships 0 by default -- this pair should get the same
-// real-hardware flood test CRSF's pins got before anyone relies on it with
-// WiFi turned on in a shipped build.
-// CH_PD, GPIO0, GPIO2 and RST are pulled high locally on the module side
-// (10k to 3V3) and do not connect to any STM32 pin -- see the wiring
-// diagram referenced from _notes/spec-wifi.md.
-#define WIFI_RX_PIN  PB7
-#define WIFI_TX_PIN  PB6
-#define WIFI_BAUD    115200

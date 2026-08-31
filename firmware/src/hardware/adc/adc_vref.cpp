@@ -3,7 +3,7 @@
 
 // Guards the body, not just the declaration: PlatformIO compiles every .cpp
 // under src/ regardless of what includes it, and this one is STM32-only.
-#if !FW_MCU_ESP32 && FW_TARGET_ARDUINO
+#if FW_TARGET_ARDUINO
 
 #include <Arduino.h>
 

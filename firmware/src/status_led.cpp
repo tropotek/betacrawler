@@ -54,7 +54,7 @@ void StatusLed::tick(uint32_t nowMs) { (void)nowMs; }
 
 }  // namespace status_led
 
-#if FEATURE_STATUS_LED && !FW_MCU_ESP32
+#if FEATURE_STATUS_LED
 
 // Overrides the weak HardFault_Handler so a crash blinks instead of freezing
 // with the pin latched. HardFault runs at priority -1, which masks every

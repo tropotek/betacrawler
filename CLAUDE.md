@@ -45,11 +45,6 @@ contributor-facing ones), and anything placed there gets committed.
 Two ST-Link/V2 units may be attached at once — if upload grabs the wrong one, add
 `upload_port = <device>` to `[env:blackpill_f411ce]`.
 
-ESP32 (`esp32_wroom32`) is not a supported build target at this time — its `[env:]` block was
-removed from `platformio.ini`. `boards/esp32_wroom32.h` and `hardware/wifi/wifi_esp32_driver.cpp`
-are left in place as unused dead code, so support is cheap to resurrect later; see
-`firmware/platformio.ini`'s comment where the env used to be.
-
 Building and bundling release firmware images is covered by the `bundle-firmware` skill —
 invoke it rather than reading this file for those steps.
 
@@ -124,8 +119,8 @@ firmware/src/core/     pure C++, zero Arduino — protocol, params, registry, di
                         triangle, led_pattern, health, tlm_format, boot_log, version,
                         device_params. Native-tested (Unity).
 firmware/src/features/ behaviours, one folder per module (drive/)
-firmware/src/hardware/ device drivers, one folder per module (system/, button/, servo/, rx/;
-                        WiFi and other peripherals go here)
+firmware/src/hardware/ device drivers, one folder per module (system/, servo/, rx/, motor0/,
+                        motor1/, vbat/, adc/; new peripherals go here)
 firmware/src/modules.cpp  THE wiring file — one #if block per module. Compiled by BOTH envs.
 firmware/src/          Arduino glue: main.cpp, storage.cpp (flash), dfu.cpp,
                         status_led.cpp (health LED + HardFault_Handler)
@@ -227,10 +222,10 @@ PA10, PA3, and PB6/PB7 all block DFU under a deliberate flood of the byte its au
 watches for) — PA3 works because real, linked ELRS traffic never happens to emit that byte, not
 because of any property of the pin itself. Crossfire/TBS is untested and may behave differently;
 don't assume PA3 is safe for a receiver protocol that hasn't been checked. `RX_TX_PIN` stays
-outbound-only deliberately: it can't trigger the race regardless of protocol. `motor1` moved to PB8
-(from PB6) and WiFi moved to PB6/PB7 (from PA2/PA3) to make room — `motor1`'s pin is safe by
-directionality alone (motor output never receives external data), and WiFi's new pins carry the
-same untested-for-its-own-traffic caveat PA3 no longer needs. Reasoning and full bench methodology:
+outbound-only deliberately: it can't trigger the race regardless of protocol. `motor1` is on PB8,
+safe by directionality alone (motor output never receives external data), which leaves USART1's
+alternate PB6/PB7 pair free — anything that *receives* on it inherits the untested case PA3 no
+longer has. Reasoning and full bench methodology:
 `docs/development/architecture.md`, "CRSF pin choice and the bootloader race".
 
 **`web-app/firmware/` stays committed** — unlike most build output: the site has no server, so

@@ -68,31 +68,13 @@ static void writeLine(const char* buf, size_t len) {
 
 // Space between the heap top and the current stack -- the cheapest "is this
 // build about to run out of RAM" signal there is, and worth capturing at boot
-// before anything has had a chance to grow.
-//
-// STM32's Arduino core declares sbrk() nowhere public, so this file has
-// always had to declare it itself and call it directly. The ESP32 core's own
-// <unistd.h> (dragged in transitively by Arduino.h -> HardwareSerial.h ->
-// ... on that platform) DOES declare a compatible-looking `void*
-// sbrk(ptrdiff_t)` -- but arduino-esp32 does not implement a classic
-// sbrk()-growable heap at all (it uses a multi-region heap-caps allocator
-// instead), so calling it is not just a declaration mismatch to paper over:
-// it hits syscall_not_implemented_aborts() and crash-loops the board before
-// setup() ever completes (confirmed on real hardware). system_esp32_driver.cpp
-// (Task 3) already solved the equivalent problem for its own RAM telemetry
-// field with ESP.getFreeHeap(); reuse that here instead of sbrk() on this
-// platform.
-#if !FW_MCU_ESP32
+// before anything has had a chance to grow. STM32's Arduino core declares
+// sbrk() nowhere public, so this file declares it itself.
 extern "C" char* sbrk(int incr);
 static int freeRamBytes() {
   char top;
   return (int)(&top - (char*)sbrk(0));
 }
-#else
-static int freeRamBytes() {
-  return (int)ESP.getFreeHeap();
-}
-#endif
 
 // Replays everything recorded during setup(). Called at the end of boot (for
 // whoever is watching the serial monitor) and again after every `hello` --
@@ -116,7 +98,6 @@ void setup() {
 
   Serial.begin(FW_SERIAL_BAUD);
   registerModules(g_reg);
-  g_dispatch.setWifiScanner(wifiScanner());
 
   // g_params was constructed during static init, before registerModules()
   // ran, so it defaulted an empty table. Now that the registry is populated,

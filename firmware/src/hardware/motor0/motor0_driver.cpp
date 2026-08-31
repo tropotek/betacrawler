@@ -6,7 +6,7 @@
 // .cpp under src/ as its own translation unit no matter what includes it, so
 // an unguarded file here would still demand MOTOR0_PIN/MOTOR0_TIMER -- and drag
 // in the STM32-only <HardwareTimer.h> -- on any board that never defines
-// them. Same trap wifi_driver.cpp documents its own guard against.
+// them.
 #if FEATURE_MOTOR0
 
 #include <Arduino.h>
