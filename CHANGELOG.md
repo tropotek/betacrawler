@@ -3,8 +3,9 @@
 Summaries of completed work, one to two lines each. Detail, reasoning and hardware-verification
 records live in the git history, not here.
 
-Merged work lands under `## Unreleased`. Cutting a release renames that heading to the version
-number being tagged, and a fresh `## Unreleased` opens above it.
+Merged work lands under `## Unreleased`, which is added above the newest release by the first
+change to land after it. Cutting a release renames that heading to the version number being
+tagged.
 
 ## Unreleased
 
