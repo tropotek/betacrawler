@@ -33,7 +33,7 @@ No build step and no npm dependencies — vanilla ES modules served as static fi
 
 ```bash
 python3 -m http.server 9091   # then open http://localhost:9091
-node --test                   # unit tests, needs Node 18+
+node --test                   # unit tests and browser suites, needs Node 18+
 ```
 
 Web Serial and WebUSB require a secure context (`localhost` works, a LAN IP over plain HTTP
@@ -54,8 +54,9 @@ docs/.venv/bin/mkdocs serve   # live-reloading preview at http://localhost:8000
 
 ## Headless browser testing
 
-There's no automated test suite for the rendered web-app UI, but a change to it should still be
-checked in a real browser before you call it done. Set up a Playwright + Chromium venv once:
+The rendered UI is covered by the browser suites in `web-app/tests/*.playwright.py`, which drive a
+real headless Chromium. `node --test` runs them alongside the unit tests, reusing a server on port
+9091 or starting one for the duration. They need a Playwright + Chromium venv, set up once:
 
 ```bash
 python3 -m venv ~/.pwvenv
@@ -63,12 +64,21 @@ python3 -m venv ~/.pwvenv
 ~/.pwvenv/bin/playwright install --with-deps chromium
 ```
 
-Then drive the app headlessly against your local server:
+Without it the suites skip visibly rather than passing silently, so a `node --test` run that
+reports a skip here has not checked the UI at all.
+
+Run a single suite against a server you already have up:
 
 ```bash
-~/.pwvenv/bin/python3 script.py   # sync_playwright(), p.chromium.launch(headless=True)
+~/.pwvenv/bin/python3 tests/config-page.playwright.py
 ```
 
-Point it at `http://localhost:9091`. For a device state you can't reproduce on real hardware,
-install a fake `navigator.serial` with `add_init_script()` before the page loads and answer the
-wire protocol from it — see [Protocol](protocol.md) for the message shapes.
+Each suite reads its base URL from `BETACRAWLER_BASE` (default `http://localhost:9091`; set
+`BETACRAWLER_PORT` to move the port `node --test` uses), and reports a failure by printing it and
+exiting non-zero. Add one by dropping a new `tests/<name>.playwright.py` into `web-app/tests/` —
+suites are discovered, not listed anywhere.
+
+Use them to read rendered text, click through a page and collect console and `pageerror` events
+before calling a UI change done. For a device state real hardware can't produce, install a fake
+`navigator.serial` with `add_init_script()` before the page loads and answer the wire protocol
+from it — see [Protocol](protocol.md) for the message shapes.
