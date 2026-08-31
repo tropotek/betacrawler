@@ -51,64 +51,6 @@ def fake_bin(name: str, version: str, board: str, stamp: str) -> bytes:
     return head + body + b"\x00" * (2048 - len(head) - len(body))
 
 
-# --- method derivation ----------------------------------------------------
-
-def test_method_for_a_normal_stm32_env_is_dfu(tree):
-    mod = tree
-    assert mod.method_for("board_a") == "dfu"
-
-
-def test_method_for_an_esp32_env_is_esptool(tree):
-    mod = tree
-    (mod.FIRMWARE / "platformio.ini").write_text(
-        (mod.FIRMWARE / "platformio.ini").read_text() +
-        "\n[env:board_c]\n"
-        "build_flags = -D BOARD_HEADER='\"boards/board_a.h\"' -D FW_MCU_ESP32=1\n")
-    assert mod.method_for("board_c") == "esptool"
-
-
-# --- esp32 image validation -------------------------------------------------
-
-def fake_esp32_merged_image(size=8192) -> bytes:
-    """Shaped like a real merge-bin output: 0xFF padding up to 0x1000, then
-    the ESP image magic byte -- not a magic byte at offset 0, which a real
-    merged image never has."""
-    pad = b"\xff" * 0x1000
-    body = b"\xe9" + b"\x00" * (size - len(pad) - 1)
-    return pad + body
-
-
-def test_check_esp32_image_accepts_a_plausible_merged_image(tree):
-    mod = tree
-    mod.check_esp32_image(fake_esp32_merged_image())
-
-
-def test_check_esp32_image_rejects_a_missing_magic_byte(tree):
-    mod = tree
-    blob = bytearray(fake_esp32_merged_image())
-    blob[0x1000] = 0x00
-    with pytest.raises(mod.BundleError, match="0xE9|magic"):
-        mod.check_esp32_image(bytes(blob))
-
-
-def test_check_esp32_image_rejects_a_magic_byte_at_offset_zero(tree):
-    """The realistic mistake this guards against: checking blob[0] instead
-    of blob[0x1000] would wrongly accept a bare firmware.bin (which DOES
-    have 0xE9 at offset 0) as if it were a flashable merged image."""
-    mod = tree
-    blob = bytearray(fake_esp32_merged_image())
-    blob[0] = 0xe9   # looks right at offset 0, but that's not where it counts
-    blob[0x1000] = 0x00
-    with pytest.raises(mod.BundleError, match="0xE9|magic"):
-        mod.check_esp32_image(bytes(blob))
-
-
-def test_check_esp32_image_rejects_tiny_input(tree):
-    mod = tree
-    with pytest.raises(mod.BundleError, match="too small"):
-        mod.check_esp32_image(b"\x00" * 16)
-
-
 @pytest.fixture
 def tree(tmp_path, monkeypatch):
     """A repo-shaped fixture the script can be pointed at wholesale."""
@@ -143,237 +85,12 @@ def tree(tmp_path, monkeypatch):
     return mod
 
 
-@pytest.fixture
-def esp32_tree(tree, monkeypatch):
-    """`tree` plus one esptool-method env with the four PlatformIO output
-    files an ESP32 build actually produces, and a fake boot_app0.bin standing
-    in for the framework package (never write into the real
-    ~/.platformio/packages/ during a test)."""
-    mod = tree
-    (mod.FIRMWARE / "include" / "boards" / "board_c.h").write_text(
-        '#define BOARD_ID "board_c"\n#define FEATURE_LED 1\n')
-    with (mod.FIRMWARE / "platformio.ini").open("a") as f:
-        f.write("\n[env:board_c]\n"
-                "build_flags = -D BOARD_HEADER='\"boards/board_c.h\"' "
-                "-D FW_MCU_ESP32=1\n")
+# --- plan_entry / release ----------------------------------------------------
 
-    boot_app0 = mod.ROOT / "fake-framework" / "boot_app0.bin"
-    boot_app0.parent.mkdir(parents=True)
-    boot_app0.write_bytes(b"\xe9" + b"\x00" * 64)
-    monkeypatch.setattr(mod, "BOOT_APP0_PATH", boot_app0)
-    # No test here shells out to a real esptool (every one injects a runner),
-    # so resolving one would only make the suite depend on the machine it
-    # runs on. find_esptool()'s own behavior is tested directly, above.
-    monkeypatch.setattr(mod, "find_esptool", lambda: "esptool")
-    return mod
-
-
-def build_esp32_parts_into(mod, env: str, stamp: str = STAMP_A, board: str | None = None):
-    """The four files a real `pio run -e <esp32 env>` leaves behind, standing
-    in for what merge_esp32_image() reads. firmware.bin alone is what
-    check_identity()/embedded_build_date() scan for the project/version/board
-    strings and __DATE__ stamp -- those checks work on the merged blob too
-    since they scan the whole thing for substrings, so only firmware.bin
-    needs the real identity payload."""
-    build_dir = mod.FIRMWARE / ".pio" / "build" / env
-    build_dir.mkdir(parents=True, exist_ok=True)
-    (build_dir / "bootloader.bin").write_bytes(b"\xe9" + b"\x11" * 256)
-    (build_dir / "partitions.bin").write_bytes(b"\x00" * 128)
-    (build_dir / "firmware.bin").write_bytes(
-        fake_bin("betacrawler", "1.0.0", board or env, stamp))
-    return build_dir
-
-
-# --- locating esptool ---------------------------------------------------------
-
-def test_find_esptool_uses_path(tree, monkeypatch):
-    mod = tree
-    monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/esptool")
-    assert mod.find_esptool() == "/usr/bin/esptool"
-
-
-def test_find_esptool_reports_a_clean_error_when_missing(tree, monkeypatch):
-    """A traceback out of subprocess is not an error message. This is the
-    one place that can say what to install and where."""
-    mod = tree
-    monkeypatch.setattr(mod.shutil, "which", lambda name: None)
-    with pytest.raises(mod.BundleError, match="esptool"):
-        mod.find_esptool()
-
-
-def test_run_esptool_reports_a_missing_binary_as_a_bundle_error(tree, monkeypatch):
-    """Belt and braces for the same finding: even if find_esptool() hands
-    back a path that has since vanished, subprocess's FileNotFoundError must
-    not escape as a raw traceback (run_build() already handles `pio` this
-    way)."""
-    mod = tree
-
-    def boom(argv, **kwargs):
-        raise FileNotFoundError(2, "No such file or directory", argv[0])
-
-    monkeypatch.setattr(mod.subprocess, "run", boom)
-    with pytest.raises(mod.BundleError, match="esptool"):
-        mod._run_esptool(["/nope/esptool", "--chip", "esp32", "merge-bin"])
-
-
-# --- merging ------------------------------------------------------------------
-
-def test_merge_esp32_image_produces_a_sparse_file_with_magic_at_0x1000(esp32_tree):
-    mod = esp32_tree
-    build_esp32_parts_into(mod, "board_c")
-
-    def fake_esptool(argv):
-        # Stand-in for the real `esptool merge-bin` call: write a
-        # minimally-plausible merged shape (padding then magic at 0x1000)
-        # rather than actually running the tool.
-        out = Path(argv[argv.index("-o") + 1])
-        out.write_bytes(b"\xff" * 0x1000 + b"\xe9" + b"\x00" * 512)
-        return 0
-
-    merged = mod.merge_esp32_image("board_c", runner=fake_esptool)
-    blob = merged.read_bytes()
-    assert blob[:0x1000] == b"\xff" * 0x1000
-    assert blob[0x1000] == 0xe9
-
-
-def test_merge_esp32_image_reports_a_failed_merge(esp32_tree):
-    mod = esp32_tree
-    build_esp32_parts_into(mod, "board_c")
-
-    def failing_esptool(argv):
-        return 1
-
-    with pytest.raises(mod.BundleError, match="merge"):
-        mod.merge_esp32_image("board_c", runner=failing_esptool)
-
-
-def test_merge_esp32_image_requires_all_four_inputs(esp32_tree):
-    mod = esp32_tree
-    # bootloader.bin/partitions.bin never written -- only firmware.bin exists.
-    build_dir = mod.FIRMWARE / ".pio" / "build" / "board_c"
-    build_dir.mkdir(parents=True)
-    (build_dir / "firmware.bin").write_bytes(fake_bin("betacrawler", "1.0.0", "board_c", STAMP_A))
-
-    with pytest.raises(mod.BundleError, match="bootloader.bin"):
-        mod.merge_esp32_image("board_c", runner=lambda argv: 0)
-
-
-def test_merge_esp32_image_invokes_esptool_with_the_right_argv(esp32_tree):
-    """The other merge tests' fakes only look at `-o` -- none of them check
-    that the offsets/paths/flags actually sent to esptool are right. A
-    transposed offset in ESP32_MERGE_LAYOUT, or a flag reverted to a
-    deprecated underscored spelling (`merge_bin` instead of `merge-bin`),
-    would pass every other test here and only bite at real-flash time."""
-    mod = esp32_tree
-    build_dir = build_esp32_parts_into(mod, "board_c")
-
-    calls = []
-
-    def recording_esptool(argv):
-        calls.append(argv)
-        out = Path(argv[argv.index("-o") + 1])
-        out.write_bytes(b"\xff" * 0x1000 + b"\xe9" + b"\x00" * 512)
-        return 0
-
-    mod.merge_esp32_image("board_c", runner=recording_esptool)
-
-    assert len(calls) == 1
-    argv = calls[0]
-
-    assert argv[0:3] == ["esptool", "--chip", "esp32"]
-    assert argv[3] == "merge-bin"
-    assert "merge_bin" not in argv   # the deprecated underscored spelling
-
-    assert argv[argv.index("--flash-mode") + 1] == "dio"
-    assert argv[argv.index("--flash-freq") + 1] == "40m"
-    assert argv[argv.index("--flash-size") + 1] == "4MB"
-
-    # Offset/path pairs, in the documented ESP32_MERGE_LAYOUT order.
-    tail = argv[argv.index("--flash-size") + 2:]
-    pairs = list(zip(tail[0::2], tail[1::2]))
-    assert pairs == [
-        ("0x1000", str(build_dir / "bootloader.bin")),
-        ("0x8000", str(build_dir / "partitions.bin")),
-        ("0xe000", str(mod.BOOT_APP0_PATH)),
-        ("0x10000", str(build_dir / "firmware.bin")),
-    ]
-
-
-# --- plan_entry / release dispatch on method -----------------------------
-
-def test_release_bundles_an_esp32_env_as_the_merged_image(esp32_tree, monkeypatch):
-    mod = esp32_tree
-
-    def builder(env, pio):
-        build_esp32_parts_into(mod, env)
-
-    def fake_esptool(argv):
-        out = Path(argv[argv.index("-o") + 1])
-        out.write_bytes(b"\xff" * 0x1000 + b"\xe9" + b"\x00" * 512)
-        return 0
-    monkeypatch.setattr(mod, "_run_esptool", fake_esptool)
-
-    entries, _ = mod.release(["board_c"], builder=builder)
-
-    assert entries[0]["method"] == "esptool"
-    assert entries[0]["board"] == "board_c"
-    bundled = (mod.BUNDLES[0] / entries[0]["file"]).read_bytes()
-    assert bundled[0x1000] == 0xe9
-
-
-def test_release_still_bundles_a_dfu_env_as_firmware_bin(tree):
-    """Unaffected by the esptool path: same behavior as before this task."""
+def test_release_bundles_an_env_as_firmware_bin(tree):
     mod = tree
     entries, _ = mod.release(["board_a"], builder=builder_for(mod))
     assert entries[0]["method"] == "dfu"
-
-
-def test_release_rejects_an_esp32_env_missing_boot_app0(esp32_tree, monkeypatch):
-    mod = esp32_tree
-    monkeypatch.setattr(mod, "BOOT_APP0_PATH", mod.ROOT / "nope" / "boot_app0.bin")
-
-    def builder(env, pio):
-        build_esp32_parts_into(mod, env)
-
-    with pytest.raises(mod.BundleError, match="boot_app0"):
-        mod.release(["board_c"], builder=builder)
-
-
-def test_release_checks_esp32_image_format_before_identity(esp32_tree, monkeypatch):
-    """Mirrors test_a_binary_that_fails_validation_stops_the_whole_release's
-    technique for the DFU path: firmware.bin here carries none of the
-    FW_PROJECT_NAME/FW_VERSION/BOARD_ID strings check_identity() looks for,
-    AND the merged image is missing its format magic byte, so BOTH checks
-    would fail if reached. Only the check that runs first ever raises.
-
-    A version with valid identity strings would not prove anything here --
-    check_identity() would then pass silently regardless of which check ran
-    first, and the observed error would be the format error either way. Only
-    making both fail lets the assertion tell the two orderings apart.
-    """
-    mod = esp32_tree
-
-    def builder(env, pio):
-        build_dir = mod.FIRMWARE / ".pio" / "build" / env
-        build_dir.mkdir(parents=True, exist_ok=True)
-        (build_dir / "bootloader.bin").write_bytes(b"\xe9" + b"\x11" * 256)
-        (build_dir / "partitions.bin").write_bytes(b"\x00" * 128)
-        # No identity strings at all -- see the docstring above.
-        (build_dir / "firmware.bin").write_bytes(b"\x00" * 2048)
-
-    def bad_esptool(argv):
-        out = Path(argv[argv.index("-o") + 1])
-        # Missing the ESP image magic byte at 0x1000.
-        out.write_bytes(b"\xff" * 0x1000 + b"\x00" + b"\x00" * 512)
-        return 0
-    monkeypatch.setattr(mod, "_run_esptool", bad_esptool)
-
-    with pytest.raises(mod.BundleError) as exc_info:
-        mod.release(["board_c"], builder=builder)
-
-    msg = str(exc_info.value)
-    assert "0xE9" in msg or "magic" in msg or "0x1000" in msg
-    assert "does not contain" not in msg   # would mean check_identity() ran first
 
 
 def build_into(mod, env: str, stamp: str = STAMP_A, board: str | None = None):
@@ -431,8 +148,7 @@ def test_release_resolves_run_build_at_call_time(tree, monkeypatch):
     A `builder=run_build` default captures the function object at import, so
     `monkeypatch.setattr(mod, "run_build", fake)` has no effect on any caller
     that omits `builder=` -- which would shell out to a real PlatformIO from
-    a test. merge_esp32_image() already resolves its `runner` this way; these
-    two are what were left behind.
+    a test.
     """
     mod = tree
     monkeypatch.setattr(mod, "run_build", builder_for(mod))
@@ -678,11 +394,6 @@ def test_all_board_envs_excludes_native_even_with_a_board_header(tree):
             "build_flags =\n"
             "    -D BOARD_HEADER='\"boards/board_a.h\"'\n")
     assert mod.all_board_envs() == ["board_a", "board_b"]
-
-
-def test_all_board_envs_includes_an_esptool_env(esp32_tree):
-    mod = esp32_tree
-    assert mod.all_board_envs() == ["board_a", "board_b", "board_c"]
 
 
 def test_main_all_flag_builds_every_board(tree, monkeypatch, capsys):

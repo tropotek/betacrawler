@@ -20,10 +20,6 @@ re-checks the sha256 against the manifest before every flash), so the whole
 value of this script is that the manifest cannot quietly describe a binary
 that isn't there. Everything below exists to enforce that.
 
-An esptool-method env (currently esp32_wroom32) bundles a merged single
-binary built from PlatformIO's four separate output files, not a copy of
-firmware.bin directly -- see merge_esp32_image().
-
 That invariant is why a multi-board run is ALL-OR-NOTHING. Every env is built
 and validated before anything is written, so a second board failing to compile
 cannot leave behind a manifest that looks like a complete release and isn't.
@@ -54,24 +50,6 @@ FIRMWARE = ROOT / "firmware"
 BUNDLES = [ROOT / "web-app" / "firmware"]
 
 DEFAULT_ENV = "blackpill_f411ce"
-
-# Real path on this machine, confirmed present. If the ESP32 platform is
-# reinstalled to a different location this needs updating -- there is no
-# portable way to derive it without invoking PlatformIO itself, which this
-# stdlib-only script deliberately avoids (see the module docstring).
-BOOT_APP0_PATH = (Path.home() / ".platformio" / "packages"
-                  / "framework-arduinoespressif32" / "tools" / "partitions"
-                  / "boot_app0.bin")
-
-# Verified against esp32dev.json (flash_size/flash_mode/f_flash) and a real
-# `esptool merge-bin` run against this project's own esp32_wroom32 build.
-ESP32_MERGE_LAYOUT = (
-    ("0x1000", "bootloader.bin"),
-    ("0x8000", "partitions.bin"),
-    ("0xe000", None),          # boot_app0.bin, resolved via BOOT_APP0_PATH
-    ("0x10000", "firmware.bin"),
-)
-
 
 def manifest_path(bundle: Path) -> Path:
     return bundle / "manifest.json"
@@ -135,28 +113,13 @@ def board_header_path(env: str) -> Path:
     return header
 
 
-def method_for(env: str) -> str:
-    """Method for an env: "esptool" if ESP32, else "dfu".
-
-    Read from the same platformio.ini block board_header_path() already
-    parses, keyed on the FW_MCU_ESP32 build flag the 2026-08-01 ESP32 design
-    introduced to guard architecture-specific driver bodies -- reusing it
-    here means there is exactly one place in the tree that says "this env is
-    an ESP32", not two that could drift apart.
-    """
-    block = _env_block(env)
-    if re.search(r"-D\s+FW_MCU_ESP32\s*=\s*1\b", block):
-        return "esptool"
-    return "dfu"
-
-
 def all_board_envs() -> list[str]:
     """Every [env:*] in platformio.ini that is a real board target, in file
     order. Excluded without a name-based blocklist, which would itself go
     stale -- exactly the kind of drift this script exists to prevent (see
     module docstring). Two structural signals, both required:
 
-    - `-D BOARD_HEADER=...` -- what board_header_path()/method_for() key off.
+    - `-D BOARD_HEADER=...` -- what board_header_path() keys off.
     - NOT `platform = native` -- [env:native] (the host-side Unity suite)
       deliberately DOES set BOARD_HEADER too (the real board header, per the
       comment on that section: its fixtures must describe the actual
@@ -276,21 +239,6 @@ def find_pio() -> str | None:
     return shutil.which("pio")
 
 
-def find_esptool() -> str:
-    """Locate the esptool CLI, the same way find_pio() locates PlatformIO.
-
-    Raises rather than returning None (unlike find_pio(), whose caller has its
-    own message for that) so a missing tool reads as an instruction instead of
-    a FileNotFoundError traceback out of subprocess.
-    """
-    found = shutil.which("esptool")
-    if found:
-        return found
-    raise BundleError(
-        "esptool not found. Install it so `esptool` is on PATH (`pip install "
-        "esptool`). Only esptool-method envs -- the ESP32 targets -- need it.")
-
-
 def force_version_rebuild(env: str) -> list[Path]:
     """Delete version.cpp's object file so the build re-stamps __DATE__/__TIME__.
 
@@ -352,61 +300,6 @@ def run_build(env: str, pio: str) -> None:
         raise BundleError(f"`pio run -e {env}` failed:\n{tail}")
 
 
-def _run_esptool(argv: list[str]) -> int:
-    try:
-        proc = subprocess.run(argv, capture_output=True, text=True)
-    except OSError as exc:
-        # run_build() reports a broken `pio` as a BundleError rather than a
-        # traceback; the same applies here, for the same reason: the caller
-        # prints BundleError as the tool's error message.
-        raise BundleError(f"could not run esptool ({argv[0]}): {exc}") from exc
-    if proc.returncode != 0:
-        raise BundleError(
-            "esptool merge-bin failed:\n" +
-            (proc.stdout + proc.stderr).strip())
-    return proc.returncode
-
-
-def merge_esp32_image(env: str, esptool: str | None = None, runner=None) -> Path:
-    """Fold this env's four PlatformIO build outputs into one flashable file.
-
-    `runner` is injected the same way run_build()'s `builder` param is --
-    tests replace it with something that writes a fake merged file instead
-    of shelling out to a real esptool. Resolved to _run_esptool INSIDE the
-    body (a name lookup at call time), not as the default parameter value --
-    a default of `runner=_run_esptool` would bind the function object at
-    def-time, so a test's `monkeypatch.setattr(mod, "_run_esptool", fake)`
-    would silently have no effect on any caller (like plan_entry() below)
-    that doesn't pass its own runner explicitly.
-
-    `esptool` is resolved the same way and for the same reason -- a bare
-    "esptool" only works when the app venv happens to be on PATH, which it
-    is not under this script's documented invocation. See find_esptool().
-    """
-    runner = runner or _run_esptool
-    build_dir = FIRMWARE / ".pio" / "build" / env
-    inputs = []
-    for offset, name in ESP32_MERGE_LAYOUT:
-        path = build_dir / name if name else BOOT_APP0_PATH
-        if not path.is_file():
-            raise BundleError(
-                f"{path} does not exist -- build {env} first, or (for "
-                f"boot_app0.bin) check the ESP32 Arduino platform is "
-                f"installed")
-        inputs.append((offset, path))
-
-    merged = build_dir / "merged-flash.bin"
-    argv = [esptool or find_esptool(), "--chip", "esp32", "merge-bin", "-o", str(merged),
-            "--flash-mode", "dio", "--flash-freq", "40m", "--flash-size", "4MB"]
-    for offset, path in inputs:
-        argv += [offset, str(path)]
-
-    runner(argv)
-    if not merged.is_file():
-        raise BundleError(f"esptool merge-bin did not produce {merged}")
-    return merged
-
-
 def sources_newer_than(bin_path: Path) -> list[Path]:
     """Source files newer than the binary (empty means it looks current).
 
@@ -444,27 +337,6 @@ def check_vector_table(blob: bytes) -> None:
         raise BundleError(
             f"reset vector 0x{reset:08x} is not a Thumb address in flash "
             f"(0x{FLASH_LO:08x}..0x{FLASH_HI:08x})")
-
-
-# A merged ESP32 image is sparse: bytes 0x0-0xFFF are 0xFF padding because
-# bootloader.bin (the first real content) starts at offset 0x1000, not 0.
-# Verified against a real `esptool merge-bin` run -- checking blob[0] would
-# reject every genuine merged image AND wrongly accept a bare, unbootable
-# firmware.bin (which does have the magic byte at offset 0 on its own).
-ESP32_IMAGE_MAGIC_OFFSET = 0x1000
-ESP32_IMAGE_MAGIC = 0xE9
-
-
-def check_esp32_image(blob: bytes) -> None:
-    if len(blob) < ESP32_IMAGE_MAGIC_OFFSET + 1:
-        raise BundleError(
-            f"binary is only {len(blob)} bytes -- too small to contain a "
-            f"bootloader image at offset 0x{ESP32_IMAGE_MAGIC_OFFSET:x}")
-    if blob[ESP32_IMAGE_MAGIC_OFFSET] != ESP32_IMAGE_MAGIC:
-        raise BundleError(
-            f"byte at offset 0x{ESP32_IMAGE_MAGIC_OFFSET:x} is "
-            f"0x{blob[ESP32_IMAGE_MAGIC_OFFSET]:02x}, not the ESP image magic "
-            f"(0x{ESP32_IMAGE_MAGIC:02x}) -- not a raw merged esptool image?")
 
 
 # --- manifest ------------------------------------------------------------------
@@ -566,13 +438,11 @@ def plan_entry(env: str, force: bool = False, build: bool = True,
     `builder` is injected the same way `SerialLink` takes `open_port` and
     `DfuFlasher` takes `runner` -- it is the one call that needs a toolchain,
     so the tests replace it and exercise everything else for real. Resolved
-    to run_build INSIDE the body, exactly as merge_esp32_image() resolves its
-    `runner`: a `builder=run_build` default would bind the function object at
+    to run_build INSIDE the body: a `builder=run_build` default would bind it at
     def-time, so a `monkeypatch.setattr(mod, "run_build", fake)` would be
     silently ignored by any caller that omits `builder=`.
     """
     builder = builder or run_build
-    method = method_for(env)
     bin_path = bin_path_for(env)
 
     if build:
@@ -604,19 +474,10 @@ def plan_entry(env: str, force: bool = False, build: bool = True,
     # error for the same fixture, silently changing what that test proves.
     fw_blob = bin_path.read_bytes()
 
-    if method == "esptool":
-        image_path = merge_esp32_image(env)
-        blob = image_path.read_bytes()
-        check_esp32_image(blob)
-    else:
-        image_path = bin_path
-        blob = fw_blob
-        check_vector_table(blob)
+    image_path = bin_path
+    blob = fw_blob
+    check_vector_table(blob)
 
-    # check_identity()/embedded_build_date() scan firmware.bin -- the
-    # ESP32 app partition -- for the FW_PROJECT_NAME/FW_VERSION/BOARD_ID
-    # strings and the __DATE__ stamp, regardless of whether that's the file
-    # actually shipped.
     check_identity(fw_blob, name, version, board)
 
     # Only meaningful under --no-build: with a build just run, the binary is
@@ -639,7 +500,7 @@ def plan_entry(env: str, force: bool = False, build: bool = True,
         "version": version,
         "built": embedded_build_date(fw_blob),
         "proto": proto_version(),
-        "method": method,
+        "method": "dfu",
         "file": f"{board}/{name}-{version}.bin",
         "size": len(blob),
         "sha256": hashlib.sha256(blob).hexdigest(),
