@@ -1,7 +1,6 @@
 <!-- Replace this with your own project's assembly/wiring instructions. This is a starting
-     skeleton, not betacrawler's own documentation. See docs/guides/adding-a-board.md and
-     docs/guides/wiring-the-display.md on the betacrawler docs site for the structure this is
-     modeled on. -->
+     skeleton, not betacrawler's own documentation. The Build section at
+     https://tropotek.github.io/betacrawler/build/ shows the structure this is modeled on. -->
 
 # Assembly
 
