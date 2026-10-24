@@ -1,6 +1,6 @@
 # BetaCrawler
 
-![BetaCrawler](docs/assets/hero.png)
+![BetaCrawler](docs/assets/hero.webp)
 
 **This project is currently under construction. If you want to contribute hit up our discussion forum and get involved.**
 

@@ -9,6 +9,8 @@ tagged.
 
 ## Unreleased
 
+- **feat: a new cartoon tank hero** on the app's home page, the README and the docs front page.
+  The badge banner stays on the About page.
 - **chore: the `button` and `wifi` modules and the ESP32 build target are gone.** Both shipped
   disabled on every board; the `wifiscan` op and its errors go with them. Stored settings survive
   this update.
